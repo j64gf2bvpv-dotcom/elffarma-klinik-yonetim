@@ -94,13 +94,6 @@ export function RemindersPage() {
   const alerts = useAlertsSummary()
   const deleteBulkMutation = useDeleteRemindersBulk()
 
-  const clearedOnViewRef = React.useRef(false)
-  React.useEffect(() => {
-    if (clearedOnViewRef.current || reminders.length === 0) return
-    clearedOnViewRef.current = true
-    deleteBulkMutation.mutate(reminders.map((r) => r.id))
-  }, [reminders, deleteBulkMutation])
-
   function handleDeleteAll() {
     if (reminders.length === 0) return
     deleteBulkMutation.mutate(
