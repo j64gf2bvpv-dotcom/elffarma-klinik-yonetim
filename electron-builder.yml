@@ -1,0 +1,39 @@
+appId: com.elffarma.paketprogrami
+productName: Elffarma Paket Programı
+copyright: Copyright © Elffarma
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+extraMetadata:
+  main: dist-electron/main.cjs
+protocols:
+  name: Elffarma Paket Programı Şifre Sıfırlama
+  schemes:
+    - elffarmapaket
+mac:
+  category: public.app-category.medical
+  icon: build/icons/icon.icns
+  identity: null
+  target:
+    - target: dmg
+      arch:
+        - arm64
+win:
+  icon: build/icons/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+linux:
+  icon: build/icons/icon.png
+  target:
+    - AppImage
