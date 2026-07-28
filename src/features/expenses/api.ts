@@ -7,11 +7,15 @@ export interface ExpenseInput {
   amount: number
   description?: string | null
   expense_date: string
+  congress_id?: string | null
+  workshop_id?: string | null
 }
 
 export interface ExpenseFilters {
   from?: string
   to?: string
+  congressId?: string
+  workshopId?: string
 }
 
 export async function fetchExpenses(filters: ExpenseFilters): Promise<Expense[]> {
@@ -19,6 +23,8 @@ export async function fetchExpenses(filters: ExpenseFilters): Promise<Expense[]>
 
   if (filters.from) query = query.gte('expense_date', filters.from)
   if (filters.to) query = query.lte('expense_date', filters.to)
+  if (filters.congressId) query = query.eq('congress_id', filters.congressId)
+  if (filters.workshopId) query = query.eq('workshop_id', filters.workshopId)
 
   const { data, error } = await query
   if (error) throw error

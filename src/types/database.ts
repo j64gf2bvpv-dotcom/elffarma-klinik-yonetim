@@ -111,6 +111,12 @@ export interface Congress {
   single_person_price: number | null
   two_person_price: number | null
   image_url: string | null
+  hotel_id: string | null
+  hotel_cost: number | null
+  stand_cost: number | null
+  stand_notes: string | null
+  sponsor_name: string | null
+  sponsorship_amount: number | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -120,6 +126,7 @@ export interface CongressParticipant {
   id: string
   congress_id: string
   doctor_name: string
+  customer_id: string | null
   flight_cost: number
   registration_cost: number
   accommodation_cost: number
@@ -132,9 +139,49 @@ export interface CongressParticipantProduct {
   id: string
   participant_id: string
   product_name: string
+  product_id: string | null
   quantity: number
   unit_price: number
   sales_rep_id: string | null
+  created_at: string
+}
+
+export interface Hotel {
+  id: string
+  name: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface Workshop {
+  id: string
+  congress_id: string | null
+  name: string
+  workshop_date: string | null
+  location: string | null
+  notes: string | null
+  cost: number | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface WorkshopParticipant {
+  id: string
+  workshop_id: string
+  customer_id: string
+  notes: string | null
+  created_at: string
+}
+
+export interface WorkshopProduct {
+  id: string
+  workshop_id: string
+  participant_id: string | null
+  product_id: string
+  sales_rep_id: string | null
+  quantity: number
+  unit_price: number
   created_at: string
 }
 
@@ -243,7 +290,7 @@ export interface Reminder {
   created_at: string
 }
 
-export type ExpenseCategory = 'hizmet_gideri' | 'diger'
+export type ExpenseCategory = 'hizmet_gideri' | 'kongre_gideri' | 'workshop_gideri' | 'diger'
 
 export interface Expense {
   id: string
@@ -252,6 +299,8 @@ export interface Expense {
   description: string | null
   expense_date: string
   staff_id: string | null
+  congress_id: string | null
+  workshop_id: string | null
   created_at: string
 }
 

@@ -11,15 +11,23 @@ export interface CongressInput {
   single_person_price?: number | null
   two_person_price?: number | null
   image_url?: string | null
+  hotel_id?: string | null
+  hotel_cost?: number | null
+  stand_cost?: number | null
+  stand_notes?: string | null
+  sponsor_name?: string | null
+  sponsorship_amount?: number | null
 }
 
-export async function fetchCongresses(): Promise<Congress[]> {
+export type CongressWithHotel = Congress & { hotels: { name: string } | null }
+
+export async function fetchCongresses(): Promise<CongressWithHotel[]> {
   const { data, error } = await supabase
     .from('congresses')
-    .select('*')
+    .select('*, hotels(name)')
     .order('start_date', { ascending: false, nullsFirst: false })
   if (error) throw error
-  return data as Congress[]
+  return data as unknown as CongressWithHotel[]
 }
 
 export async function fetchCongress(id: string): Promise<Congress> {
@@ -44,6 +52,7 @@ export async function deleteCongress(id: string): Promise<void> {
 export interface ParticipantInput {
   congress_id: string
   doctor_name: string
+  customer_id?: string | null
   flight_cost: number
   registration_cost: number
   accommodation_cost: number
@@ -93,6 +102,7 @@ export async function deleteParticipant(id: string): Promise<void> {
 export interface ParticipantProductInput {
   participant_id: string
   product_name: string
+  product_id?: string | null
   quantity: number
   unit_price: number
   sales_rep_id?: string | null
@@ -110,6 +120,20 @@ export async function createParticipantProduct(
 
 export async function deleteParticipantProduct(id: string): Promise<void> {
   return offlineDelete('congress_participant_products', id, 'Kongre ürünü silme')
+}
+
+export type ParticipantWithCongress = CongressParticipant & {
+  congresses: { name: string; start_date: string | null } | null
+}
+
+export async function fetchParticipationsByCustomer(customerId: string): Promise<ParticipantWithCongress[]> {
+  const { data, error } = await supabase
+    .from('congress_participants')
+    .select('*, congresses(name, start_date)')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as unknown as ParticipantWithCongress[]
 }
 
 export type ParticipantProductSaleRow = CongressParticipantProduct & {

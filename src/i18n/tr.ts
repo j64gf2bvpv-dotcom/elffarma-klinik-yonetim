@@ -5,6 +5,7 @@ export const tr = {
     stock: 'Stok Yönetimi',
     payments: 'Tahsilatlar',
     congresses: 'Kongreler',
+    workshops: 'Workshoplar',
     doctorVisits: 'Satış Temsilcisi Raporu',
     sales: 'Satışlar',
     cariHesap: 'Cari Hesap',
@@ -31,6 +32,8 @@ export const tr = {
   } as Record<string, string>,
   expenseCategory: {
     hizmet_gideri: 'Hizmet Gideri',
+    kongre_gideri: 'Kongre Gideri',
+    workshop_gideri: 'Workshop Gideri',
     diger: 'Diğer Giderler',
   } as Record<string, string>,
 }

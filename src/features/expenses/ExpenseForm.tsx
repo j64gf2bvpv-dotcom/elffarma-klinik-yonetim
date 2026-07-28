@@ -20,9 +20,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { tr } from '@/i18n/tr'
 import { useCreateExpense } from './hooks'
+import type { ExpenseCategory } from '@/types/database'
 
 const schema = z.object({
-  category: z.enum(['hizmet_gideri', 'diger']),
+  category: z.enum(['hizmet_gideri', 'kongre_gideri', 'workshop_gideri', 'diger']),
   amount: z.coerce.number().positive('Tutar 0’dan büyük olmalı'),
   description: z.string().optional(),
   expense_date: z.string().min(1),
@@ -37,7 +38,7 @@ function todayLocal() {
   return d.toISOString().slice(0, 16)
 }
 
-export function ExpenseForm({ defaultCategory }: { defaultCategory?: 'hizmet_gideri' | 'diger' }) {
+export function ExpenseForm({ defaultCategory }: { defaultCategory?: ExpenseCategory }) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateExpense()
 

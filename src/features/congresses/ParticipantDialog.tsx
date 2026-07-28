@@ -17,11 +17,14 @@ import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Textarea } from '@/components/ui/textarea'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
+import { useCustomers } from '@/features/customers/hooks'
 import { useCreateParticipant, useDeleteParticipant, useUpdateParticipant } from './hooks'
 import type { CongressParticipant } from '@/types/database'
 
 const schema = z.object({
   doctor_name: z.string().min(2, 'Doktor adı gerekli'),
+  customer_id: z.string().optional(),
   flight_cost: z.coerce.number().min(0),
   registration_cost: z.coerce.number().min(0),
   accommodation_cost: z.coerce.number().min(0),
@@ -42,11 +45,13 @@ export function ParticipantDialog({
   const createMutation = useCreateParticipant()
   const updateMutation = useUpdateParticipant()
   const deleteMutation = useDeleteParticipant()
+  const { data: customers = [] } = useCustomers('')
 
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
     defaultValues: {
       doctor_name: participant?.doctor_name ?? '',
+      customer_id: participant?.customer_id ?? undefined,
       flight_cost: participant?.flight_cost ?? 0,
       registration_cost: participant?.registration_cost ?? 0,
       accommodation_cost: participant?.accommodation_cost ?? 0,
@@ -90,6 +95,27 @@ export function ParticipantDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+            <FormField
+              control={form.control}
+              name="customer_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cari Karttan Doktor Seç (opsiyonel)</FormLabel>
+                  <FormControl>
+                    <CustomerCombobox
+                      value={field.value}
+                      onChange={(customerId) => {
+                        field.onChange(customerId)
+                        const customer = customers.find((c) => c.id === customerId)
+                        if (customer) form.setValue('doctor_name', customer.full_name)
+                      }}
+                      placeholder="Cari kartlardan seçin"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="doctor_name"

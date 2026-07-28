@@ -15,6 +15,8 @@ import {
   CalendarClock,
   Package,
   Eye,
+  Presentation,
+  Files,
 } from 'lucide-react'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 
@@ -38,6 +40,8 @@ import { PaymentForm } from '@/features/payments/PaymentForm'
 import { getInvoiceFileUrl } from '@/features/payments/api'
 import { useInvoices } from '@/features/invoices/hooks'
 import { InvoiceForm } from '@/features/invoices/InvoiceForm'
+import { useParticipationsByCustomer } from '@/features/congresses/hooks'
+import { useWorkshopParticipationsByCustomer } from '@/features/workshops/hooks'
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
 import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { tr } from '@/i18n/tr'
@@ -61,6 +65,8 @@ export function CustomerDetailPage() {
   const { data: payments = [] } = usePayments({ customerId: id })
   const { data: pendingProducts = [] } = usePendingProducts(id)
   const { data: allInvoices = [] } = useInvoices()
+  const { data: congressParticipations = [] } = useParticipationsByCustomer(id)
+  const { data: workshopParticipations = [] } = useWorkshopParticipationsByCustomer(id)
   const deletePendingMutation = useDeletePendingProduct()
   const deleteMutation = useDeleteCustomer()
   const [confirmOpen, setConfirmOpen] = React.useState(false)
@@ -373,6 +379,52 @@ export function CustomerDetailPage() {
               title={viewingInvoice.number || 'Fatura'}
               getUrl={() => getInvoiceFileUrl(viewingInvoice.filePath!)}
             />
+          )}
+
+          {(congressParticipations.length > 0 || workshopParticipations.length > 0) && (
+            <>
+              <div className="mt-6 mb-3">
+                <h2 className="text-base font-semibold">Kongre / Workshop Katılımları</h2>
+              </div>
+              <Card>
+                <CardContent className="grid gap-1.5 p-4">
+                  {congressParticipations.map((p) => (
+                    <Link
+                      key={`congress-${p.id}`}
+                      to={`/kongreler/${p.congress_id}`}
+                      className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Presentation className="text-muted-foreground size-3.5" />
+                        {p.congresses?.name ?? 'Kongre'}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {p.congresses?.start_date
+                          ? format(new Date(p.congresses.start_date), 'd MMM yyyy', { locale: trLocale })
+                          : ''}
+                      </span>
+                    </Link>
+                  ))}
+                  {workshopParticipations.map((p) => (
+                    <Link
+                      key={`workshop-${p.id}`}
+                      to={`/workshoplar/${p.workshop_id}`}
+                      className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Files className="text-muted-foreground size-3.5" />
+                        {p.workshops?.name ?? 'Workshop'}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {p.workshops?.workshop_date
+                          ? format(new Date(p.workshops.workshop_date), 'd MMM yyyy', { locale: trLocale })
+                          : ''}
+                      </span>
+                    </Link>
+                  ))}
+                </CardContent>
+              </Card>
+            </>
           )}
 
           <div className="mt-6 mb-3 flex items-center justify-between">

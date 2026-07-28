@@ -11,6 +11,9 @@ import {
   Package,
   AlertTriangle,
   UserRound,
+  Building2,
+  Presentation,
+  HandCoins,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -21,6 +24,8 @@ import { Separator } from '@/components/ui/separator'
 import { CongressForm } from '@/features/congresses/CongressForm'
 import { ParticipantDialog } from '@/features/congresses/ParticipantDialog'
 import { ParticipantProductDialog } from '@/features/congresses/ParticipantProductDialog'
+import { PostToExpenseButton } from '@/features/expenses/PostToExpenseButton'
+import { useHotels } from '@/features/hotels/hooks'
 import {
   useCongress,
   useDeleteCongress,
@@ -37,6 +42,7 @@ export function CongressDetailPage() {
   const navigate = useNavigate()
   const { data: congress, isLoading } = useCongress(id)
   const { data: participants = [] } = useParticipants(id)
+  const { data: hotels = [] } = useHotels()
   const deleteCongressMutation = useDeleteCongress()
   const deleteProductMutation = useDeleteParticipantProduct()
 
@@ -55,11 +61,15 @@ export function CongressDetailPage() {
       sum + p.congress_participant_products.reduce((s, x) => s + Number(x.quantity) * Number(x.unit_price), 0),
     0,
   )
-  const totalPackagePrice =
-    participants.reduce(
-      (sum, p) => sum + Number(p.flight_cost) + Number(p.registration_cost) + Number(p.accommodation_cost),
-      0,
-    ) + totalProducts
+  const totalParticipantCosts = participants.reduce(
+    (sum, p) => sum + Number(p.flight_cost) + Number(p.registration_cost) + Number(p.accommodation_cost),
+    0,
+  )
+  const totalPackagePrice = totalParticipantCosts + totalProducts
+  const eventCosts =
+    Number(congress.hotel_cost ?? 0) + Number(congress.stand_cost ?? 0) + Number(congress.sponsorship_amount ?? 0)
+  const totalCongressCost = totalParticipantCosts + eventCosts
+  const hotelName = congress.hotel_id ? hotels.find((h) => h.id === congress.hotel_id)?.name : null
 
   const salesByRep = new Map<
     string,
@@ -157,6 +167,50 @@ export function CongressDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {(hotelName || congress.hotel_cost || congress.stand_cost || congress.sponsorship_amount) && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Otel / Stand / Sponsorluk</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-3 flex flex-wrap gap-2">
+              {hotelName && (
+                <Badge variant="outline">
+                  <Building2 className="size-3" /> {hotelName}
+                  {congress.hotel_cost != null && ` — ${currency(Number(congress.hotel_cost))}`}
+                </Badge>
+              )}
+              {congress.stand_cost != null && (
+                <Badge variant="outline">
+                  <Presentation className="size-3" /> Stand: {currency(Number(congress.stand_cost))}
+                  {congress.stand_notes && ` (${congress.stand_notes})`}
+                </Badge>
+              )}
+              {congress.sponsorship_amount != null && (
+                <Badge variant="outline">
+                  <HandCoins className="size-3" /> Sponsorluk
+                  {congress.sponsor_name && `: ${congress.sponsor_name}`} —{' '}
+                  {currency(Number(congress.sponsorship_amount))}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center justify-between border-t pt-3">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">TOPLAM KONGRE MALİYETİ</p>
+                <p className="text-lg font-semibold tabular-nums">{currency(totalCongressCost)}</p>
+                <p className="text-muted-foreground text-xs">Uçak + Kayıt + Konaklama (katılımcılar) + Otel + Stand + Sponsorluk</p>
+              </div>
+              <PostToExpenseButton
+                category="kongre_gideri"
+                amount={totalCongressCost}
+                description={`${congress.name} kongre giderleri`}
+                congressId={congress.id}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Katılımcı Doktorlar</h2>

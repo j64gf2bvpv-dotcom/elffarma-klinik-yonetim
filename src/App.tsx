@@ -16,6 +16,8 @@ import { StockPage } from '@/routes/StockPage'
 import { PaymentsPage } from '@/routes/PaymentsPage'
 import { CongressesPage } from '@/routes/CongressesPage'
 import { CongressDetailPage } from '@/routes/CongressDetailPage'
+import { WorkshopsPage } from '@/routes/WorkshopsPage'
+import { WorkshopDetailPage } from '@/routes/WorkshopDetailPage'
 import { DoctorVisitsPage } from '@/routes/DoctorVisitsPage'
 import { SalesPage } from '@/routes/SalesPage'
 import { RemindersPage } from '@/routes/RemindersPage'
@@ -62,6 +64,8 @@ function App() {
             <Route path="butce-yili" element={<BudgetYearPage />} />
             <Route path="kongreler" element={<CongressesPage />} />
             <Route path="kongreler/:id" element={<CongressDetailPage />} />
+            <Route path="workshoplar" element={<WorkshopsPage />} />
+            <Route path="workshoplar/:id" element={<WorkshopDetailPage />} />
             <Route path="doktor-ziyaretleri" element={<DoctorVisitsPage />} />
             <Route path="satislar" element={<SalesPage />} />
             <Route path="hatirlatmalar" element={<RemindersPage />} />

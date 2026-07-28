@@ -53,6 +53,7 @@ export const navItems: { to: string; label: string; key: NavKey; end?: boolean }
   { to: '/', label: tr.nav.dashboard, key: 'dashboard', end: true },
   { to: '/stok', label: tr.nav.stock, key: 'stock' },
   { to: '/kongreler', label: tr.nav.congresses, key: 'congresses' },
+  { to: '/workshoplar', label: tr.nav.workshops, key: 'workshops' },
   { to: '/tahsilatlar', label: tr.nav.payments, key: 'payments' },
   { to: '/giderler', label: tr.nav.expenses, key: 'expenses' },
   { to: '/satislar', label: tr.nav.sales, key: 'sales' },

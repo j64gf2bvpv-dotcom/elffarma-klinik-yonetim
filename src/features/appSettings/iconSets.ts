@@ -36,6 +36,9 @@ import {
   FileText,
   Files,
   FileCheck2,
+  Wrench,
+  Hammer,
+  FlaskConical,
 } from 'lucide-react'
 
 export type NavKey =
@@ -44,6 +47,7 @@ export type NavKey =
   | 'stock'
   | 'payments'
   | 'congresses'
+  | 'workshops'
   | 'doctorVisits'
   | 'sales'
   | 'cariHesap'
@@ -76,6 +80,7 @@ export const iconSets: IconSet[] = [
       stock: PackageSearch,
       payments: Banknote,
       congresses: Presentation,
+      workshops: Wrench,
       doctorVisits: Stethoscope,
       sales: ShoppingCart,
       cariHesap: Receipt,
@@ -98,6 +103,7 @@ export const iconSets: IconSet[] = [
       stock: Boxes,
       payments: Wallet,
       congresses: GraduationCap,
+      workshops: Hammer,
       doctorVisits: HeartPulse,
       sales: ShoppingCart,
       cariHesap: NotebookText,
@@ -120,6 +126,7 @@ export const iconSets: IconSet[] = [
       stock: PackageCheck,
       payments: CircleDollarSign,
       congresses: Landmark,
+      workshops: FlaskConical,
       doctorVisits: ClipboardPlus,
       sales: ShoppingCart,
       cariHesap: HandCoins,

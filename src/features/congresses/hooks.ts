@@ -11,6 +11,7 @@ import {
   fetchCongress,
   fetchCongresses,
   fetchParticipants,
+  fetchParticipationsByCustomer,
   updateCongress,
   updateParticipant,
   type CongressInput,
@@ -19,6 +20,14 @@ import {
   type ParticipantWithProducts,
 } from './api'
 import type { Congress } from '@/types/database'
+
+export function useParticipationsByCustomer(customerId: string | undefined) {
+  return useQuery({
+    queryKey: ['congress_participants', 'by_customer', customerId],
+    queryFn: () => fetchParticipationsByCustomer(customerId as string),
+    enabled: !!customerId,
+  })
+}
 
 export function useAllParticipantProductSales() {
   return useQuery({
