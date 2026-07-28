@@ -71,6 +71,7 @@ import { RevenueChart, type RevenueChartPoint } from '@/components/charts/Revenu
 import type { RegionChartPoint } from '@/components/charts/RegionChart'
 import { TurkeyMap } from '@/components/charts/TurkeyMap'
 import { StockStatusChart, type StockStatusPoint } from '@/components/charts/StockStatusChart'
+import { TopProductsChart } from '@/components/charts/TopProductsChart'
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
 import { tr } from '@/i18n/tr'
 
@@ -176,72 +177,6 @@ function useCountUp(value: number, duration = 700) {
     return () => cancelAnimationFrame(raf)
   }, [value, duration])
   return display
-}
-
-const rankTone: Record<number, string> = {
-  1: 'bg-gradient-to-br from-[oklch(0.88_0.14_92)] to-[oklch(0.72_0.16_70)] text-[oklch(0.32_0.06_70)] shadow-[0_2px_8px_-1px_oklch(0.72_0.16_70/0.6)]',
-  2: 'bg-gradient-to-br from-[oklch(0.86_0.01_0)] to-[oklch(0.68_0.01_0)] text-[oklch(0.28_0.01_0)] shadow-[0_2px_8px_-1px_oklch(0.68_0.01_0/0.5)]',
-  3: 'bg-gradient-to-br from-[oklch(0.76_0.11_50)] to-[oklch(0.58_0.13_40)] text-[oklch(0.24_0.05_40)] shadow-[0_2px_8px_-1px_oklch(0.58_0.13_40/0.5)]',
-}
-
-function TopProductRow({
-  rank,
-  name,
-  qty,
-  revenue,
-  maxRevenue,
-  delayMs,
-}: {
-  rank: number
-  name: string
-  qty: number
-  revenue: number
-  maxRevenue: number
-  delayMs: number
-}) {
-  const qtyAnimated = useCountUp(qty, 900)
-  const revenueAnimated = useCountUp(revenue, 900)
-  const [barVisible, setBarVisible] = React.useState(false)
-
-  React.useEffect(() => {
-    const t = setTimeout(() => setBarVisible(true), delayMs + 150)
-    return () => clearTimeout(t)
-  }, [delayMs])
-
-  const pct = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0
-
-  return (
-    <div
-      className="group animate-in fade-in-0 slide-in-from-left-3 flex items-center gap-3 rounded-xl border p-3 duration-500 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-      style={{ animationDelay: `${delayMs}ms`, animationFillMode: 'backwards' }}
-    >
-      <span
-        className={cn(
-          'flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ring-1 ring-white/40 transition-transform duration-300 group-hover:scale-110',
-          rankTone[rank] ?? 'bg-primary/10 text-primary shadow-none',
-        )}
-      >
-        {rank}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <span className="truncate text-sm font-medium">{name}</span>
-          <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-            {Math.round(qtyAnimated).toLocaleString('tr-TR')} adet
-          </span>
-        </div>
-        <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-primary to-[oklch(0.7_0.16_50)] transition-[width] duration-1000 ease-out"
-            style={{ width: `${barVisible ? pct : 0}%` }}
-          />
-        </div>
-      </div>
-      <span className="shrink-0 text-right font-semibold tabular-nums">
-        {revenueAnimated.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
-      </span>
-    </div>
-  )
 }
 
 type WidgetId =
@@ -555,8 +490,6 @@ export function DashboardPage() {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
   }, [generalSalesThisMonth, congressSalesThisMonth])
-
-  const topProductsMax = Math.max(1, ...topProducts.map((p) => p.revenue))
 
   const upcomingReminders = React.useMemo(() => {
     const now = new Date()
@@ -1025,21 +958,12 @@ export function DashboardPage() {
               </Link>
             </Button>
           </CardHeader>
-          <CardContent className="grid gap-2.5">
-            {topProducts.length === 0 && (
+          <CardContent>
+            {topProducts.length === 0 ? (
               <p className="text-sm text-muted-foreground">Bu ay henüz ürün satışı yok</p>
+            ) : (
+              <TopProductsChart data={topProducts} />
             )}
-            {topProducts.map((p, i) => (
-              <TopProductRow
-                key={p.name}
-                rank={i + 1}
-                name={p.name}
-                qty={p.qty}
-                revenue={p.revenue}
-                maxRevenue={topProductsMax}
-                delayMs={i * 90}
-              />
-            ))}
           </CardContent>
         </Card>
       )
