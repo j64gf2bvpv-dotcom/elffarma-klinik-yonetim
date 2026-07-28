@@ -28,5 +28,15 @@ export function useDismissedAlerts() {
     })
   }, [])
 
-  return { dismissed, dismiss }
+  const dismissMany = React.useCallback((keys: string[]) => {
+    if (keys.length === 0) return
+    setDismissed((prev) => {
+      const next = new Set(prev)
+      for (const key of keys) next.add(key)
+      saveDismissed(next)
+      return next
+    })
+  }, [])
+
+  return { dismissed, dismiss, dismissMany }
 }

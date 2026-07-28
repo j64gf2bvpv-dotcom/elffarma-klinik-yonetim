@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { ReminderForm } from '@/features/reminders/ReminderForm'
 import { useReminders, useUpdateReminder, useDeleteReminder, useDeleteRemindersBulk } from '@/features/reminders/hooks'
 import { useAlertsSummary } from '@/features/alerts/useAlertsSummary'
+import { useDismissedAlerts } from '@/features/alerts/useDismissedAlerts'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 import { cn } from '@/lib/utils'
 import type { Reminder } from '@/types/database'
@@ -93,13 +94,39 @@ export function RemindersPage() {
   const { data: reminders = [] } = useReminders()
   const alerts = useAlertsSummary()
   const deleteBulkMutation = useDeleteRemindersBulk()
+  const { dismissed, dismissMany } = useDismissedAlerts()
+
+  const visibleCriticalStock = alerts.criticalStock.filter((p) => !dismissed.has(`criticalStock:${p.id}`))
+  const visibleExpiringProducts = alerts.expiringProducts.filter((p) => !dismissed.has(`expiring:${p.id}`))
+  const visiblePaymentDue = alerts.paymentDue.filter((d) => !dismissed.has(`paymentDue:${d.id}`))
+  const visibleDoctorsWithBalance = alerts.doctorsWithBalance.filter((d) => !dismissed.has(`balance:${d.id}`))
+  const visiblePendingProducts = alerts.pendingProducts.filter((p) => !dismissed.has(`pending:${p.id}`))
+  const visibleUpcomingCongresses = alerts.upcomingCongresses.filter((c) => !dismissed.has(`congress:${c.id}`))
+
+  const systemAlertCount =
+    visibleCriticalStock.length +
+    visibleExpiringProducts.length +
+    visiblePaymentDue.length +
+    visibleDoctorsWithBalance.length +
+    visiblePendingProducts.length
 
   function handleDeleteAll() {
-    if (reminders.length === 0) return
-    deleteBulkMutation.mutate(
-      reminders.map((r) => r.id),
-      { onSuccess: () => toast.success('Tüm hatırlatmalar silindi') },
-    )
+    const alertKeys = [
+      ...visibleCriticalStock.map((p) => `criticalStock:${p.id}`),
+      ...visibleExpiringProducts.map((p) => `expiring:${p.id}`),
+      ...visiblePaymentDue.map((d) => `paymentDue:${d.id}`),
+      ...visibleDoctorsWithBalance.map((d) => `balance:${d.id}`),
+      ...visiblePendingProducts.map((p) => `pending:${p.id}`),
+      ...visibleUpcomingCongresses.map((c) => `congress:${c.id}`),
+    ]
+    if (reminders.length === 0 && alertKeys.length === 0) return
+    dismissMany(alertKeys)
+    if (reminders.length > 0) {
+      deleteBulkMutation.mutate(
+        reminders.map((r) => r.id),
+        { onSuccess: () => toast.success('Tüm hatırlatmalar silindi') },
+      )
+    }
   }
 
   const overdue = reminders.filter(
@@ -118,12 +145,7 @@ export function RemindersPage() {
     { label: 'Tamamlanan', items: done },
   ]
 
-  const systemAlertCount =
-    alerts.criticalStock.length +
-    alerts.expiringProducts.length +
-    alerts.paymentDue.length +
-    alerts.doctorsWithBalance.length +
-    alerts.pendingProducts.length
+  const nothingToClear = reminders.length === 0 && systemAlertCount === 0 && visibleUpcomingCongresses.length === 0
 
   return (
     <div>
@@ -132,7 +154,7 @@ export function RemindersPage() {
         description="Sistem uyarıları ve kişisel hatırlatmaların tek merkezi"
         actions={
           <>
-            <Button variant="outline" onClick={handleDeleteAll} disabled={reminders.length === 0}>
+            <Button variant="outline" onClick={handleDeleteAll} disabled={nothingToClear}>
               <Trash2 className="text-destructive" />
               Tümünü Sil
             </Button>
@@ -150,7 +172,7 @@ export function RemindersPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
-              {alerts.criticalStock.map((p) => (
+              {visibleCriticalStock.map((p) => (
                 <AlertRow
                   key={`stock-${p.id}`}
                   to="/stok"
@@ -159,7 +181,7 @@ export function RemindersPage() {
                   subtitle={`Kritik stok seviyesinde (${p.current_quantity} ${p.unit})`}
                 />
               ))}
-              {alerts.expiringProducts.map((p) => (
+              {visibleExpiringProducts.map((p) => (
                 <AlertRow
                   key={`expiry-${p.id}`}
                   to="/stok"
@@ -168,7 +190,7 @@ export function RemindersPage() {
                   subtitle={`Son kullanım tarihi ${p.expiry_date && new Date(p.expiry_date) < new Date() ? 'doldu' : 'yaklaşıyor'}: ${p.expiry_date}`}
                 />
               ))}
-              {alerts.paymentDue.map((d) => (
+              {visiblePaymentDue.map((d) => (
                 <AlertRow
                   key={`due-${d.id}`}
                   to={`/musteriler/${d.id}`}
@@ -177,7 +199,7 @@ export function RemindersPage() {
                   subtitle={`Ödeme vadesi ${getPaymentDueStatus(d.next_payment_due) === 'overdue' ? 'geçti' : 'yaklaşıyor'}`}
                 />
               ))}
-              {alerts.doctorsWithBalance.map((d) => (
+              {visibleDoctorsWithBalance.map((d) => (
                 <AlertRow
                   key={`balance-${d.id}`}
                   to={`/musteriler/${d.id}`}
@@ -186,7 +208,7 @@ export function RemindersPage() {
                   subtitle={`Eksik bakiye: ${currency(d.balance)}`}
                 />
               ))}
-              {alerts.pendingProducts.map((p) => (
+              {visiblePendingProducts.map((p) => (
                 <AlertRow
                   key={`pending-${p.id}`}
                   to={`/musteriler/${p.customer_id}`}
@@ -199,7 +221,7 @@ export function RemindersPage() {
           </Card>
         )}
 
-        {alerts.upcomingCongresses.length > 0 && (
+        {visibleUpcomingCongresses.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
@@ -207,7 +229,7 @@ export function RemindersPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
-              {alerts.upcomingCongresses.map((c) => (
+              {visibleUpcomingCongresses.map((c) => (
                 <Link
                   key={c.id}
                   to={`/kongreler/${c.id}`}
@@ -241,7 +263,7 @@ export function RemindersPage() {
               </Card>
             ),
         )}
-        {reminders.length === 0 && systemAlertCount === 0 && alerts.upcomingCongresses.length === 0 && (
+        {nothingToClear && (
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
               <BellRing className="text-muted-foreground size-10" />
