@@ -1,9 +1,9 @@
 import * as React from 'react'
-import { Search, AlertTriangle, Trash2, CalendarClock } from 'lucide-react'
+import { Search, AlertTriangle, Trash2, CalendarClock, Wallet, TrendingUp, PackageSearch, ShoppingBasket } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -19,6 +19,56 @@ import { ExportMenu } from '@/components/ExportMenu'
 import type { BrandLine, Product } from '@/types/database'
 
 const ALL_BRANDS = 'all'
+
+function currency(n: number) {
+  return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
+}
+
+function suggestedReorderQty(product: Product): number {
+  const target = product.critical_stock_threshold * 2
+  return Math.max(target - product.current_quantity, product.critical_stock_threshold)
+}
+
+function ReorderSuggestions({ products }: { products: Product[] }) {
+  const criticalProducts = products.filter((p) => p.current_quantity <= p.critical_stock_threshold)
+  if (criticalProducts.length === 0) return null
+
+  const totalCost = criticalProducts.reduce(
+    (sum, p) => sum + suggestedReorderQty(p) * Number(p.unit_cost ?? 0),
+    0,
+  )
+
+  return (
+    <Card className="mb-6">
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ShoppingBasket className="size-4 text-destructive" /> Sipariş Önerileri
+          <Badge variant="secondary">{criticalProducts.length}</Badge>
+        </CardTitle>
+        {totalCost > 0 && (
+          <span className="text-muted-foreground text-sm">
+            Tahmini maliyet: <span className="font-semibold text-foreground">{currency(totalCost)}</span>
+          </span>
+        )}
+      </CardHeader>
+      <CardContent className="grid gap-2">
+        {criticalProducts.map((p) => (
+          <div key={p.id} className="flex items-center justify-between rounded-lg border p-2.5 text-sm">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{p.name}</p>
+              <p className="text-muted-foreground text-xs">
+                Mevcut: {p.current_quantity} {p.unit} · Eşik: {p.critical_stock_threshold} {p.unit}
+              </p>
+            </div>
+            <Badge variant="destructive" className="shrink-0">
+              Önerilen: {suggestedReorderQty(p)} {p.unit}
+            </Badge>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
 
 function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: (product: Product) => void }) {
   return (
@@ -82,9 +132,22 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {product.unit_price
-                      ? Number(product.unit_price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
-                      : '—'}
+                    {product.unit_price ? (
+                      <>
+                        {Number(product.unit_price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                        {product.unit_cost != null && Number(product.unit_price) > 0 && (
+                          <span className="ml-1.5 text-xs text-success">
+                            (%
+                            {Math.round(
+                              ((Number(product.unit_price) - Number(product.unit_cost)) / Number(product.unit_price)) * 100,
+                            )}{' '}
+                            marj)
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      '—'
+                    )}
                   </TableCell>
                   <TableCell>
                     {product.campaign ? (
@@ -140,12 +203,17 @@ export function StockPage() {
   const [search, setSearch] = React.useState('')
   const [brandFilter, setBrandFilter] = React.useState<typeof ALL_BRANDS | BrandLine>(ALL_BRANDS)
   const { data: products = [], isLoading } = useProducts(search, brandFilter === ALL_BRANDS ? undefined : brandFilter)
+  const { data: allProducts = [] } = useProducts('')
   const deactivateMutation = useDeactivateProduct()
 
   function handleRemove(product: Product) {
     if (!confirm(`${product.name} kaldırılsın mı? Ürün stok listesinden kaldırılır, geçmiş hareketler saklanır.`)) return
     deactivateMutation.mutate(product.id)
   }
+
+  const totalCostValue = allProducts.reduce((sum, p) => sum + p.current_quantity * Number(p.unit_cost ?? 0), 0)
+  const totalRetailValue = allProducts.reduce((sum, p) => sum + p.current_quantity * Number(p.unit_price ?? 0), 0)
+  const criticalCount = allProducts.filter((p) => p.current_quantity <= p.critical_stock_threshold).length
 
   return (
     <div>
@@ -173,6 +241,47 @@ export function StockPage() {
           </div>
         }
       />
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Wallet className="size-5" />
+            </span>
+            <div>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Stok Değeri (Maliyet)</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(totalCostValue)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
+              <TrendingUp className="size-5" />
+            </span>
+            <div>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Stok Değeri (Satış)</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(totalRetailValue)}</p>
+              <p className="text-muted-foreground text-xs">
+                Potansiyel kâr: {currency(totalRetailValue - totalCostValue)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive">
+              <PackageSearch className="size-5" />
+            </span>
+            <div>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Kritik Stok</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">{criticalCount}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <ReorderSuggestions products={allProducts} />
 
       <Tabs defaultValue="products">
         <TabsList className="mb-4">

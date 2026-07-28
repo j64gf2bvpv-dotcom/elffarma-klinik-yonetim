@@ -14,6 +14,7 @@ export interface ProductInput {
   expiry_date?: string | null
   barcode?: string | null
   brand_line?: BrandLine | null
+  image_url?: string | null
 }
 
 export async function fetchProducts(search: string, brandLine?: BrandLine): Promise<Product[]> {

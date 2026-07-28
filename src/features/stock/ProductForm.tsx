@@ -34,6 +34,7 @@ const schema = z.object({
   expiry_date: z.string().optional(),
   barcode: z.string().optional(),
   brand_line: z.string().optional(),
+  image_url: z.string().optional(),
 })
 
 type FormInput = z.input<typeof schema>
@@ -58,6 +59,7 @@ export function ProductForm({ product }: { product?: Product }) {
       expiry_date: product?.expiry_date ?? '',
       barcode: product?.barcode ?? '',
       brand_line: product?.brand_line ?? NO_BRAND,
+      image_url: product?.image_url ?? '',
     },
   })
 
@@ -74,6 +76,7 @@ export function ProductForm({ product }: { product?: Product }) {
       expiry_date: values.expiry_date || null,
       barcode: values.barcode || null,
       brand_line: values.brand_line && values.brand_line !== NO_BRAND ? (values.brand_line as 'dermakor' | 'swiss') : null,
+      image_url: values.image_url || null,
     }
     if (product) {
       await updateMutation.mutateAsync({ id: product.id, input })
@@ -248,6 +251,19 @@ export function ProductForm({ product }: { product?: Product }) {
                       <SelectItem value="swiss">Swiss</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="image_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ürün Görseli URL (opsiyonel)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://..." {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
