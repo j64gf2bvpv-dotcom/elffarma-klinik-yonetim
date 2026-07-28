@@ -1,6 +1,19 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
-import { format, startOfMonth, subMonths, differenceInCalendarDays } from 'date-fns'
+import {
+  format,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+  startOfDay,
+  subMonths,
+  subWeeks,
+  subYears,
+  subDays,
+  differenceInCalendarDays,
+  isPast,
+  isToday,
+} from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import {
   Wallet,
@@ -28,6 +41,12 @@ import {
   BarChart3,
   PieChart,
   Landmark,
+  AlertTriangle,
+  ClipboardX,
+  CalendarClock,
+  BellRing,
+  Trophy,
+  Stethoscope,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -44,6 +63,9 @@ import { useExchangeRates } from '@/features/exchangeRates/hooks'
 import { useCongresses } from '@/features/congresses/hooks'
 import { useAllParticipantProductSales } from '@/features/congresses/hooks'
 import { useSales } from '@/features/sales/hooks'
+import { useAlertsSummary } from '@/features/alerts/useAlertsSummary'
+import { useReminders } from '@/features/reminders/hooks'
+import { getPaymentDueStatus } from '@/lib/paymentDue'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 import { RevenueChart, type RevenueChartPoint } from '@/components/charts/RevenueChart'
@@ -160,13 +182,18 @@ function useCountUp(value: number, duration = 700) {
 type WidgetId =
   | 'stats'
   | 'quick_actions'
+  | 'critical_alerts'
+  | 'upcoming_reminders'
+  | 'revenue_chart'
+  | 'sales_trend'
+  | 'top_products'
+  | 'doctor_performance'
   | 'stock_status'
   | 'upcoming_congresses'
   | 'exchange_rates'
-  | 'revenue_chart'
-  | 'alerts'
-  | 'congress_prices'
   | 'region_sales'
+  | 'congress_prices'
+  | 'recent_activity'
 
 interface LayoutItem {
   id: WidgetId
@@ -176,25 +203,112 @@ interface LayoutItem {
 const defaultLayout: LayoutItem[] = [
   { id: 'stats', visible: true },
   { id: 'quick_actions', visible: true },
+  { id: 'critical_alerts', visible: true },
+  { id: 'upcoming_reminders', visible: true },
+  { id: 'revenue_chart', visible: true },
+  { id: 'sales_trend', visible: true },
+  { id: 'top_products', visible: true },
+  { id: 'doctor_performance', visible: true },
   { id: 'stock_status', visible: true },
   { id: 'upcoming_congresses', visible: true },
   { id: 'exchange_rates', visible: true },
-  { id: 'revenue_chart', visible: true },
   { id: 'region_sales', visible: true },
   { id: 'congress_prices', visible: true },
-  { id: 'alerts', visible: true },
+  { id: 'recent_activity', visible: true },
 ]
 
 const widgetLabels: Record<WidgetId, string> = {
   stats: 'Özet Kartları',
   quick_actions: 'Hızlı Erişim',
+  critical_alerts: 'Kritik Uyarılar',
+  upcoming_reminders: 'Yaklaşan Hatırlatmalar',
+  revenue_chart: 'Tahsilat Trendi',
+  sales_trend: 'Satış Trendi',
+  top_products: 'En Çok Satan Ürünler',
+  doctor_performance: 'Doktor Performansı',
   stock_status: 'Stok Durumu',
   upcoming_congresses: 'Yaklaşan Kongreler',
   exchange_rates: 'Döviz Kurları',
-  revenue_chart: 'Tahsilat Trendi',
   region_sales: 'Satış Haritası (İllere Göre)',
   congress_prices: 'Kongre Paket Fiyatları',
-  alerts: 'Son Tahsilatlar',
+  recent_activity: 'Son İşlemler',
+}
+
+type ChartPeriod = 'day' | 'week' | 'month' | 'year'
+
+const periodLabels: Record<ChartPeriod, string> = {
+  day: 'Gün',
+  week: 'Hafta',
+  month: 'Ay',
+  year: 'Yıl',
+}
+
+function buildPeriodBuckets(
+  items: { date: Date; amount: number }[],
+  period: ChartPeriod,
+): RevenueChartPoint[] {
+  const now = new Date()
+  const buckets = new Map<string, { total: number; label: string }>()
+
+  if (period === 'day') {
+    for (let i = 13; i >= 0; i--) {
+      const d = startOfDay(subDays(now, i))
+      buckets.set(d.toISOString(), { total: 0, label: format(d, 'd MMM', { locale: trLocale }) })
+    }
+    for (const item of items) {
+      const key = startOfDay(item.date).toISOString()
+      if (buckets.has(key)) buckets.get(key)!.total += item.amount
+    }
+  } else if (period === 'week') {
+    for (let i = 7; i >= 0; i--) {
+      const d = startOfWeek(subWeeks(now, i), { weekStartsOn: 1 })
+      buckets.set(d.toISOString(), { total: 0, label: format(d, 'd MMM', { locale: trLocale }) })
+    }
+    for (const item of items) {
+      const key = startOfWeek(item.date, { weekStartsOn: 1 }).toISOString()
+      if (buckets.has(key)) buckets.get(key)!.total += item.amount
+    }
+  } else if (period === 'year') {
+    for (let i = 4; i >= 0; i--) {
+      const d = startOfYear(subYears(now, i))
+      buckets.set(d.toISOString(), { total: 0, label: format(d, 'yyyy') })
+    }
+    for (const item of items) {
+      const key = startOfYear(item.date).toISOString()
+      if (buckets.has(key)) buckets.get(key)!.total += item.amount
+    }
+  } else {
+    for (let i = 5; i >= 0; i--) {
+      const d = startOfMonth(subMonths(now, i))
+      buckets.set(d.toISOString(), { total: 0, label: format(d, 'MMM', { locale: trLocale }) })
+    }
+    for (const item of items) {
+      const key = startOfMonth(item.date).toISOString()
+      if (buckets.has(key)) buckets.get(key)!.total += item.amount
+    }
+  }
+
+  return Array.from(buckets.values())
+}
+
+function PeriodToggle({ value, onChange }: { value: ChartPeriod; onChange: (p: ChartPeriod) => void }) {
+  return (
+    <div className="flex items-center gap-0.5 rounded-lg border p-0.5">
+      {(Object.keys(periodLabels) as ChartPeriod[]).map((p) => (
+        <button
+          key={p}
+          type="button"
+          onClick={() => onChange(p)}
+          className={cn(
+            'rounded-md px-2 py-1 text-xs font-medium transition-colors',
+            value === p ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
+          )}
+        >
+          {periodLabels[p]}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 export function DashboardPage() {
@@ -202,15 +316,17 @@ export function DashboardPage() {
   const isAdmin = staff?.role === 'admin'
   const { data: products = [] } = useProducts('')
   const { data: monthPayments = [] } = usePayments({ from: startOfMonth(new Date()).toISOString() })
-  const sixMonthsAgo = React.useMemo(() => startOfMonth(subMonths(new Date(), 5)), [])
-  const { data: recentPayments = [] } = usePayments({ from: sixMonthsAgo.toISOString() })
+  const { data: recentPayments = [] } = usePayments({})
   const { data: exchangeRates = [], isLoading: ratesLoading } = useExchangeRates()
   const { data: congresses = [] } = useCongresses()
   const { data: participantSales = [] } = useAllParticipantProductSales()
   const { data: sales = [] } = useSales()
+  const { data: reminders = [] } = useReminders()
+  const alerts = useAlertsSummary()
   const [convertAmount, setConvertAmount] = React.useState('100')
   const [fromCurrency, setFromCurrency] = React.useState<'TRY' | 'USD' | 'EUR'>('TRY')
   const [toCurrency, setToCurrency] = React.useState<'TRY' | 'USD' | 'EUR'>('USD')
+  const [chartPeriod, setChartPeriod] = React.useState<ChartPeriod>('month')
 
   const rateToTry = React.useMemo(() => {
     const map: Record<'TRY' | 'USD' | 'EUR', number> = { TRY: 1, USD: 0, EUR: 0 }
@@ -281,7 +397,26 @@ export function DashboardPage() {
   }
 
   const monthTotal = monthPayments.reduce((sum, p) => sum + Number(p.amount), 0)
-  const lastPayments = recentPayments.slice(0, 6)
+
+  const recentActivity = React.useMemo(() => {
+    const paymentItems = recentPayments.slice(0, 10).map((p) => ({
+      key: `payment-${p.id}`,
+      date: p.paid_at,
+      title: p.customers?.full_name ?? '—',
+      subtitle: 'Tahsilat',
+      amount: Number(p.amount),
+      to: '/tahsilatlar',
+    }))
+    const saleItems = sales.slice(0, 10).map((s) => ({
+      key: `sale-${s.id}`,
+      date: s.sale_date,
+      title: s.product_name,
+      subtitle: s.type === 'return' ? 'İade' : 'Satış',
+      amount: (s.type === 'return' ? -1 : 1) * s.quantity * Number(s.unit_price),
+      to: '/satislar',
+    }))
+    return [...paymentItems, ...saleItems].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)
+  }, [recentPayments, sales])
 
   const monthStart = React.useMemo(() => startOfMonth(new Date()), [])
   const prevMonthStart = React.useMemo(() => startOfMonth(subMonths(new Date(), 1)), [])
@@ -319,25 +454,110 @@ export function DashboardPage() {
   const upcomingCongressAnimated = useCountUp(upcomingCongresses.length)
   const salesTotalAnimated = useCountUp(salesTotal)
 
-  const revenueData = React.useMemo<RevenueChartPoint[]>(() => {
-    const buckets = new Map<string, number>()
-    for (let i = 5; i >= 0; i--) {
-      const d = subMonths(new Date(), i)
-      buckets.set(format(d, 'yyyy-MM'), 0)
-    }
-    for (const payment of recentPayments) {
-      const key = format(new Date(payment.paid_at), 'yyyy-MM')
-      if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + Number(payment.amount))
-    }
-    return Array.from(buckets.entries()).map(([key, total]) => ({
-      label: format(new Date(`${key}-01`), 'MMM', { locale: trLocale }),
-      total,
+  const revenueData = React.useMemo<RevenueChartPoint[]>(
+    () =>
+      buildPeriodBuckets(
+        recentPayments.map((p) => ({ date: new Date(p.paid_at), amount: Number(p.amount) })),
+        chartPeriod,
+      ),
+    [recentPayments, chartPeriod],
+  )
+
+  const salesTrendData = React.useMemo<RevenueChartPoint[]>(() => {
+    const salesItems = sales.map((s) => ({ date: new Date(s.sale_date), amount: netAmount(s) }))
+    const congressItems = participantSales.map((s) => ({
+      date: new Date(s.created_at),
+      amount: Number(s.quantity) * Number(s.unit_price),
     }))
-  }, [recentPayments])
+    return buildPeriodBuckets([...salesItems, ...congressItems], chartPeriod)
+  }, [sales, participantSales, chartPeriod])
+
+  const topProducts = React.useMemo(() => {
+    const byProduct = new Map<string, { qty: number; revenue: number }>()
+    for (const s of generalSalesThisMonth) {
+      const cur = byProduct.get(s.product_name) ?? { qty: 0, revenue: 0 }
+      const sign = s.type === 'return' ? -1 : 1
+      cur.qty += sign * s.quantity
+      cur.revenue += sign * s.quantity * Number(s.unit_price)
+      byProduct.set(s.product_name, cur)
+    }
+    for (const s of congressSalesThisMonth) {
+      const cur = byProduct.get(s.product_name) ?? { qty: 0, revenue: 0 }
+      cur.qty += s.quantity
+      cur.revenue += s.quantity * Number(s.unit_price)
+      byProduct.set(s.product_name, cur)
+    }
+    return Array.from(byProduct.entries())
+      .map(([name, v]) => ({ name, ...v }))
+      .filter((p) => p.qty > 0)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+  }, [generalSalesThisMonth, congressSalesThisMonth])
+
+  const topProductsMax = Math.max(1, ...topProducts.map((p) => p.revenue))
+
+  const doctorPerformance = React.useMemo(() => {
+    const byCustomer = new Map<string, { name: string; total: number }>()
+    for (const p of monthPayments) {
+      const cur = byCustomer.get(p.customer_id) ?? { name: p.customers?.full_name ?? '—', total: 0 }
+      cur.total += Number(p.amount)
+      byCustomer.set(p.customer_id, cur)
+    }
+    return Array.from(byCustomer.entries())
+      .map(([customerId, v]) => ({ customerId, ...v }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5)
+  }, [monthPayments])
+
+  const doctorPerformanceMax = Math.max(1, ...doctorPerformance.map((d) => d.total))
+
+  const upcomingReminders = React.useMemo(() => {
+    const now = new Date()
+    return reminders
+      .filter((r) => !r.is_done)
+      .filter((r) => isPast(new Date(r.due_date)) || isToday(new Date(r.due_date)) || new Date(r.due_date) <= subDays(now, -7))
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))
+      .slice(0, 5)
+  }, [reminders])
+
+  const criticalAlertItems = React.useMemo(() => {
+    const items: { key: string; icon: React.ElementType; title: string; subtitle: string; to: string }[] = []
+    for (const p of alerts.criticalStock.slice(0, 3)) {
+      items.push({
+        key: `stock-${p.id}`,
+        icon: AlertTriangle,
+        title: p.name,
+        subtitle: `Kritik stok (${p.current_quantity} ${p.unit})`,
+        to: '/stok',
+      })
+    }
+    for (const p of alerts.expiringProducts.slice(0, 2)) {
+      items.push({
+        key: `expiry-${p.id}`,
+        icon: ClipboardX,
+        title: p.name,
+        subtitle: 'Son kullanım tarihi yaklaşıyor/doldu',
+        to: '/stok',
+      })
+    }
+    for (const d of alerts.paymentDue.slice(0, 3)) {
+      items.push({
+        key: `due-${d.id}`,
+        icon: CalendarClock,
+        title: d.full_name,
+        subtitle: `Ödeme vadesi ${getPaymentDueStatus(d.next_payment_due) === 'overdue' ? 'geçti' : 'yaklaşıyor'}`,
+        to: `/musteriler/${d.id}`,
+      })
+    }
+    return items.slice(0, 6)
+  }, [alerts.criticalStock, alerts.expiringProducts, alerts.paymentDue])
+
+  const last6MonthsStart = React.useMemo(() => startOfMonth(subMonths(new Date(), 5)), [])
 
   const regionSalesData = React.useMemo<RegionChartPoint[]>(() => {
     const byProvince = new Map<string, number>()
     for (const payment of recentPayments) {
+      if (new Date(payment.paid_at) < last6MonthsStart) continue
       const province = payment.customers?.province
       if (!province) continue
       byProvince.set(province, (byProvince.get(province) ?? 0) + Number(payment.amount))
@@ -346,7 +566,7 @@ export function DashboardPage() {
       .map(([province, total]) => ({ province, total }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 8)
-  }, [recentPayments])
+  }, [recentPayments, last6MonthsStart])
 
   function renderWidget(id: WidgetId, delayMs: number) {
     const delayStyle = { animationDelay: `${delayMs}ms` }
@@ -415,6 +635,94 @@ export function DashboardPage() {
               <QuickAction to="/cari-hesap" icon={Landmark} label="Cari Hesap" />
               <QuickAction to="/satislar" icon={BarChart3} label="Raporla" />
             </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'critical_alerts') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <AlertTriangle className="size-4 text-destructive" /> Kritik Uyarılar
+              {criticalAlertItems.length > 0 && <Badge variant="secondary">{criticalAlertItems.length}</Badge>}
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/hatirlatmalar">
+                Tümünü gör <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            {criticalAlertItems.length === 0 && (
+              <p className="text-sm text-muted-foreground">Kritik uyarı yok</p>
+            )}
+            {criticalAlertItems.map((item) => (
+              <Link
+                key={item.key}
+                to={item.to}
+                className="border-destructive/20 bg-destructive/5 flex items-center gap-3 rounded-lg border p-2.5 text-sm transition-colors hover:bg-destructive/10"
+              >
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive/15 text-destructive">
+                  <item.icon className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{item.title}</p>
+                  <p className="text-muted-foreground truncate text-xs">{item.subtitle}</p>
+                </div>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'upcoming_reminders') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BellRing className="size-4 text-primary" /> Yaklaşan Hatırlatmalar
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/hatirlatmalar">
+                Tümünü gör <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            {upcomingReminders.length === 0 && (
+              <p className="text-sm text-muted-foreground">Yaklaşan hatırlatma yok</p>
+            )}
+            {upcomingReminders.map((r) => {
+              const overdue = isPast(new Date(r.due_date)) && !isToday(new Date(r.due_date))
+              return (
+                <Link
+                  key={r.id}
+                  to="/hatirlatmalar"
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg border p-2.5 text-sm transition-colors hover:bg-accent',
+                    overdue && 'border-destructive/20 bg-destructive/5',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                      overdue ? 'bg-destructive/15 text-destructive' : 'bg-primary/10 text-primary',
+                    )}
+                  >
+                    <BellRing className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{r.title}</p>
+                  </div>
+                  <Badge variant="outline" className="shrink-0">
+                    {format(new Date(r.due_date), 'd MMM', { locale: trLocale })}
+                  </Badge>
+                </Link>
+              )
+            })}
           </CardContent>
         </Card>
       )
@@ -613,18 +921,131 @@ export function DashboardPage() {
     if (id === 'revenue_chart') {
       return (
         <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
-              <TrendingUp className="size-4 text-primary" /> Son 6 Ay Tahsilat Trendi
+              <TrendingUp className="size-4 text-primary" /> Tahsilat Trendi
             </CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/tahsilatlar">
-                Tahsilatlara git <ArrowRight className="size-3.5" />
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <PeriodToggle value={chartPeriod} onChange={setChartPeriod} />
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/tahsilatlar">
+                  Tahsilatlara git <ArrowRight className="size-3.5" />
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <RevenueChart data={revenueData} />
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'sales_trend') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShoppingCart className="size-4 text-primary" /> Satış Trendi
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <PeriodToggle value={chartPeriod} onChange={setChartPeriod} />
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/satislar">
+                  Satışlara git <ArrowRight className="size-3.5" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <RevenueChart data={salesTrendData} />
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'top_products') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="size-4 text-primary" /> En Çok Satan Ürünler
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/satislar">
+                Tüm satışlar <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            {topProducts.length === 0 && (
+              <p className="text-sm text-muted-foreground">Bu ay henüz ürün satışı yok</p>
+            )}
+            {topProducts.map((p, i) => (
+              <div key={p.name} className="grid gap-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2 font-medium">
+                    <span className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary">
+                      {i + 1}
+                    </span>
+                    <span className="truncate">{p.name}</span>
+                  </span>
+                  <span className="text-muted-foreground shrink-0 tabular-nums">
+                    {p.qty} adet ·{' '}
+                    {p.revenue.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+                <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
+                  <div
+                    className="bg-primary h-full rounded-full"
+                    style={{ width: `${(p.revenue / topProductsMax) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'doctor_performance') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Stethoscope className="size-4 text-primary" /> Doktor Performansı
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/musteriler">
+                Tüm doktorlar <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            {doctorPerformance.length === 0 && (
+              <p className="text-sm text-muted-foreground">Bu ay henüz tahsilat yok</p>
+            )}
+            {doctorPerformance.map((d, i) => (
+              <div key={d.customerId} className="grid gap-1">
+                <div className="flex items-center justify-between text-sm">
+                  <Link to={`/musteriler/${d.customerId}`} className="flex items-center gap-2 font-medium hover:underline">
+                    <span className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary">
+                      {i + 1}
+                    </span>
+                    <span className="truncate">{d.name}</span>
+                  </Link>
+                  <span className="text-muted-foreground shrink-0 tabular-nums">
+                    {d.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+                <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
+                  <div
+                    className="h-full rounded-full bg-[oklch(0.55_0.15_155)]"
+                    style={{ width: `${(d.total / doctorPerformanceMax) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )
@@ -735,7 +1156,7 @@ export function DashboardPage() {
       <div>
         <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-base">Son Tahsilatlar</CardTitle>
+            <CardTitle className="text-base">Son İşlemler</CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/tahsilatlar">
                 Tahsilatlara git <ArrowRight className="size-3.5" />
@@ -743,19 +1164,23 @@ export function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent className="grid gap-3">
-            {lastPayments.length === 0 && <p className="text-sm text-muted-foreground">Tahsilat yok</p>}
-            {lastPayments.map((p) => (
-              <div key={p.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
-                <div>
-                  <p className="font-medium">{p.customers?.full_name ?? '—'}</p>
+            {recentActivity.length === 0 && <p className="text-sm text-muted-foreground">Henüz işlem yok</p>}
+            {recentActivity.map((item) => (
+              <Link
+                key={item.key}
+                to={item.to}
+                className="flex items-center justify-between rounded-md border p-3 text-sm transition-colors hover:bg-accent"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{item.title}</p>
                   <p className="text-muted-foreground">
-                    {format(new Date(p.paid_at), 'd MMM yyyy', { locale: trLocale })}
+                    {item.subtitle} · {format(new Date(item.date), 'd MMM yyyy', { locale: trLocale })}
                   </p>
                 </div>
-                <Badge variant="outline">
-                  {Number(p.amount).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                <Badge variant="outline" className={cn('shrink-0', item.amount < 0 && 'text-destructive')}>
+                  {item.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                 </Badge>
-              </div>
+              </Link>
             ))}
           </CardContent>
         </Card>
