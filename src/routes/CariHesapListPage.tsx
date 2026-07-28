@@ -1,18 +1,22 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
-import { Search, FileSpreadsheet, Wallet, ShoppingCart, Undo2 } from 'lucide-react'
+import { Search, FileSpreadsheet, Wallet, ShoppingCart, Undo2, AlarmClockCheck } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
 import { useCustomers } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useSales } from '@/features/sales/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
+import { getAgingBucket, agingBucketLabels, type AgingBucket } from '@/lib/paymentDue'
+import { cn } from '@/lib/utils'
+
+const agingBuckets: AgingBucket[] = ['1-30', '31-60', '61-90', '90+']
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -47,7 +51,9 @@ export function CariHesapListPage() {
       customers
         .map((c) => {
           const ledger = ledgerByCustomer.get(c.id) ?? { debit: 0, credit: 0 }
-          return { customer: c, debit: ledger.debit, credit: ledger.credit, balance: ledger.debit - ledger.credit }
+          const balance = ledger.debit - ledger.credit
+          const aging = balance > 0 ? getAgingBucket(c.next_payment_due) : null
+          return { customer: c, debit: ledger.debit, credit: ledger.credit, balance, aging }
         })
         .sort((a, b) => b.balance - a.balance),
     [customers, ledgerByCustomer],
@@ -55,6 +61,23 @@ export function CariHesapListPage() {
 
   const totalDebit = rows.reduce((sum, r) => sum + r.debit, 0)
   const totalCredit = rows.reduce((sum, r) => sum + r.credit, 0)
+
+  const agingSummary = React.useMemo(() => {
+    const map = new Map<AgingBucket, number>()
+    for (const bucket of agingBuckets) map.set(bucket, 0)
+    for (const r of rows) {
+      if (r.aging && r.aging !== 'current') map.set(r.aging, (map.get(r.aging) ?? 0) + r.balance)
+    }
+    return map
+  }, [rows])
+
+  const agingToneClass: Record<AgingBucket, string> = {
+    current: 'bg-muted text-muted-foreground',
+    '1-30': 'border-transparent bg-warning/15 text-warning-foreground',
+    '31-60': 'border-transparent bg-warning/25 text-warning-foreground',
+    '61-90': 'border-transparent bg-destructive/15 text-destructive',
+    '90+': 'animate-alert-glow-red border-transparent bg-destructive/25 text-destructive',
+  }
 
   return (
     <div>
@@ -71,6 +94,7 @@ export function CariHesapListPage() {
               { header: 'Borç', value: (r) => r.debit },
               { header: 'Alacak', value: (r) => r.credit },
               { header: 'Bakiye', value: (r) => r.balance },
+              { header: 'Vade Durumu', value: (r) => (r.aging && r.aging !== 'current' ? agingBucketLabels[r.aging] : '') },
             ]}
           />
         }
@@ -116,6 +140,23 @@ export function CariHesapListPage() {
         </Card>
       </div>
 
+      <Card className="mb-6">
+        <CardHeader className="flex-row items-center gap-2">
+          <AlarmClockCheck className="size-4 text-primary" />
+          <CardTitle className="text-base">Yaşlandırma Raporu (Vadesi Geçen Bakiyeler)</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {agingBuckets.map((bucket) => (
+            <div key={bucket} className="rounded-lg border p-3">
+              <p className="text-muted-foreground text-xs font-medium">{agingBucketLabels[bucket]}</p>
+              <p className={cn('mt-1 text-lg font-semibold tabular-nums', (agingSummary.get(bucket) ?? 0) > 0 && 'text-destructive')}>
+                {currency(agingSummary.get(bucket) ?? 0)}
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
       <div className="mb-4 max-w-sm">
         <div className="relative">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -137,20 +178,21 @@ export function CariHesapListPage() {
                 <TableHead>Borç</TableHead>
                 <TableHead>Alacak</TableHead>
                 <TableHead>Bakiye</TableHead>
+                <TableHead>Vade Durumu</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
                     Yükleniyor...
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
                     Cari kayıt bulunamadı
                   </TableCell>
                 </TableRow>
@@ -175,6 +217,15 @@ export function CariHesapListPage() {
                     >
                       {currency(r.balance)}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {r.aging && r.aging !== 'current' ? (
+                      <Badge variant="outline" className={agingToneClass[r.aging]}>
+                        {agingBucketLabels[r.aging]}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>

@@ -17,6 +17,7 @@ export interface Customer {
   id: string
   full_name: string
   phone: string
+  email: string | null
   notes: string | null
   tags: string[]
   is_invoiced: boolean

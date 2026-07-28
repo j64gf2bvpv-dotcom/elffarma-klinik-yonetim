@@ -14,6 +14,12 @@ import {
   User,
   CalendarClock,
   Package,
+  Mail,
+  Wallet,
+  ShoppingCart,
+  Undo2,
+  Receipt,
+  History,
 } from 'lucide-react'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 
@@ -33,8 +39,11 @@ import {
 } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { PaymentForm } from '@/features/payments/PaymentForm'
+import { useSales } from '@/features/sales/hooks'
+import { useInvoices } from '@/features/invoices/hooks'
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
 import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
+import { cn } from '@/lib/utils'
 import { tr } from '@/i18n/tr'
 
 function currency(n: number) {
@@ -46,6 +55,8 @@ export function CustomerDetailPage() {
   const navigate = useNavigate()
   const { data: customer, isLoading } = useCustomer(id)
   const { data: payments = [] } = usePayments({ customerId: id })
+  const { data: allSales = [] } = useSales()
+  const { data: allInvoices = [] } = useInvoices()
   const { data: pendingProducts = [] } = usePendingProducts(id)
   const deletePendingMutation = useDeletePendingProduct()
   const deleteMutation = useDeleteCustomer()
@@ -65,6 +76,40 @@ export function CustomerDetailPage() {
   const lastPayment = payments[0]
   const remainingBalance = customer.total_debt != null ? Number(customer.total_debt) - totalPaid : null
   const totalPending = pendingProducts.reduce((sum, p) => sum + Number(p.quantity) * Number(p.unit_price), 0)
+
+  const activityTimeline = [
+    ...payments.map((p) => ({
+      key: `payment-${p.id}`,
+      date: p.paid_at,
+      icon: Wallet,
+      tone: 'success' as const,
+      title: 'Tahsilat',
+      subtitle: tr.paymentMethod[p.payment_method],
+      amount: Number(p.amount),
+    })),
+    ...allSales
+      .filter((s) => s.customer_id === customer.id)
+      .map((s) => ({
+        key: `sale-${s.id}`,
+        date: s.sale_date,
+        icon: s.type === 'return' ? Undo2 : ShoppingCart,
+        tone: s.type === 'return' ? ('success' as const) : ('neutral' as const),
+        title: s.type === 'return' ? 'İade' : 'Satış',
+        subtitle: s.product_name,
+        amount: (s.type === 'return' ? -1 : 1) * s.quantity * Number(s.unit_price),
+      })),
+    ...allInvoices
+      .filter((inv) => inv.customer_id === customer.id)
+      .map((inv) => ({
+        key: `invoice-${inv.id}`,
+        date: inv.issue_date,
+        icon: Receipt,
+        tone: 'neutral' as const,
+        title: `Fatura ${inv.invoice_number}`,
+        subtitle: inv.note ?? '',
+        amount: Number(inv.amount),
+      })),
+  ].sort((a, b) => b.date.localeCompare(a.date))
 
   async function handleDelete() {
     await deleteMutation.mutateAsync(customer!.id)
@@ -140,6 +185,14 @@ export function CustomerDetailPage() {
               <Phone className="size-4 text-muted-foreground" />
               {formatTrPhoneForDisplay(customer.phone)}
             </p>
+            {customer.email && (
+              <p className="flex items-center gap-2">
+                <Mail className="size-4 text-muted-foreground" />
+                <a href={`mailto:${customer.email}`} className="hover:underline">
+                  {customer.email}
+                </a>
+              </p>
+            )}
             {customer.next_payment_due &&
               (() => {
                 const status = getPaymentDueStatus(customer.next_payment_due)
@@ -254,6 +307,44 @@ export function CustomerDetailPage() {
         </div>
 
         <div className="md:col-span-2">
+          <div className="mb-3 flex items-center gap-2">
+            <History className="size-4 text-primary" />
+            <h2 className="text-base font-semibold">İşlem Geçmişi</h2>
+          </div>
+          <Card className="mb-6">
+            <CardContent className="grid gap-2 p-4">
+              {activityTimeline.length === 0 && (
+                <p className="text-muted-foreground py-4 text-center text-sm">Henüz işlem yok</p>
+              )}
+              {activityTimeline.map((item) => (
+                <div key={item.key} className="flex items-center gap-3 rounded-lg border p-2.5 text-sm">
+                  <span
+                    className={cn(
+                      'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                      item.tone === 'success' ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground',
+                    )}
+                  >
+                    <item.icon className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{item.title}</p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {item.subtitle} · {format(new Date(item.date), 'd MMM yyyy', { locale: trLocale })}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      'shrink-0 font-medium tabular-nums',
+                      item.amount < 0 ? 'text-destructive' : item.tone === 'success' ? 'text-success' : '',
+                    )}
+                  >
+                    {item.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold">Tahsilatlar</h2>
             <PaymentForm defaultCustomerId={customer.id} />

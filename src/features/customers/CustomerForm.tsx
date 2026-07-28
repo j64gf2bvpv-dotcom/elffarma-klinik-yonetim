@@ -40,6 +40,7 @@ const schema = z.object({
     .string()
     .min(1, 'Telefon gerekli')
     .refine((v) => normalizeTrPhone(v) !== null, 'Geçerli bir telefon numarası girin (10 hane)'),
+  email: z.string().email('Geçerli bir e-posta girin').optional().or(z.literal('')),
   notes: z.string().optional(),
   tags: z.string().optional(),
   is_invoiced: z.boolean(),
@@ -74,6 +75,7 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
     defaultValues: {
       full_name: customer?.full_name ?? '',
       phone: customer?.phone ?? '',
+      email: customer?.email ?? '',
       notes: customer?.notes ?? '',
       tags: customer?.tags?.join(', ') ?? '',
       is_invoiced: customer?.is_invoiced ?? false,
@@ -97,6 +99,7 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
       form.reset({
         full_name: customer?.full_name ?? '',
         phone: customer?.phone ?? '',
+        email: customer?.email ?? '',
         notes: customer?.notes ?? '',
         tags: customer?.tags?.join(', ') ?? '',
         is_invoiced: customer?.is_invoiced ?? false,
@@ -119,6 +122,7 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
     const input = {
       full_name: values.full_name,
       phone: values.phone,
+      email: values.email || null,
       notes: values.notes || null,
       tags: values.tags
         ? values.tags.split(',').map((t) => t.trim()).filter(Boolean)
@@ -184,6 +188,19 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
                   <FormLabel>Telefon</FormLabel>
                   <FormControl>
                     <Input placeholder="0532 123 45 67" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>E-posta (opsiyonel)</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="ornek@klinik.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

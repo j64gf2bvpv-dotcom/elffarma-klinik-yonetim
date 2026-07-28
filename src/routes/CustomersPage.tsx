@@ -24,15 +24,25 @@ import { turkeyProvinces } from '@/lib/turkeyProvinces'
 import type { Customer } from '@/types/database'
 
 const ALL_PROVINCES = '__all__'
+const ALL_TAGS = '__all_tags__'
 
 export function CustomersPage() {
   const [search, setSearch] = React.useState('')
   const [invoiceFilter, setInvoiceFilter] = React.useState<InvoiceFilter>('all')
   const [provinceFilter, setProvinceFilter] = React.useState(ALL_PROVINCES)
-  const { data: customers = [], isLoading } = useCustomers(
+  const [tagFilter, setTagFilter] = React.useState(ALL_TAGS)
+  const { data: allCustomers = [], isLoading } = useCustomers(
     search,
     invoiceFilter,
     provinceFilter === ALL_PROVINCES ? undefined : provinceFilter,
+  )
+  const availableTags = React.useMemo(
+    () => Array.from(new Set(allCustomers.flatMap((c) => c.tags))).sort((a, b) => a.localeCompare(b, 'tr')),
+    [allCustomers],
+  )
+  const customers = React.useMemo(
+    () => (tagFilter === ALL_TAGS ? allCustomers : allCustomers.filter((c) => c.tags.includes(tagFilter))),
+    [allCustomers, tagFilter],
   )
   const deleteMutation = useDeleteCustomer()
   const [customerToDelete, setCustomerToDelete] = React.useState<Customer | null>(null)
@@ -105,6 +115,21 @@ export function CustomersPage() {
             ))}
           </SelectContent>
         </Select>
+        {availableTags.length > 0 && (
+          <Select value={tagFilter} onValueChange={setTagFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Etiket" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_TAGS}>Tüm Etiketler</SelectItem>
+              {availableTags.map((tag) => (
+                <SelectItem key={tag} value={tag}>
+                  {tag}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <Card>

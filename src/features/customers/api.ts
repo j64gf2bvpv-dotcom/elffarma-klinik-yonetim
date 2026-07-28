@@ -6,6 +6,7 @@ import type { Customer, CustomerPendingProduct, DoctorType, PaymentMethod } from
 export interface CustomerInput {
   full_name: string
   phone: string
+  email?: string | null
   notes?: string | null
   tags: string[]
   is_invoiced: boolean
