@@ -1,7 +1,7 @@
 {
   "name": "klinik-yonetim",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.5.0",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "description": "Medikal estetik klinikleri için müşteri, stok, tahsilat ve randevu yönetimi",
@@ -11,7 +11,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "prepackage": "node scripts/check-release-env.mjs",
     "package": "cross-env ELECTRON_RUN_AS_NODE= npm run build && cross-env ELECTRON_RUN_AS_NODE= electron-builder",
+    "predist": "node scripts/check-release-env.mjs",
     "dist": "npm run package"
   },
   "dependencies": {
@@ -43,6 +45,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
     "docx": "^9.7.1",
+    "electron-updater": "^6.8.9",
     "file-saver": "^2.0.5",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
@@ -71,6 +74,7 @@
     "electron-builder": "^26.15.3",
     "electron-is-dev": "^3.0.1",
     "oxlint": "^1.71.0",
+    "png-to-ico": "^3.0.2",
     "postcss": "^8.5.23",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",

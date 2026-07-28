@@ -71,8 +71,58 @@ derler, ardından `electron-builder` ile `release/` klasörüne kurulabilir bir
 
 Bu, günlük kullanım için engel değildir. İleride isterseniz bir Apple Developer
 hesabı (yıllık ~$99) ve/veya Windows kod imzalama sertifikası (~$100-400/yıl)
-alarak bu uyarıları tamamen kaldırabilir ve otomatik güncelleme (auto-update)
-özelliğini etkinleştirebilirsiniz — bu depoda hazır değildir.
+alarak bu uyarıları tamamen kaldırabilirsiniz.
+
+## Kurulum sonrası: kısayollar ve tek tıkla açılış
+
+- **Windows**: NSIS kurulum sihirbazı (İleri → Kurulum Yeri Seç → Kur → Bitir)
+  masaüstüne ve Başlat Menüsü'ne "Elffarma Paket Programı" kısayolu ekler;
+  kurulumdan sonra bu kısayola çift tıklamak yeterlidir.
+- **macOS**: `.dmg` açıldığında görünen pencerede uygulama ikonunu
+  **Uygulamalar** klasörü kısayoluna sürükleyin; sonrasında Launchpad/Uygulamalar'dan
+  tek tıkla açılır.
+- Kurulan uygulama, geliştirme ortamını (Node.js, VS Code, proje kaynak kodu)
+  hiçbir şekilde gerektirmez — Electron, kendi Chromium/Node çalışma zamanını
+  paketin içine gömer. Kullanıcıya sadece `Setup.exe` ya da `.dmg` dosyasını
+  göndermeniz yeterlidir; proje dosyalarına erişimleri olmaz.
+
+## Yayınlama (Release) ve otomatik güncelleme
+
+Sürüm numarası `package.json` → `version` alanından gelir (şu an `1.5.0`).
+Yeni bir sürüm yayınlamak için:
+
+1. `package.json`'daki `version`'ı artırın (`1.5.1`, `1.6.0` vb.) ve
+   `CHANGELOG.md`'ye bir madde ekleyin.
+2. `git tag v1.6.0 && git push origin v1.6.0` (versiyonu gerçek numarayla
+   değiştirin).
+3. Bu tag push'u `.github/workflows/release.yml` iş akışını tetikler; bu iş
+   akışı **gerçek bir Windows runner'ında** Setup.exe (NSIS) ve **gerçek bir
+   macOS runner'ında** .dmg üretip bir GitHub Release'e **taslak (draft)**
+   olarak yükler (geliştirme makinesi macOS olduğu ve `wine` kurulu olmadığı
+   için Windows kurulum paketi yerelde üretilemez — CI asıl dağıtım yoludur).
+4. GitHub → Releases sayfasından taslağı inceleyip **Publish release**
+   yapın. Yayınlandığı andan itibaren kurulu uygulamalar
+   (`electron-updater` üzerinden) yeni sürümü fark edip arka planda indirir
+   ve kullanıcıya "yeniden başlat" bildirimi gösterir.
+
+**Önemli — Supabase yapılandırması**: Vite, `VITE_SUPABASE_URL` /
+`VITE_SUPABASE_ANON_KEY` değerlerini **build anında** derlenmiş dosyanın içine
+gömer (çalışma zamanında `.env` okunmaz). Bu, kaynak kodun dağıtılması anlamına
+gelmez — her normal Electron uygulamasında olduğu gibi sadece derlenmiş,
+minifiye edilmiş bundle dağıtılır. Ama bu değerler gerçek olmadan paketlenirse
+(placeholder ile), dağıtılan uygulama hiçbir veriye erişemez. Bunu önlemek için
+`npm run package`/`npm run dist` çalıştırılmadan hemen önce
+`scripts/check-release-env.mjs` otomatik çalışır ve gerçek değerler yoksa
+paketlemeyi durdurur. CI'da bu değerler repository secrets olarak
+(`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) tanımlanmalıdır — bkz.
+`.github/workflows/release.yml` üstündeki yorum.
+
+**macOS'ta auto-update ile ilgili bilinen sınırlama**: `mac.identity: null`
+(imzasız paketleme) hâlâ geçerli olduğu için macOS'ta otomatik güncelleme
+motoru (Squirrel.Mac) indirilen güncellemeyi doğrulayamayabilir — bu, yukarıda
+bahsedilen Apple Developer imzası/notarization eklenene kadar sürecek bilinen
+bir sınırlamadır. Windows tarafında (NSIS + electron-updater) bu kısıtlama
+yoktur.
 
 ## Mimari özeti
 

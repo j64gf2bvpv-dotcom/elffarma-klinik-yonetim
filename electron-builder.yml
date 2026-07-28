@@ -4,6 +4,12 @@ copyright: Copyright © Elffarma
 directories:
   output: release
   buildResources: build
+# Açıkça sabitlenmedikçe, auto-update besleme dosyasının (latest.yml/latest-mac.yml)
+# referans verdiği dosya adıyla gerçekten üretilen installer'ın adı electron-builder'da
+# farklılaşabiliyor (biri package.json "name"ini, diğeri "productName"i kullanabiliyor) —
+# bu da GitHub Release'e yüklenince auto-update'in dosyayı bulamayıp sessizce
+# başarısız olmasına yol açar. Tek bir şablonu her ikisi için de zorunlu kılıyoruz.
+artifactName: ElffarmaPaketProgrami-${version}-${arch}.${ext}
 files:
   - dist/**
   - dist-electron/**
@@ -14,25 +20,57 @@ protocols:
   name: Elffarma Paket Programı Şifre Sıfırlama
   schemes:
     - elffarmapaket
+# Otomatik güncelleme (electron-updater) bu depodaki GitHub Releases'i kaynak olarak
+# kullanır. `releaseType` belirtilmediği için electron-builder varsayılanı olan
+# "draft" geçerlidir: CI bir sürümü derleyip GitHub'a taslak (draft) olarak yükler,
+# gerçekten yayınlanıp istemcilerin auto-update ile görmesi için taslağın GitHub'da
+# elle "Publish release" ile yayınlanması gerekir — bu, yanlışlıkla erken/bozuk bir
+# sürümün otomatik olarak tüm kurulu uygulamalara dağıtılmasını engelleyen bilinçli
+# bir güvenlik adımıdır.
+publish:
+  provider: github
+  owner: j64gf2bvpv-dotcom
+  repo: elffarma-klinik-yonetim
 mac:
   category: public.app-category.medical
   icon: build/icons/icon.icns
+  # Dijital imza / notarization henüz kurulmadı (Apple Developer hesabı gerektirir).
+  # identity: null bunu bilinçli olarak atlar — Gatekeeper ilk açılışta uyarı verir
+  # (bkz. README "Bilinen sınırlamalar"). İmza eklendiğinde bu satır kaldırılmalı;
+  # o zamana kadar macOS'ta auto-update de güvenilir çalışmayabilir (Squirrel.Mac
+  # imzasız uygulamalarda güncellemeyi doğrulayamaz) — Windows tarafı bundan etkilenmez.
   identity: null
   target:
     - target: dmg
       arch:
         - arm64
+dmg:
+  # Kurulum sırasında pencerede uygulama ikonu + "Uygulamalar" klasörüne sürükle-bırak
+  # kısayolu yan yana görünür (macOS'un standart DMG kurulum deneyimi).
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
 win:
-  icon: build/icons/icon.png
+  icon: build/icons/icon.ico
   target:
     - target: nsis
       arch:
         - x64
 nsis:
+  # oneClick: false → tam kurulum sihirbazı (Next → Kurulum Yeri Seç → Install → Finish),
+  # tek tıkla sessiz kurulum değil.
   oneClick: false
+  perMachine: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
+  shortcutName: Elffarma Paket Programı
+  installerIcon: build/icons/icon.ico
+  uninstallerIcon: build/icons/icon.ico
 linux:
   icon: build/icons/icon.png
   target:

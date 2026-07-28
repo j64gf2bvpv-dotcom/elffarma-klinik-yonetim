@@ -1,4 +1,5 @@
 import { app, BrowserWindow, Menu, shell, Notification, ipcMain } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import path from 'node:path'
 
 process.env.APP_ROOT = path.join(__dirname, '..')
@@ -107,6 +108,20 @@ function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
+// GitHub Releases'teki en son sürümü kontrol eder, arka planda indirir ve indirme
+// bitince "şimdi yeniden başlat" bildirimi gösterir (checkForUpdatesAndNotify'ın
+// varsayılan davranışı). Sadece paketlenmiş (kurulmuş) uygulamada anlamlı olduğu
+// için `npm run dev` sırasında hiç çağrılmaz — orada kontrol edilecek bir update
+// feed'i yoktur ve autoUpdater sessizce hata loglar.
+function setupAutoUpdater() {
+  autoUpdater.on('error', (error) => {
+    console.error('[AutoUpdater] Güncelleme kontrolü başarısız:', error)
+  })
+  autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+    console.error('[AutoUpdater] checkForUpdatesAndNotify başarısız:', error)
+  })
+}
+
 // Narrow IPC surface used by the renderer's preload bridge.
 ipcMain.handle('shell:open-external', (_event, url: string) => {
   if (typeof url === 'string' && /^https:\/\/wa\.me\//.test(url)) {
@@ -161,6 +176,9 @@ if (!gotSingleInstanceLock) {
   app.whenReady().then(() => {
     buildMenu()
     createWindow()
+    if (app.isPackaged) {
+      setupAutoUpdater()
+    }
     // Windows: uygulama elffarmapaket:// bağlantısıyla ilk kez açılıyorsa argv'de gelir.
     const initialDeepLink = process.argv.find((arg) => arg.startsWith(`${DEEP_LINK_PROTOCOL}://`))
     if (initialDeepLink) {

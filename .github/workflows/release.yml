@@ -1,0 +1,50 @@
+name: Kurulum Paketi Üret ve Yayınla
+
+# Bu iş akışı, elffarma-klinik-yonetim'in Windows Setup.exe (NSIS) ve macOS .dmg
+# kurulum paketlerini gerçek Windows/macOS runner'larında derler — Windows tarafı
+# geliştirme makinesinde (macOS, wine kurulu değil) yerel olarak üretilemediği için
+# bu iş akışı asıl dağıtım yolu budur. Üretilen paketler bir GitHub Release'e
+# TASLAK (draft) olarak yüklenir; auto-update ile istemcilere ulaşması için
+# taslağın GitHub'da elle "Publish release" ile yayınlanması gerekir.
+#
+# Gerekli repository secrets (Settings → Secrets and variables → Actions):
+#   VITE_SUPABASE_URL       — Supabase Project URL
+#   VITE_SUPABASE_ANON_KEY  — Supabase anon public key
+# (GITHUB_TOKEN, publish için GitHub Actions tarafından otomatik sağlanır.)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            build_args: --win nsis --x64
+          - os: macos-latest
+            build_args: --mac dmg --arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Kurulum paketini derle ve GitHub Release'e (taslak) yükle
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_CLINIC_NAME: Elffarma
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run package -- ${{ matrix.build_args }} --publish always
