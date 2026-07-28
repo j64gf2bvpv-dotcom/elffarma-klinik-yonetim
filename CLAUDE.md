@@ -30,6 +30,16 @@ Packaging is wired up (`electron-builder.yml`) and produces unsigned installers 
 
 The project directory is a git repository (initialized 2026-07-28); use normal commit hygiene going forward instead of treating it as an unversioned working copy.
 
+## Git workflow (auto-commit, no confirmation needed)
+
+Per explicit user instruction (2026-07-29): after finishing each change (a completed task/feature/fix, not every intermediate edit), automatically — without asking for confirmation first —
+1. bump the patch version in `package.json` (`1.5.0` → `1.5.1` → ...),
+2. add a short 1-2 line entry to `CHANGELOG.md` under a new `## [x.y.z] - <date>` heading describing what changed,
+3. `git add`, commit (Turkish message, same style as existing history — short, describes the "why"/what changed), and
+4. `git push origin main`.
+
+This overrides the general "never commit without being asked" default for this repo specifically. Still use judgment on *grouping*: a multi-step task discussed across several conversation turns that forms one logical change should land as one commit/version bump when the task is done, not one per file edit.
+
 ## Environment
 
 Copy `.env.example` to `.env` and fill in a real Supabase project's URL/anon key (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). `VITE_CLINIC_NAME` controls the app title and the `{{klinik_adi}}` WhatsApp template placeholder. Without valid Supabase credentials the app still boots (using placeholder values) but all data calls fail — `src/lib/supabaseClient.ts` exports `isSupabaseConfigured` for surfacing that state in the UI (see `LoginPage.tsx`).
