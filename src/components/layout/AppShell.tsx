@@ -17,6 +17,10 @@ import {
   Wallet,
   PackageOpen,
   CloudUpload,
+  Pencil,
+  Save,
+  X,
+  GripVertical,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -24,7 +28,7 @@ import { useAuth } from '@/lib/auth'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useApplyBrandTheme } from '@/features/appSettings/useApplyBrandTheme'
 import { useColorMode } from '@/features/appSettings/useColorMode'
-import { useAppSetting } from '@/features/appSettings/hooks'
+import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
 import { getIconSet, type IconVariant, type NavKey } from '@/features/appSettings/iconSets'
 import { useAlertsSummary } from '@/features/alerts/useAlertsSummary'
 import { useDismissedAlerts } from '@/features/alerts/useDismissedAlerts'
@@ -34,6 +38,7 @@ import { getPaymentDueStatus } from '@/lib/paymentDue'
 import { tr } from '@/i18n/tr'
 import { ElffarmaLogo } from '@/components/brand/ElffarmaLogo'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Input } from '@/components/ui/input'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +62,22 @@ const navItems: { to: string; label: string; key: NavKey; end?: boolean }[] = [
   { to: '/hatirlatmalar', label: tr.nav.reminders, key: 'reminders' },
   { to: '/ajanda', label: tr.nav.agenda, key: 'agenda' },
 ]
+
+const navItemsByKey = new Map(navItems.map((item) => [item.key, item]))
+
+interface NavLayoutItem {
+  key: NavKey
+  label: string
+}
+
+const defaultNavLayout: NavLayoutItem[] = navItems.map((item) => ({ key: item.key, label: item.label }))
+
+function sanitizeNavLayout(input: NavLayoutItem[]): NavLayoutItem[] {
+  const known = input.filter((item) => navItemsByKey.has(item.key))
+  const presentKeys = new Set(known.map((item) => item.key))
+  const missing = defaultNavLayout.filter((item) => !presentKeys.has(item.key))
+  return [...known, ...missing]
+}
 
 function iconBoxClasses(variant: IconVariant, isActive: boolean): string {
   if (variant === '3d') {
@@ -365,6 +386,46 @@ export function AppShell() {
   const { mode, toggle: toggleColorMode } = useColorMode()
   const { data: iconSetId } = useAppSetting<string>('sidebar_icon_set')
   const iconSet = getIconSet(iconSetId)
+  const isAdmin = staff?.role === 'admin'
+
+  const { data: savedNavLayout } = useAppSetting<NavLayoutItem[]>('sidebar_nav_layout')
+  const saveNavLayoutMutation = useSaveAppSetting<NavLayoutItem[]>('sidebar_nav_layout')
+  const [navEditMode, setNavEditMode] = React.useState(false)
+  const [draftNavLayout, setDraftNavLayout] = React.useState<NavLayoutItem[] | null>(null)
+  const navDragIndexRef = React.useRef<number | null>(null)
+
+  const navLayout = sanitizeNavLayout(draftNavLayout ?? savedNavLayout ?? defaultNavLayout)
+
+  function startNavEditing() {
+    setDraftNavLayout(navLayout)
+    setNavEditMode(true)
+  }
+
+  function cancelNavEditing() {
+    setDraftNavLayout(null)
+    setNavEditMode(false)
+  }
+
+  async function saveNavLayout() {
+    if (draftNavLayout) await saveNavLayoutMutation.mutateAsync(draftNavLayout)
+    setNavEditMode(false)
+  }
+
+  function renameNavItem(key: NavKey, label: string) {
+    setDraftNavLayout((prev) => (prev ?? navLayout).map((item) => (item.key === key ? { ...item, label } : item)))
+  }
+
+  function handleNavDrop(targetIndex: number) {
+    const from = navDragIndexRef.current
+    navDragIndexRef.current = null
+    if (from === null || from === targetIndex) return
+    setDraftNavLayout((prev) => {
+      const list = [...(prev ?? navLayout)]
+      const [moved] = list.splice(from, 1)
+      list.splice(targetIndex, 0, moved)
+      return list
+    })
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
@@ -377,18 +438,73 @@ export function AppShell() {
           <ElffarmaLogo variant="premium" />
         </div>
 
+        {isAdmin && (
+          <div className="relative z-10 flex items-center justify-end gap-1 px-3 pt-2">
+            {!navEditMode ? (
+              <button
+                type="button"
+                onClick={startNavEditing}
+                title="Menüyü düzenle"
+                className="flex size-6 items-center justify-center rounded-md text-sidebar-foreground/50 transition-colors hover:bg-white/10 hover:text-sidebar-foreground"
+              >
+                <Pencil className="size-3.5" />
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={cancelNavEditing}
+                  title="Vazgeç"
+                  className="flex size-6 items-center justify-center rounded-md text-sidebar-foreground/50 transition-colors hover:bg-white/10 hover:text-sidebar-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={saveNavLayout}
+                  title="Kaydet"
+                  className="flex size-6 items-center justify-center rounded-md text-sidebar-foreground/50 transition-colors hover:bg-white/10 hover:text-sidebar-foreground"
+                >
+                  <Save className="size-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
         <nav className="relative z-10 flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-3">
-          {navItems.map((item) => (
-            <SidebarNavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              icon={iconSet.icons[item.key]}
-              label={item.label}
-              variant={iconSet.variant}
-              strokeWidth={iconSet.strokeWidth}
-            />
-          ))}
+          {!navEditMode
+            ? navLayout.map((item) => {
+                const meta = navItemsByKey.get(item.key)!
+                return (
+                  <SidebarNavLink
+                    key={item.key}
+                    to={meta.to}
+                    end={meta.end}
+                    icon={iconSet.icons[item.key]}
+                    label={item.label}
+                    variant={iconSet.variant}
+                    strokeWidth={iconSet.strokeWidth}
+                  />
+                )
+              })
+            : navLayout.map((item, index) => (
+                <div
+                  key={item.key}
+                  draggable
+                  onDragStart={() => (navDragIndexRef.current = index)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleNavDrop(index)}
+                  className="flex items-center gap-2 rounded-lg bg-white/5 px-2 py-1.5"
+                >
+                  <GripVertical className="text-sidebar-foreground/40 size-3.5 shrink-0 cursor-grab" />
+                  <Input
+                    value={item.label}
+                    onChange={(e) => renameNavItem(item.key, e.target.value)}
+                    className="h-7 border-white/15 bg-white/10 px-2 text-xs text-sidebar-foreground placeholder:text-sidebar-foreground/40"
+                  />
+                </div>
+              ))}
           {staff?.role === 'admin' && (
             <SidebarNavLink
               to="/ayarlar"
