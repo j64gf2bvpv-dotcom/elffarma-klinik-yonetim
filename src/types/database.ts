@@ -42,6 +42,7 @@ export interface Product {
   category: string | null
   unit: string
   critical_stock_threshold: number
+  minimum_stock: number | null
   current_quantity: number
   unit_cost: number | null
   unit_price: number | null
@@ -49,10 +50,20 @@ export interface Product {
   image_url: string | null
   expiry_date: string | null
   barcode: string | null
+  lot_number: string | null
+  serial_number: string | null
   brand_line: BrandLine | null
+  warehouse_id: string | null
   is_active: boolean
   created_at: string
   updated_at: string
+}
+
+export interface Warehouse {
+  id: string
+  name: string
+  is_active: boolean
+  created_at: string
 }
 
 export interface StockMovement {

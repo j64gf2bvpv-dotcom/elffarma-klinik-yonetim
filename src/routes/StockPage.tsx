@@ -12,14 +12,15 @@ import { ProductForm } from '@/features/stock/ProductForm'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
 import { useDeactivateProduct, useProducts } from '@/features/stock/hooks'
-import { createProduct, recordStockMovement } from '@/features/stock/api'
+import { createProduct, recordStockMovement, type ProductWithWarehouse } from '@/features/stock/api'
+import { WarehouseDialog } from '@/features/warehouses/WarehouseDialog'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ExcelImportDialog, type ImportField } from '@/components/ExcelImportDialog'
 import { queryClient } from '@/lib/queryClient'
-import type { BrandLine, Product } from '@/types/database'
+import type { BrandLine } from '@/types/database'
 
 const ALL_BRANDS = 'all'
 
@@ -39,6 +40,9 @@ const productImportFields: ImportField[] = [
   { key: 'unit_price', label: 'Birim Satış Fiyatı', aliases: ['satış fiyatı', 'fiyat'] },
   { key: 'barcode', label: 'Barkod', aliases: ['barkod'] },
   { key: 'expiry_date', label: 'Son Kullanma Tarihi', aliases: ['skt', 'son kullanma tarihi', 'miat'] },
+  { key: 'lot_number', label: 'Lot No', aliases: ['lot', 'lot no', 'parti no'] },
+  { key: 'serial_number', label: 'Seri No', aliases: ['seri', 'seri no'] },
+  { key: 'minimum_stock', label: 'Minimum Stok', aliases: ['min stok', 'minimum stok', 'yeniden sipariş seviyesi'] },
 ]
 
 function parseOptionalNumber(v: string): number | null {
@@ -69,10 +73,13 @@ async function importProductRow(row: Record<string, string>) {
     category: row.category?.trim() || null,
     unit,
     critical_stock_threshold: threshold,
+    minimum_stock: parseOptionalNumber(row.minimum_stock),
     unit_cost: parseOptionalNumber(row.unit_cost),
     unit_price: parseOptionalNumber(row.unit_price),
     barcode: row.barcode?.trim() || null,
     expiry_date: parseOptionalDate(row.expiry_date),
+    lot_number: row.lot_number?.trim() || null,
+    serial_number: row.serial_number?.trim() || null,
   })
 
   const startQty = parseOptionalNumber(row.current_quantity)
@@ -86,7 +93,13 @@ async function importProductRow(row: Record<string, string>) {
   }
 }
 
-function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: (product: Product) => void }) {
+function ProductsTable({
+  products,
+  onRemove,
+}: {
+  products: ProductWithWarehouse[]
+  onRemove: (product: ProductWithWarehouse) => void
+}) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -96,6 +109,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
               <TableHead className="w-12"></TableHead>
               <TableHead>Ürün</TableHead>
               <TableHead>Kategori</TableHead>
+              <TableHead>Depo</TableHead>
               <TableHead>Stok</TableHead>
               <TableHead>Satış Fiyatı</TableHead>
               <TableHead>Kampanya</TableHead>
@@ -107,13 +121,15 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
           <TableBody>
             {products.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                   Ürün bulunamadı
                 </TableCell>
               </TableRow>
             )}
             {products.map((product) => {
               const isCritical = product.current_quantity <= product.critical_stock_threshold
+              const isBelowMinimum =
+                !isCritical && product.minimum_stock != null && product.current_quantity <= product.minimum_stock
               const expiryStatus = getExpiryStatus(product.expiry_date)
               return (
                 <TableRow
@@ -137,12 +153,19 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     {product.barcode && (
                       <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>
                     )}
+                    {product.lot_number && (
+                      <span className="block text-xs text-muted-foreground">Lot: {product.lot_number}</span>
+                    )}
+                    {product.serial_number && (
+                      <span className="block text-xs text-muted-foreground">Seri: {product.serial_number}</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{product.category ?? '—'}</TableCell>
+                  <TableCell className="text-muted-foreground">{product.warehouses?.name ?? '—'}</TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-1.5">
                       {isCritical && <AlertTriangle className="size-3.5 text-destructive" />}
-                      <Badge variant={isCritical ? 'destructive' : 'secondary'}>
+                      <Badge variant={isCritical ? 'destructive' : isBelowMinimum ? 'warning' : 'secondary'}>
                         {product.current_quantity} {product.unit}
                       </Badge>
                     </span>
@@ -208,7 +231,7 @@ export function StockPage() {
   const { data: products = [], isLoading } = useProducts(search, brandFilter === ALL_BRANDS ? undefined : brandFilter)
   const deactivateMutation = useDeactivateProduct()
 
-  function handleRemove(product: Product) {
+  function handleRemove(product: ProductWithWarehouse) {
     if (!confirm(`${product.name} kaldırılsın mı? Ürün stok listesinden kaldırılır, geçmiş hareketler saklanır.`)) return
     deactivateMutation.mutate(product.id)
   }
@@ -220,17 +243,21 @@ export function StockPage() {
         description="Ürün kataloğunu ve stok seviyelerini yönetin"
         actions={
           <div className="flex gap-2">
-            <ExportMenu<Product>
+            <ExportMenu<ProductWithWarehouse>
               title="Stok Listesi"
               filename="stok"
               rows={products}
               columns={[
                 { header: 'Ürün', value: (p) => p.name },
                 { header: 'Kategori', value: (p) => p.category ?? '' },
+                { header: 'Depo', value: (p) => p.warehouses?.name ?? '' },
                 { header: 'Stok', value: (p) => `${p.current_quantity} ${p.unit}` },
+                { header: 'Minimum Stok', value: (p) => (p.minimum_stock ?? '') },
                 { header: 'Satış Fiyatı', value: (p) => (p.unit_price ? Number(p.unit_price) : '') },
                 { header: 'Kampanya', value: (p) => p.campaign ?? '' },
                 { header: 'Barkod', value: (p) => p.barcode ?? '' },
+                { header: 'Lot No', value: (p) => p.lot_number ?? '' },
+                { header: 'Seri No', value: (p) => p.serial_number ?? '' },
                 { header: 'Ürün Hattı', value: (p) => (p.brand_line === 'dermakor' ? 'Dermakor' : p.brand_line === 'swiss' ? 'Swiss' : '') },
                 { header: 'Son Kullanım Tarihi', value: (p) => p.expiry_date ?? '' },
               ]}
@@ -241,6 +268,7 @@ export function StockPage() {
               importRow={importProductRow}
               onDone={() => queryClient.invalidateQueries({ queryKey: ['products'] })}
             />
+            <WarehouseDialog />
             <ProductForm />
           </div>
         }

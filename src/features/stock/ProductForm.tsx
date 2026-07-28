@@ -18,9 +18,11 @@ import { CurrencyInput } from '@/components/ui/currency-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useCreateProduct, useUpdateProduct } from './hooks'
+import { useWarehouses } from '@/features/warehouses/hooks'
 import type { Product } from '@/types/database'
 
 const NO_BRAND = '__none__'
+const NO_WAREHOUSE = '__none__'
 
 const schema = z.object({
   name: z.string().min(2, 'Ürün adı gerekli'),
@@ -28,12 +30,16 @@ const schema = z.object({
   category: z.string().optional(),
   unit: z.string().min(1, 'Birim gerekli'),
   critical_stock_threshold: z.coerce.number().int().min(0),
+  minimum_stock: z.coerce.number().int().min(0).optional(),
   unit_cost: z.coerce.number().min(0).optional(),
   unit_price: z.coerce.number().min(0).optional(),
   campaign: z.string().optional(),
   expiry_date: z.string().optional(),
   barcode: z.string().optional(),
+  lot_number: z.string().optional(),
+  serial_number: z.string().optional(),
   brand_line: z.string().optional(),
+  warehouse_id: z.string().optional(),
 })
 
 type FormInput = z.input<typeof schema>
@@ -43,6 +49,7 @@ export function ProductForm({ product }: { product?: Product }) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateProduct()
   const updateMutation = useUpdateProduct()
+  const { data: warehouses = [] } = useWarehouses()
 
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
@@ -52,12 +59,16 @@ export function ProductForm({ product }: { product?: Product }) {
       category: product?.category ?? '',
       unit: product?.unit ?? 'adet',
       critical_stock_threshold: product?.critical_stock_threshold ?? 5,
+      minimum_stock: product?.minimum_stock ?? undefined,
       unit_cost: product?.unit_cost ?? undefined,
       unit_price: product?.unit_price ?? undefined,
       campaign: product?.campaign ?? '',
       expiry_date: product?.expiry_date ?? '',
       barcode: product?.barcode ?? '',
+      lot_number: product?.lot_number ?? '',
+      serial_number: product?.serial_number ?? '',
       brand_line: product?.brand_line ?? NO_BRAND,
+      warehouse_id: product?.warehouse_id ?? NO_WAREHOUSE,
     },
   })
 
@@ -68,12 +79,16 @@ export function ProductForm({ product }: { product?: Product }) {
       category: values.category || null,
       unit: values.unit,
       critical_stock_threshold: values.critical_stock_threshold,
+      minimum_stock: values.minimum_stock ?? null,
       unit_cost: values.unit_cost ?? null,
       unit_price: values.unit_price ?? null,
       campaign: values.campaign || null,
       expiry_date: values.expiry_date || null,
       barcode: values.barcode || null,
+      lot_number: values.lot_number || null,
+      serial_number: values.serial_number || null,
       brand_line: values.brand_line && values.brand_line !== NO_BRAND ? (values.brand_line as 'dermakor' | 'swiss') : null,
+      warehouse_id: values.warehouse_id && values.warehouse_id !== NO_WAREHOUSE ? values.warehouse_id : null,
     }
     if (product) {
       await updateMutation.mutateAsync({ id: product.id, input })
@@ -177,6 +192,46 @@ export function ProductForm({ product }: { product?: Product }) {
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
+                name="minimum_stock"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Minimum Stok (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="0" {...field} value={field.value as number | string} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="warehouse_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Depo (opsiyonel)</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={NO_WAREHOUSE}>Belirtilmedi</SelectItem>
+                        {warehouses.map((w) => (
+                          <SelectItem key={w.id} value={w.id}>
+                            {w.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="unit_cost"
                 render={({ field }) => (
                   <FormItem>
@@ -224,6 +279,34 @@ export function ProductForm({ product }: { product?: Product }) {
                     <FormLabel>Son Kullanım Tarihi (opsiyonel)</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="lot_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Lot No (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="serial_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seri No (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -8,9 +8,10 @@ import {
   recordStockMovement,
   updateProduct,
   type ProductInput,
+  type ProductWithWarehouse,
   type RecordMovementInput,
 } from './api'
-import type { BrandLine, Product } from '@/types/database'
+import type { BrandLine } from '@/types/database'
 
 export function useProducts(search: string, brandLine?: BrandLine) {
   return useQuery({ queryKey: ['products', search, brandLine], queryFn: () => fetchProducts(search, brandLine) })
@@ -29,7 +30,9 @@ export function useCreateProduct() {
   return useMutation({
     mutationFn: (input: ProductInput) => createProduct(input),
     onSuccess: (created) => {
-      queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) => (old ? [...old, created] : old))
+      queryClient.setQueriesData<ProductWithWarehouse[]>({ queryKey: ['products'] }, (old) =>
+        old ? [...old, { ...created, warehouses: null }] : old,
+      )
       queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success('Ürün eklendi')
     },
@@ -42,7 +45,7 @@ export function useUpdateProduct() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: ProductInput }) => updateProduct(id, input),
     onSuccess: (updated, { id }) => {
-      queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) =>
+      queryClient.setQueriesData<ProductWithWarehouse[]>({ queryKey: ['products'] }, (old) =>
         old?.map((p) => (p.id === id ? { ...p, ...updated } : p)),
       )
       queryClient.invalidateQueries({ queryKey: ['products'] })
@@ -57,7 +60,7 @@ export function useDeactivateProduct() {
   return useMutation({
     mutationFn: (id: string) => deactivateProduct(id),
     onSuccess: (_data, id) => {
-      queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) => old?.filter((p) => p.id !== id))
+      queryClient.setQueriesData<ProductWithWarehouse[]>({ queryKey: ['products'] }, (old) => old?.filter((p) => p.id !== id))
       queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success('Ürün pasife alındı')
     },
@@ -77,7 +80,7 @@ export function useRecordStockMovement() {
             ? variables.quantity
             : 0
       if (delta !== 0) {
-        queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) =>
+        queryClient.setQueriesData<ProductWithWarehouse[]>({ queryKey: ['products'] }, (old) =>
           old?.map((p) =>
             p.id === variables.product_id ? { ...p, current_quantity: p.current_quantity + delta } : p,
           ),

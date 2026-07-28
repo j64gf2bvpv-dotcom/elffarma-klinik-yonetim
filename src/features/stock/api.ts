@@ -8,21 +8,27 @@ export interface ProductInput {
   category?: string | null
   unit: string
   critical_stock_threshold: number
+  minimum_stock?: number | null
   unit_cost?: number | null
   unit_price?: number | null
   campaign?: string | null
   expiry_date?: string | null
   barcode?: string | null
+  lot_number?: string | null
+  serial_number?: string | null
   brand_line?: BrandLine | null
+  warehouse_id?: string | null
 }
 
-export async function fetchProducts(search: string, brandLine?: BrandLine): Promise<Product[]> {
-  let query = supabase.from('products').select('*').eq('is_active', true).order('name')
+export type ProductWithWarehouse = Product & { warehouses: { name: string } | null }
+
+export async function fetchProducts(search: string, brandLine?: BrandLine): Promise<ProductWithWarehouse[]> {
+  let query = supabase.from('products').select('*, warehouses(name)').eq('is_active', true).order('name')
   if (search.trim()) query = query.ilike('name', `%${search.trim()}%`)
   if (brandLine) query = query.eq('brand_line', brandLine)
   const { data, error } = await query
   if (error) throw error
-  return data as Product[]
+  return data as unknown as ProductWithWarehouse[]
 }
 
 export async function createProduct(input: ProductInput): Promise<Product> {
