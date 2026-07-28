@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Trash2, ExternalLink } from 'lucide-react'
+import { Trash2, ExternalLink, Banknote, CreditCard, ArrowLeftRight, Wallet } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 
@@ -17,6 +17,30 @@ import type { PaymentWithCustomer } from '@/features/payments/api'
 import { tr } from '@/i18n/tr'
 import { ExportMenu } from '@/components/ExportMenu'
 
+function currency(n: number) {
+  return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
+}
+
+interface KasaRow {
+  date: string
+  nakit: number
+  kredi_karti: number
+  havale: number
+  total: number
+}
+
+function buildKasaRows(payments: PaymentWithCustomer[]): KasaRow[] {
+  const byDay = new Map<string, KasaRow>()
+  for (const p of payments) {
+    const day = format(new Date(p.paid_at), 'yyyy-MM-dd')
+    const row = byDay.get(day) ?? { date: day, nakit: 0, kredi_karti: 0, havale: 0, total: 0 }
+    row[p.payment_method] += Number(p.amount)
+    row.total += Number(p.amount)
+    byDay.set(day, row)
+  }
+  return Array.from(byDay.values()).sort((a, b) => b.date.localeCompare(a.date))
+}
+
 export function PaymentsPage() {
   const [from, setFrom] = React.useState('')
   const [to, setTo] = React.useState('')
@@ -27,6 +51,14 @@ export function PaymentsPage() {
   const deleteMutation = useDeletePayment()
 
   const total = payments.reduce((sum, p) => sum + Number(p.amount), 0)
+  const totalsByMethod = payments.reduce(
+    (acc, p) => {
+      acc[p.payment_method] += Number(p.amount)
+      return acc
+    },
+    { nakit: 0, kredi_karti: 0, havale: 0 },
+  )
+  const kasaRows = React.useMemo(() => buildKasaRows(payments), [payments])
 
   return (
     <div>
@@ -80,6 +112,77 @@ export function PaymentsPage() {
           </p>
         </CardContent>
       </Card>
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
+              <Banknote className="size-5" />
+            </span>
+            <div>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Nakit</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.nakit)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <CreditCard className="size-5" />
+            </span>
+            <div>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Kredi Kartı</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.kredi_karti)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.55_0.18_250)]/15 text-[oklch(0.55_0.18_250)]">
+              <ArrowLeftRight className="size-5" />
+            </span>
+            <div>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Havale</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.havale)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {kasaRows.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader className="flex-row items-center gap-2">
+            <Wallet className="size-4 text-primary" />
+            <CardTitle className="text-base">Kasa Özeti — Günlük Döküm</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tarih</TableHead>
+                  <TableHead>Nakit</TableHead>
+                  <TableHead>Kredi Kartı</TableHead>
+                  <TableHead>Havale</TableHead>
+                  <TableHead>Gün Toplamı</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {kasaRows.map((row) => (
+                  <TableRow key={row.date}>
+                    <TableCell className="font-medium">
+                      {format(new Date(row.date), 'd MMMM yyyy, EEEE', { locale: trLocale })}
+                    </TableCell>
+                    <TableCell>{row.nakit > 0 ? currency(row.nakit) : '—'}</TableCell>
+                    <TableCell>{row.kredi_karti > 0 ? currency(row.kredi_karti) : '—'}</TableCell>
+                    <TableCell>{row.havale > 0 ? currency(row.havale) : '—'}</TableCell>
+                    <TableCell className="font-semibold">{currency(row.total)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="p-0">

@@ -7,6 +7,8 @@ import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -24,9 +26,29 @@ function netAmount(s: { type: string; quantity: number; unit_price: number }) {
   return (s.type === 'return' ? -1 : 1) * s.quantity * Number(s.unit_price)
 }
 
-function SalesTab() {
-  const { data: sales = [], isLoading } = useSales()
+function filterSalesByDate<T extends { sale_date: string }>(sales: T[], from: string, to: string): T[] {
+  return sales.filter((s) => {
+    if (from && s.sale_date < from) return false
+    if (to && s.sale_date > to) return false
+    return true
+  })
+}
+
+function SalesTab({
+  from,
+  to,
+  onFromChange,
+  onToChange,
+}: {
+  from: string
+  to: string
+  onFromChange: (v: string) => void
+  onToChange: (v: string) => void
+}) {
+  const { data: allSales = [], isLoading } = useSales()
   const deleteMutation = useDeleteSale()
+
+  const sales = React.useMemo(() => filterSalesByDate(allSales, from, to), [allSales, from, to])
 
   const totalSales = sales.filter((s) => s.type === 'sale').reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
   const totalReturns = sales
@@ -35,6 +57,17 @@ function SalesTab() {
 
   return (
     <div>
+      <div className="mb-4 grid grid-cols-2 gap-4 sm:flex sm:items-end">
+        <div className="grid gap-1.5">
+          <Label htmlFor="sales-from">Başlangıç</Label>
+          <Input id="sales-from" type="date" value={from} onChange={(e) => onFromChange(e.target.value)} />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="sales-to">Bitiş</Label>
+          <Input id="sales-to" type="date" value={to} onChange={(e) => onToChange(e.target.value)} />
+        </div>
+      </div>
+
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
@@ -246,9 +279,15 @@ function InvoicesTab() {
 }
 
 export function SalesPage() {
-  const { data: sales = [] } = useSales()
+  const { data: allSales = [] } = useSales()
   const { data: invoices = [] } = useInvoices()
   const [tab, setTab] = React.useState('sales')
+  const [salesFrom, setSalesFrom] = React.useState('')
+  const [salesTo, setSalesTo] = React.useState('')
+  const sales = React.useMemo(
+    () => filterSalesByDate(allSales, salesFrom, salesTo),
+    [allSales, salesFrom, salesTo],
+  )
 
   return (
     <div>
@@ -322,7 +361,7 @@ export function SalesPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="sales">
-          <SalesTab />
+          <SalesTab from={salesFrom} to={salesTo} onFromChange={setSalesFrom} onToChange={setSalesTo} />
         </TabsContent>
         <TabsContent value="reports">
           <ReportsTab />
