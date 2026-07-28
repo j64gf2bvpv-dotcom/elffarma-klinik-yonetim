@@ -1,6 +1,11 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
-import type { Congress, CongressParticipant, CongressParticipantProduct } from '@/types/database'
+import type {
+  Congress,
+  CongressParticipant,
+  CongressParticipantProduct,
+  CongressRemainingProduct,
+} from '@/types/database'
 
 export interface CongressInput {
   name: string
@@ -125,5 +130,34 @@ export async function fetchAllParticipantProductSales(): Promise<ParticipantProd
     .order('created_at', { ascending: false })
   if (error) throw error
   return data as unknown as ParticipantProductSaleRow[]
+}
+
+export interface RemainingProductInput {
+  congress_id: string
+  product_name: string
+  quantity: number
+  unit_price: number
+}
+
+export async function fetchRemainingProducts(congressId: string): Promise<CongressRemainingProduct[]> {
+  const { data, error } = await supabase
+    .from('congress_remaining_products')
+    .select('*')
+    .eq('congress_id', congressId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data as CongressRemainingProduct[]
+}
+
+export async function createRemainingProduct(input: RemainingProductInput): Promise<CongressRemainingProduct> {
+  return offlineInsert<CongressRemainingProduct>(
+    'congress_remaining_products',
+    { ...input },
+    `Kalan ürün: ${input.product_name}`,
+  )
+}
+
+export async function deleteRemainingProduct(id: string): Promise<void> {
+  return offlineDelete('congress_remaining_products', id, 'Kalan ürün silme')
 }
 

@@ -7,8 +7,10 @@ import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ExportMenu } from '@/components/ExportMenu'
 import { CongressForm } from '@/features/congresses/CongressForm'
 import { useCongresses } from '@/features/congresses/hooks'
+import type { Congress } from '@/types/database'
 
 export function CongressesPage() {
   const { data: congresses = [], isLoading } = useCongresses()
@@ -18,7 +20,24 @@ export function CongressesPage() {
       <PageHeader
         title="Kongreler"
         description="Kongre ve workshopları, katılan doktorları ve maliyetleri yönetin"
-        actions={<CongressForm />}
+        actions={
+          <div className="flex gap-2">
+            <ExportMenu<Congress>
+              title="Kongre Listesi"
+              filename="kongreler"
+              rows={congresses}
+              columns={[
+                { header: 'Kongre', value: (c) => c.name },
+                { header: 'Başlangıç', value: (c) => c.start_date ?? '' },
+                { header: 'Bitiş', value: (c) => c.end_date ?? '' },
+                { header: 'Katılım Planlandı', value: (c) => (c.will_attend ? 'Evet' : 'Hayır') },
+                { header: 'Tek Kişi Fiyatı', value: (c) => (c.single_person_price != null ? Number(c.single_person_price) : '') },
+                { header: '2 Kişi Fiyatı', value: (c) => (c.two_person_price != null ? Number(c.two_person_price) : '') },
+              ]}
+            />
+            <CongressForm />
+          </div>
+        }
       />
 
       {isLoading && <p className="text-muted-foreground">Yükleniyor...</p>}

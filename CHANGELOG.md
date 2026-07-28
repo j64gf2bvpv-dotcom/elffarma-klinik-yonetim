@@ -3,6 +3,13 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [1.9.0] - 2026-07-29
+
+Geliştirme planı Aşama 5: Kongre ve Workshop yönetimi geliştirildi.
+- **Karlılık Analizi**: Kongre detayında artık gerçek bir Gelir (ürün satışı) − Maliyet (uçak+kayıt+konaklama) = Net Kâr/Zarar hesabı ve kâr marjı % gösteriliyor (önceden hepsi tek bir "paket fiyatı" toplamında karışıktı).
+- **Kalan/Kullanılmayan Ürünler**: Şemada olup hiç bağlanmamış `congress_remaining_products` özelliği hayata geçirildi — ekle/sil ve toplam değer.
+- Kongre listesine dışa aktarım (Excel/Word/PDF) eklendi — daha önce hiç yoktu.
+
 ## [1.8.0] - 2026-07-29
 
 Geliştirme planı Aşama 4: Satış, Tahsilat ve Kasa modülleri geliştirildi.

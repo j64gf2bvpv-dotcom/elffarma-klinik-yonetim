@@ -11,6 +11,9 @@ import {
   Package,
   AlertTriangle,
   UserRound,
+  TrendingUp,
+  TrendingDown,
+  Archive,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -18,14 +21,18 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
 import { CongressForm } from '@/features/congresses/CongressForm'
 import { ParticipantDialog } from '@/features/congresses/ParticipantDialog'
 import { ParticipantProductDialog } from '@/features/congresses/ParticipantProductDialog'
+import { RemainingProductDialog } from '@/features/congresses/RemainingProductDialog'
 import {
   useCongress,
   useDeleteCongress,
   useDeleteParticipantProduct,
+  useDeleteRemainingProduct,
   useParticipants,
+  useRemainingProducts,
 } from '@/features/congresses/hooks'
 
 function currency(n: number) {
@@ -37,8 +44,10 @@ export function CongressDetailPage() {
   const navigate = useNavigate()
   const { data: congress, isLoading } = useCongress(id)
   const { data: participants = [] } = useParticipants(id)
+  const { data: remainingProducts = [] } = useRemainingProducts(id)
   const deleteCongressMutation = useDeleteCongress()
   const deleteProductMutation = useDeleteParticipantProduct()
+  const deleteRemainingMutation = useDeleteRemainingProduct()
 
   if (isLoading) {
     return (
@@ -55,11 +64,16 @@ export function CongressDetailPage() {
       sum + p.congress_participant_products.reduce((s, x) => s + Number(x.quantity) * Number(x.unit_price), 0),
     0,
   )
-  const totalPackagePrice =
-    participants.reduce(
-      (sum, p) => sum + Number(p.flight_cost) + Number(p.registration_cost) + Number(p.accommodation_cost),
-      0,
-    ) + totalProducts
+  const totalAttendanceCost = participants.reduce(
+    (sum, p) => sum + Number(p.flight_cost) + Number(p.registration_cost) + Number(p.accommodation_cost),
+    0,
+  )
+  const netProfit = totalProducts - totalAttendanceCost
+  const profitMargin = totalProducts > 0 ? (netProfit / totalProducts) * 100 : null
+  const remainingProductsValue = remainingProducts.reduce(
+    (sum, p) => sum + Number(p.quantity) * Number(p.unit_price),
+    0,
+  )
 
   const salesByRep = new Map<
     string,
@@ -130,7 +144,7 @@ export function CongressDetailPage() {
         }
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Katılımcı Doktor</CardTitle>
@@ -141,19 +155,38 @@ export function CongressDetailPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Toplam Katılım Paket Fiyatı</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Toplam Katılım Maliyeti</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold">{currency(totalPackagePrice)}</p>
-            <p className="text-xs text-muted-foreground">Uçak + Kayıt + Konaklama + Ürünler</p>
+            <p className="text-2xl font-semibold">{currency(totalAttendanceCost)}</p>
+            <p className="text-xs text-muted-foreground">Uçak + Kayıt + Konaklama</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Toplam Ürün Tutarı</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Toplam Ürün Geliri</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{currency(totalProducts)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Net Kâr / Zarar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p
+              className={cn(
+                'flex items-center gap-1.5 text-2xl font-semibold',
+                netProfit >= 0 ? 'text-success' : 'text-destructive',
+              )}
+            >
+              {netProfit >= 0 ? <TrendingUp className="size-5" /> : <TrendingDown className="size-5" />}
+              {currency(netProfit)}
+            </p>
+            {profitMargin != null && (
+              <p className="text-xs text-muted-foreground">Marj: %{profitMargin.toFixed(1)}</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -267,6 +300,50 @@ export function CongressDetailPage() {
       </div>
 
       <Separator className="my-6" />
+
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <Archive className="size-4 text-muted-foreground" /> Kalan / Kullanılmayan Ürünler
+        </h2>
+        <RemainingProductDialog congressId={congress.id} />
+      </div>
+
+      <Card className="mb-6">
+        <CardContent className={remainingProducts.length === 0 ? '' : 'grid gap-1.5 p-4'}>
+          {remainingProducts.length === 0 ? (
+            <p className="text-muted-foreground p-4 text-sm">
+              Kongreye götürülüp kullanılmayan/dağıtılmayan ürün kaydı yok.
+            </p>
+          ) : (
+            <>
+              {remainingProducts.map((p) => (
+                <div key={p.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <span className="flex items-center gap-2">
+                    <Package className="text-muted-foreground size-3.5" />
+                    {p.product_name}{' '}
+                    <span className="text-muted-foreground">
+                      × {p.quantity} @ {currency(Number(p.unit_price))}
+                    </span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{currency(Number(p.quantity) * Number(p.unit_price))}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteRemainingMutation.mutate({ id: p.id, congressId: congress.id })}
+                    >
+                      <Trash2 className="text-destructive size-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <p className="mt-1 text-right text-sm font-medium">
+                Kullanılmayan Ürün Değeri: {currency(remainingProductsValue)}
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="mb-6">
         <CardHeader>
