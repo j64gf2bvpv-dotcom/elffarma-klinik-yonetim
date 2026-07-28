@@ -12,7 +12,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ExpenseForm } from '@/features/expenses/ExpenseForm'
 import { useDeleteExpense, useExpenses } from '@/features/expenses/hooks'
+import { ExportMenu } from '@/components/ExportMenu'
 import { tr } from '@/i18n/tr'
+import type { Expense } from '@/types/database'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -38,7 +40,22 @@ export function ExpensesPage() {
       <PageHeader
         title="Giderler"
         description="Hizmet giderlerini ve diğer giderleri kaydedin ve takip edin"
-        actions={<ExpenseForm />}
+        actions={
+          <div className="flex gap-2">
+            <ExportMenu<Expense>
+              title="Gider Listesi"
+              filename="giderler"
+              rows={expenses}
+              columns={[
+                { header: 'Tarih', value: (e) => format(new Date(e.expense_date), 'd.MM.yyyy HH:mm') },
+                { header: 'Kategori', value: (e) => tr.expenseCategory[e.category] },
+                { header: 'Tutar', value: (e) => Number(e.amount) },
+                { header: 'Açıklama', value: (e) => e.description ?? '' },
+              ]}
+            />
+            <ExpenseForm />
+          </div>
+        }
       />
 
       <div className="mb-4 grid grid-cols-2 gap-4 sm:flex sm:items-end">

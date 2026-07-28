@@ -1,7 +1,7 @@
 import * as React from 'react'
-import { format } from 'date-fns'
+import { format, startOfMonth, subMonths } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ShoppingCart, Undo2, Trash2, BarChart3, FileText } from 'lucide-react'
+import { ShoppingCart, Undo2, Trash2, BarChart3, FileText, TrendingUp, TrendingDown } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +17,9 @@ import { SaleForm } from '@/features/sales/SaleForm'
 import { useSales, useDeleteSale } from '@/features/sales/hooks'
 import { InvoiceForm } from '@/features/invoices/InvoiceForm'
 import { useInvoices, useDeleteInvoice } from '@/features/invoices/hooks'
+import { usePayments } from '@/features/payments/hooks'
+import { useExpenses } from '@/features/expenses/hooks'
+import { cn } from '@/lib/utils'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -149,6 +152,99 @@ function SalesTab({
   )
 }
 
+function IncomeExpenseReport() {
+  const sixMonthsAgo = React.useMemo(() => startOfMonth(subMonths(new Date(), 5)), [])
+  const { data: payments = [] } = usePayments({ from: sixMonthsAgo.toISOString() })
+  const { data: expenses = [] } = useExpenses({ from: sixMonthsAgo.toISOString() })
+
+  const rows = React.useMemo(() => {
+    const buckets = new Map<string, { label: string; income: number; expense: number }>()
+    for (let i = 5; i >= 0; i--) {
+      const d = subMonths(new Date(), i)
+      const key = format(d, 'yyyy-MM')
+      buckets.set(key, { label: format(d, 'MMM yyyy', { locale: trLocale }), income: 0, expense: 0 })
+    }
+    for (const p of payments) {
+      const key = format(new Date(p.paid_at), 'yyyy-MM')
+      if (buckets.has(key)) buckets.get(key)!.income += Number(p.amount)
+    }
+    for (const e of expenses) {
+      const key = format(new Date(e.expense_date), 'yyyy-MM')
+      if (buckets.has(key)) buckets.get(key)!.expense += Number(e.amount)
+    }
+    return Array.from(buckets.values())
+  }, [payments, expenses])
+
+  const totalIncome = rows.reduce((sum, r) => sum + r.income, 0)
+  const totalExpense = rows.reduce((sum, r) => sum + r.expense, 0)
+  const netProfit = totalIncome - totalExpense
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle className="text-base">Gelir-Gider Raporu (Son 6 Ay)</CardTitle>
+        <ExportMenu
+          filename="gelir-gider-raporu"
+          title="Gelir-Gider Raporu"
+          columns={[
+            { header: 'Ay', value: (r) => r.label },
+            { header: 'Gelir', value: (r) => r.income },
+            { header: 'Gider', value: (r) => r.expense },
+            { header: 'Net Kâr', value: (r) => r.income - r.expense },
+          ]}
+          rows={rows}
+        />
+      </CardHeader>
+      <CardContent>
+        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border p-3">
+            <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Toplam Gelir</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalIncome)}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Toplam Gider</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalExpense)}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Net Kâr</p>
+            <p
+              className={cn(
+                'mt-1 flex items-center gap-1.5 text-xl font-semibold tabular-nums',
+                netProfit >= 0 ? 'text-success' : 'text-destructive',
+              )}
+            >
+              {netProfit >= 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
+              {currency(netProfit)}
+            </p>
+          </div>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Ay</TableHead>
+              <TableHead>Gelir</TableHead>
+              <TableHead>Gider</TableHead>
+              <TableHead>Net Kâr</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.label}>
+                <TableCell className="font-medium">{r.label}</TableCell>
+                <TableCell className="text-success">{currency(r.income)}</TableCell>
+                <TableCell className="text-destructive">{currency(r.expense)}</TableCell>
+                <TableCell className={cn('font-medium', r.income - r.expense >= 0 ? 'text-success' : 'text-destructive')}>
+                  {currency(r.income - r.expense)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+}
+
 function ReportsTab() {
   const { data: sales = [] } = useSales()
 
@@ -185,6 +281,8 @@ function ReportsTab() {
 
   return (
     <div className="grid gap-6">
+      <IncomeExpenseReport />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">En Çok Satan / İade Edilen Ürünler</CardTitle>

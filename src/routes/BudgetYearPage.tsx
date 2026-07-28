@@ -10,6 +10,7 @@ import { CurrencyInput } from '@/components/ui/currency-input'
 import { Badge } from '@/components/ui/badge'
 import { useBudgetTargets, useSaveBudgetTarget } from '@/features/budget/hooks'
 import { usePayments } from '@/features/payments/hooks'
+import { ExportMenu } from '@/components/ExportMenu'
 
 const MONTH_NAMES = [
   'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
@@ -89,6 +90,17 @@ export function BudgetYearPage() {
         description="Aylık ciro hedeflerini girin, gerçekleşen tahsilatlarla karşılaştırın"
         actions={
           <div className="flex items-center gap-2">
+            <ExportMenu
+              title={`Bütçe Yılı ${year}`}
+              filename={`butce-${year}`}
+              rows={rows}
+              columns={[
+                { header: 'Ay', value: (r) => r.name },
+                { header: 'Hedef', value: (r) => r.target },
+                { header: 'Gerçekleşen', value: (r) => r.actual },
+                { header: 'Fark', value: (r) => r.diff },
+              ]}
+            />
             <Button variant="outline" size="icon" onClick={() => setYear((y) => y - 1)}>
               <ChevronLeft className="size-4" />
             </Button>
