@@ -46,7 +46,6 @@ import {
   CalendarClock,
   BellRing,
   Trophy,
-  Stethoscope,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -179,6 +178,72 @@ function useCountUp(value: number, duration = 700) {
   return display
 }
 
+const rankTone: Record<number, string> = {
+  1: 'bg-gradient-to-br from-[oklch(0.88_0.14_92)] to-[oklch(0.72_0.16_70)] text-[oklch(0.32_0.06_70)] shadow-[0_2px_8px_-1px_oklch(0.72_0.16_70/0.6)]',
+  2: 'bg-gradient-to-br from-[oklch(0.86_0.01_0)] to-[oklch(0.68_0.01_0)] text-[oklch(0.28_0.01_0)] shadow-[0_2px_8px_-1px_oklch(0.68_0.01_0/0.5)]',
+  3: 'bg-gradient-to-br from-[oklch(0.76_0.11_50)] to-[oklch(0.58_0.13_40)] text-[oklch(0.24_0.05_40)] shadow-[0_2px_8px_-1px_oklch(0.58_0.13_40/0.5)]',
+}
+
+function TopProductRow({
+  rank,
+  name,
+  qty,
+  revenue,
+  maxRevenue,
+  delayMs,
+}: {
+  rank: number
+  name: string
+  qty: number
+  revenue: number
+  maxRevenue: number
+  delayMs: number
+}) {
+  const qtyAnimated = useCountUp(qty, 900)
+  const revenueAnimated = useCountUp(revenue, 900)
+  const [barVisible, setBarVisible] = React.useState(false)
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setBarVisible(true), delayMs + 150)
+    return () => clearTimeout(t)
+  }, [delayMs])
+
+  const pct = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0
+
+  return (
+    <div
+      className="group animate-in fade-in-0 slide-in-from-left-3 flex items-center gap-3 rounded-xl border p-3 duration-500 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+      style={{ animationDelay: `${delayMs}ms`, animationFillMode: 'backwards' }}
+    >
+      <span
+        className={cn(
+          'flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ring-1 ring-white/40 transition-transform duration-300 group-hover:scale-110',
+          rankTone[rank] ?? 'bg-primary/10 text-primary shadow-none',
+        )}
+      >
+        {rank}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="truncate text-sm font-medium">{name}</span>
+          <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+            {Math.round(qtyAnimated).toLocaleString('tr-TR')} adet
+          </span>
+        </div>
+        <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-primary to-[oklch(0.7_0.16_50)] transition-[width] duration-1000 ease-out"
+            style={{ width: `${barVisible ? pct : 0}%` }}
+          />
+        </div>
+      </div>
+      <span className="shrink-0 text-right font-semibold tabular-nums">
+        {revenueAnimated.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+      </span>
+    </div>
+  )
+}
+
 type WidgetId =
   | 'stats'
   | 'quick_actions'
@@ -187,7 +252,6 @@ type WidgetId =
   | 'revenue_chart'
   | 'sales_trend'
   | 'top_products'
-  | 'doctor_performance'
   | 'stock_status'
   | 'upcoming_congresses'
   | 'exchange_rates'
@@ -208,7 +272,6 @@ const defaultLayout: LayoutItem[] = [
   { id: 'revenue_chart', visible: true },
   { id: 'sales_trend', visible: true },
   { id: 'top_products', visible: true },
-  { id: 'doctor_performance', visible: true },
   { id: 'stock_status', visible: true },
   { id: 'upcoming_congresses', visible: true },
   { id: 'exchange_rates', visible: true },
@@ -225,7 +288,6 @@ const widgetLabels: Record<WidgetId, string> = {
   revenue_chart: 'Tahsilat Trendi',
   sales_trend: 'Satış Trendi',
   top_products: 'En Çok Satan Ürünler',
-  doctor_performance: 'Doktor Performansı',
   stock_status: 'Stok Durumu',
   upcoming_congresses: 'Yaklaşan Kongreler',
   exchange_rates: 'Döviz Kurları',
@@ -495,21 +557,6 @@ export function DashboardPage() {
   }, [generalSalesThisMonth, congressSalesThisMonth])
 
   const topProductsMax = Math.max(1, ...topProducts.map((p) => p.revenue))
-
-  const doctorPerformance = React.useMemo(() => {
-    const byCustomer = new Map<string, { name: string; total: number }>()
-    for (const p of monthPayments) {
-      const cur = byCustomer.get(p.customer_id) ?? { name: p.customers?.full_name ?? '—', total: 0 }
-      cur.total += Number(p.amount)
-      byCustomer.set(p.customer_id, cur)
-    }
-    return Array.from(byCustomer.entries())
-      .map(([customerId, v]) => ({ customerId, ...v }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 5)
-  }, [monthPayments])
-
-  const doctorPerformanceMax = Math.max(1, ...doctorPerformance.map((d) => d.total))
 
   const upcomingReminders = React.useMemo(() => {
     const now = new Date()
@@ -966,10 +1013,11 @@ export function DashboardPage() {
 
     if (id === 'top_products') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 overflow-hidden duration-700" style={delayStyle}>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Trophy className="size-4 text-primary" /> En Çok Satan Ürünler
+              <Trophy className="size-4 text-[oklch(0.72_0.16_70)]" /> En Çok Satan Ürünler
+              <span className="text-muted-foreground text-xs font-normal">Bu ay</span>
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/satislar">
@@ -977,74 +1025,20 @@ export function DashboardPage() {
               </Link>
             </Button>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent className="grid gap-2.5">
             {topProducts.length === 0 && (
               <p className="text-sm text-muted-foreground">Bu ay henüz ürün satışı yok</p>
             )}
             {topProducts.map((p, i) => (
-              <div key={p.name} className="grid gap-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2 font-medium">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary">
-                      {i + 1}
-                    </span>
-                    <span className="truncate">{p.name}</span>
-                  </span>
-                  <span className="text-muted-foreground shrink-0 tabular-nums">
-                    {p.qty} adet ·{' '}
-                    {p.revenue.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
-                  </span>
-                </div>
-                <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
-                  <div
-                    className="bg-primary h-full rounded-full"
-                    style={{ width: `${(p.revenue / topProductsMax) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )
-    }
-
-    if (id === 'doctor_performance') {
-      return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Stethoscope className="size-4 text-primary" /> Doktor Performansı
-            </CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/musteriler">
-                Tüm doktorlar <ArrowRight className="size-3.5" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {doctorPerformance.length === 0 && (
-              <p className="text-sm text-muted-foreground">Bu ay henüz tahsilat yok</p>
-            )}
-            {doctorPerformance.map((d, i) => (
-              <div key={d.customerId} className="grid gap-1">
-                <div className="flex items-center justify-between text-sm">
-                  <Link to={`/musteriler/${d.customerId}`} className="flex items-center gap-2 font-medium hover:underline">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary">
-                      {i + 1}
-                    </span>
-                    <span className="truncate">{d.name}</span>
-                  </Link>
-                  <span className="text-muted-foreground shrink-0 tabular-nums">
-                    {d.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
-                  </span>
-                </div>
-                <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
-                  <div
-                    className="h-full rounded-full bg-[oklch(0.55_0.15_155)]"
-                    style={{ width: `${(d.total / doctorPerformanceMax) * 100}%` }}
-                  />
-                </div>
-              </div>
+              <TopProductRow
+                key={p.name}
+                rank={i + 1}
+                name={p.name}
+                qty={p.qty}
+                revenue={p.revenue}
+                maxRevenue={topProductsMax}
+                delayMs={i * 90}
+              />
             ))}
           </CardContent>
         </Card>
