@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
+import { DailyMovementImportButton } from '@/features/stock/DailyMovementImportButton'
 import { readCell, type ImportSummary } from '@/lib/importData'
 import type { BrandLine, Product } from '@/types/database'
 
@@ -333,6 +334,7 @@ export function StockPage() {
                 },
               ]}
             />
+            <DailyMovementImportButton />
             <ProductForm />
           </div>
         }

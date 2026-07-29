@@ -32,6 +32,39 @@ export function readExcelFile(file: File): Promise<Record<string, unknown>[]> {
   })
 }
 
+/**
+ * Basit "tek satır başlık" varsayımı yapmayan, ham hücre matrisi (array of
+ * arrays) döner — birleştirilmiş (merge) tarih başlıkları gibi çok satırlı /
+ * düzensiz başlık yapıları için kullanılır (bkz. günlük stok hareket şablonu).
+ */
+export function readExcelSheetAsMatrix(file: File): Promise<unknown[][]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const data = event.target?.result
+        const workbook = XLSX.read(data, { type: 'array' })
+        const sheet = workbook.Sheets[workbook.SheetNames[0]]
+        resolve(XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' }))
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error(String(err)))
+      }
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('Dosya okunamadı'))
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+/** Birleştirilmiş (merge) hücrelerde değer sadece en soldaki hücrede durur — bir satırda, verilen sütundan
+ * geriye doğru ilk dolu hücreyi bulur (örn. bir tarih başlığının hangi kişi sütununa ait olduğunu bulmak için). */
+export function nearestLeftValue(row: unknown[], fromIndex: number): string {
+  for (let i = fromIndex; i >= 0; i--) {
+    const value = String(row[i] ?? '').trim()
+    if (value) return value
+  }
+  return ''
+}
+
 /** Bir satırdan, birden fazla olası sütun başlığı (eş anlamlı) deneyerek ilk dolu değeri döner. */
 export function readCell(row: Record<string, unknown>, ...keys: string[]): string {
   for (const key of keys) {
