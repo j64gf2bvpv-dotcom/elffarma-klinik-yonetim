@@ -81,6 +81,8 @@ const schema = z.object({
   sales_rep_id: z.string().optional(),
   region_id: z.string().nullable().optional(),
   is_active: z.boolean(),
+  sample_monthly_quota: z.coerce.number().int().min(0).optional(),
+  sample_yearly_quota: z.coerce.number().int().min(0).optional(),
   products: z.array(
     z.object({
       product_id: z.string().min(1, 'Ürün seçin'),
@@ -131,6 +133,8 @@ function defaultValues(customer: Customer | undefined): FormInput {
     sales_rep_id: customer?.sales_rep_id ?? NO_SALES_REP,
     region_id: customer?.region_id ?? null,
     is_active: customer?.is_active ?? true,
+    sample_monthly_quota: customer?.sample_monthly_quota ?? undefined,
+    sample_yearly_quota: customer?.sample_yearly_quota ?? undefined,
     products: [],
   }
 }
@@ -197,6 +201,8 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
       sales_rep_id: values.sales_rep_id && values.sales_rep_id !== NO_SALES_REP ? values.sales_rep_id : null,
       region_id: values.region_id ?? null,
       is_active: values.is_active,
+      sample_monthly_quota: values.sample_monthly_quota ?? null,
+      sample_yearly_quota: values.sample_yearly_quota ?? null,
     }
     if (customer) {
       await updateMutation.mutateAsync({ id: customer.id, input })
@@ -523,6 +529,34 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
                       <FormLabel>Bölge (opsiyonel)</FormLabel>
                       <FormControl>
                         <RegionPicker value={field.value} onChange={field.onChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="sample_monthly_quota"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Aylık Numune Kotası (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" {...field} value={field.value as number | string} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="sample_yearly_quota"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Yıllık Numune Kotası (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" {...field} value={field.value as number | string} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

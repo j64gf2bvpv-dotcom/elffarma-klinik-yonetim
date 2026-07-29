@@ -1,5 +1,5 @@
 export type StaffRole = 'admin' | 'staff'
-export type MovementType = 'in' | 'out' | 'adjustment'
+export type MovementType = 'in' | 'out' | 'adjustment' | 'sample'
 export type PaymentMethod = 'nakit' | 'kredi_karti' | 'havale'
 export type DoctorType = 'sahis' | 'hastane'
 export type BrandLine = 'dermakor' | 'swiss'
@@ -47,6 +47,8 @@ export interface Customer {
   region_id: string | null
   is_active: boolean
   photo_url: string | null
+  sample_monthly_quota: number | null
+  sample_yearly_quota: number | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -268,6 +270,35 @@ export interface CommissionAdjustment {
   period_end: string
   note: string | null
   created_by: string | null
+  created_at: string
+}
+
+export type SampleRequestStatus = 'pending' | 'approved' | 'rejected' | 'shipped' | 'delivered'
+
+export interface SampleRequest {
+  id: string
+  customer_id: string
+  sales_rep_id: string | null
+  request_date: string
+  status: SampleRequestStatus
+  tracking_number: string | null
+  shipped_at: string | null
+  delivered_at: string | null
+  delivered_to: string | null
+  note: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SampleItem {
+  id: string
+  sample_request_id: string
+  product_id: string
+  lot_no: string | null
+  expiry_date: string | null
+  quantity: number
+  unit_price: number
   created_at: string
 }
 

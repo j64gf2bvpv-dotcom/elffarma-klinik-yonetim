@@ -71,7 +71,7 @@ export function useRecordStockMovement() {
     mutationFn: (input: RecordMovementInput) => recordStockMovement(input),
     onSuccess: (_data, variables) => {
       const delta =
-        variables.movement_type === 'out'
+        variables.movement_type === 'out' || variables.movement_type === 'sample'
           ? -variables.quantity
           : variables.movement_type === 'in'
             ? variables.quantity

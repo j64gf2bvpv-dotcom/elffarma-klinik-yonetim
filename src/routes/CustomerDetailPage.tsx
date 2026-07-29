@@ -51,6 +51,17 @@ import { useSalesReps } from '@/features/salesReps/hooks'
 import { useParticipationsByDoctorName } from '@/features/congresses/hooks'
 import { useVisitsByDoctorName } from '@/features/doctorVisits/hooks'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
+import { SampleRequestForm } from '@/features/samples/SampleRequestForm'
+import { useSampleRequests } from '@/features/samples/hooks'
+import type { SampleRequestStatus } from '@/types/database'
+
+const sampleStatusLabels: Record<SampleRequestStatus, string> = {
+  pending: 'Beklemede',
+  approved: 'Onaylandı',
+  rejected: 'Reddedildi',
+  shipped: 'Kargoya Verildi',
+  delivered: 'Teslim Edildi',
+}
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
 import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { cn } from '@/lib/utils'
@@ -72,6 +83,7 @@ export function CustomerDetailPage() {
   const { data: salesReps = [] } = useSalesReps()
   const { data: congressParticipations = [] } = useParticipationsByDoctorName(customer?.full_name)
   const { data: visits = [] } = useVisitsByDoctorName(customer?.full_name)
+  const { data: sampleRequests = [] } = useSampleRequests({ customerId: id })
   const summary = useCustomerSummary(customer)
   const deletePendingMutation = useDeletePendingProduct()
   const deleteMutation = useDeleteCustomer()
@@ -532,9 +544,29 @@ export function CustomerDetailPage() {
         </TabsContent>
 
         <TabsContent value="numuneler">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Numune Talepleri</h2>
+            <SampleRequestForm defaultCustomerId={customer.id} />
+          </div>
           <Card>
-            <CardContent className="p-6 text-sm text-muted-foreground">
-              Numune takibi modülü yakında eklenecek.
+            <CardContent className={sampleRequests.length === 0 ? 'p-6' : 'grid gap-1.5 p-4'}>
+              {sampleRequests.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Numune talebi bulunamadı.</p>
+              ) : (
+                sampleRequests.map((r) => (
+                  <div key={r.id} className="rounded-md border px-3 py-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">
+                        {format(new Date(r.request_date), 'd MMMM yyyy', { locale: trLocale })}
+                      </p>
+                      <Badge variant="outline">{sampleStatusLabels[r.status]}</Badge>
+                    </div>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {r.sample_items.map((item) => `${item.products?.name ?? item.product_id} × ${item.quantity}`).join(', ')}
+                    </p>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -1045,6 +1045,104 @@ drop policy if exists "commission_adjustments_all_staff" on public.commission_ad
 create policy "commission_adjustments_all_staff" on public.commission_adjustments for all
   using (public.is_active_staff()) with check (public.is_active_staff());
 
+-- =========================================================
+-- 26. NUMUNE TAKİBİ (Faz 3 ERP genişletmesi)
+-- =========================================================
+
+-- stock_movements: numune çıkışı da 'out' gibi stoktan düşer ama ayrı raporlanabilsin diye
+-- kendi hareket türü olsun. record_stock_movement RPC'si bunu 'out' ile aynı yönde işler.
+alter table public.stock_movements drop constraint if exists stock_movements_movement_type_check;
+alter table public.stock_movements add constraint stock_movements_movement_type_check
+  check (movement_type in ('in', 'out', 'adjustment', 'sample'));
+
+create or replace function public.record_stock_movement(
+  p_product_id uuid,
+  p_movement_type text,
+  p_quantity integer,
+  p_reason text default null,
+  p_customer_id uuid default null,
+  p_note text default null
+)
+returns public.stock_movements
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_delta integer;
+  v_row public.stock_movements;
+begin
+  if not public.is_active_staff() then
+    raise exception 'Yetkisiz işlem';
+  end if;
+
+  v_delta := case p_movement_type
+    when 'in' then p_quantity
+    when 'out' then -p_quantity
+    when 'sample' then -p_quantity
+    when 'adjustment' then p_quantity
+    else 0
+  end;
+
+  insert into public.stock_movements (product_id, movement_type, quantity, reason, customer_id, staff_id, note)
+  values (p_product_id, p_movement_type, abs(p_quantity), p_reason, p_customer_id, auth.uid(), p_note)
+  returning * into v_row;
+
+  update public.products
+  set current_quantity = greatest(0, current_quantity + v_delta),
+      updated_at = now()
+  where id = p_product_id;
+
+  return v_row;
+end;
+$$;
+
+-- customers: aylık/yıllık numune kotası (opsiyonel — boşsa limitsiz kabul edilir)
+alter table public.customers add column if not exists sample_monthly_quota integer;
+alter table public.customers add column if not exists sample_yearly_quota integer;
+
+create table if not exists public.sample_requests (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customers (id) on delete cascade,
+  sales_rep_id uuid references public.sales_reps (id) on delete set null,
+  request_date date not null default current_date,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'shipped', 'delivered')),
+  tracking_number text,
+  shipped_at date,
+  delivered_at date,
+  delivered_to text,
+  note text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists sample_requests_customer_idx on public.sample_requests (customer_id);
+
+drop trigger if exists set_updated_at on public.sample_requests;
+create trigger set_updated_at before update on public.sample_requests
+  for each row execute function public.set_updated_at();
+
+alter table public.sample_requests enable row level security;
+drop policy if exists "sample_requests_all_staff" on public.sample_requests;
+create policy "sample_requests_all_staff" on public.sample_requests for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+create table if not exists public.sample_items (
+  id uuid primary key default gen_random_uuid(),
+  sample_request_id uuid not null references public.sample_requests (id) on delete cascade,
+  product_id uuid not null references public.products (id),
+  lot_no text,
+  expiry_date date,
+  quantity integer not null check (quantity > 0),
+  unit_price numeric(10, 2) not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists sample_items_request_idx on public.sample_items (sample_request_id);
+
+alter table public.sample_items enable row level security;
+drop policy if exists "sample_items_all_staff" on public.sample_items;
+create policy "sample_items_all_staff" on public.sample_items for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

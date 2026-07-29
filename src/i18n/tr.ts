@@ -4,6 +4,7 @@ export const tr = {
     customers: 'Cari Kart',
     clinics: 'Klinikler',
     commissions: 'Prim Hesaplama',
+    samples: 'Numune Takibi',
     stock: 'Stok Yönetimi',
     payments: 'Tahsilatlar',
     congresses: 'Kongreler',
@@ -20,6 +21,7 @@ export const tr = {
     in: 'Giriş',
     out: 'Çıkış',
     adjustment: 'Düzeltme',
+    sample: 'Numune',
   } as Record<string, string>,
   paymentMethod: {
     nakit: 'Nakit',
