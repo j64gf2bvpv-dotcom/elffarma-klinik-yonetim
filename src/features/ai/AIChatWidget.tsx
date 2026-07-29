@@ -6,7 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { useAIService } from './useAIService'
-import { useAISettings, useAIConversations, useCreateAIConversation, useAIMessages, useAppendAIMessage } from './hooks'
+import {
+  useAISettings,
+  useAIConversations,
+  useCreateAIConversation,
+  useAIMessages,
+  useAppendAIMessage,
+  useDeleteAIConversation,
+} from './hooks'
 import { AIServiceError, type AIMessage } from './types'
 
 /**
@@ -20,6 +27,7 @@ export function AIChatWidget() {
   const { data: conversations = [] } = useAIConversations()
   const createConversationMutation = useCreateAIConversation()
   const appendMessageMutation = useAppendAIMessage()
+  const deleteConversationMutation = useDeleteAIConversation()
 
   const [open, setOpen] = React.useState(false)
   const [conversationId, setConversationId] = React.useState<string | undefined>(undefined)
@@ -28,10 +36,17 @@ export function AIChatWidget() {
   const [streamingText, setStreamingText] = React.useState('')
   const [sending, setSending] = React.useState(false)
   const scrollRef = React.useRef<HTMLDivElement>(null)
+  const hasAutoSelectedRef = React.useRef(false)
 
   React.useEffect(() => {
-    if (!conversationId && conversations.length > 0) setConversationId(conversations[0].id)
-  }, [conversationId, conversations])
+    // Sadece ilk açılışta son konuşmayı otomatik geri yükle — "Yeni Sohbet"
+    // conversationId'yi bilerek undefined yaptığında burada tekrar en son
+    // konuşmaya sıçramamalı (bu, "silinmiyor" gibi görünen asıl hataydı).
+    if (hasAutoSelectedRef.current) return
+    if (conversations.length === 0) return
+    hasAutoSelectedRef.current = true
+    setConversationId(conversations[0].id)
+  }, [conversations])
 
   React.useEffect(() => {
     if (open) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
@@ -79,9 +94,12 @@ export function AIChatWidget() {
     }
   }
 
-  function handleNewConversation() {
-    setConversationId(undefined)
+  async function handleDeleteConversation() {
     setStreamingText('')
+    if (conversationId) {
+      await deleteConversationMutation.mutateAsync(conversationId)
+    }
+    setConversationId(undefined)
   }
 
   return (
@@ -106,7 +124,7 @@ export function AIChatWidget() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="size-7" onClick={handleNewConversation} title="Yeni Sohbet">
+            <Button variant="ghost" size="icon" className="size-7" onClick={handleDeleteConversation} title="Sohbeti Sil">
               <Trash2 className="size-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="size-7" onClick={() => setOpen(false)} title="Kapat">
