@@ -1,8 +1,8 @@
 import * as React from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, Trash2, Package } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -27,12 +27,21 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { normalizeTrPhone } from '@/features/whatsapp/normalizePhone'
+import { ProductCombobox } from '@/features/stock/ProductCombobox'
+import { useRecordStockMovement } from '@/features/stock/hooks'
+import { useCreateSale } from '@/features/sales/hooks'
 import { useCreateCustomer, useHospitalNames, useUpdateCustomer } from './hooks'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
 import { tr } from '@/i18n/tr'
-import type { Customer } from '@/types/database'
+import type { Customer, Product } from '@/types/database'
 
 const NO_PAYMENT_METHOD = '__none__'
+
+function todayDate() {
+  const d = new Date()
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+  return d.toISOString().slice(0, 10)
+}
 
 const schema = z.object({
   full_name: z.string().min(2, 'Ad soyad gerekli'),
@@ -54,6 +63,14 @@ const schema = z.object({
   tax_number: z.string().optional(),
   vat_rate: z.coerce.number().min(0).max(100).optional(),
   preferred_payment_method: z.string().optional(),
+  products: z.array(
+    z.object({
+      product_id: z.string().min(1, 'Ürün seçin'),
+      product_name: z.string().min(1),
+      quantity: z.coerce.number().int().positive('Adet 0’dan büyük olmalı'),
+      unit_price: z.coerce.number().min(0),
+    }),
+  ),
 })
 
 type FormInput = z.input<typeof schema>
@@ -68,6 +85,8 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateCustomer()
   const updateMutation = useUpdateCustomer()
+  const createSaleMutation = useCreateSale()
+  const recordMovementMutation = useRecordStockMovement()
   const { data: hospitalNames = [] } = useHospitalNames()
 
   const form = useForm<FormInput, unknown, FormValues>({
@@ -89,8 +108,11 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
       tax_number: customer?.tax_number ?? '',
       vat_rate: customer?.vat_rate ?? undefined,
       preferred_payment_method: customer?.preferred_payment_method ?? NO_PAYMENT_METHOD,
+      products: [],
     },
   })
+
+  const productFields = useFieldArray({ control: form.control, name: 'products' })
 
   const doctorType = form.watch('doctor_type')
 
@@ -113,6 +135,7 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
         tax_number: customer?.tax_number ?? '',
         vat_rate: customer?.vat_rate ?? undefined,
         preferred_payment_method: customer?.preferred_payment_method ?? NO_PAYMENT_METHOD,
+        products: [],
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,12 +168,41 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
     if (customer) {
       await updateMutation.mutateAsync({ id: customer.id, input })
     } else {
-      await createMutation.mutateAsync(input)
+      const created = await createMutation.mutateAsync(input)
+      for (const product of values.products) {
+        await createSaleMutation.mutateAsync({
+          type: 'sale',
+          customer_id: created.id,
+          product_id: product.product_id,
+          product_name: product.product_name,
+          quantity: product.quantity,
+          unit_price: product.unit_price,
+          sale_date: todayDate(),
+        })
+        await recordMovementMutation.mutateAsync({
+          product_id: product.product_id,
+          movement_type: 'out',
+          quantity: product.quantity,
+          reason: 'Satış',
+          customer_id: created.id,
+          note: `${created.full_name} için yeni kayıt satışı`,
+        })
+      }
     }
     setOpen(false)
   }
 
-  const submitting = createMutation.isPending || updateMutation.isPending
+  const submitting =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    createSaleMutation.isPending ||
+    recordMovementMutation.isPending
+
+  function handleSelectProduct(index: number, product: Product) {
+    form.setValue(`products.${index}.product_id`, product.id, { shouldValidate: true })
+    form.setValue(`products.${index}.product_name`, product.name, { shouldValidate: true })
+    form.setValue(`products.${index}.unit_price`, product.unit_price ?? 0)
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -429,6 +481,80 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
                 </FormItem>
               )}
             />
+
+            {!customer && (
+              <div className="grid gap-3 rounded-lg border p-3">
+                <div className="flex items-center justify-between">
+                  <p className="flex items-center gap-1.5 text-sm font-medium">
+                    <Package className="size-4" /> Aldığı Ürünler (opsiyonel)
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      productFields.append({ product_id: '', product_name: '', quantity: 1, unit_price: 0 })
+                    }
+                  >
+                    <Plus className="size-3.5" /> Ürün Ekle
+                  </Button>
+                </div>
+                {productFields.fields.length === 0 && (
+                  <p className="text-muted-foreground text-sm">
+                    Doktor kaydedilirken aynı anda aldığı ürünleri de ekleyebilirsiniz.
+                  </p>
+                )}
+                {productFields.fields.map((field, index) => (
+                  <div key={field.id} className="grid gap-2 rounded-md border p-2.5">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <ProductCombobox
+                          value={form.watch(`products.${index}.product_id`)}
+                          onChange={(product) => handleSelectProduct(index, product)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => productFields.remove(index)}
+                      >
+                        <Trash2 className="size-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`products.${index}.quantity`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Adet</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="1" {...field} value={field.value as number | string} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`products.${index}.unit_price`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Birim Fiyat</FormLabel>
+                            <FormControl>
+                              <CurrencyInput value={field.value} onChange={field.onChange} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Vazgeç
