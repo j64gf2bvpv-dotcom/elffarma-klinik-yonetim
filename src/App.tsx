@@ -8,6 +8,8 @@ import { ResetPasswordPage } from '@/routes/ResetPasswordPage'
 import { DashboardPage } from '@/routes/DashboardPage'
 import { CustomersPage } from '@/routes/CustomersPage'
 import { CustomerDetailPage } from '@/routes/CustomerDetailPage'
+import { ClinicsPage } from '@/routes/ClinicsPage'
+import { ClinicDetailPage } from '@/routes/ClinicDetailPage'
 import { CariHesapPage } from '@/routes/CariHesapPage'
 import { CariHesapListPage } from '@/routes/CariHesapListPage'
 import { BudgetYearPage } from '@/routes/BudgetYearPage'
@@ -53,6 +55,8 @@ function App() {
             <Route index element={<DashboardPage />} />
             <Route path="musteriler" element={<CustomersPage />} />
             <Route path="musteriler/:id" element={<CustomerDetailPage />} />
+            <Route path="klinikler" element={<ClinicsPage />} />
+            <Route path="klinikler/:id" element={<ClinicDetailPage />} />
             <Route path="cari-hesap" element={<CariHesapListPage />} />
             <Route path="cari-hesap/:id" element={<CariHesapPage />} />
             <Route path="stok" element={<StockPage />} />

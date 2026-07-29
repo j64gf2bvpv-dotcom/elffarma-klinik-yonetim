@@ -2,6 +2,7 @@ export const tr = {
   nav: {
     dashboard: 'Ana Panel',
     customers: 'Cari Kart',
+    clinics: 'Klinikler',
     stock: 'Stok Yönetimi',
     payments: 'Tahsilatlar',
     congresses: 'Kongreler',

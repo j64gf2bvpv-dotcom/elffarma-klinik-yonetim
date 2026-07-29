@@ -13,6 +13,7 @@ import {
   fetchCongress,
   fetchCongresses,
   fetchParticipants,
+  fetchParticipationsByDoctorName,
   fetchRemainingProducts,
   updateCongress,
   updateParticipant,
@@ -48,6 +49,14 @@ export function useParticipants(congressId: string | undefined) {
     queryKey: ['congress_participants', congressId],
     queryFn: () => fetchParticipants(congressId as string),
     enabled: !!congressId,
+  })
+}
+
+export function useParticipationsByDoctorName(doctorName: string | undefined) {
+  return useQuery({
+    queryKey: ['congress_participants', 'by_doctor_name', doctorName],
+    queryFn: () => fetchParticipationsByDoctorName(doctorName as string),
+    enabled: !!doctorName,
   })
 }
 

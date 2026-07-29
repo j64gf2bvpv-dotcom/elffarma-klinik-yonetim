@@ -31,6 +31,22 @@ export interface Customer {
   tax_number: string | null
   vat_rate: number | null
   preferred_payment_method: PaymentMethod | null
+  doctor_code: string | null
+  specialty: string | null
+  clinic_id: string | null
+  mobile_phone: string | null
+  whatsapp_phone: string | null
+  website: string | null
+  instagram: string | null
+  district: string | null
+  tax_office: string | null
+  assistant_info: string | null
+  secretary_info: string | null
+  referrer: string | null
+  sales_rep_id: string | null
+  region_id: string | null
+  is_active: boolean
+  photo_url: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -167,6 +183,60 @@ export interface SalesRep {
   id: string
   name: string
   is_active: boolean
+  photo_url: string | null
+  email: string | null
+  vehicle_info: string | null
+  license_info: string | null
+  hire_date: string | null
+  commission_rate: number | null
+  salary: number | null
+  bank_info: string | null
+  sales_target: number | null
+  region_id: string | null
+  created_at: string
+}
+
+export interface Region {
+  id: string
+  name: string
+  parent_region_id: string | null
+  created_at: string
+}
+
+export interface Clinic {
+  id: string
+  name: string
+  authorized_persons: string | null
+  address: string | null
+  phone: string | null
+  tax_office: string | null
+  tax_number: string | null
+  employee_count: number | null
+  branch_count: number | null
+  sales_rep_id: string | null
+  region_id: string | null
+  category: string | null
+  is_vip: boolean
+  risk_limit: number | null
+  discount_rate: number | null
+  payment_method: string | null
+  working_days: string[]
+  maps_url: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type AttachmentOwnerType = 'customer' | 'clinic' | 'congress' | 'workshop'
+
+export interface Attachment {
+  id: string
+  owner_type: AttachmentOwnerType
+  owner_id: string
+  file_path: string
+  file_name: string
+  uploaded_by: string | null
   created_at: string
 }
 

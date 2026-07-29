@@ -16,6 +16,9 @@ import {
   type PendingProductInput,
 } from './api'
 import type { Customer, CustomerPendingProduct } from '@/types/database'
+import { usePayments } from '@/features/payments/hooks'
+import { useSales } from '@/features/sales/hooks'
+import { useInvoices } from '@/features/invoices/hooks'
 
 const customerListPredicate = (query: { queryKey: readonly unknown[] }) =>
   query.queryKey[1] !== 'hospital_names' && query.queryKey[1] !== 'detail'
@@ -125,4 +128,46 @@ export function useDeletePendingProduct() {
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
   })
+}
+
+/**
+ * Doktor detay sayfasındaki özet kartlar için mevcut feature'lardan (payments/sales/invoices)
+ * canlı hesaplanan toplam alış/satış/tahsilat/bakiye + son işlem tarihleri.
+ * Numune/prim toplamları henüz modellenmedi (Faz 2-3), bu alanlar o fazlar tamamlanınca
+ * buraya eklenecek — şimdilik hook'u çağıran taraf null olarak ele almalı.
+ */
+export function useCustomerSummary(customer: Customer | undefined) {
+  const customerId = customer?.id
+  const { data: payments = [] } = usePayments({ customerId })
+  const { data: allSales = [] } = useSales()
+  const { data: allInvoices = [] } = useInvoices()
+
+  const sales = allSales.filter((s) => s.customer_id === customerId)
+  const invoices = allInvoices.filter((inv) => inv.customer_id === customerId)
+
+  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0)
+  const totalSold = sales
+    .filter((s) => s.type === 'sale')
+    .reduce((sum, s) => sum + Number(s.quantity) * Number(s.unit_price), 0)
+  const totalReturned = sales
+    .filter((s) => s.type === 'return')
+    .reduce((sum, s) => sum + Number(s.quantity) * Number(s.unit_price), 0)
+  const totalInvoiced = invoices.reduce((sum, inv) => sum + Number(inv.amount), 0)
+  const remainingBalance = customer?.total_debt != null ? Number(customer.total_debt) - totalPaid : null
+
+  const lastPayment = payments[0]
+  const lastSale = [...sales].sort((a, b) => b.sale_date.localeCompare(a.sale_date))[0]
+
+  return {
+    totalPaid,
+    totalSold,
+    totalReturned,
+    totalInvoiced,
+    remainingBalance,
+    lastPaymentAt: lastPayment?.paid_at ?? null,
+    lastSaleAt: lastSale?.sale_date ?? null,
+    // Faz 2-3 tamamlanana kadar sabit placeholder:
+    totalSamples: null as number | null,
+    totalCommission: null as number | null,
+  }
 }

@@ -26,6 +26,20 @@ export async function fetchVisitsInRange(from: string, to: string, salesRepId?: 
   return data as DoctorVisit[]
 }
 
+/**
+ * doctor_visits'te henüz customer_id FK'si yok (doctor_name serbest metin) — doktor
+ * detay sayfasının ZİYARETLER sekmesi bu yüzden isim eşleştirmesiyle çalışır.
+ */
+export async function fetchVisitsByDoctorName(doctorName: string): Promise<DoctorVisit[]> {
+  const { data, error } = await supabase
+    .from('doctor_visits')
+    .select('*')
+    .eq('doctor_name', doctorName)
+    .order('visit_date', { ascending: false })
+  if (error) throw error
+  return data as DoctorVisit[]
+}
+
 export async function createVisit(input: DoctorVisitInput): Promise<DoctorVisit> {
   return offlineInsert<DoctorVisit>('doctor_visits', { ...input }, `Doktor ziyareti: ${input.doctor_name}`)
 }

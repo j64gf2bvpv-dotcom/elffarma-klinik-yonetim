@@ -71,6 +71,23 @@ export async function fetchParticipants(congressId: string): Promise<Participant
   return data as unknown as ParticipantWithProducts[]
 }
 
+export type ParticipationWithCongress = CongressParticipant & { congresses: { name: string; start_date: string | null } | null }
+
+/**
+ * congress_participants doktora customer_id FK'si ile değil doctor_name serbest metniyle
+ * bağlı (henüz FK'ye geçirilmedi) — doktor detay sayfasının KONGRELER sekmesi bu yüzden
+ * isim eşleştirmesiyle çalışır.
+ */
+export async function fetchParticipationsByDoctorName(doctorName: string): Promise<ParticipationWithCongress[]> {
+  const { data, error } = await supabase
+    .from('congress_participants')
+    .select('*, congresses(name, start_date)')
+    .eq('doctor_name', doctorName)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as unknown as ParticipationWithCongress[]
+}
+
 export async function createParticipant(input: ParticipantInput): Promise<CongressParticipant> {
   return offlineInsert<CongressParticipant>(
     'congress_participants',

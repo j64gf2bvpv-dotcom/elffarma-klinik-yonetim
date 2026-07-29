@@ -33,11 +33,15 @@ import {
   ReceiptText,
   CreditCard,
   Coins,
+  Building2,
+  Building,
+  Hospital,
 } from 'lucide-react'
 
 export type NavKey =
   | 'dashboard'
   | 'customers'
+  | 'clinics'
   | 'stock'
   | 'payments'
   | 'congresses'
@@ -69,6 +73,7 @@ export const iconSets: IconSet[] = [
     icons: {
       dashboard: Gauge,
       customers: UserRound,
+      clinics: Building2,
       stock: PackageSearch,
       payments: Banknote,
       congresses: Presentation,
@@ -90,6 +95,7 @@ export const iconSets: IconSet[] = [
     icons: {
       dashboard: LayoutDashboard,
       customers: Users,
+      clinics: Building,
       stock: Boxes,
       payments: Wallet,
       congresses: GraduationCap,
@@ -111,6 +117,7 @@ export const iconSets: IconSet[] = [
     icons: {
       dashboard: PieChart,
       customers: CircleUserRound,
+      clinics: Hospital,
       stock: PackageCheck,
       payments: CircleDollarSign,
       congresses: Landmark,

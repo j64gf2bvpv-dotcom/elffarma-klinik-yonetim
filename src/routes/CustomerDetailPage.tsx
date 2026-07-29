@@ -19,7 +19,10 @@ import {
   ShoppingCart,
   Undo2,
   Receipt,
-  History,
+  Globe,
+  AtSign,
+  MessageCircle,
+  Users,
 } from 'lucide-react'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 
@@ -29,10 +32,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CustomerForm } from '@/features/customers/CustomerForm'
 import { PendingProductDialog } from '@/features/customers/PendingProductDialog'
 import {
   useCustomer,
+  useCustomerSummary,
   useDeleteCustomer,
   useDeletePendingProduct,
   usePendingProducts,
@@ -41,6 +46,11 @@ import { usePayments } from '@/features/payments/hooks'
 import { PaymentForm } from '@/features/payments/PaymentForm'
 import { useSales } from '@/features/sales/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
+import { useClinic } from '@/features/clinics/hooks'
+import { useSalesReps } from '@/features/salesReps/hooks'
+import { useParticipationsByDoctorName } from '@/features/congresses/hooks'
+import { useVisitsByDoctorName } from '@/features/doctorVisits/hooks'
+import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
 import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { cn } from '@/lib/utils'
@@ -58,6 +68,11 @@ export function CustomerDetailPage() {
   const { data: allSales = [] } = useSales()
   const { data: allInvoices = [] } = useInvoices()
   const { data: pendingProducts = [] } = usePendingProducts(id)
+  const { data: clinic } = useClinic(customer?.clinic_id ?? undefined)
+  const { data: salesReps = [] } = useSalesReps()
+  const { data: congressParticipations = [] } = useParticipationsByDoctorName(customer?.full_name)
+  const { data: visits = [] } = useVisitsByDoctorName(customer?.full_name)
+  const summary = useCustomerSummary(customer)
   const deletePendingMutation = useDeletePendingProduct()
   const deleteMutation = useDeleteCustomer()
   const [confirmOpen, setConfirmOpen] = React.useState(false)
@@ -76,6 +91,7 @@ export function CustomerDetailPage() {
   const lastPayment = payments[0]
   const remainingBalance = customer.total_debt != null ? Number(customer.total_debt) - totalPaid : null
   const totalPending = pendingProducts.reduce((sum, p) => sum + Number(p.quantity) * Number(p.unit_price), 0)
+  const salesRep = salesReps.find((r) => r.id === customer.sales_rep_id)
 
   const activityTimeline = [
     ...payments.map((p) => ({
@@ -158,160 +174,293 @@ export function CustomerDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="grid gap-6 md:col-span-1">
+      <div className="mb-6 flex flex-wrap gap-1.5">
+        {customer.doctor_code && <Badge variant="outline">{customer.doctor_code}</Badge>}
+        <Badge variant={customer.is_active ? 'secondary' : 'destructive'}>
+          {customer.is_active ? 'Aktif' : 'Pasif'}
+        </Badge>
+        {customer.doctor_type === 'hastane' ? (
+          <Badge variant="outline">
+            <Building2 className="size-3" /> {customer.hospital_name || 'Hastane'}
+          </Badge>
+        ) : (
+          <Badge variant="secondary">
+            <User className="size-3" /> Şahıs
+          </Badge>
+        )}
+        {customer.specialty && <Badge variant="outline">{customer.specialty}</Badge>}
+        {clinic && (
+          <Badge variant="outline">
+            <Building2 className="size-3" /> {clinic.name}
+          </Badge>
+        )}
+        {salesRep && (
+          <Badge variant="outline">
+            <Users className="size-3" /> {salesRep.name}
+          </Badge>
+        )}
+        {customer.province && (
+          <Badge variant="outline">
+            <MapPin className="size-3" /> {customer.province}
+            {customer.district ? ` / ${customer.district}` : ''}
+          </Badge>
+        )}
+      </div>
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">İletişim Bilgileri</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 text-sm">
-            <div className="flex flex-wrap gap-1.5">
-              {customer.doctor_type === 'hastane' ? (
-                <Badge variant="outline">
-                  <Building2 className="size-3" /> {customer.hospital_name || 'Hastane'}
-                </Badge>
-              ) : (
-                <Badge variant="secondary">
-                  <User className="size-3" /> Şahıs
-                </Badge>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium text-muted-foreground">TOPLAM SATIŞ</p>
+            <p className="text-lg font-semibold tabular-nums">{currency(summary.totalSold)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium text-muted-foreground">TOPLAM TAHSİLAT</p>
+            <p className="text-lg font-semibold tabular-nums text-success">{currency(summary.totalPaid)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium text-muted-foreground">BAKİYE</p>
+            <p
+              className={cn(
+                'text-lg font-semibold tabular-nums',
+                summary.remainingBalance && summary.remainingBalance > 0 ? 'text-destructive' : 'text-success',
               )}
-              {customer.province && (
-                <Badge variant="outline">
-                  <MapPin className="size-3" /> {customer.province}
-                </Badge>
-              )}
-            </div>
-            <p className="flex items-center gap-2">
-              <Phone className="size-4 text-muted-foreground" />
-              {formatTrPhoneForDisplay(customer.phone)}
+            >
+              {summary.remainingBalance != null ? currency(summary.remainingBalance) : '—'}
             </p>
-            {customer.email && (
-              <p className="flex items-center gap-2">
-                <Mail className="size-4 text-muted-foreground" />
-                <a href={`mailto:${customer.email}`} className="hover:underline">
-                  {customer.email}
-                </a>
-              </p>
-            )}
-            {customer.next_payment_due &&
-              (() => {
-                const status = getPaymentDueStatus(customer.next_payment_due)
-                return (
-                  <Badge
-                    variant={status === 'overdue' ? 'destructive' : status === 'upcoming' ? 'warning' : 'outline'}
-                    className="w-fit"
-                  >
-                    <CalendarClock className="size-3" /> Ödeme Vadesi:{' '}
-                    {format(new Date(customer.next_payment_due), 'd MMMM yyyy', { locale: trLocale })}
-                  </Badge>
-                )
-              })()}
-            {customer.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-1">
-                {customer.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    <Tag className="size-3" />
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {customer.notes && (
-              <div className="pt-2">
-                <p className="mb-1 text-xs font-medium text-muted-foreground">NOTLAR</p>
-                <p className="whitespace-pre-wrap">{customer.notes}</p>
-              </div>
-            )}
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-sm text-muted-foreground">Cari Hesap</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to={`/cari-hesap/${customer.id}`}>Hesabı Görüntüle</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="grid gap-4 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-medium text-muted-foreground">TİCARİ ALACAKLAR</p>
-              <p className="text-lg font-semibold tabular-nums">
-                {customer.total_debt != null ? currency(Number(customer.total_debt)) : '—'}
-              </p>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">TAHSİLAT</p>
-                {lastPayment && (
-                  <p className="text-muted-foreground text-xs">
-                    Son: {format(new Date(lastPayment.paid_at), 'd MMMM yyyy', { locale: trLocale })}
-                  </p>
-                )}
-              </div>
-              <p className="text-lg font-semibold tabular-nums text-success">{currency(totalPaid)}</p>
-            </div>
-            <div className="flex items-center justify-between gap-3 border-t pt-3">
-              <p className="text-xs font-medium text-muted-foreground">BAKİYE</p>
-              <p
-                className={`text-lg font-semibold tabular-nums ${remainingBalance && remainingBalance > 0 ? 'text-destructive' : 'text-success'}`}
-              >
-                {remainingBalance != null ? currency(remainingBalance) : '—'}
-              </p>
-            </div>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium text-muted-foreground">SON TAHSİLAT</p>
+            <p className="text-lg font-semibold">
+              {summary.lastPaymentAt
+                ? format(new Date(summary.lastPaymentAt), 'd MMM yyyy', { locale: trLocale })
+                : '—'}
+            </p>
           </CardContent>
         </Card>
+      </div>
 
-        {(customer.tc_no ||
-          customer.address ||
-          customer.tax_number ||
-          customer.vat_rate != null ||
-          customer.preferred_payment_method) && (
+      <Tabs defaultValue="genel">
+        <TabsList className="mb-4 h-auto flex-wrap justify-start">
+          <TabsTrigger value="genel">Genel</TabsTrigger>
+          <TabsTrigger value="iletisim">İletişim</TabsTrigger>
+          <TabsTrigger value="finans">Finans</TabsTrigger>
+          <TabsTrigger value="satin-almalar">Satın Almalar</TabsTrigger>
+          <TabsTrigger value="urunler">Ürünler</TabsTrigger>
+          <TabsTrigger value="numuneler">Numuneler</TabsTrigger>
+          <TabsTrigger value="workshop">Workshop</TabsTrigger>
+          <TabsTrigger value="kongreler">Kongreler</TabsTrigger>
+          <TabsTrigger value="ziyaretler">Ziyaretler</TabsTrigger>
+          <TabsTrigger value="tahsilat">Tahsilat</TabsTrigger>
+          <TabsTrigger value="belgeler">Belgeler</TabsTrigger>
+          <TabsTrigger value="mesajlar">Mesajlar</TabsTrigger>
+          <TabsTrigger value="crm">CRM</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="genel">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Fatura Bilgileri</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Genel Bilgiler</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm">
-              {customer.tc_no && (
+              {customer.referrer && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">TC KİMLİK NO</p>
-                  <p>{customer.tc_no}</p>
+                  <p className="text-xs font-medium text-muted-foreground">REFERANS KİŞİ</p>
+                  <p>{customer.referrer}</p>
                 </div>
               )}
-              {customer.tax_number && (
+              {customer.assistant_info && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">VERGİ NUMARASI</p>
-                  <p>{customer.tax_number}</p>
+                  <p className="text-xs font-medium text-muted-foreground">ASİSTAN</p>
+                  <p>{customer.assistant_info}</p>
                 </div>
               )}
-              {customer.vat_rate != null && (
+              {customer.secretary_info && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">KDV ORANI</p>
-                  <p>%{customer.vat_rate}</p>
+                  <p className="text-xs font-medium text-muted-foreground">SEKRETER</p>
+                  <p>{customer.secretary_info}</p>
                 </div>
               )}
-              {customer.preferred_payment_method && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">TERCİH EDİLEN ÖDEME ŞEKLİ</p>
-                  <p>{tr.paymentMethod[customer.preferred_payment_method]}</p>
+              {customer.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {customer.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      <Tag className="size-3" />
+                      {tag}
+                    </Badge>
+                  ))}
                 </div>
+              )}
+              {customer.notes && (
+                <div className="pt-2">
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">NOTLAR</p>
+                  <p className="whitespace-pre-wrap">{customer.notes}</p>
+                </div>
+              )}
+              {!customer.referrer && !customer.assistant_info && !customer.secretary_info && !customer.notes && (
+                <p className="text-muted-foreground">Ek bilgi girilmemiş.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="iletisim">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-muted-foreground">İletişim Bilgileri</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 text-sm">
+              <p className="flex items-center gap-2">
+                <Phone className="size-4 text-muted-foreground" />
+                {formatTrPhoneForDisplay(customer.phone)}
+              </p>
+              {customer.mobile_phone && (
+                <p className="flex items-center gap-2">
+                  <Phone className="size-4 text-muted-foreground" /> {customer.mobile_phone} (cep)
+                </p>
+              )}
+              {customer.whatsapp_phone && (
+                <p className="flex items-center gap-2">
+                  <MessageCircle className="size-4 text-muted-foreground" /> {customer.whatsapp_phone}
+                </p>
+              )}
+              {customer.email && (
+                <p className="flex items-center gap-2">
+                  <Mail className="size-4 text-muted-foreground" />
+                  <a href={`mailto:${customer.email}`} className="hover:underline">
+                    {customer.email}
+                  </a>
+                </p>
+              )}
+              {customer.website && (
+                <p className="flex items-center gap-2">
+                  <Globe className="size-4 text-muted-foreground" />
+                  <a href={customer.website} target="_blank" rel="noreferrer" className="hover:underline">
+                    {customer.website}
+                  </a>
+                </p>
+              )}
+              {customer.instagram && (
+                <p className="flex items-center gap-2">
+                  <AtSign className="size-4 text-muted-foreground" /> {customer.instagram}
+                </p>
               )}
               {customer.address && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">ADRES</p>
+                <div className="pt-2">
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">ADRES</p>
                   <p className="whitespace-pre-wrap">{customer.address}</p>
                 </div>
               )}
             </CardContent>
           </Card>
-        )}
-        </div>
+        </TabsContent>
 
-        <div className="md:col-span-2">
-          <div className="mb-3 flex items-center gap-2">
-            <History className="size-4 text-primary" />
-            <h2 className="text-base font-semibold">İşlem Geçmişi</h2>
+        <TabsContent value="finans">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader className="flex-row items-center justify-between">
+                <CardTitle className="text-sm text-muted-foreground">Cari Hesap</CardTitle>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to={`/cari-hesap/${customer.id}`}>Hesabı Görüntüle</Link>
+                </Button>
+              </CardHeader>
+              <CardContent className="grid gap-4 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-medium text-muted-foreground">TİCARİ ALACAKLAR</p>
+                  <p className="text-lg font-semibold tabular-nums">
+                    {customer.total_debt != null ? currency(Number(customer.total_debt)) : '—'}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">TAHSİLAT</p>
+                    {lastPayment && (
+                      <p className="text-muted-foreground text-xs">
+                        Son: {format(new Date(lastPayment.paid_at), 'd MMMM yyyy', { locale: trLocale })}
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-lg font-semibold tabular-nums text-success">{currency(totalPaid)}</p>
+                </div>
+                <div className="flex items-center justify-between gap-3 border-t pt-3">
+                  <p className="text-xs font-medium text-muted-foreground">BAKİYE</p>
+                  <p
+                    className={`text-lg font-semibold tabular-nums ${remainingBalance && remainingBalance > 0 ? 'text-destructive' : 'text-success'}`}
+                  >
+                    {remainingBalance != null ? currency(remainingBalance) : '—'}
+                  </p>
+                </div>
+                {customer.next_payment_due && (
+                  (() => {
+                    const status = getPaymentDueStatus(customer.next_payment_due)
+                    return (
+                      <Badge
+                        variant={status === 'overdue' ? 'destructive' : status === 'upcoming' ? 'warning' : 'outline'}
+                        className="w-fit"
+                      >
+                        <CalendarClock className="size-3" /> Ödeme Vadesi:{' '}
+                        {format(new Date(customer.next_payment_due), 'd MMMM yyyy', { locale: trLocale })}
+                      </Badge>
+                    )
+                  })()
+                )}
+              </CardContent>
+            </Card>
+
+            {(customer.tc_no ||
+              customer.address ||
+              customer.tax_number ||
+              customer.tax_office ||
+              customer.vat_rate != null ||
+              customer.preferred_payment_method) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm text-muted-foreground">Fatura Bilgileri</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 text-sm">
+                  {customer.tc_no && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">TC KİMLİK NO</p>
+                      <p>{customer.tc_no}</p>
+                    </div>
+                  )}
+                  {customer.tax_office && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">VERGİ DAİRESİ</p>
+                      <p>{customer.tax_office}</p>
+                    </div>
+                  )}
+                  {customer.tax_number && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">VERGİ NUMARASI</p>
+                      <p>{customer.tax_number}</p>
+                    </div>
+                  )}
+                  {customer.vat_rate != null && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">KDV ORANI</p>
+                      <p>%{customer.vat_rate}</p>
+                    </div>
+                  )}
+                  {customer.preferred_payment_method && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">TERCİH EDİLEN ÖDEME ŞEKLİ</p>
+                      <p>{tr.paymentMethod[customer.preferred_payment_method]}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
-          <Card className="mb-6">
+        </TabsContent>
+
+        <TabsContent value="satin-almalar">
+          <Card>
             <CardContent className="grid gap-2 p-4">
               {activityTimeline.length === 0 && (
                 <p className="text-muted-foreground py-4 text-center text-sm">Henüz işlem yok</p>
@@ -344,7 +493,108 @@ export function CustomerDetailPage() {
               ))}
             </CardContent>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="urunler">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Eksik Ürünler</h2>
+            <PendingProductDialog customerId={customer.id} />
+          </div>
+          <Card>
+            <CardContent className={pendingProducts.length === 0 ? '' : 'grid gap-1.5 p-4'}>
+              {pendingProducts.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground">Eksik/teslim edilmemiş ürün yok.</p>
+              ) : (
+                <>
+                  {pendingProducts.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                      <span className="flex items-center gap-2">
+                        <Package className="size-3.5 text-muted-foreground" />
+                        {p.product_name}{' '}
+                        <span className="text-muted-foreground">
+                          × {p.quantity} @ {currency(Number(p.unit_price))}
+                        </span>
+                        {p.note && <span className="text-xs text-muted-foreground">({p.note})</span>}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{currency(Number(p.quantity) * Number(p.unit_price))}</span>
+                        <Button variant="ghost" size="icon" onClick={() => deletePendingMutation.mutate(p.id)}>
+                          <Trash2 className="size-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <p className="mt-1 text-right text-sm font-medium">Eksik Ürün Toplamı: {currency(totalPending)}</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="numuneler">
+          <Card>
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              Numune takibi modülü yakında eklenecek.
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="workshop">
+          <Card>
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              Workshop modülü yakında eklenecek.
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="kongreler">
+          <Card>
+            <CardContent className={congressParticipations.length === 0 ? 'p-6' : 'grid gap-1.5 p-4'}>
+              {congressParticipations.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Kongre katılımı bulunamadı.</p>
+              ) : (
+                congressParticipations.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                    <div>
+                      <p className="font-medium">{p.congresses?.name ?? 'Kongre'}</p>
+                      {p.congresses?.start_date && (
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(p.congresses.start_date), 'd MMM yyyy', { locale: trLocale })}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-muted-foreground text-xs">
+                      Uçuş {currency(Number(p.flight_cost))} · Kayıt {currency(Number(p.registration_cost))} · Konaklama{' '}
+                      {currency(Number(p.accommodation_cost))}
+                    </span>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ziyaretler">
+          <Card>
+            <CardContent className={visits.length === 0 ? 'p-6' : 'grid gap-1.5 p-4'}>
+              {visits.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Ziyaret kaydı bulunamadı.</p>
+              ) : (
+                visits.map((v) => (
+                  <div key={v.id} className="rounded-md border px-3 py-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{format(new Date(v.visit_date), 'd MMMM yyyy', { locale: trLocale })}</p>
+                      {v.social_media && <span className="text-xs text-muted-foreground">{v.social_media}</span>}
+                    </div>
+                    {v.notes && <p className="text-muted-foreground mt-1 text-xs whitespace-pre-wrap">{v.notes}</p>}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tahsilat">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold">Tahsilatlar</h2>
             <PaymentForm defaultCustomerId={customer.id} />
@@ -382,53 +632,27 @@ export function CustomerDetailPage() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          <div className="mt-6 mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold">Eksik Ürünler</h2>
-            <PendingProductDialog customerId={customer.id} />
-          </div>
+        <TabsContent value="belgeler">
+          <AttachmentsPanel ownerType="customer" ownerId={customer.id} />
+        </TabsContent>
+
+        <TabsContent value="mesajlar">
           <Card>
-            <CardContent className={pendingProducts.length === 0 ? '' : 'grid gap-1.5 p-4'}>
-              {pendingProducts.length === 0 ? (
-                <p className="p-4 text-sm text-muted-foreground">
-                  Eksik/teslim edilmemiş ürün yok.
-                </p>
-              ) : (
-                <>
-                  {pendingProducts.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Package className="size-3.5 text-muted-foreground" />
-                        {p.product_name}{' '}
-                        <span className="text-muted-foreground">
-                          × {p.quantity} @ {currency(Number(p.unit_price))}
-                        </span>
-                        {p.note && <span className="text-xs text-muted-foreground">({p.note})</span>}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">
-                          {currency(Number(p.quantity) * Number(p.unit_price))}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deletePendingMutation.mutate(p.id)}
-                        >
-                          <Trash2 className="size-3.5 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  <p className="mt-1 text-right text-sm font-medium">Eksik Ürün Toplamı: {currency(totalPending)}</p>
-                </>
-              )}
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              Gönderim geçmişi kaydı yakında eklenecek — yukarıdaki "WhatsApp Gönder" butonuyla şablon seçip
+              mesaj gönderebilirsiniz.
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="crm">
+          <Card>
+            <CardContent className="p-6 text-sm text-muted-foreground">CRM modülü yakında eklenecek.</CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

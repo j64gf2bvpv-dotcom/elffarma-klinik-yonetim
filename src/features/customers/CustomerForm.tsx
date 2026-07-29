@@ -31,11 +31,15 @@ import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useRecordStockMovement } from '@/features/stock/hooks'
 import { useCreateSale } from '@/features/sales/hooks'
 import { useCreateCustomer, useHospitalNames, useUpdateCustomer } from './hooks'
+import { ClinicCombobox } from '@/features/clinics/ClinicCombobox'
+import { RegionPicker } from '@/features/regions/RegionPicker'
+import { useSalesReps } from '@/features/salesReps/hooks'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
 import { tr } from '@/i18n/tr'
 import type { Customer, Product } from '@/types/database'
 
 const NO_PAYMENT_METHOD = '__none__'
+const NO_SALES_REP = '__none__'
 
 function todayDate() {
   const d = new Date()
@@ -63,6 +67,20 @@ const schema = z.object({
   tax_number: z.string().optional(),
   vat_rate: z.coerce.number().min(0).max(100).optional(),
   preferred_payment_method: z.string().optional(),
+  specialty: z.string().optional(),
+  clinic_id: z.string().nullable().optional(),
+  mobile_phone: z.string().optional(),
+  whatsapp_phone: z.string().optional(),
+  website: z.string().optional(),
+  instagram: z.string().optional(),
+  district: z.string().optional(),
+  tax_office: z.string().optional(),
+  assistant_info: z.string().optional(),
+  secretary_info: z.string().optional(),
+  referrer: z.string().optional(),
+  sales_rep_id: z.string().optional(),
+  region_id: z.string().nullable().optional(),
+  is_active: z.boolean(),
   products: z.array(
     z.object({
       product_id: z.string().min(1, 'Ürün seçin'),
@@ -81,6 +99,42 @@ interface CustomerFormProps {
   trigger?: React.ReactNode
 }
 
+function defaultValues(customer: Customer | undefined): FormInput {
+  return {
+    full_name: customer?.full_name ?? '',
+    phone: customer?.phone ?? '',
+    email: customer?.email ?? '',
+    notes: customer?.notes ?? '',
+    tags: customer?.tags?.join(', ') ?? '',
+    is_invoiced: customer?.is_invoiced ?? false,
+    doctor_type: customer?.doctor_type ?? 'sahis',
+    province: customer?.province ?? '',
+    hospital_name: customer?.hospital_name ?? '',
+    next_payment_due: customer?.next_payment_due ?? '',
+    total_debt: customer?.total_debt ?? undefined,
+    tc_no: customer?.tc_no ?? '',
+    address: customer?.address ?? '',
+    tax_number: customer?.tax_number ?? '',
+    vat_rate: customer?.vat_rate ?? undefined,
+    preferred_payment_method: customer?.preferred_payment_method ?? NO_PAYMENT_METHOD,
+    specialty: customer?.specialty ?? '',
+    clinic_id: customer?.clinic_id ?? null,
+    mobile_phone: customer?.mobile_phone ?? '',
+    whatsapp_phone: customer?.whatsapp_phone ?? '',
+    website: customer?.website ?? '',
+    instagram: customer?.instagram ?? '',
+    district: customer?.district ?? '',
+    tax_office: customer?.tax_office ?? '',
+    assistant_info: customer?.assistant_info ?? '',
+    secretary_info: customer?.secretary_info ?? '',
+    referrer: customer?.referrer ?? '',
+    sales_rep_id: customer?.sales_rep_id ?? NO_SALES_REP,
+    region_id: customer?.region_id ?? null,
+    is_active: customer?.is_active ?? true,
+    products: [],
+  }
+}
+
 export function CustomerForm({ customer, trigger }: CustomerFormProps) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateCustomer()
@@ -88,28 +142,11 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
   const createSaleMutation = useCreateSale()
   const recordMovementMutation = useRecordStockMovement()
   const { data: hospitalNames = [] } = useHospitalNames()
+  const { data: salesReps = [] } = useSalesReps()
 
   const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      full_name: customer?.full_name ?? '',
-      phone: customer?.phone ?? '',
-      email: customer?.email ?? '',
-      notes: customer?.notes ?? '',
-      tags: customer?.tags?.join(', ') ?? '',
-      is_invoiced: customer?.is_invoiced ?? false,
-      doctor_type: customer?.doctor_type ?? 'sahis',
-      province: customer?.province ?? '',
-      hospital_name: customer?.hospital_name ?? '',
-      next_payment_due: customer?.next_payment_due ?? '',
-      total_debt: customer?.total_debt ?? undefined,
-      tc_no: customer?.tc_no ?? '',
-      address: customer?.address ?? '',
-      tax_number: customer?.tax_number ?? '',
-      vat_rate: customer?.vat_rate ?? undefined,
-      preferred_payment_method: customer?.preferred_payment_method ?? NO_PAYMENT_METHOD,
-      products: [],
-    },
+    defaultValues: defaultValues(customer),
   })
 
   const productFields = useFieldArray({ control: form.control, name: 'products' })
@@ -118,25 +155,7 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
 
   React.useEffect(() => {
     if (open) {
-      form.reset({
-        full_name: customer?.full_name ?? '',
-        phone: customer?.phone ?? '',
-        email: customer?.email ?? '',
-        notes: customer?.notes ?? '',
-        tags: customer?.tags?.join(', ') ?? '',
-        is_invoiced: customer?.is_invoiced ?? false,
-        doctor_type: customer?.doctor_type ?? 'sahis',
-        province: customer?.province ?? '',
-        hospital_name: customer?.hospital_name ?? '',
-        next_payment_due: customer?.next_payment_due ?? '',
-        total_debt: customer?.total_debt ?? undefined,
-        tc_no: customer?.tc_no ?? '',
-        address: customer?.address ?? '',
-        tax_number: customer?.tax_number ?? '',
-        vat_rate: customer?.vat_rate ?? undefined,
-        preferred_payment_method: customer?.preferred_payment_method ?? NO_PAYMENT_METHOD,
-        products: [],
-      })
+      form.reset(defaultValues(customer))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -164,6 +183,20 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
         values.preferred_payment_method && values.preferred_payment_method !== NO_PAYMENT_METHOD
           ? (values.preferred_payment_method as 'nakit' | 'kredi_karti' | 'havale')
           : null,
+      specialty: values.specialty || null,
+      clinic_id: values.clinic_id ?? null,
+      mobile_phone: values.mobile_phone || null,
+      whatsapp_phone: values.whatsapp_phone || null,
+      website: values.website || null,
+      instagram: values.instagram || null,
+      district: values.district || null,
+      tax_office: values.tax_office || null,
+      assistant_info: values.assistant_info || null,
+      secretary_info: values.secretary_info || null,
+      referrer: values.referrer || null,
+      sales_rep_id: values.sales_rep_id && values.sales_rep_id !== NO_SALES_REP ? values.sales_rep_id : null,
+      region_id: values.region_id ?? null,
+      is_active: values.is_active,
     }
     if (customer) {
       await updateMutation.mutateAsync({ id: customer.id, input })
@@ -303,6 +336,213 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
                 </FormItem>
               )}
             />
+            <div className="grid gap-3 rounded-lg border p-3">
+              <p className="text-sm font-medium">Meslek ve Bağlantı Bilgileri</p>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="specialty"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Uzmanlık (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Örn. Dermatoloji" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="district"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>İlçe (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="clinic_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Çalıştığı Klinik (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <ClinicCombobox value={field.value} onChange={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="mobile_phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cep Telefonu (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="whatsapp_phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WhatsApp (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Web Sitesi (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="instagram"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Instagram (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="@kullaniciadi" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="tax_office"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vergi Dairesi (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="assistant_info"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Asistan Bilgileri (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="secretary_info"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sekreter Bilgileri (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="referrer"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Referans Kişi (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="sales_rep_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Temsilci (opsiyonel)</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value={NO_SALES_REP}>Belirtilmedi</SelectItem>
+                          {salesReps.map((rep) => (
+                            <SelectItem key={rep.id} value={rep.id}>
+                              {rep.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="region_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bölge (opsiyonel)</FormLabel>
+                      <FormControl>
+                        <RegionPicker value={field.value} onChange={field.onChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="is_active"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center gap-2">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(v === true)} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Aktif doktor</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             {doctorType === 'hastane' && (
               <FormField
                 control={form.control}

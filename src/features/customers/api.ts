@@ -20,6 +20,21 @@ export interface CustomerInput {
   tax_number?: string | null
   vat_rate?: number | null
   preferred_payment_method?: PaymentMethod | null
+  specialty?: string | null
+  clinic_id?: string | null
+  mobile_phone?: string | null
+  whatsapp_phone?: string | null
+  website?: string | null
+  instagram?: string | null
+  district?: string | null
+  tax_office?: string | null
+  assistant_info?: string | null
+  secretary_info?: string | null
+  referrer?: string | null
+  sales_rep_id?: string | null
+  region_id?: string | null
+  is_active?: boolean
+  photo_url?: string | null
 }
 
 export type InvoiceFilter = 'all' | 'invoiced' | 'not_invoiced'

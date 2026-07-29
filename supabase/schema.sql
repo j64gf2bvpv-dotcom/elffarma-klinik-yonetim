@@ -841,6 +841,162 @@ create policy "ai_usage_logs_insert_staff" on public.ai_usage_logs for insert
 
 comment on table public.ai_usage_logs is 'AIService çağrılarının denetim/hata/performans kaydı — düzenlenmez, sadece eklenir';
 
+-- =========================================================
+-- 24. DOKTOR/KLİNİK/BÖLGE/TEMSİLCİ (Faz 1 ERP genişletmesi)
+-- =========================================================
+
+-- REGIONS: sınırsız/iç içe bölge ağacı (şehir → ilçe)
+create table if not exists public.regions (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  parent_region_id uuid references public.regions (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists regions_parent_idx on public.regions (parent_region_id);
+
+alter table public.regions enable row level security;
+drop policy if exists "regions_all_staff" on public.regions;
+create policy "regions_all_staff" on public.regions for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+-- CLINICS: doktorların bağlı olduğu klinik/hastane kartı
+create table if not exists public.clinics (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  authorized_persons text,
+  address text,
+  phone text,
+  tax_office text,
+  tax_number text,
+  employee_count integer,
+  branch_count integer,
+  sales_rep_id uuid references public.sales_reps (id) on delete set null,
+  region_id uuid references public.regions (id) on delete set null,
+  category text,
+  is_vip boolean not null default false,
+  risk_limit numeric(12, 2),
+  discount_rate numeric(5, 2),
+  payment_method text,
+  working_days text[] not null default '{}',
+  maps_url text,
+  notes text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists clinics_name_idx on public.clinics using gin (to_tsvector('simple', name));
+
+drop trigger if exists set_updated_at on public.clinics;
+create trigger set_updated_at before update on public.clinics
+  for each row execute function public.set_updated_at();
+
+alter table public.clinics enable row level security;
+drop policy if exists "clinics_all_staff" on public.clinics;
+create policy "clinics_all_staff" on public.clinics for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+-- ATTACHMENTS: doktor/klinik/kongre/workshop "Belgeler" sekmeleri için tek genel dosya-eki tablosu
+create table if not exists public.attachments (
+  id uuid primary key default gen_random_uuid(),
+  owner_type text not null check (owner_type in ('customer', 'clinic', 'congress', 'workshop')),
+  owner_id uuid not null,
+  file_path text not null,
+  file_name text not null,
+  uploaded_by uuid references public.staff (id),
+  created_at timestamptz not null default now()
+);
+create index if not exists attachments_owner_idx on public.attachments (owner_type, owner_id);
+
+alter table public.attachments enable row level security;
+drop policy if exists "attachments_all_staff" on public.attachments;
+create policy "attachments_all_staff" on public.attachments for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+-- documents storage bucket (private, invoices bucket ile aynı auth.uid()-gated desen)
+insert into storage.buckets (id, name, public)
+values ('documents', 'documents', false)
+on conflict (id) do nothing;
+
+drop policy if exists "documents_select_staff" on storage.objects;
+create policy "documents_select_staff" on storage.objects for select
+  using (bucket_id = 'documents' and auth.uid() is not null);
+
+drop policy if exists "documents_insert_staff" on storage.objects;
+create policy "documents_insert_staff" on storage.objects for insert
+  with check (bucket_id = 'documents' and auth.uid() is not null);
+
+drop policy if exists "documents_update_staff" on storage.objects;
+create policy "documents_update_staff" on storage.objects for update
+  using (bucket_id = 'documents' and auth.uid() is not null);
+
+drop policy if exists "documents_delete_staff" on storage.objects;
+create policy "documents_delete_staff" on storage.objects for delete
+  using (bucket_id = 'documents' and auth.uid() is not null);
+
+-- customers (doktorlar): klinik/bölge/temsilci bağlantısı + genişletilmiş iletişim/idari alanlar
+alter table public.customers add column if not exists specialty text;
+alter table public.customers add column if not exists clinic_id uuid references public.clinics (id) on delete set null;
+alter table public.customers add column if not exists mobile_phone text;
+alter table public.customers add column if not exists whatsapp_phone text;
+alter table public.customers add column if not exists website text;
+alter table public.customers add column if not exists instagram text;
+alter table public.customers add column if not exists district text;
+alter table public.customers add column if not exists tax_office text;
+alter table public.customers add column if not exists assistant_info text;
+alter table public.customers add column if not exists secretary_info text;
+alter table public.customers add column if not exists referrer text;
+alter table public.customers add column if not exists sales_rep_id uuid references public.sales_reps (id) on delete set null;
+alter table public.customers add column if not exists region_id uuid references public.regions (id) on delete set null;
+alter table public.customers add column if not exists is_active boolean not null default true;
+alter table public.customers add column if not exists photo_url text;
+
+-- doctor_code: otomatik "DOC-000001" formatında, geriye dönük mevcut kayıtlar da doldurulur
+alter table public.customers add column if not exists doctor_code text;
+alter table public.customers drop constraint if exists customers_doctor_code_key;
+alter table public.customers add constraint customers_doctor_code_key unique (doctor_code);
+
+create sequence if not exists public.doctor_code_seq;
+
+with numbered as (
+  select id, row_number() over (order by created_at) as rn
+  from public.customers
+  where doctor_code is null
+)
+update public.customers c
+set doctor_code = 'DOC-' || lpad(n.rn::text, 6, '0')
+from numbered n
+where c.id = n.id;
+
+select setval('public.doctor_code_seq', greatest((select count(*) from public.customers), 1), true);
+
+create or replace function public.set_doctor_code()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.doctor_code is null then
+    new.doctor_code := 'DOC-' || lpad(nextval('public.doctor_code_seq')::text, 6, '0');
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists set_doctor_code on public.customers;
+create trigger set_doctor_code before insert on public.customers
+  for each row execute function public.set_doctor_code();
+
+-- sales_reps: özlük/performans alanları + bölge bağlantısı
+alter table public.sales_reps add column if not exists photo_url text;
+alter table public.sales_reps add column if not exists email text;
+alter table public.sales_reps add column if not exists vehicle_info text;
+alter table public.sales_reps add column if not exists license_info text;
+alter table public.sales_reps add column if not exists hire_date date;
+alter table public.sales_reps add column if not exists commission_rate numeric(5, 2);
+alter table public.sales_reps add column if not exists salary numeric(12, 2);
+alter table public.sales_reps add column if not exists bank_info text;
+alter table public.sales_reps add column if not exists sales_target numeric(12, 2);
+alter table public.sales_reps add column if not exists region_id uuid references public.regions (id) on delete set null;
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.
