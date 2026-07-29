@@ -138,7 +138,40 @@ export function CustomersPage() {
                 { header: 'Etiketler', value: (c) => c.tags.join(', ') },
               ]}
             />
-            <ImportMenu onImport={handleImport} />
+            <ImportMenu
+              onImport={handleImport}
+              templateFilename="cari-kart-sablon"
+              templateHeaders={[
+                'Ad Soyad',
+                'Telefon',
+                'Tip',
+                'İl',
+                'Hastane',
+                'Ödeme Vadesi',
+                'TC Kimlik No',
+                'Vergi Numarası',
+                'KDV Oranı',
+                'Adres',
+                'Fatura Durumu',
+                'Etiketler',
+              ]}
+              templateSampleRows={[
+                {
+                  'Ad Soyad': 'Dr. Ayşe Yılmaz',
+                  Telefon: '0532 123 45 67',
+                  Tip: 'Şahıs',
+                  İl: 'İstanbul',
+                  Hastane: '',
+                  'Ödeme Vadesi': '2026-08-15',
+                  'TC Kimlik No': '',
+                  'Vergi Numarası': '',
+                  'KDV Oranı': '',
+                  Adres: '',
+                  'Fatura Durumu': 'Faturasız',
+                  Etiketler: 'botoks, vip',
+                },
+              ]}
+            />
             <CustomerForm />
           </div>
         }

@@ -164,7 +164,21 @@ export function PaymentsPage() {
                 { header: 'Fatura No', value: (p) => p.invoice_number ?? '' },
               ]}
             />
-            <ImportMenu onImport={handleImport} />
+            <ImportMenu
+              onImport={handleImport}
+              templateFilename="tahsilat-sablon"
+              templateHeaders={['Doktor', 'Tutar', 'Tarih', 'Yöntem', 'Satış Temsilcisi', 'Açıklama']}
+              templateSampleRows={[
+                {
+                  Doktor: 'Dr. Ayşe Yılmaz',
+                  Tutar: 5000,
+                  Tarih: '15.03.2026',
+                  Yöntem: 'Nakit',
+                  'Satış Temsilcisi': '',
+                  Açıklama: '',
+                },
+              ]}
+            />
             <PaymentForm />
           </div>
         }

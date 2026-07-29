@@ -1,18 +1,37 @@
 import * as React from 'react'
-import { Upload, Loader2 } from 'lucide-react'
+import { Upload, FileSpreadsheet, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { readExcelFile, type ImportSummary } from '@/lib/importData'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { readExcelFile, downloadExcelTemplate, type ImportSummary } from '@/lib/importData'
 
 interface ImportMenuProps {
   onImport: (rows: Record<string, unknown>[]) => Promise<ImportSummary>
+  templateFilename: string
+  templateHeaders: string[]
+  templateSampleRows: Record<string, string | number>[]
   label?: string
 }
 
-export function ImportMenu({ onImport, label = 'İçe Aktar (Excel)' }: ImportMenuProps) {
+export function ImportMenu({
+  onImport,
+  templateFilename,
+  templateHeaders,
+  templateSampleRows,
+  label = 'İçe Aktar',
+}: ImportMenuProps) {
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [importing, setImporting] = React.useState(false)
+
+  function handleDownloadTemplate() {
+    downloadExcelTemplate(templateFilename, templateHeaders, templateSampleRows)
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -51,10 +70,22 @@ export function ImportMenu({ onImport, label = 'İçe Aktar (Excel)' }: ImportMe
   return (
     <>
       <input ref={inputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
-      <Button variant="outline" onClick={() => inputRef.current?.click()} disabled={importing}>
-        {importing ? <Loader2 className="animate-spin" /> : <Upload />}
-        {label}
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" disabled={importing}>
+            {importing ? <Loader2 className="animate-spin" /> : <Upload />}
+            {label}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={handleDownloadTemplate}>
+            <FileSpreadsheet className="text-success" /> Örnek Şablonu İndir (.xlsx)
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => inputRef.current?.click()}>
+            <Upload /> Excel Dosyası Seç...
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   )
 }

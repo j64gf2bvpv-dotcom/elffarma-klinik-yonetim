@@ -1,4 +1,18 @@
 import * as XLSX from 'xlsx'
+import { saveAs } from 'file-saver'
+
+/** İçe aktarma için örnek/şablon bir Excel dosyası üretir — başlıklar gerçek içe aktarma okuyucusuyla birebir eşleşir. */
+export function downloadExcelTemplate(
+  filename: string,
+  headers: string[],
+  sampleRows: Record<string, string | number>[],
+) {
+  const worksheet = XLSX.utils.json_to_sheet(sampleRows, { header: headers })
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Şablon')
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+  saveAs(new Blob([buffer], { type: 'application/octet-stream' }), `${filename}.xlsx`)
+}
 
 export function readExcelFile(file: File): Promise<Record<string, unknown>[]> {
   return new Promise((resolve, reject) => {

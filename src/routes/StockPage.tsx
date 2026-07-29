@@ -299,7 +299,40 @@ export function StockPage() {
                 { header: 'Son Kullanım Tarihi', value: (p) => p.expiry_date ?? '' },
               ]}
             />
-            <ImportMenu onImport={handleImport} />
+            <ImportMenu
+              onImport={handleImport}
+              templateFilename="stok-sablon"
+              templateHeaders={[
+                'Ürün',
+                'SKU',
+                'Kategori',
+                'Birim',
+                'Kritik Stok Eşiği',
+                'Birim Maliyet',
+                'Satış Fiyatı',
+                'Kampanya',
+                'Barkod',
+                'Ürün Hattı',
+                'Son Kullanım Tarihi',
+                'Başlangıç Stoğu',
+              ]}
+              templateSampleRows={[
+                {
+                  Ürün: 'Botoks 100u',
+                  SKU: 'BTX-100',
+                  Kategori: 'Botoks',
+                  Birim: 'adet',
+                  'Kritik Stok Eşiği': 5,
+                  'Birim Maliyet': 800,
+                  'Satış Fiyatı': 1200,
+                  Kampanya: '',
+                  Barkod: '',
+                  'Ürün Hattı': 'Dermakor',
+                  'Son Kullanım Tarihi': '2027-01-01',
+                  'Başlangıç Stoğu': 20,
+                },
+              ]}
+            />
             <ProductForm />
           </div>
         }
