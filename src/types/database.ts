@@ -1,5 +1,5 @@
 export type StaffRole = 'admin' | 'staff'
-export type MovementType = 'in' | 'out' | 'adjustment' | 'sample'
+export type MovementType = 'in' | 'out' | 'adjustment' | 'sample' | 'return' | 'disposal'
 export type PaymentMethod = 'nakit' | 'kredi_karti' | 'havale'
 export type DoctorType = 'sahis' | 'hastane'
 export type BrandLine = 'dermakor' | 'swiss'
@@ -83,7 +83,24 @@ export interface StockMovement {
   customer_id: string | null
   staff_id: string | null
   note: string | null
+  lot_id: string | null
   created_at: string
+}
+
+export interface ProductLot {
+  id: string
+  product_id: string
+  lot_no: string | null
+  barcode: string | null
+  qr_code: string | null
+  production_date: string | null
+  expiry_date: string | null
+  warehouse: string | null
+  shelf: string | null
+  supplier: string | null
+  quantity: number
+  created_at: string
+  updated_at: string
 }
 
 export interface Payment {

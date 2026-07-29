@@ -98,6 +98,7 @@ export function RemindersPage() {
 
   const visibleCriticalStock = alerts.criticalStock.filter((p) => !dismissed.has(`criticalStock:${p.id}`))
   const visibleExpiringProducts = alerts.expiringProducts.filter((p) => !dismissed.has(`expiring:${p.id}`))
+  const visibleExpiringLots = alerts.expiringLots.filter((l) => !dismissed.has(`expiringLot:${l.id}`))
   const visiblePaymentDue = alerts.paymentDue.filter((d) => !dismissed.has(`paymentDue:${d.id}`))
   const visibleDoctorsWithBalance = alerts.doctorsWithBalance.filter((d) => !dismissed.has(`balance:${d.id}`))
   const visiblePendingProducts = alerts.pendingProducts.filter((p) => !dismissed.has(`pending:${p.id}`))
@@ -106,6 +107,7 @@ export function RemindersPage() {
   const systemAlertCount =
     visibleCriticalStock.length +
     visibleExpiringProducts.length +
+    visibleExpiringLots.length +
     visiblePaymentDue.length +
     visibleDoctorsWithBalance.length +
     visiblePendingProducts.length
@@ -114,6 +116,7 @@ export function RemindersPage() {
     const alertKeys = [
       ...visibleCriticalStock.map((p) => `criticalStock:${p.id}`),
       ...visibleExpiringProducts.map((p) => `expiring:${p.id}`),
+      ...visibleExpiringLots.map((l) => `expiringLot:${l.id}`),
       ...visiblePaymentDue.map((d) => `paymentDue:${d.id}`),
       ...visibleDoctorsWithBalance.map((d) => `balance:${d.id}`),
       ...visiblePendingProducts.map((p) => `pending:${p.id}`),
@@ -188,6 +191,15 @@ export function RemindersPage() {
                   icon={ClipboardX}
                   title={p.name}
                   subtitle={`Son kullanım tarihi ${p.expiry_date && new Date(p.expiry_date) < new Date() ? 'doldu' : 'yaklaşıyor'}: ${p.expiry_date}`}
+                />
+              ))}
+              {visibleExpiringLots.map((lot) => (
+                <AlertRow
+                  key={`lot-${lot.id}`}
+                  to="/stok"
+                  icon={ClipboardX}
+                  title={lot.products?.name ?? 'Ürün'}
+                  subtitle={`${lot.lot_no ? `Lot: ${lot.lot_no} — ` : ''}SKT ${lot.status === 'expired' ? 'doldu' : `${lot.band} gün içinde doluyor`}`}
                 />
               ))}
               {visiblePaymentDue.map((d) => (

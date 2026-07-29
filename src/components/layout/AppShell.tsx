@@ -196,6 +196,7 @@ function TopBar() {
   const visibleDueReminders = alerts.dueReminders.filter((r) => !dismissed.has(`reminder:${r.id}`))
   const visibleCriticalStock = alerts.criticalStock.filter((p) => !dismissed.has(`criticalStock:${p.id}`))
   const visibleExpiringProducts = alerts.expiringProducts.filter((p) => !dismissed.has(`expiring:${p.id}`))
+  const visibleExpiringLots = alerts.expiringLots.filter((l) => !dismissed.has(`expiringLot:${l.id}`))
   const visiblePaymentDue = alerts.paymentDue.filter((d) => !dismissed.has(`paymentDue:${d.id}`))
   const visibleDoctorsWithBalance = alerts.doctorsWithBalance.filter((d) => !dismissed.has(`balance:${d.id}`))
   const visiblePendingProducts = alerts.pendingProducts.filter((p) => !dismissed.has(`pending:${p.id}`))
@@ -205,6 +206,7 @@ function TopBar() {
     visibleDueReminders.length +
     visibleCriticalStock.length +
     visibleExpiringProducts.length +
+    visibleExpiringLots.length +
     visiblePaymentDue.length +
     visibleDoctorsWithBalance.length +
     visiblePendingProducts.length
@@ -292,6 +294,18 @@ function TopBar() {
                   <span className="text-xs">
                     <span className="font-medium">{p.name}</span> son kullanım tarihi{' '}
                     {p.expiry_date && new Date(p.expiry_date) < new Date() ? 'doldu' : 'yaklaşıyor'}
+                  </span>
+                </Link>
+              </DropdownMenuItem>
+            ))}
+            {visibleExpiringLots.slice(0, 3).map((lot) => (
+              <DropdownMenuItem key={lot.id} asChild onSelect={() => dismiss(`expiringLot:${lot.id}`)}>
+                <Link to="/stok" className="flex items-start gap-2">
+                  <NotifIcon icon={ClipboardX} />
+                  <span className="text-xs">
+                    <span className="font-medium">{lot.products?.name ?? 'Ürün'}</span>
+                    {lot.lot_no ? ` (Lot: ${lot.lot_no})` : ''} SKT {lot.band} gün içinde
+                    {lot.status === 'expired' ? ' doldu' : ''}
                   </span>
                 </Link>
               </DropdownMenuItem>

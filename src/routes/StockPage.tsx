@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ProductForm } from '@/features/stock/ProductForm'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
+import { ProductLotsDialog } from '@/features/stock/ProductLotsDialog'
 import { useDeactivateProduct, useProducts } from '@/features/stock/hooks'
 import { createProduct, recordStockMovement } from '@/features/stock/api'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
@@ -187,6 +188,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                   <TableCell>
                     <div className="flex justify-end gap-2">
                       <StockHistoryDialog product={product} />
+                      <ProductLotsDialog product={product} />
                       <StockMovementDialog product={product} />
                       <ProductForm product={product} />
                       <Button variant="ghost" size="icon" onClick={() => onRemove(product)}>

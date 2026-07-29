@@ -22,6 +22,8 @@ export const tr = {
     out: 'Çıkış',
     adjustment: 'Düzeltme',
     sample: 'Numune',
+    return: 'İade',
+    disposal: 'İmha',
   } as Record<string, string>,
   paymentMethod: {
     nakit: 'Nakit',

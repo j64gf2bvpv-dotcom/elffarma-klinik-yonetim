@@ -1167,7 +1167,7 @@ alter table public.congresses add column if not exists budget numeric(12, 2);
 alter table public.congresses add column if not exists campaign_info text;
 alter table public.congresses add column if not exists video_urls text[] not null default '{}';
 
-comment on column public.congresses.city is 'Kongre/workshop\'ın yapıldığı şehir';
+comment on column public.congresses.city is 'Kongre veya workshopun yapıldığı şehir';
 comment on column public.congresses.venue is 'Salon bilgisi';
 comment on column public.congresses.hotel is 'Konaklama oteli';
 comment on column public.congresses.capacity is 'Kontenjan (maksimum katılımcı sayısı)';
@@ -1193,6 +1193,100 @@ alter table public.congress_participants add constraint congress_participants_qr
 comment on column public.congress_participants.attendance_status is 'Yoklama durumu: registered (kayıtlı/davetli), attended (katıldı), no_show (gelmedi)';
 comment on column public.congress_participants.certificate_issued is 'Katılım belgesi verildi mi';
 comment on column public.congress_participants.qr_code is 'QR kod kayıt/check-in için benzersiz metin kod';
+
+-- =========================================================
+-- 28. LOT VE SKT TAKİBİ (Faz 5 ERP genişletmesi)
+-- =========================================================
+create table if not exists public.product_lots (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references public.products (id) on delete cascade,
+  lot_no text,
+  barcode text,
+  qr_code text,
+  production_date date,
+  expiry_date date,
+  warehouse text,
+  shelf text,
+  supplier text,
+  quantity integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists product_lots_product_idx on public.product_lots (product_id);
+create index if not exists product_lots_expiry_idx on public.product_lots (expiry_date);
+
+drop trigger if exists set_updated_at on public.product_lots;
+create trigger set_updated_at before update on public.product_lots
+  for each row execute function public.set_updated_at();
+
+alter table public.product_lots enable row level security;
+drop policy if exists "product_lots_all_staff" on public.product_lots;
+create policy "product_lots_all_staff" on public.product_lots for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.product_lots is 'Lot/parti bazlı stok takibi — bir ürünün birden çok lotu, her birinin kendi SKT/miktarı olabilir';
+
+alter table public.stock_movements add column if not exists lot_id uuid references public.product_lots (id) on delete set null;
+comment on column public.stock_movements.lot_id is 'Bu hareketin ilişkili olduğu lot (opsiyonel — lot takibi yapılmayan ürünlerde boş kalır)';
+
+-- movement_type'a iade (stoğa geri dönüş) ve imha (SKT/hasar nedeniyle stoktan düşüm) eklendi
+alter table public.stock_movements drop constraint if exists stock_movements_movement_type_check;
+alter table public.stock_movements add constraint stock_movements_movement_type_check
+  check (movement_type in ('in', 'out', 'adjustment', 'sample', 'return', 'disposal'));
+
+-- record_stock_movement RPC'sine opsiyonel p_lot_id eklendi — verilirse hem
+-- products.current_quantity hem de o lotun kendi product_lots.quantity'si
+-- aynı anda atomik güncellenir (iki ayrı yazım yerine tek RPC çağrısı).
+create or replace function public.record_stock_movement(
+  p_product_id uuid,
+  p_movement_type text,
+  p_quantity integer,
+  p_reason text default null,
+  p_customer_id uuid default null,
+  p_note text default null,
+  p_lot_id uuid default null
+)
+returns public.stock_movements
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_delta integer;
+  v_row public.stock_movements;
+begin
+  if not public.is_active_staff() then
+    raise exception 'Yetkisiz işlem';
+  end if;
+
+  v_delta := case p_movement_type
+    when 'in' then p_quantity
+    when 'out' then -p_quantity
+    when 'sample' then -p_quantity
+    when 'return' then p_quantity
+    when 'disposal' then -p_quantity
+    when 'adjustment' then p_quantity
+    else 0
+  end;
+
+  insert into public.stock_movements (product_id, movement_type, quantity, reason, customer_id, staff_id, note, lot_id)
+  values (p_product_id, p_movement_type, abs(p_quantity), p_reason, p_customer_id, auth.uid(), p_note, p_lot_id)
+  returning * into v_row;
+
+  update public.products
+  set current_quantity = greatest(0, current_quantity + v_delta),
+      updated_at = now()
+  where id = p_product_id;
+
+  if p_lot_id is not null then
+    update public.product_lots
+    set quantity = greatest(0, quantity + v_delta),
+        updated_at = now()
+    where id = p_lot_id;
+  end if;
+
+  return v_row;
+end;
+$$;
 
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle

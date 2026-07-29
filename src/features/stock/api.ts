@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineRpc } from '@/lib/offlineMutation'
-import type { BrandLine, MovementType, Product, StockMovement } from '@/types/database'
+import type { BrandLine, MovementType, Product, ProductLot, StockMovement } from '@/types/database'
 
 export interface ProductInput {
   name: string
@@ -61,6 +61,7 @@ export interface RecordMovementInput {
   reason?: string | null
   customer_id?: string | null
   note?: string | null
+  lot_id?: string | null
 }
 
 export async function recordStockMovement(input: RecordMovementInput): Promise<void> {
@@ -73,7 +74,45 @@ export async function recordStockMovement(input: RecordMovementInput): Promise<v
       p_reason: input.reason ?? null,
       p_customer_id: input.customer_id ?? null,
       p_note: input.note ?? null,
+      p_lot_id: input.lot_id ?? null,
     },
     `Stok hareketi: ${input.movement_type} × ${input.quantity}`,
   )
+}
+
+export async function fetchProductLots(productId: string): Promise<ProductLot[]> {
+  const { data, error } = await supabase
+    .from('product_lots')
+    .select('*')
+    .eq('product_id', productId)
+    .order('expiry_date', { ascending: true, nullsFirst: false })
+  if (error) throw error
+  return data as ProductLot[]
+}
+
+export interface ProductLotInput {
+  product_id: string
+  lot_no?: string | null
+  barcode?: string | null
+  qr_code?: string | null
+  production_date?: string | null
+  expiry_date?: string | null
+  warehouse?: string | null
+  shelf?: string | null
+  supplier?: string | null
+}
+
+export async function createProductLot(input: ProductLotInput): Promise<ProductLot> {
+  return offlineInsert<ProductLot>('product_lots', { ...input, quantity: 0 }, `Lot: ${input.lot_no ?? input.product_id}`)
+}
+
+export type ProductLotWithProduct = ProductLot & { products: { name: string } | null }
+
+export async function fetchAllProductLots(): Promise<ProductLotWithProduct[]> {
+  const { data, error } = await supabase
+    .from('product_lots')
+    .select('*, products(name)')
+    .order('expiry_date', { ascending: true, nullsFirst: false })
+  if (error) throw error
+  return data as unknown as ProductLotWithProduct[]
 }

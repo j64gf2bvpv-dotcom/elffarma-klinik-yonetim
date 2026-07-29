@@ -2,7 +2,9 @@ import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowLeftRight, Loader2 } from 'lucide-react'
+import { format } from 'date-fns'
+import { tr as trLocale } from 'date-fns/locale/tr'
+import { ArrowLeftRight, Loader2, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -14,18 +16,23 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { tr } from '@/i18n/tr'
-import { useRecordStockMovement } from './hooks'
+import { useCreateProductLot, useProductLots, useRecordStockMovement } from './hooks'
 import type { Product } from '@/types/database'
 
+const NO_LOT = '__none__'
+const NEW_LOT = '__new__'
+
 const schema = z.object({
-  movement_type: z.enum(['in', 'out', 'adjustment']),
+  movement_type: z.enum(['in', 'out', 'adjustment', 'return', 'disposal']),
   quantity: z.coerce.number().int().positive('Miktar 0’dan büyük olmalı'),
   reason: z.string().optional(),
   note: z.string().optional(),
+  lot_id: z.string().optional(),
 })
 
 type FormInput = z.input<typeof schema>
@@ -33,24 +40,44 @@ type FormOutput = z.output<typeof schema>
 
 export function StockMovementDialog({ product }: { product: Product }) {
   const [open, setOpen] = React.useState(false)
+  const [newLot, setNewLot] = React.useState({ lot_no: '', expiry_date: '', warehouse: '', shelf: '' })
   const mutation = useRecordStockMovement()
+  const createLotMutation = useCreateProductLot()
+  const { data: lots = [] } = useProductLots(open ? product.id : undefined)
 
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
-    defaultValues: { movement_type: 'in', quantity: 1, reason: '', note: '' },
+    defaultValues: { movement_type: 'in', quantity: 1, reason: '', note: '', lot_id: NO_LOT },
   })
 
+  const selectedLotId = form.watch('lot_id')
+
   async function onSubmit(values: FormOutput) {
+    let lotId: string | null = values.lot_id && values.lot_id !== NO_LOT ? values.lot_id : null
+    if (values.lot_id === NEW_LOT) {
+      const created = await createLotMutation.mutateAsync({
+        product_id: product.id,
+        lot_no: newLot.lot_no || null,
+        expiry_date: newLot.expiry_date || null,
+        warehouse: newLot.warehouse || null,
+        shelf: newLot.shelf || null,
+      })
+      lotId = created.id
+    }
     await mutation.mutateAsync({
       product_id: product.id,
       movement_type: values.movement_type,
       quantity: values.quantity,
       reason: values.reason || null,
       note: values.note || null,
+      lot_id: lotId,
     })
-    form.reset({ movement_type: 'in', quantity: 1, reason: '', note: '' })
+    form.reset({ movement_type: 'in', quantity: 1, reason: '', note: '', lot_id: NO_LOT })
+    setNewLot({ lot_no: '', expiry_date: '', warehouse: '', shelf: '' })
     setOpen(false)
   }
+
+  const submitting = mutation.isPending || createLotMutation.isPending
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -81,9 +108,9 @@ export function StockMovementDialog({ product }: { product: Product }) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {Object.entries(tr.movementType).map(([value, label]) => (
+                      {(['in', 'out', 'adjustment', 'return', 'disposal'] as const).map((value) => (
                         <SelectItem key={value} value={value}>
-                          {label}
+                          {tr.movementType[value]}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -105,6 +132,64 @@ export function StockMovementDialog({ product }: { product: Product }) {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="lot_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lot (opsiyonel)</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={NO_LOT}>Lot takibi yok</SelectItem>
+                      {lots.map((lot) => (
+                        <SelectItem key={`lot-${lot.id}`} value={lot.id}>
+                          {lot.lot_no ?? 'Lot'} {lot.expiry_date ? `— SKT: ${format(new Date(lot.expiry_date), 'd MMM yyyy', { locale: trLocale })}` : ''} ({lot.quantity} adet)
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={NEW_LOT}>
+                        <span className="flex items-center gap-1"><Plus className="size-3" /> Yeni Lot</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {selectedLotId === NEW_LOT && (
+              <div className="grid grid-cols-2 gap-3 rounded-lg border p-3">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">Lot No</Label>
+                  <Input
+                    value={newLot.lot_no}
+                    onChange={(e) => setNewLot((v) => ({ ...v, lot_no: e.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">SKT</Label>
+                  <Input
+                    type="date"
+                    value={newLot.expiry_date}
+                    onChange={(e) => setNewLot((v) => ({ ...v, expiry_date: e.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">Depo</Label>
+                  <Input
+                    value={newLot.warehouse}
+                    onChange={(e) => setNewLot((v) => ({ ...v, warehouse: e.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">Raf</Label>
+                  <Input value={newLot.shelf} onChange={(e) => setNewLot((v) => ({ ...v, shelf: e.target.value }))} />
+                </div>
+              </div>
+            )}
             <FormField
               control={form.control}
               name="reason"
@@ -135,8 +220,8 @@ export function StockMovementDialog({ product }: { product: Product }) {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Vazgeç
               </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending && <Loader2 className="animate-spin" />}
+              <Button type="submit" disabled={submitting}>
+                {submitting && <Loader2 className="animate-spin" />}
                 Kaydet
               </Button>
             </DialogFooter>

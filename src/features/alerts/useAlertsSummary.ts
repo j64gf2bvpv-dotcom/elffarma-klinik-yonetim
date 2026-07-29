@@ -1,5 +1,5 @@
 import { addDays } from 'date-fns'
-import { useProducts } from '@/features/stock/hooks'
+import { useProducts, useAllProductLots } from '@/features/stock/hooks'
 import { useCustomers, useAllPendingProducts } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useCongresses } from '@/features/congresses/hooks'
@@ -14,6 +14,7 @@ export function useAlertsSummary() {
   const { data: allPayments = [] } = usePayments({})
   const { data: pendingProducts = [] } = useAllPendingProducts()
   const { data: reminders = [] } = useReminders()
+  const { data: productLots = [] } = useAllProductLots()
 
   const criticalStock = products.filter((p) => p.current_quantity <= p.critical_stock_threshold)
 
@@ -22,6 +23,20 @@ export function useAlertsSummary() {
       const status = getExpiryStatus(p.expiry_date)
       return status === 'expired' || status === 'soon'
     })
+    .sort((a, b) => (a.expiry_date ?? '').localeCompare(b.expiry_date ?? ''))
+
+  const expiringLots = productLots
+    .filter((lot) => lot.quantity > 0)
+    .map((lot) => {
+      const status = getExpiryStatus(lot.expiry_date, 90)
+      const band = getExpiryStatus(lot.expiry_date, 30) === 'soon' || status === 'expired'
+        ? 30
+        : getExpiryStatus(lot.expiry_date, 60) === 'soon'
+          ? 60
+          : 90
+      return { ...lot, status, band }
+    })
+    .filter((lot) => lot.status === 'expired' || lot.status === 'soon')
     .sort((a, b) => (a.expiry_date ?? '').localeCompare(b.expiry_date ?? ''))
 
   const paymentDue = doctors
@@ -51,6 +66,7 @@ export function useAlertsSummary() {
   const total =
     criticalStock.length +
     expiringProducts.length +
+    expiringLots.length +
     paymentDue.length +
     doctorsWithBalance.length +
     pendingProducts.length +
@@ -59,6 +75,7 @@ export function useAlertsSummary() {
   return {
     criticalStock,
     expiringProducts,
+    expiringLots,
     paymentDue,
     doctorsWithBalance,
     pendingProducts,

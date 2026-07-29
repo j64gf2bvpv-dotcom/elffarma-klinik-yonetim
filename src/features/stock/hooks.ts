@@ -2,15 +2,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   createProduct,
+  createProductLot,
   deactivateProduct,
+  fetchAllProductLots,
+  fetchProductLots,
   fetchProducts,
   fetchStockMovements,
   recordStockMovement,
   updateProduct,
   type ProductInput,
+  type ProductLotInput,
   type RecordMovementInput,
 } from './api'
-import type { BrandLine, Product } from '@/types/database'
+import type { BrandLine, Product, ProductLot } from '@/types/database'
 
 export function useProducts(search: string, brandLine?: BrandLine) {
   return useQuery({ queryKey: ['products', search, brandLine], queryFn: () => fetchProducts(search, brandLine) })
@@ -71,9 +75,9 @@ export function useRecordStockMovement() {
     mutationFn: (input: RecordMovementInput) => recordStockMovement(input),
     onSuccess: (_data, variables) => {
       const delta =
-        variables.movement_type === 'out' || variables.movement_type === 'sample'
+        variables.movement_type === 'out' || variables.movement_type === 'sample' || variables.movement_type === 'disposal'
           ? -variables.quantity
-          : variables.movement_type === 'in'
+          : variables.movement_type === 'in' || variables.movement_type === 'return'
             ? variables.quantity
             : 0
       if (delta !== 0) {
@@ -85,8 +89,39 @@ export function useRecordStockMovement() {
       }
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['stock_movements', variables.product_id] })
+      if (variables.lot_id) {
+        queryClient.invalidateQueries({ queryKey: ['product_lots', variables.product_id] })
+        queryClient.invalidateQueries({ queryKey: ['product_lots', 'all'] })
+      }
       toast.success('Stok hareketi kaydedildi')
     },
     onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
+  })
+}
+
+export function useProductLots(productId: string | undefined) {
+  return useQuery({
+    queryKey: ['product_lots', productId],
+    queryFn: () => fetchProductLots(productId as string),
+    enabled: !!productId,
+  })
+}
+
+export function useAllProductLots() {
+  return useQuery({ queryKey: ['product_lots', 'all'], queryFn: fetchAllProductLots })
+}
+
+export function useCreateProductLot() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ProductLotInput) => createProductLot(input),
+    onSuccess: (created) => {
+      queryClient.setQueryData<ProductLot[]>(['product_lots', created.product_id], (old) =>
+        old ? [...old, created] : old,
+      )
+      queryClient.invalidateQueries({ queryKey: ['product_lots'] })
+      toast.success('Lot eklendi')
+    },
+    onError: (error: Error) => toast.error('Lot eklenemedi', { description: error.message }),
   })
 }
