@@ -19,11 +19,19 @@ export type SaleWithRelations = Sale & {
   sales_reps: { name: string } | null
 }
 
-export async function fetchSales(): Promise<SaleWithRelations[]> {
-  const { data, error } = await supabase
+export interface SaleFilters {
+  from?: string
+  to?: string
+}
+
+export async function fetchSales(filters: SaleFilters = {}): Promise<SaleWithRelations[]> {
+  let query = supabase
     .from('sales')
     .select('*, customers(full_name), sales_reps(name)')
     .order('sale_date', { ascending: false })
+  if (filters.from) query = query.gte('sale_date', filters.from)
+  if (filters.to) query = query.lte('sale_date', filters.to)
+  const { data, error } = await query
   if (error) throw error
   return data as unknown as SaleWithRelations[]
 }

@@ -36,12 +36,16 @@ import {
   Building2,
   Building,
   Hospital,
+  Percent,
+  BadgePercent,
+  Award,
 } from 'lucide-react'
 
 export type NavKey =
   | 'dashboard'
   | 'customers'
   | 'clinics'
+  | 'commissions'
   | 'stock'
   | 'payments'
   | 'congresses'
@@ -74,6 +78,7 @@ export const iconSets: IconSet[] = [
       dashboard: Gauge,
       customers: UserRound,
       clinics: Building2,
+      commissions: Percent,
       stock: PackageSearch,
       payments: Banknote,
       congresses: Presentation,
@@ -96,6 +101,7 @@ export const iconSets: IconSet[] = [
       dashboard: LayoutDashboard,
       customers: Users,
       clinics: Building,
+      commissions: BadgePercent,
       stock: Boxes,
       payments: Wallet,
       congresses: GraduationCap,
@@ -118,6 +124,7 @@ export const iconSets: IconSet[] = [
       dashboard: PieChart,
       customers: CircleUserRound,
       clinics: Hospital,
+      commissions: Award,
       stock: PackageCheck,
       payments: CircleDollarSign,
       congresses: Landmark,

@@ -997,6 +997,54 @@ alter table public.sales_reps add column if not exists bank_info text;
 alter table public.sales_reps add column if not exists sales_target numeric(12, 2);
 alter table public.sales_reps add column if not exists region_id uuid references public.regions (id) on delete set null;
 
+-- =========================================================
+-- 25. PRİM HESAPLAMA (Faz 2 ERP genişletmesi)
+-- =========================================================
+-- Prim tutarları burada saklanmaz — mevcut sales/payments/products/customers
+-- üzerinden istenen tarih aralığı için canlı hesaplanır (bkz. src/features/commissions/calculateCommissions.ts).
+-- Bu tablo sadece admin'in tanımladığı dinamik kuralları + manuel bonus/ceza kayıtlarını tutar.
+create table if not exists public.commission_rules (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  scope_type text not null check (
+    scope_type in ('all', 'product', 'category', 'brand', 'sales_rep', 'clinic', 'customer')
+  ),
+  scope_value text,
+  basis text not null check (basis in ('satis', 'tahsilat')),
+  rate_percent numeric(5, 2) not null check (rate_percent >= 0),
+  is_active boolean not null default true,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists set_updated_at on public.commission_rules;
+create trigger set_updated_at before update on public.commission_rules
+  for each row execute function public.set_updated_at();
+
+alter table public.commission_rules enable row level security;
+drop policy if exists "commission_rules_all_staff" on public.commission_rules;
+create policy "commission_rules_all_staff" on public.commission_rules for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+create table if not exists public.commission_adjustments (
+  id uuid primary key default gen_random_uuid(),
+  sales_rep_id uuid not null references public.sales_reps (id) on delete cascade,
+  adjustment_type text not null check (adjustment_type in ('bonus', 'ceza')),
+  amount numeric(12, 2) not null check (amount >= 0),
+  period_start date not null,
+  period_end date not null,
+  note text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now()
+);
+create index if not exists commission_adjustments_rep_idx on public.commission_adjustments (sales_rep_id, period_start);
+
+alter table public.commission_adjustments enable row level security;
+drop policy if exists "commission_adjustments_all_staff" on public.commission_adjustments;
+create policy "commission_adjustments_all_staff" on public.commission_adjustments for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

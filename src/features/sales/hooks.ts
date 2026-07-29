@@ -3,7 +3,11 @@ import { toast } from 'sonner'
 import { fetchSales, createSale, deleteSale, type SaleInput, type SaleWithRelations } from './api'
 
 export function useSales() {
-  return useQuery({ queryKey: ['sales'], queryFn: fetchSales })
+  return useQuery({ queryKey: ['sales'], queryFn: () => fetchSales() })
+}
+
+export function useSalesInRange(from: string, to: string) {
+  return useQuery({ queryKey: ['sales', 'range', from, to], queryFn: () => fetchSales({ from, to }) })
 }
 
 export function useCreateSale() {

@@ -64,6 +64,7 @@ const navItems: { to: string; label: string; key: NavKey; end?: boolean }[] = [
   { to: '/hatirlatmalar', label: tr.nav.reminders, key: 'reminders' },
   { to: '/ajanda', label: tr.nav.agenda, key: 'agenda' },
   { to: '/klinikler', label: tr.nav.clinics, key: 'clinics' },
+  { to: '/prim', label: tr.nav.commissions, key: 'commissions' },
 ]
 
 const navItemsByKey = new Map(navItems.map((item) => [item.key, item]))

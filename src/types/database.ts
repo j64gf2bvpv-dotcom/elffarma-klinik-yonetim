@@ -240,6 +240,37 @@ export interface Attachment {
   created_at: string
 }
 
+export type CommissionScopeType = 'all' | 'product' | 'category' | 'brand' | 'sales_rep' | 'clinic' | 'customer'
+
+export type CommissionBasis = 'satis' | 'tahsilat'
+
+export interface CommissionRule {
+  id: string
+  name: string
+  scope_type: CommissionScopeType
+  scope_value: string | null
+  basis: CommissionBasis
+  rate_percent: number
+  is_active: boolean
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type CommissionAdjustmentType = 'bonus' | 'ceza'
+
+export interface CommissionAdjustment {
+  id: string
+  sales_rep_id: string
+  adjustment_type: CommissionAdjustmentType
+  amount: number
+  period_start: string
+  period_end: string
+  note: string | null
+  created_by: string | null
+  created_at: string
+}
+
 export interface CongressRemainingProduct {
   id: string
   congress_id: string

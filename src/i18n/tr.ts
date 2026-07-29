@@ -3,6 +3,7 @@ export const tr = {
     dashboard: 'Ana Panel',
     customers: 'Cari Kart',
     clinics: 'Klinikler',
+    commissions: 'Prim Hesaplama',
     stock: 'Stok Yönetimi',
     payments: 'Tahsilatlar',
     congresses: 'Kongreler',
