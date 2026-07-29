@@ -69,7 +69,7 @@ export function AIProviderSettings() {
           <CardTitle>Yapay Zekâ</CardTitle>
           <CardDescription>
             AI sağlayıcısını, adresini ve modelini yönetin — tüm AI işlemleri buradaki ayara göre tek bir
-            AIService üzerinden çalışır.
+            AIService üzerinden çalışır. Sohbet etmek için sağ alt köşedeki AI simgesini kullanın.
           </CardDescription>
         </div>
       </CardHeader>
