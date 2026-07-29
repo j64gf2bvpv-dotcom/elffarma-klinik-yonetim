@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Search, AlertTriangle, Trash2, CalendarClock, Wallet, TrendingUp, PackageSearch, ShoppingBasket } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -12,10 +13,13 @@ import { ProductForm } from '@/features/stock/ProductForm'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
 import { useDeactivateProduct, useProducts } from '@/features/stock/hooks'
+import { createProduct, recordStockMovement } from '@/features/stock/api'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
 import { ExportMenu } from '@/components/ExportMenu'
+import { ImportMenu } from '@/components/ImportMenu'
+import { readCell, type ImportSummary } from '@/lib/importData'
 import type { BrandLine, Product } from '@/types/database'
 
 const ALL_BRANDS = 'all'
@@ -205,10 +209,68 @@ export function StockPage() {
   const { data: products = [], isLoading } = useProducts(search, brandFilter === ALL_BRANDS ? undefined : brandFilter)
   const { data: allProducts = [] } = useProducts('')
   const deactivateMutation = useDeactivateProduct()
+  const queryClient = useQueryClient()
 
   function handleRemove(product: Product) {
     if (!confirm(`${product.name} kaldırılsın mı? Ürün stok listesinden kaldırılır, geçmiş hareketler saklanır.`)) return
     deactivateMutation.mutate(product.id)
+  }
+
+  async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
+    const existingSkus = new Set(allProducts.filter((p) => p.sku).map((p) => p.sku))
+    const existingNames = new Set(allProducts.map((p) => p.name.toLocaleLowerCase('tr')))
+    const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      const rowLabel = `Satır ${i + 2}`
+      const name = readCell(row, 'Ürün', 'Ürün Adı')
+      if (!name) {
+        summary.errors.push(`${rowLabel}: Ürün adı eksik`)
+        continue
+      }
+      const sku = readCell(row, 'SKU') || null
+      if ((sku && existingSkus.has(sku)) || existingNames.has(name.toLocaleLowerCase('tr'))) {
+        summary.skipped++
+        continue
+      }
+
+      const brandText = readCell(row, 'Ürün Hattı')
+      const initialQtyText = readCell(row, 'Başlangıç Stoğu', 'Stok')
+      const initialQty = initialQtyText ? Number(initialQtyText.replace(/[^\d.-]/g, '')) : 0
+
+      try {
+        const created = await createProduct({
+          name,
+          sku,
+          category: readCell(row, 'Kategori') || null,
+          unit: readCell(row, 'Birim') || 'adet',
+          critical_stock_threshold: Number(readCell(row, 'Kritik Stok Eşiği') || 5),
+          unit_cost: readCell(row, 'Birim Maliyet') ? Number(readCell(row, 'Birim Maliyet')) : null,
+          unit_price: readCell(row, 'Satış Fiyatı') ? Number(readCell(row, 'Satış Fiyatı')) : null,
+          campaign: readCell(row, 'Kampanya') || null,
+          expiry_date: readCell(row, 'Son Kullanım Tarihi') || null,
+          barcode: readCell(row, 'Barkod') || null,
+          brand_line: /dermakor/i.test(brandText) ? 'dermakor' : /swiss/i.test(brandText) ? 'swiss' : null,
+        })
+        if (initialQty > 0) {
+          await recordStockMovement({
+            product_id: created.id,
+            movement_type: 'in',
+            quantity: initialQty,
+            reason: 'İçe aktarma — başlangıç stoğu',
+          })
+        }
+        if (sku) existingSkus.add(sku)
+        existingNames.add(name.toLocaleLowerCase('tr'))
+        summary.added++
+      } catch (err) {
+        summary.errors.push(`${rowLabel}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
+      }
+    }
+
+    if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['products'] })
+    return summary
   }
 
   const totalCostValue = allProducts.reduce((sum, p) => sum + p.current_quantity * Number(p.unit_cost ?? 0), 0)
@@ -237,6 +299,7 @@ export function StockPage() {
                 { header: 'Son Kullanım Tarihi', value: (p) => p.expiry_date ?? '' },
               ]}
             />
+            <ImportMenu onImport={handleImport} />
             <ProductForm />
           </div>
         }

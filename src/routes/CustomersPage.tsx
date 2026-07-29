@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { Search, Phone, Tag, ReceiptText, MapPin, Building2, User, CalendarClock, FileSpreadsheet, Trash2, Loader2 } from 'lucide-react'
@@ -16,10 +17,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { CustomerForm } from '@/features/customers/CustomerForm'
 import { useCustomers, useDeleteCustomer } from '@/features/customers/hooks'
-import type { InvoiceFilter } from '@/features/customers/api'
+import { createCustomer, type InvoiceFilter } from '@/features/customers/api'
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
-import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
+import { formatTrPhoneForDisplay, normalizeTrPhone } from '@/features/whatsapp/normalizePhone'
 import { ExportMenu } from '@/components/ExportMenu'
+import { ImportMenu } from '@/components/ImportMenu'
+import { readCell, type ImportSummary } from '@/lib/importData'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
 import type { Customer } from '@/types/database'
 
@@ -45,12 +48,68 @@ export function CustomersPage() {
     [allCustomers, tagFilter],
   )
   const deleteMutation = useDeleteCustomer()
+  const queryClient = useQueryClient()
   const [customerToDelete, setCustomerToDelete] = React.useState<Customer | null>(null)
 
   async function confirmDelete() {
     if (!customerToDelete) return
     await deleteMutation.mutateAsync(customerToDelete.id)
     setCustomerToDelete(null)
+  }
+
+  async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
+    const existingPhones = new Set(allCustomers.map((c) => c.phone))
+    const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      const rowLabel = `Satır ${i + 2}`
+      const fullName = readCell(row, 'Ad Soyad', 'Ad', 'İsim')
+      const phoneRaw = readCell(row, 'Telefon', 'Phone')
+      if (!fullName || !phoneRaw) {
+        summary.errors.push(`${rowLabel}: Ad Soyad veya Telefon eksik`)
+        continue
+      }
+      const normalized = normalizeTrPhone(phoneRaw)
+      if (!normalized) {
+        summary.errors.push(`${rowLabel}: Geçersiz telefon numarası (${phoneRaw})`)
+        continue
+      }
+      if (existingPhones.has(normalized.canonical)) {
+        summary.skipped++
+        continue
+      }
+
+      const tip = readCell(row, 'Tip', 'Doktor Tipi')
+      const isInvoicedText = readCell(row, 'Fatura Durumu', 'Faturalı')
+      const vatRateText = readCell(row, 'KDV Oranı')
+
+      try {
+        await createCustomer({
+          full_name: fullName,
+          phone: phoneRaw,
+          doctor_type: /hastane/i.test(tip) ? 'hastane' : 'sahis',
+          province: readCell(row, 'İl') || null,
+          hospital_name: readCell(row, 'Hastane') || null,
+          next_payment_due: readCell(row, 'Ödeme Vadesi') || null,
+          tc_no: readCell(row, 'TC Kimlik No') || null,
+          tax_number: readCell(row, 'Vergi Numarası') || null,
+          vat_rate: vatRateText ? Number(vatRateText) : null,
+          address: readCell(row, 'Adres') || null,
+          is_invoiced: /faturalı|evet/i.test(isInvoicedText),
+          tags: readCell(row, 'Etiketler')
+            ? readCell(row, 'Etiketler').split(',').map((t) => t.trim()).filter(Boolean)
+            : [],
+        })
+        existingPhones.add(normalized.canonical)
+        summary.added++
+      } catch (err) {
+        summary.errors.push(`${rowLabel}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
+      }
+    }
+
+    if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['customers'] })
+    return summary
   }
 
   return (
@@ -79,6 +138,7 @@ export function CustomersPage() {
                 { header: 'Etiketler', value: (c) => c.tags.join(', ') },
               ]}
             />
+            <ImportMenu onImport={handleImport} />
             <CustomerForm />
           </div>
         }

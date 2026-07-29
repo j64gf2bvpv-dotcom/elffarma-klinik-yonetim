@@ -1,0 +1,51 @@
+import * as XLSX from 'xlsx'
+
+export function readExcelFile(file: File): Promise<Record<string, unknown>[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const data = event.target?.result
+        const workbook = XLSX.read(data, { type: 'array' })
+        const sheet = workbook.Sheets[workbook.SheetNames[0]]
+        resolve(XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' }))
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error(String(err)))
+      }
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('Dosya okunamadı'))
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+/** Bir satırdan, birden fazla olası sütun başlığı (eş anlamlı) deneyerek ilk dolu değeri döner. */
+export function readCell(row: Record<string, unknown>, ...keys: string[]): string {
+  for (const key of keys) {
+    const value = row[key]
+    if (value != null && String(value).trim() !== '') return String(value).trim()
+  }
+  return ''
+}
+
+export interface ImportSummary {
+  added: number
+  skipped: number
+  errors: string[]
+}
+
+/**
+ * "d.MM.yyyy" veya "d.MM.yyyy HH:mm" gibi bu uygulamanın dışa aktarımlarında
+ * kullandığı Türkçe tarih biçimlerini ayrıştırır (native `Date` bunları
+ * güvenilir ayrıştıramaz); tanınmazsa ISO/ay-adı gibi biçimler için `Date`'e
+ * düşer.
+ */
+export function parseFlexibleDate(text: string): Date | null {
+  const trMatch = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/)
+  if (trMatch) {
+    const [, d, m, y, h, min] = trMatch
+    const date = new Date(Number(y), Number(m) - 1, Number(d), h ? Number(h) : 0, min ? Number(min) : 0)
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+  const parsed = new Date(text)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}

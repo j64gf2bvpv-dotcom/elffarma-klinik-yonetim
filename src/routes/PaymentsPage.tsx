@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Trash2, ExternalLink, Banknote, CreditCard, ArrowLeftRight, Wallet } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
@@ -13,9 +14,14 @@ import { Label } from '@/components/ui/label'
 import { PaymentForm } from '@/features/payments/PaymentForm'
 import { InvoiceDialog } from '@/features/payments/InvoiceDialog'
 import { useDeletePayment, usePayments } from '@/features/payments/hooks'
-import type { PaymentWithCustomer } from '@/features/payments/api'
+import { createPayment, type PaymentWithCustomer } from '@/features/payments/api'
+import { useCustomers } from '@/features/customers/hooks'
+import { useSalesReps } from '@/features/salesReps/hooks'
 import { tr } from '@/i18n/tr'
 import { ExportMenu } from '@/components/ExportMenu'
+import { ImportMenu } from '@/components/ImportMenu'
+import { readCell, parseFlexibleDate, type ImportSummary } from '@/lib/importData'
+import type { PaymentMethod } from '@/types/database'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -49,6 +55,10 @@ export function PaymentsPage() {
     to: to ? new Date(to + 'T23:59:59').toISOString() : undefined,
   })
   const deleteMutation = useDeletePayment()
+  const queryClient = useQueryClient()
+  const { data: allPayments = [] } = usePayments({})
+  const { data: doctors = [] } = useCustomers('')
+  const { data: salesReps = [] } = useSalesReps()
 
   const total = payments.reduce((sum, p) => sum + Number(p.amount), 0)
   const totalsByMethod = payments.reduce(
@@ -59,6 +69,74 @@ export function PaymentsPage() {
     { nakit: 0, kredi_karti: 0, havale: 0 },
   )
   const kasaRows = React.useMemo(() => buildKasaRows(payments), [payments])
+
+  const paymentMethodByLabel = React.useMemo(() => {
+    const map = new Map<string, PaymentMethod>()
+    for (const [key, label] of Object.entries(tr.paymentMethod)) map.set(label.toLocaleLowerCase('tr'), key as PaymentMethod)
+    return map
+  }, [])
+
+  async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
+    const existingKeys = new Set(
+      allPayments.map((p) => `${p.customer_id}|${format(new Date(p.paid_at), 'yyyy-MM-dd')}|${Number(p.amount)}|${p.payment_method}`),
+    )
+    const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      const rowLabel = `Satır ${i + 2}`
+      const doctorName = readCell(row, 'Doktor', 'Ad Soyad')
+      const amountText = readCell(row, 'Tutar')
+      const dateText = readCell(row, 'Tarih')
+      if (!doctorName || !amountText || !dateText) {
+        summary.errors.push(`${rowLabel}: Doktor, Tutar veya Tarih eksik`)
+        continue
+      }
+      const doctor = doctors.find((d) => d.full_name.toLocaleLowerCase('tr') === doctorName.toLocaleLowerCase('tr'))
+      if (!doctor) {
+        summary.errors.push(`${rowLabel}: "${doctorName}" adında doktor bulunamadı`)
+        continue
+      }
+      const paidAt = parseFlexibleDate(dateText)
+      if (!paidAt) {
+        summary.errors.push(`${rowLabel}: Geçersiz tarih (${dateText})`)
+        continue
+      }
+      const amount = Number(amountText.replace(/[^\d.-]/g, ''))
+      if (!amount || amount <= 0) {
+        summary.errors.push(`${rowLabel}: Geçersiz tutar (${amountText})`)
+        continue
+      }
+      const methodText = readCell(row, 'Yöntem').toLocaleLowerCase('tr')
+      const paymentMethod = paymentMethodByLabel.get(methodText) ?? 'nakit'
+      const repName = readCell(row, 'Satış Temsilcisi')
+      const rep = repName ? salesReps.find((r) => r.name.toLocaleLowerCase('tr') === repName.toLocaleLowerCase('tr')) : undefined
+
+      const key = `${doctor.id}|${format(paidAt, 'yyyy-MM-dd')}|${amount}|${paymentMethod}`
+      if (existingKeys.has(key)) {
+        summary.skipped++
+        continue
+      }
+
+      try {
+        await createPayment({
+          customer_id: doctor.id,
+          amount,
+          payment_method: paymentMethod,
+          description: readCell(row, 'Açıklama') || null,
+          paid_at: paidAt.toISOString(),
+          sales_rep_id: rep?.id ?? null,
+        })
+        existingKeys.add(key)
+        summary.added++
+      } catch (err) {
+        summary.errors.push(`${rowLabel}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
+      }
+    }
+
+    if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['payments'] })
+    return summary
+  }
 
   return (
     <div>
@@ -86,6 +164,7 @@ export function PaymentsPage() {
                 { header: 'Fatura No', value: (p) => p.invoice_number ?? '' },
               ]}
             />
+            <ImportMenu onImport={handleImport} />
             <PaymentForm />
           </div>
         }
