@@ -30,43 +30,59 @@ const schema = z.object({
   single_person_price: z.coerce.number().min(0).optional(),
   two_person_price: z.coerce.number().min(0).optional(),
   image_url: z.string().optional(),
+  city: z.string().optional(),
+  venue: z.string().optional(),
+  hotel: z.string().optional(),
+  capacity: z.coerce.number().int().min(0).optional(),
+  sponsorship_info: z.string().optional(),
+  speakers: z.string().optional(),
+  trainers: z.string().optional(),
+  meal_plan: z.string().optional(),
+  transfer_info: z.string().optional(),
+  stand_info: z.string().optional(),
+  budget: z.coerce.number().min(0).optional(),
+  campaign_info: z.string().optional(),
+  video_urls: z.string().optional(),
 })
 
 type FormInput = z.input<typeof schema>
 type FormValues = z.output<typeof schema>
+
+function defaults(congress: Congress | undefined): FormInput {
+  return {
+    name: congress?.name ?? '',
+    start_date: congress?.start_date ?? '',
+    end_date: congress?.end_date ?? '',
+    notes: congress?.notes ?? '',
+    will_attend: congress?.will_attend ?? false,
+    single_person_price: congress?.single_person_price ?? undefined,
+    two_person_price: congress?.two_person_price ?? undefined,
+    image_url: congress?.image_url ?? '',
+    city: congress?.city ?? '',
+    venue: congress?.venue ?? '',
+    hotel: congress?.hotel ?? '',
+    capacity: congress?.capacity ?? undefined,
+    sponsorship_info: congress?.sponsorship_info ?? '',
+    speakers: congress?.speakers ?? '',
+    trainers: congress?.trainers ?? '',
+    meal_plan: congress?.meal_plan ?? '',
+    transfer_info: congress?.transfer_info ?? '',
+    stand_info: congress?.stand_info ?? '',
+    budget: congress?.budget ?? undefined,
+    campaign_info: congress?.campaign_info ?? '',
+    video_urls: congress?.video_urls?.join('\n') ?? '',
+  }
+}
 
 export function CongressForm({ congress }: { congress?: Congress }) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateCongress()
   const updateMutation = useUpdateCongress()
 
-  const form = useForm<FormInput, unknown, FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      name: congress?.name ?? '',
-      start_date: congress?.start_date ?? '',
-      end_date: congress?.end_date ?? '',
-      notes: congress?.notes ?? '',
-      will_attend: congress?.will_attend ?? false,
-      single_person_price: congress?.single_person_price ?? undefined,
-      two_person_price: congress?.two_person_price ?? undefined,
-      image_url: congress?.image_url ?? '',
-    },
-  })
+  const form = useForm<FormInput, unknown, FormValues>({ resolver: zodResolver(schema), defaultValues: defaults(congress) })
 
   React.useEffect(() => {
-    if (open) {
-      form.reset({
-        name: congress?.name ?? '',
-        start_date: congress?.start_date ?? '',
-        end_date: congress?.end_date ?? '',
-        notes: congress?.notes ?? '',
-        will_attend: congress?.will_attend ?? false,
-        single_person_price: congress?.single_person_price ?? undefined,
-        two_person_price: congress?.two_person_price ?? undefined,
-        image_url: congress?.image_url ?? '',
-      })
-    }
+    if (open) form.reset(defaults(congress))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -80,6 +96,21 @@ export function CongressForm({ congress }: { congress?: Congress }) {
       single_person_price: values.single_person_price ?? null,
       two_person_price: values.two_person_price ?? null,
       image_url: values.image_url || null,
+      city: values.city || null,
+      venue: values.venue || null,
+      hotel: values.hotel || null,
+      capacity: values.capacity ?? null,
+      sponsorship_info: values.sponsorship_info || null,
+      speakers: values.speakers || null,
+      trainers: values.trainers || null,
+      meal_plan: values.meal_plan || null,
+      transfer_info: values.transfer_info || null,
+      stand_info: values.stand_info || null,
+      budget: values.budget ?? null,
+      campaign_info: values.campaign_info || null,
+      video_urls: values.video_urls
+        ? values.video_urls.split('\n').map((v) => v.trim()).filter(Boolean)
+        : [],
     }
     if (congress) {
       await updateMutation.mutateAsync({ id: congress.id, input })
@@ -104,7 +135,7 @@ export function CongressForm({ congress }: { congress?: Congress }) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{congress ? 'Kongreyi Düzenle' : 'Yeni Kongre / Workshop'}</DialogTitle>
         </DialogHeader>
@@ -145,6 +176,172 @@ export function CongressForm({ congress }: { congress?: Congress }) {
                     <FormLabel>Bitiş Tarihi (opsiyonel)</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Şehir (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="venue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Salon (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="hotel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Otel (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="capacity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kontenjan (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="0" {...field} value={field.value as number | string} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="budget"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bütçe (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <CurrencyInput value={field.value} onChange={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="speakers"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Konuşmacılar (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="trainers"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Eğitmenler (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="sponsorship_info"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sponsorluk (opsiyonel)</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="meal_plan"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Yemek Planı (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="transfer_info"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Transfer (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="stand_info"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Stand Bilgisi (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="campaign_info"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kampanya (opsiyonel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -200,6 +397,19 @@ export function CongressForm({ congress }: { congress?: Congress }) {
                   <FormLabel>Görsel URL (opsiyonel)</FormLabel>
                   <FormControl>
                     <Input placeholder="https://..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="video_urls"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Video Linkleri (opsiyonel, her satıra bir link)</FormLabel>
+                  <FormControl>
+                    <Textarea rows={2} placeholder="https://youtube.com/..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

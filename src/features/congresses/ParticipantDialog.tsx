@@ -16,9 +16,17 @@ import {
 import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useCreateParticipant, useDeleteParticipant, useUpdateParticipant } from './hooks'
-import type { CongressParticipant } from '@/types/database'
+import type { AttendanceStatus, CongressParticipant } from '@/types/database'
+
+const attendanceLabels: Record<AttendanceStatus, string> = {
+  registered: 'Kayıtlı / Davetli',
+  attended: 'Katıldı',
+  no_show: 'Gelmedi',
+}
 
 const schema = z.object({
   doctor_name: z.string().min(2, 'Doktor adı gerekli'),
@@ -26,6 +34,8 @@ const schema = z.object({
   registration_cost: z.coerce.number().min(0),
   accommodation_cost: z.coerce.number().min(0),
   notes: z.string().optional(),
+  attendance_status: z.enum(['registered', 'attended', 'no_show']),
+  certificate_issued: z.boolean(),
 })
 
 type FormInput = z.input<typeof schema>
@@ -51,6 +61,8 @@ export function ParticipantDialog({
       registration_cost: participant?.registration_cost ?? 0,
       accommodation_cost: participant?.accommodation_cost ?? 0,
       notes: participant?.notes ?? '',
+      attendance_status: participant?.attendance_status ?? 'registered',
+      certificate_issued: participant?.certificate_issued ?? false,
     },
   })
 
@@ -144,6 +156,48 @@ export function ParticipantDialog({
                 )}
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="attendance_status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Yoklama</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {(Object.keys(attendanceLabels) as AttendanceStatus[]).map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {attendanceLabels[s]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="certificate_issued"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-end gap-2 pb-2">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(v === true)} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Katılım belgesi verildi</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            {participant?.qr_code && (
+              <p className="text-muted-foreground text-xs">QR Kayıt Kodu: {participant.qr_code}</p>
+            )}
             <FormField
               control={form.control}
               name="notes"

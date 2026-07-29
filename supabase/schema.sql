@@ -1143,6 +1143,57 @@ drop policy if exists "sample_items_all_staff" on public.sample_items;
 create policy "sample_items_all_staff" on public.sample_items for all
   using (public.is_active_staff()) with check (public.is_active_staff());
 
+-- =========================================================
+-- 27. KONGRE/WORKSHOP GENİŞLETMESİ (Faz 4 ERP genişletmesi)
+-- =========================================================
+-- "Workshop" ayrı bir tablo değil — congresses zaten kongre/workshop ayrımı
+-- yapmadan kullanılıyor (bkz. seed verisindeki "Workshoplar" kaydı). Bu yüzden
+-- workshop'a özgü alanlar (salon/otel/şehir/kontenjan/sponsor/yoklama/QR...)
+-- congresses + congress_participants'a eklenir, ayrı bir modül kurulmaz.
+-- Sunum dosyası/broşür/fotoğraf gibi belgeler genel `attachments` tablosu
+-- (owner_type='congress') üzerinden yönetilir.
+
+alter table public.congresses add column if not exists city text;
+alter table public.congresses add column if not exists venue text;
+alter table public.congresses add column if not exists hotel text;
+alter table public.congresses add column if not exists capacity integer;
+alter table public.congresses add column if not exists sponsorship_info text;
+alter table public.congresses add column if not exists speakers text;
+alter table public.congresses add column if not exists trainers text;
+alter table public.congresses add column if not exists meal_plan text;
+alter table public.congresses add column if not exists transfer_info text;
+alter table public.congresses add column if not exists stand_info text;
+alter table public.congresses add column if not exists budget numeric(12, 2);
+alter table public.congresses add column if not exists campaign_info text;
+alter table public.congresses add column if not exists video_urls text[] not null default '{}';
+
+comment on column public.congresses.city is 'Kongre/workshop\'ın yapıldığı şehir';
+comment on column public.congresses.venue is 'Salon bilgisi';
+comment on column public.congresses.hotel is 'Konaklama oteli';
+comment on column public.congresses.capacity is 'Kontenjan (maksimum katılımcı sayısı)';
+comment on column public.congresses.sponsorship_info is 'Sponsor(lar) ve sponsorluk detayları';
+comment on column public.congresses.speakers is 'Konuşmacılar';
+comment on column public.congresses.trainers is 'Eğitmenler';
+comment on column public.congresses.meal_plan is 'Yemek planı';
+comment on column public.congresses.transfer_info is 'Transfer bilgisi';
+comment on column public.congresses.stand_info is 'Stand bilgisi';
+comment on column public.congresses.budget is 'Planlanan bütçe';
+comment on column public.congresses.campaign_info is 'Kampanya bilgisi';
+comment on column public.congresses.video_urls is 'Kongre/workshop ile ilgili video linkleri (YouTube vb.)';
+
+alter table public.congress_participants add column if not exists attendance_status text not null default 'registered';
+alter table public.congress_participants drop constraint if exists congress_participants_attendance_status_check;
+alter table public.congress_participants add constraint congress_participants_attendance_status_check
+  check (attendance_status in ('registered', 'attended', 'no_show'));
+alter table public.congress_participants add column if not exists certificate_issued boolean not null default false;
+alter table public.congress_participants add column if not exists qr_code text;
+alter table public.congress_participants drop constraint if exists congress_participants_qr_code_key;
+alter table public.congress_participants add constraint congress_participants_qr_code_key unique (qr_code);
+
+comment on column public.congress_participants.attendance_status is 'Yoklama durumu: registered (kayıtlı/davetli), attended (katıldı), no_show (gelmedi)';
+comment on column public.congress_participants.certificate_issued is 'Katılım belgesi verildi mi';
+comment on column public.congress_participants.qr_code is 'QR kod kayıt/check-in için benzersiz metin kod';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

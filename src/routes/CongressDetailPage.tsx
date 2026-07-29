@@ -26,6 +26,7 @@ import { CongressForm } from '@/features/congresses/CongressForm'
 import { ParticipantDialog } from '@/features/congresses/ParticipantDialog'
 import { ParticipantProductDialog } from '@/features/congresses/ParticipantProductDialog'
 import { RemainingProductDialog } from '@/features/congresses/RemainingProductDialog'
+import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import {
   useCongress,
   useDeleteCongress,
@@ -34,6 +35,19 @@ import {
   useParticipants,
   useRemainingProducts,
 } from '@/features/congresses/hooks'
+import type { AttendanceStatus } from '@/types/database'
+
+const attendanceLabels: Record<AttendanceStatus, string> = {
+  registered: 'Kayıtlı',
+  attended: 'Katıldı',
+  no_show: 'Gelmedi',
+}
+
+const attendanceVariant: Record<AttendanceStatus, 'outline' | 'success' | 'destructive'> = {
+  registered: 'outline',
+  attended: 'success',
+  no_show: 'destructive',
+}
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -191,6 +205,112 @@ export function CongressDetailPage() {
         </Card>
       </div>
 
+      {(congress.city ||
+        congress.venue ||
+        congress.hotel ||
+        congress.capacity != null ||
+        congress.sponsorship_info ||
+        congress.speakers ||
+        congress.trainers ||
+        congress.meal_plan ||
+        congress.transfer_info ||
+        congress.stand_info ||
+        congress.budget != null ||
+        congress.campaign_info ||
+        congress.video_urls.length > 0) && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">Etkinlik Bilgileri</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            {congress.city && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">ŞEHİR</p>
+                <p>{congress.city}</p>
+              </div>
+            )}
+            {congress.venue && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">SALON</p>
+                <p>{congress.venue}</p>
+              </div>
+            )}
+            {congress.hotel && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">OTEL</p>
+                <p>{congress.hotel}</p>
+              </div>
+            )}
+            {congress.capacity != null && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">KONTENJAN</p>
+                <p>{congress.capacity}</p>
+              </div>
+            )}
+            {congress.budget != null && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">BÜTÇE</p>
+                <p>{currency(Number(congress.budget))}</p>
+              </div>
+            )}
+            {congress.speakers && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">KONUŞMACILAR</p>
+                <p>{congress.speakers}</p>
+              </div>
+            )}
+            {congress.trainers && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">EĞİTMENLER</p>
+                <p>{congress.trainers}</p>
+              </div>
+            )}
+            {congress.sponsorship_info && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">SPONSORLUK</p>
+                <p>{congress.sponsorship_info}</p>
+              </div>
+            )}
+            {congress.meal_plan && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">YEMEK PLANI</p>
+                <p>{congress.meal_plan}</p>
+              </div>
+            )}
+            {congress.transfer_info && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">TRANSFER</p>
+                <p>{congress.transfer_info}</p>
+              </div>
+            )}
+            {congress.stand_info && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">STAND</p>
+                <p>{congress.stand_info}</p>
+              </div>
+            )}
+            {congress.campaign_info && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">KAMPANYA</p>
+                <p>{congress.campaign_info}</p>
+              </div>
+            )}
+            {congress.video_urls.length > 0 && (
+              <div className="sm:col-span-2 lg:col-span-3">
+                <p className="text-xs font-medium text-muted-foreground">VİDEOLAR</p>
+                <div className="grid gap-1">
+                  {congress.video_urls.map((url) => (
+                    <a key={url} href={url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                      {url}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Katılımcı Doktorlar</h2>
         <ParticipantDialog congressId={congress.id} />
@@ -237,6 +357,10 @@ export function CongressDetailPage() {
                     </Badge>
                   )}
                   <Badge variant="success">Katılım Paket Fiyatı: {currency(packagePrice)}</Badge>
+                  <Badge variant={attendanceVariant[participant.attendance_status]}>
+                    {attendanceLabels[participant.attendance_status]}
+                  </Badge>
+                  {participant.certificate_issued && <Badge variant="secondary">Belge Verildi</Badge>}
                 </div>
                 {participant.notes && <p className="mb-3 text-sm text-muted-foreground">{participant.notes}</p>}
 
@@ -382,6 +506,8 @@ export function CongressDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <AttachmentsPanel ownerType="congress" ownerId={congress.id} />
     </div>
   )
 }

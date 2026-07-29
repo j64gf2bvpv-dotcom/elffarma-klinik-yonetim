@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
 import type {
+  AttendanceStatus,
   Congress,
   CongressParticipant,
   CongressParticipantProduct,
@@ -16,6 +17,19 @@ export interface CongressInput {
   single_person_price?: number | null
   two_person_price?: number | null
   image_url?: string | null
+  city?: string | null
+  venue?: string | null
+  hotel?: string | null
+  capacity?: number | null
+  sponsorship_info?: string | null
+  speakers?: string | null
+  trainers?: string | null
+  meal_plan?: string | null
+  transfer_info?: string | null
+  stand_info?: string | null
+  budget?: number | null
+  campaign_info?: string | null
+  video_urls?: string[]
 }
 
 export async function fetchCongresses(): Promise<Congress[]> {
@@ -53,6 +67,8 @@ export interface ParticipantInput {
   registration_cost: number
   accommodation_cost: number
   notes?: string | null
+  attendance_status?: AttendanceStatus
+  certificate_issued?: boolean
 }
 
 export type ParticipantProductWithRep = CongressParticipantProduct & { sales_reps: { name: string } | null }
@@ -91,7 +107,7 @@ export async function fetchParticipationsByDoctorName(doctorName: string): Promi
 export async function createParticipant(input: ParticipantInput): Promise<CongressParticipant> {
   return offlineInsert<CongressParticipant>(
     'congress_participants',
-    { ...input },
+    { ...input, qr_code: crypto.randomUUID() },
     `Kongre katılımcısı: ${input.doctor_name}`,
   )
 }
