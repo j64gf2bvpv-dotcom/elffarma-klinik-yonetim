@@ -254,3 +254,36 @@ export interface BudgetTarget {
   created_at: string
   updated_at: string
 }
+
+export type AIMessageRole = 'system' | 'user' | 'assistant'
+
+export interface AIConversation {
+  id: string
+  title: string
+  provider: string | null
+  model: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AIMessageRow {
+  id: string
+  conversation_id: string
+  role: AIMessageRole
+  content: string
+  created_at: string
+}
+
+export interface AIUsageLog {
+  id: string
+  provider: string
+  model: string
+  success: boolean
+  duration_ms: number | null
+  prompt_tokens: number | null
+  completion_tokens: number | null
+  error_message: string | null
+  created_by: string | null
+  created_at: string
+}

@@ -773,6 +773,74 @@ drop policy if exists "invoices_delete_staff" on storage.objects;
 create policy "invoices_delete_staff" on storage.objects for delete
   using (bucket_id = 'invoices' and auth.uid() is not null);
 
+-- =========================================================
+-- 23. AI ALTYAPISI (AIService — sağlayıcıdan bağımsız konuşma geçmişi + kullanım logları)
+-- =========================================================
+create table if not exists public.ai_conversations (
+  id uuid primary key default gen_random_uuid(),
+  title text not null default 'Yeni Konuşma',
+  provider text,
+  model text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists set_updated_at on public.ai_conversations;
+create trigger set_updated_at before update on public.ai_conversations
+  for each row execute function public.set_updated_at();
+
+alter table public.ai_conversations enable row level security;
+
+drop policy if exists "ai_conversations_all_staff" on public.ai_conversations;
+create policy "ai_conversations_all_staff" on public.ai_conversations for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.ai_conversations is 'AIService üzerinden yürütülen konuşmaların üst kaydı (sağlayıcıdan bağımsız)';
+
+create table if not exists public.ai_messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.ai_conversations (id) on delete cascade,
+  role text not null check (role in ('system', 'user', 'assistant')),
+  content text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists ai_messages_conversation_id_idx on public.ai_messages (conversation_id);
+
+alter table public.ai_messages enable row level security;
+
+drop policy if exists "ai_messages_all_staff" on public.ai_messages;
+create policy "ai_messages_all_staff" on public.ai_messages for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.ai_messages is 'Bir AI konuşmasındaki tek tek mesajlar (kullanıcı/asistan/sistem)';
+
+create table if not exists public.ai_usage_logs (
+  id uuid primary key default gen_random_uuid(),
+  provider text not null,
+  model text not null,
+  success boolean not null,
+  duration_ms integer,
+  prompt_tokens integer,
+  completion_tokens integer,
+  error_message text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now()
+);
+create index if not exists ai_usage_logs_created_at_idx on public.ai_usage_logs (created_at);
+
+alter table public.ai_usage_logs enable row level security;
+
+drop policy if exists "ai_usage_logs_select_staff" on public.ai_usage_logs;
+create policy "ai_usage_logs_select_staff" on public.ai_usage_logs for select
+  using (public.is_active_staff());
+
+drop policy if exists "ai_usage_logs_insert_staff" on public.ai_usage_logs;
+create policy "ai_usage_logs_insert_staff" on public.ai_usage_logs for insert
+  with check (public.is_active_staff());
+
+comment on table public.ai_usage_logs is 'AIService çağrılarının denetim/hata/performans kaydı — düzenlenmez, sadece eklenir';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

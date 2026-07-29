@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useApplyBrandTheme } from '@/features/appSettings/useApplyBrandTheme'
+import { useAIStartupCheck } from '@/features/ai/useAIStartupCheck'
 import { useColorMode } from '@/features/appSettings/useColorMode'
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
 import { getIconSet, type IconVariant, type NavKey } from '@/features/appSettings/iconSets'
@@ -383,6 +384,7 @@ function TopBar() {
 export function AppShell() {
   const { staff } = useAuth()
   useApplyBrandTheme()
+  useAIStartupCheck()
   const { mode, toggle: toggleColorMode } = useColorMode()
   const { data: iconSetId } = useAppSetting<string>('sidebar_icon_set')
   const iconSet = getIconSet(iconSetId)
