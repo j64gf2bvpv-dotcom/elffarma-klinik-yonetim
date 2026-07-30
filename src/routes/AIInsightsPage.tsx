@@ -27,8 +27,9 @@ function snapshotSystemMessage(snapshot: unknown): AIMessage {
     content:
       'Sen Elffarma Paket Programı için çalışan bir işletme analisti asistanısın. ' +
       'Aşağıda uygulamanın güncel verilerinden hesaplanmış gerçek bir özet (JSON) var. ' +
-      'Sadece bu veriye dayanarak Türkçe, kısa ve net yanıt ver. Veride olmayan sayıları uydurma; ' +
-      'eksik bilgi varsa bunu açıkça belirt.\n\nVERİ ÖZETİ:\n' +
+      'Sadece bu veriye dayanarak yanıt ver. Veride olmayan sayıları uydurma; ' +
+      'eksik bilgi varsa bunu açıkça belirt. SADECE TÜRKÇE yaz — başka bir dilde (Çince, İngilizce vb.) ' +
+      'tek kelime bile yazma.\n\nVERİ ÖZETİ:\n' +
       JSON.stringify(snapshot, null, 2),
   }
 }
@@ -124,8 +125,8 @@ export function AIInsightsPage() {
           role: 'system',
           content:
             'Sen bir veri analistisin. Kullanıcının yüklediği Excel dosyasından okunan satırların bir örneğini ' +
-            'göreceksin (en fazla ilk 50 satır). Türkçe, kısa bir özet çıkar: kaç satır/sütun var, hangi alanlar ' +
-            'göze çarpıyor, dikkat çekici örüntü/anormallik var mı.',
+            'göreceksin (en fazla ilk 50 satır). Kısa bir özet çıkar: kaç satır/sütun var, hangi alanlar ' +
+            'göze çarpıyor, dikkat çekici örüntü/anormallik var mı. SADECE TÜRKÇE yaz — başka bir dilde tek kelime bile yazma.',
         },
         {
           role: 'user',

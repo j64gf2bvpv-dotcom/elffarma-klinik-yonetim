@@ -2,7 +2,7 @@ import type { AIChatOptions, AIChatResult, AIConnectionTestResult, AIMessage, AI
 import { openaiCompatibleChat, openaiCompatibleStreamChat, openaiCompatibleTestConnection } from './openaiCompatible'
 
 export const OLLAMA_DEFAULT_BASE_URL = 'http://localhost:11434/v1'
-export const OLLAMA_DEFAULT_MODEL = 'qwen2.5:7b'
+export const OLLAMA_DEFAULT_MODEL = 'qwen2.5:3b'
 
 /**
  * Yerel Ollama çalışma zamanı — varsayılan sağlayıcı. API anahtarı gerekmez;

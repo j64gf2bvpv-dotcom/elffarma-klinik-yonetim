@@ -123,6 +123,10 @@ export function AIChatWidget() {
       await appendMessageMutation.mutateAsync({ conversation_id: convId, role: 'user', content: text })
 
       const history: AIMessage[] = [
+        {
+          role: 'system',
+          content: 'Sadece Türkçe yanıt ver. Başka bir dilde (Çince, İngilizce vb.) tek kelime bile yazma.',
+        },
         ...storedMessages.map((m) => ({ role: m.role, content: m.content })),
         { role: 'user' as const, content: text },
       ]
