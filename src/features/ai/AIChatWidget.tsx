@@ -18,35 +18,41 @@ import {
 } from './hooks'
 import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 
-let sparkleGradientId = 0
+// lucide'nin genel "sparkle" (dört uçlu parıltı) şekli — CSS mask olarak kullanmak için data URI.
+const SPARKLE_MASK_URL =
+  'url("data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/></svg>',
+  ) +
+  '")'
 
 /**
- * Çok renkli, dört uçlu parıltı simgesi — Gemini'nin animasyonundan ilham
- * alan kendi SVG'imiz (lucide'nin genel "sparkle" şekli + kendi gradyanımız).
- * Google'ın gerçek logosu/asset dosyası kullanılmıyor; sadece görsel dil
- * benzer (renkli, dönen/parıldayan tek parıltı).
+ * Dört uçlu bir parıltı simgesi — Google'ın Gemini logosu/asset dosyası
+ * kullanılmadan (telif/marka), uygulamanın kendi tema renkleriyle (primary/
+ * gold/accent) dolduruluyor ve hafif bir ışık kayması ile canlandırılıyor —
+ * böylece hangi marka teması seçili olursa olsun panelle uyumlu kalıyor.
  */
 function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
-  const gradientId = React.useRef(`ai-sparkle-gradient-${sparkleGradientId++}`).current
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className={cn(className, animated && 'animate-ai-orb-hue')}
+    <span
       aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f43f5e" />
-          <stop offset="35%" stopColor="#f59e0b" />
-          <stop offset="65%" stopColor="#22c55e" />
-          <stop offset="100%" stopColor="#3b82f6" />
-        </linearGradient>
-      </defs>
-      <path
-        fill={`url(#${gradientId})`}
-        d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"
-      />
-    </svg>
+      className={cn(
+        'inline-block bg-[linear-gradient(120deg,var(--color-primary),var(--color-gold),var(--color-accent),var(--color-gold),var(--color-primary))]',
+        animated && 'animate-ai-orb-shimmer',
+        className,
+      )}
+      style={{
+        WebkitMaskImage: SPARKLE_MASK_URL,
+        maskImage: SPARKLE_MASK_URL,
+        WebkitMaskRepeat: 'no-repeat',
+        maskRepeat: 'no-repeat',
+        WebkitMaskSize: 'contain',
+        maskSize: 'contain',
+        WebkitMaskPosition: 'center',
+        maskPosition: 'center',
+        backgroundSize: '200% 200%',
+      }}
+    />
   )
 }
 
