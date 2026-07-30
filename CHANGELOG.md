@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.9] - 2026-07-31
+
+**Hata düzeltmesi:** Gemini varsayılan modeli `gemini-2.5-flash` de Google tarafından yeni hesaplar için kullanımdan kaldırılmıştı (404: "no longer available to new users"). Sabit bir model sürümü yerine Google'ın her zaman güncel önerilen flash modeline işaret eden `gemini-flash-latest` takma adına geçildi — bir sonraki model kullanımdan kaldırılmasında bu sorun tekrar yaşanmayacak. Daha önce Ayarlar'dan model adı kaydedilmişse Model alanının elle `gemini-flash-latest` yapılması gerekiyor. Şema değişikliği yok.
+
 ## [2.12.8] - 2026-07-31
 
 **Hata düzeltmesi:** AI sohbet paneli, simge ekranın kenarlarına yakın bir yere sürüklendiğinde (ör. üst veya sol kenar) açılınca ekranın dışına taşıp görünmez oluyordu — panelin konumu artık simgenin konumundan bağımsız hesaplanıyor ve pencerenin her zaman içinde kalacak şekilde otomatik olarak yukarı/aşağı yönde kendini ayarlıyor. Ayrıca Gemini sağlayıcısı, model adında yanlışlıkla `models/` öneki veya baştan/sondan boşluk bırakılırsa Google'ın "unexpected model name format" (400) hatası vermesini önlemek için model adını göndermeden önce temizliyor. Şema değişikliği yok.
