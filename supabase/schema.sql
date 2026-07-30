@@ -1426,6 +1426,17 @@ create policy "crm_opportunities_all_staff" on public.crm_opportunities for all
 
 comment on table public.crm_opportunities is 'Teklif/fırsat kayıtları — satış hunisi aşaması (stage) ile takip edilir';
 
+-- =========================================================
+-- 32. HATA DÜZELTMESİ: customers.preferred_payment_method şeması
+-- =========================================================
+-- Faz 7'de payments.payment_method'a POS/Çek/Senet eklenmişti ama bu kısıtlama
+-- customers.preferred_payment_method'a (ve TypeScript tarafındaki PaymentMethod
+-- tipine) yansıtılmamıştı — doktor kartında "Tercih Edilen Ödeme Şekli" olarak
+-- POS/Çek/Senet seçilince kayıt bu CHECK kısıtlamasına takılıp başarısız oluyordu.
+alter table public.customers drop constraint if exists customers_preferred_payment_method_check;
+alter table public.customers add constraint customers_preferred_payment_method_check
+  check (preferred_payment_method is null or preferred_payment_method in ('nakit', 'kredi_karti', 'havale', 'pos', 'cek', 'senet'));
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

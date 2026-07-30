@@ -36,7 +36,7 @@ import { RegionPicker } from '@/features/regions/RegionPicker'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
 import { tr } from '@/i18n/tr'
-import type { Customer, Product } from '@/types/database'
+import type { Customer, PaymentMethod, Product } from '@/types/database'
 
 const NO_PAYMENT_METHOD = '__none__'
 const NO_SALES_REP = '__none__'
@@ -185,7 +185,7 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
       vat_rate: values.vat_rate ?? null,
       preferred_payment_method:
         values.preferred_payment_method && values.preferred_payment_method !== NO_PAYMENT_METHOD
-          ? (values.preferred_payment_method as 'nakit' | 'kredi_karti' | 'havale')
+          ? (values.preferred_payment_method as PaymentMethod)
           : null,
       specialty: values.specialty || null,
       clinic_id: values.clinic_id ?? null,
