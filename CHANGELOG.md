@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.8] - 2026-07-31
+
+**Hata düzeltmesi:** AI sohbet paneli, simge ekranın kenarlarına yakın bir yere sürüklendiğinde (ör. üst veya sol kenar) açılınca ekranın dışına taşıp görünmez oluyordu — panelin konumu artık simgenin konumundan bağımsız hesaplanıyor ve pencerenin her zaman içinde kalacak şekilde otomatik olarak yukarı/aşağı yönde kendini ayarlıyor. Ayrıca Gemini sağlayıcısı, model adında yanlışlıkla `models/` öneki veya baştan/sondan boşluk bırakılırsa Google'ın "unexpected model name format" (400) hatası vermesini önlemek için model adını göndermeden önce temizliyor. Şema değişikliği yok.
+
 ## [2.12.7] - 2026-07-31
 
 **AI simgesi taşınabilir/gizlenebilir + Gemini varsayılan model düzeltmesi:** Sağ alttaki AI Asistan simgesi artık sürüklenip ekranda istenen bir konuma bırakılabiliyor (konum cihaza özel hatırlanıyor) ve simgenin üzerine gelip küçük X'e basarak ana ekrandan tamamen gizlenebiliyor — geri getirmek için Ayarlar > Yapay Zeka'daki "Ana ekranda AI Asistan simgesini göster" anahtarı kullanılıyor. Ayrıca Gemini sağlayıcısının varsayılan modeli, Google tarafından kullanımdan kaldırılmış olan `gemini-1.5-flash`'tan güncel `gemini-2.5-flash`'a değiştirildi — daha önce Ayarlar'dan eski model adını kaydetmiş olanların Model alanını elle güncellemesi gerekiyor. Şema değişikliği yok.

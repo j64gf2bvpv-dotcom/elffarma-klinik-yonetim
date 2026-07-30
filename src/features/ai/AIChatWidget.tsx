@@ -21,6 +21,12 @@ import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 const WIDGET_BUTTON_SIZE = 56
 const WIDGET_OFFSET_KEY = 'ai_widget_offset'
 const DEFAULT_OFFSET = { right: 24, bottom: 24 }
+// Panel için nominal boyutlar (w-96 / h-[32rem] ile eşleşir) — simge ekranın
+// neresine sürüklenirse sürüklensin panelin görünür alanın dışına taşmaması
+// için konum hesabında kullanılır.
+const PANEL_WIDTH = 384
+const PANEL_HEIGHT = 512
+const PANEL_MARGIN = 12
 
 function loadOffset(): { right: number; bottom: number } {
   try {
@@ -134,7 +140,37 @@ export function AIChatWidget() {
     localStorage.setItem(WIDGET_OFFSET_KEY, JSON.stringify(offset))
   }, [offset])
 
+  const [viewport, setViewport] = React.useState({ width: window.innerWidth, height: window.innerHeight })
+  React.useEffect(() => {
+    function handleResize() {
+      setViewport({ width: window.innerWidth, height: window.innerHeight })
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const anchorStyle: React.CSSProperties = { right: offset.right, bottom: offset.bottom }
+
+  // Panel her zaman görünür alanın (pencerenin) içinde kalsın diye kendi konumu
+  // simgenin konumundan ayrı hesaplanır — simge ekranın neresine sürüklenirse
+  // sürüklensin (üst kenar, sol kenar vb.) panel taşmadan açılır/kapanır.
+  const panelStyle = React.useMemo<React.CSSProperties>(() => {
+    const buttonLeft = viewport.width - offset.right - WIDGET_BUTTON_SIZE
+    const buttonTop = viewport.height - offset.bottom - WIDGET_BUTTON_SIZE
+    const buttonRight = buttonLeft + WIDGET_BUTTON_SIZE
+    const buttonBottom = buttonTop + WIDGET_BUTTON_SIZE
+
+    let left = buttonRight - PANEL_WIDTH
+    let top = buttonTop - PANEL_HEIGHT - 8
+    if (top < PANEL_MARGIN) {
+      top = Math.min(buttonBottom + 8, viewport.height - PANEL_HEIGHT - PANEL_MARGIN)
+    }
+
+    left = clamp(left, PANEL_MARGIN, viewport.width - PANEL_WIDTH - PANEL_MARGIN)
+    top = clamp(top, PANEL_MARGIN, viewport.height - PANEL_HEIGHT - PANEL_MARGIN)
+
+    return { left, top }
+  }, [offset, viewport])
 
   function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -326,7 +362,7 @@ export function AIChatWidget() {
           'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-bottom-right flex-col overflow-hidden rounded-2xl border bg-popover text-popover-foreground shadow-2xl transition-all duration-300 ease-out',
           open ? 'h-[32rem] max-h-[calc(100vh-6rem)] scale-100 opacity-100' : 'h-0 scale-95 opacity-0',
         )}
-        style={anchorStyle}
+        style={panelStyle}
         aria-hidden={!open}
       >
         <div className="flex items-center justify-between border-b bg-primary/5 px-4 py-3">

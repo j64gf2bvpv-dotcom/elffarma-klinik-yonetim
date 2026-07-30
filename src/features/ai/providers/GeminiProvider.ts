@@ -14,7 +14,10 @@ export class GeminiProvider implements AIProvider {
 
   constructor(baseUrl: string = GEMINI_DEFAULT_BASE_URL, model: string = GEMINI_DEFAULT_MODEL, apiKey?: string) {
     this.baseUrl = baseUrl
-    this.model = model
+    // Google'ın OpenAI-uyumlu katmanı "models/" önekini kabul etmiyor — kullanıcı
+    // yanlışlıkla bu önekle ya da baştan/sondan boşlukla girerse Google
+    // "unexpected model name format" (400) hatası döner; burada temizliyoruz.
+    this.model = model.trim().replace(/^models\//, '')
     this.apiKey = apiKey
   }
 
