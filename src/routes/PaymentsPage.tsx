@@ -226,70 +226,85 @@ export function PaymentsPage() {
         </CardContent>
       </Card>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
-              <Banknote className="size-5" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
+              <Banknote className="size-4" />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Nakit</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.nakit)}</p>
+              <p className="mt-1 truncate text-lg font-semibold tabular-nums" title={currency(totalsByMethod.nakit)}>
+                {currency(totalsByMethod.nakit)}
+              </p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <CreditCard className="size-5" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <CreditCard className="size-4" />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Kredi Kartı</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.kredi_karti)}</p>
+              <p
+                className="mt-1 truncate text-lg font-semibold tabular-nums"
+                title={currency(totalsByMethod.kredi_karti)}
+              >
+                {currency(totalsByMethod.kredi_karti)}
+              </p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.55_0.18_250)]/15 text-[oklch(0.55_0.18_250)]">
-              <ArrowLeftRight className="size-5" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.55_0.18_250)]/15 text-[oklch(0.55_0.18_250)]">
+              <ArrowLeftRight className="size-4" />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Havale</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.havale)}</p>
+              <p className="mt-1 truncate text-lg font-semibold tabular-nums" title={currency(totalsByMethod.havale)}>
+                {currency(totalsByMethod.havale)}
+              </p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
-              <CreditCard className="size-5" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
+              <CreditCard className="size-4" />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">POS</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.pos)}</p>
+              <p className="mt-1 truncate text-lg font-semibold tabular-nums" title={currency(totalsByMethod.pos)}>
+                {currency(totalsByMethod.pos)}
+              </p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-              <Banknote className="size-5" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <Banknote className="size-4" />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Çek</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.cek)}</p>
+              <p className="mt-1 truncate text-lg font-semibold tabular-nums" title={currency(totalsByMethod.cek)}>
+                {currency(totalsByMethod.cek)}
+              </p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-              <Banknote className="size-5" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <Banknote className="size-4" />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Senet</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.senet)}</p>
+              <p className="mt-1 truncate text-lg font-semibold tabular-nums" title={currency(totalsByMethod.senet)}>
+                {currency(totalsByMethod.senet)}
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.2] - 2026-07-31
+
+**Arayüz düzeltmesi:** Tahsilatlar sayfasındaki ödeme yöntemi özet kartları (Faz 7'de POS/Çek/Senet eklenince 3'ten 6'ya çıkmıştı) dar ekranlarda tek satıra sıkışıp büyük tutarların kesilmesine (taşmasına) neden oluyordu. Kart ızgarası artık ekran genişliğine göre 2/3/6 sütuna kademeli olarak yerleşiyor, tutar metni taşma yerine üç nokta ile kısaltılıp üzerine gelince tam değeri gösteriyor. Şema değişikliği yok.
+
 ## [2.12.1] - 2026-07-31
 
 **Hata düzeltmesi:** `customers.preferred_payment_method` (doktor kartındaki "Tercih Edilen Ödeme Şekli") alanının veritabanı şeması, Faz 7'de `payments.payment_method`'a eklenen POS/Çek/Senet'i yansıtmıyordu — TypeScript tipi ve formdaki açılır liste tüm 6 yöntemi gösterdiği halde veritabanı CHECK kısıtlaması hâlâ sadece 3 yöntemi (Nakit/Kredi Kartı/Havale) kabul ediyordu. Doktor formunda POS/Çek/Senet seçilip kaydedilmeye çalışılınca kayıt başarısız oluyordu. Veritabanı kısıtlaması genişletildi, form tarafındaki tip daraltması düzeltildi. Bu düzeltme şema değişikliği içerir — `supabase/schema.sql`'in TAMAMI yeniden SQL Editor'e yapıştırılıp çalıştırılmalı.
