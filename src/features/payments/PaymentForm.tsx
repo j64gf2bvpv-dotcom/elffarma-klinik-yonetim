@@ -28,7 +28,7 @@ const NO_REP = '__none__'
 const schema = z.object({
   customer_id: z.string().min(1, 'Doktor seçin'),
   amount: z.coerce.number().positive('Tutar 0’dan büyük olmalı'),
-  payment_method: z.enum(['nakit', 'kredi_karti', 'havale', 'pos', 'cek', 'senet']),
+  payment_method: z.enum(['nakit', 'kredi_karti', 'havale', 'pos']),
   description: z.string().optional(),
   paid_at: z.string().min(1),
   sales_rep_id: z.string().optional(),

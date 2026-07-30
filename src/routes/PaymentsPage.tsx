@@ -42,8 +42,6 @@ interface KasaRow {
   kredi_karti: number
   havale: number
   pos: number
-  cek: number
-  senet: number
   total: number
 }
 
@@ -51,8 +49,7 @@ function buildKasaRows(payments: PaymentWithCustomer[]): KasaRow[] {
   const byDay = new Map<string, KasaRow>()
   for (const p of payments) {
     const day = format(new Date(p.paid_at), 'yyyy-MM-dd')
-    const row =
-      byDay.get(day) ?? { date: day, nakit: 0, kredi_karti: 0, havale: 0, pos: 0, cek: 0, senet: 0, total: 0 }
+    const row = byDay.get(day) ?? { date: day, nakit: 0, kredi_karti: 0, havale: 0, pos: 0, total: 0 }
     row[p.payment_method] += Number(p.amount)
     row.total += Number(p.amount)
     byDay.set(day, row)
@@ -79,7 +76,7 @@ export function PaymentsPage() {
       acc[p.payment_method] += Number(p.amount)
       return acc
     },
-    { nakit: 0, kredi_karti: 0, havale: 0, pos: 0, cek: 0, senet: 0 },
+    { nakit: 0, kredi_karti: 0, havale: 0, pos: 0 },
   )
   const kasaRows = React.useMemo(() => buildKasaRows(payments), [payments])
 
@@ -226,15 +223,15 @@ export function PaymentsPage() {
         </CardContent>
       </Card>
 
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
-              <Banknote className="size-4" />
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
+              <Banknote className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Nakit</p>
-              <p className="mt-1 truncate text-lg font-semibold tabular-nums" title={currency(totalsByMethod.nakit)}>
+              <p className="mt-1 truncate text-xl font-semibold tabular-nums" title={currency(totalsByMethod.nakit)}>
                 {currency(totalsByMethod.nakit)}
               </p>
             </div>
@@ -242,13 +239,13 @@ export function PaymentsPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <CreditCard className="size-4" />
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <CreditCard className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Kredi Kartı</p>
               <p
-                className="mt-1 truncate text-lg font-semibold tabular-nums"
+                className="mt-1 truncate text-xl font-semibold tabular-nums"
                 title={currency(totalsByMethod.kredi_karti)}
               >
                 {currency(totalsByMethod.kredi_karti)}
@@ -258,12 +255,12 @@ export function PaymentsPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.55_0.18_250)]/15 text-[oklch(0.55_0.18_250)]">
-              <ArrowLeftRight className="size-4" />
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.55_0.18_250)]/15 text-[oklch(0.55_0.18_250)]">
+              <ArrowLeftRight className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Havale</p>
-              <p className="mt-1 truncate text-lg font-semibold tabular-nums" title={currency(totalsByMethod.havale)}>
+              <p className="mt-1 truncate text-xl font-semibold tabular-nums" title={currency(totalsByMethod.havale)}>
                 {currency(totalsByMethod.havale)}
               </p>
             </div>
@@ -271,39 +268,13 @@ export function PaymentsPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
-              <CreditCard className="size-4" />
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
+              <CreditCard className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">POS</p>
-              <p className="mt-1 truncate text-lg font-semibold tabular-nums" title={currency(totalsByMethod.pos)}>
+              <p className="mt-1 truncate text-xl font-semibold tabular-nums" title={currency(totalsByMethod.pos)}>
                 {currency(totalsByMethod.pos)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-              <Banknote className="size-4" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Çek</p>
-              <p className="mt-1 truncate text-lg font-semibold tabular-nums" title={currency(totalsByMethod.cek)}>
-                {currency(totalsByMethod.cek)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-              <Banknote className="size-4" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Senet</p>
-              <p className="mt-1 truncate text-lg font-semibold tabular-nums" title={currency(totalsByMethod.senet)}>
-                {currency(totalsByMethod.senet)}
               </p>
             </div>
           </CardContent>
@@ -325,8 +296,6 @@ export function PaymentsPage() {
                   <TableHead>Kredi Kartı</TableHead>
                   <TableHead>Havale</TableHead>
                   <TableHead>POS</TableHead>
-                  <TableHead>Çek</TableHead>
-                  <TableHead>Senet</TableHead>
                   <TableHead>Gün Toplamı</TableHead>
                 </TableRow>
               </TableHeader>
@@ -340,8 +309,6 @@ export function PaymentsPage() {
                     <TableCell>{row.kredi_karti > 0 ? currency(row.kredi_karti) : '—'}</TableCell>
                     <TableCell>{row.havale > 0 ? currency(row.havale) : '—'}</TableCell>
                     <TableCell>{row.pos > 0 ? currency(row.pos) : '—'}</TableCell>
-                    <TableCell>{row.cek > 0 ? currency(row.cek) : '—'}</TableCell>
-                    <TableCell>{row.senet > 0 ? currency(row.senet) : '—'}</TableCell>
                     <TableCell className="font-semibold">{currency(row.total)}</TableCell>
                   </TableRow>
                 ))}

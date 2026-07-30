@@ -32,8 +32,6 @@ export const tr = {
     kredi_karti: 'Kredi Kartı',
     havale: 'Havale/EFT (IBAN)',
     pos: 'POS',
-    cek: 'Çek',
-    senet: 'Senet',
   } as Record<string, string>,
   crmActivityType: {
     arama: 'Arama',

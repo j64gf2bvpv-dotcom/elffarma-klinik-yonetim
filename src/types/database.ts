@@ -1,6 +1,6 @@
 export type StaffRole = 'admin' | 'staff'
 export type MovementType = 'in' | 'out' | 'adjustment' | 'sample' | 'return' | 'disposal'
-export type PaymentMethod = 'nakit' | 'kredi_karti' | 'havale' | 'pos' | 'cek' | 'senet'
+export type PaymentMethod = 'nakit' | 'kredi_karti' | 'havale' | 'pos'
 export type DoctorType = 'sahis' | 'hastane'
 export type BrandLine = 'dermakor' | 'swiss'
 

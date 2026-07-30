@@ -1437,6 +1437,22 @@ alter table public.customers drop constraint if exists customers_preferred_payme
 alter table public.customers add constraint customers_preferred_payment_method_check
   check (preferred_payment_method is null or preferred_payment_method in ('nakit', 'kredi_karti', 'havale', 'pos', 'cek', 'senet'));
 
+-- =========================================================
+-- 33. ÇEK VE SENET ÖDEME YÖNTEMLERİ KALDIRILDI
+-- =========================================================
+-- İşletme Çek/Senet ile tahsilat kabul etmiyor — Faz 7'de eklenen bu iki
+-- yöntem hem payments hem customers.preferred_payment_method kısıtlamasından
+-- çıkarıldı. Var olan bir kayıt bu iki değerden birini kullanıyorsa bu ALTER
+-- başarısız olur; böyle bir durumda önce o kayıtları başka bir yönteme
+-- güncelleyin.
+alter table public.payments drop constraint if exists payments_payment_method_check;
+alter table public.payments add constraint payments_payment_method_check
+  check (payment_method in ('nakit', 'kredi_karti', 'havale', 'pos'));
+
+alter table public.customers drop constraint if exists customers_preferred_payment_method_check;
+alter table public.customers add constraint customers_preferred_payment_method_check
+  check (preferred_payment_method is null or preferred_payment_method in ('nakit', 'kredi_karti', 'havale', 'pos'));
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.
