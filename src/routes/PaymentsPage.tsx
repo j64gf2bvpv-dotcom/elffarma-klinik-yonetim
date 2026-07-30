@@ -13,8 +13,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PaymentForm } from '@/features/payments/PaymentForm'
 import { InvoiceDialog } from '@/features/payments/InvoiceDialog'
-import { useDeletePayment, usePayments } from '@/features/payments/hooks'
+import { InstallmentPlanForm } from '@/features/payments/InstallmentPlanForm'
+import { CollectInstallmentDialog } from '@/features/payments/CollectInstallmentDialog'
+import {
+  useAllInstallments,
+  useDeleteInstallmentPlan,
+  useDeletePayment,
+  useInstallmentPlans,
+  usePayments,
+} from '@/features/payments/hooks'
 import { createPayment, type PaymentWithCustomer } from '@/features/payments/api'
+import { calculateReceivablesRisk } from '@/features/payments/calculateReceivablesRisk'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { tr } from '@/i18n/tr'
@@ -32,6 +41,9 @@ interface KasaRow {
   nakit: number
   kredi_karti: number
   havale: number
+  pos: number
+  cek: number
+  senet: number
   total: number
 }
 
@@ -39,7 +51,8 @@ function buildKasaRows(payments: PaymentWithCustomer[]): KasaRow[] {
   const byDay = new Map<string, KasaRow>()
   for (const p of payments) {
     const day = format(new Date(p.paid_at), 'yyyy-MM-dd')
-    const row = byDay.get(day) ?? { date: day, nakit: 0, kredi_karti: 0, havale: 0, total: 0 }
+    const row =
+      byDay.get(day) ?? { date: day, nakit: 0, kredi_karti: 0, havale: 0, pos: 0, cek: 0, senet: 0, total: 0 }
     row[p.payment_method] += Number(p.amount)
     row.total += Number(p.amount)
     byDay.set(day, row)
@@ -66,9 +79,15 @@ export function PaymentsPage() {
       acc[p.payment_method] += Number(p.amount)
       return acc
     },
-    { nakit: 0, kredi_karti: 0, havale: 0 },
+    { nakit: 0, kredi_karti: 0, havale: 0, pos: 0, cek: 0, senet: 0 },
   )
   const kasaRows = React.useMemo(() => buildKasaRows(payments), [payments])
+
+  const { data: installmentPlans = [] } = useInstallmentPlans()
+  const { data: allInstallments = [] } = useAllInstallments()
+  const deletePlanMutation = useDeleteInstallmentPlan()
+  const riskRows = React.useMemo(() => calculateReceivablesRisk(allInstallments), [allInstallments])
+  const unpaidInstallments = allInstallments.filter((i) => !i.paid_payment_id)
 
   const paymentMethodByLabel = React.useMemo(() => {
     const map = new Map<string, PaymentMethod>()
@@ -179,6 +198,7 @@ export function PaymentsPage() {
                 },
               ]}
             />
+            <InstallmentPlanForm />
             <PaymentForm />
           </div>
         }
@@ -206,7 +226,7 @@ export function PaymentsPage() {
         </CardContent>
       </Card>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
@@ -240,6 +260,39 @@ export function PaymentsPage() {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
+              <CreditCard className="size-5" />
+            </span>
+            <div>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">POS</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.pos)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <Banknote className="size-5" />
+            </span>
+            <div>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Çek</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.cek)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <Banknote className="size-5" />
+            </span>
+            <div>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Senet</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">{currency(totalsByMethod.senet)}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {kasaRows.length > 0 && (
@@ -256,6 +309,9 @@ export function PaymentsPage() {
                   <TableHead>Nakit</TableHead>
                   <TableHead>Kredi Kartı</TableHead>
                   <TableHead>Havale</TableHead>
+                  <TableHead>POS</TableHead>
+                  <TableHead>Çek</TableHead>
+                  <TableHead>Senet</TableHead>
                   <TableHead>Gün Toplamı</TableHead>
                 </TableRow>
               </TableHeader>
@@ -268,11 +324,93 @@ export function PaymentsPage() {
                     <TableCell>{row.nakit > 0 ? currency(row.nakit) : '—'}</TableCell>
                     <TableCell>{row.kredi_karti > 0 ? currency(row.kredi_karti) : '—'}</TableCell>
                     <TableCell>{row.havale > 0 ? currency(row.havale) : '—'}</TableCell>
+                    <TableCell>{row.pos > 0 ? currency(row.pos) : '—'}</TableCell>
+                    <TableCell>{row.cek > 0 ? currency(row.cek) : '—'}</TableCell>
+                    <TableCell>{row.senet > 0 ? currency(row.senet) : '—'}</TableCell>
                     <TableCell className="font-semibold">{currency(row.total)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {riskRows.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base text-destructive">Risk Analizi — Vadesi Geçen Taksitler</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Doktor</TableHead>
+                  <TableHead>Geciken Taksit</TableHead>
+                  <TableHead>Geciken Tutar</TableHead>
+                  <TableHead>En Uzun Gecikme</TableHead>
+                  <TableHead>Tahmini Gecikme Faizi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {riskRows.map((row) => (
+                  <TableRow key={row.customerId}>
+                    <TableCell className="font-medium">{row.customerName}</TableCell>
+                    <TableCell>{row.overdueCount}</TableCell>
+                    <TableCell className="text-destructive">{currency(row.overdueAmount)}</TableCell>
+                    <TableCell>{row.maxDaysOverdue} gün</TableCell>
+                    <TableCell>{row.estimatedLateFee > 0 ? currency(row.estimatedLateFee) : '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {installmentPlans.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Taksitli Tahsilat Planları</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 p-4">
+            {installmentPlans.map((plan) => {
+              const planInstallments = unpaidInstallments.filter((i) => i.plan_id === plan.id)
+              return (
+                <div key={plan.id} className="rounded-lg border p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{plan.customers?.full_name ?? '—'}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {currency(Number(plan.total_amount))} / {plan.installment_count} taksit
+                        {plan.description ? ` — ${plan.description}` : ''}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => deletePlanMutation.mutate(plan.id)}>
+                      <Trash2 className="size-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                  {planInstallments.length === 0 ? (
+                    <p className="text-success text-sm">Tüm taksitler tahsil edildi.</p>
+                  ) : (
+                    <div className="grid gap-1.5">
+                      {planInstallments.map((installment) => (
+                        <div key={installment.id} className="flex items-center justify-between text-sm">
+                          <span>
+                            Taksit {installment.installment_no} —{' '}
+                            {format(new Date(installment.due_date), 'd MMM yyyy', { locale: trLocale })}
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <span className="font-medium">{currency(Number(installment.amount))}</span>
+                            <CollectInstallmentDialog installment={installment} />
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </CardContent>
         </Card>
       )}

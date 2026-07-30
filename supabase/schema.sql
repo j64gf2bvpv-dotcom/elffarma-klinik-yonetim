@@ -1315,6 +1315,57 @@ alter table public.attachments drop constraint if exists attachments_owner_type_
 alter table public.attachments add constraint attachments_owner_type_check
   check (owner_type in ('customer', 'clinic', 'congress', 'workshop', 'doctor_visit'));
 
+-- =========================================================
+-- 30. TAHSİLAT TAKİBİ GENİŞLETMESİ (Faz 7 ERP genişletmesi)
+-- =========================================================
+
+-- payment_method'a POS/Çek/Senet eklendi (Nakit/Kredi Kartı/Havale-EFT zaten vardı)
+alter table public.payments drop constraint if exists payments_payment_method_check;
+alter table public.payments add constraint payments_payment_method_check
+  check (payment_method in ('nakit', 'kredi_karti', 'havale', 'pos', 'cek', 'senet'));
+
+-- Parçalı tahsilat: bir plan altında birden çok vadeli taksit. Taksit ödendiğinde
+-- payments tablosuna gerçek bir tahsilat kaydı eklenir ve paid_payment_id ile
+-- buraya bağlanır — "ödendi mi" durumu ayrıca bir sütunda tutulmaz, bu FK'nin
+-- dolu olup olmamasından (ve gecikme durumu due_date'ten) canlı hesaplanır.
+create table if not exists public.payment_installment_plans (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customers (id) on delete cascade,
+  total_amount numeric(12, 2) not null check (total_amount > 0),
+  installment_count integer not null check (installment_count > 0),
+  late_fee_rate numeric(5, 2) not null default 0,
+  description text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now()
+);
+create index if not exists payment_installment_plans_customer_idx on public.payment_installment_plans (customer_id);
+
+alter table public.payment_installment_plans enable row level security;
+drop policy if exists "payment_installment_plans_all_staff" on public.payment_installment_plans;
+create policy "payment_installment_plans_all_staff" on public.payment_installment_plans for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.payment_installment_plans is 'Parçalı tahsilat planı başlığı — vade/gecikme faizi oranı burada, taksitler payment_installments''te';
+
+create table if not exists public.payment_installments (
+  id uuid primary key default gen_random_uuid(),
+  plan_id uuid not null references public.payment_installment_plans (id) on delete cascade,
+  installment_no integer not null,
+  due_date date not null,
+  amount numeric(12, 2) not null check (amount > 0),
+  paid_payment_id uuid references public.payments (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists payment_installments_plan_idx on public.payment_installments (plan_id);
+create index if not exists payment_installments_due_date_idx on public.payment_installments (due_date);
+
+alter table public.payment_installments enable row level security;
+drop policy if exists "payment_installments_all_staff" on public.payment_installments;
+create policy "payment_installments_all_staff" on public.payment_installments for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.payment_installments is 'Bir taksidin vadesi/tutarı; paid_payment_id doluysa tahsil edilmiştir';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

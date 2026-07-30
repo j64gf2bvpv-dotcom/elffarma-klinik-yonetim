@@ -1,6 +1,6 @@
 export type StaffRole = 'admin' | 'staff'
 export type MovementType = 'in' | 'out' | 'adjustment' | 'sample' | 'return' | 'disposal'
-export type PaymentMethod = 'nakit' | 'kredi_karti' | 'havale'
+export type PaymentMethod = 'nakit' | 'kredi_karti' | 'havale' | 'pos' | 'cek' | 'senet'
 export type DoctorType = 'sahis' | 'hastane'
 export type BrandLine = 'dermakor' | 'swiss'
 
@@ -343,6 +343,27 @@ export interface SampleItem {
   expiry_date: string | null
   quantity: number
   unit_price: number
+  created_at: string
+}
+
+export interface PaymentInstallmentPlan {
+  id: string
+  customer_id: string
+  total_amount: number
+  installment_count: number
+  late_fee_rate: number
+  description: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export interface PaymentInstallment {
+  id: string
+  plan_id: string
+  installment_no: number
+  due_date: string
+  amount: number
+  paid_payment_id: string | null
   created_at: string
 }
 

@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
-import { offlineInsert, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
-import type { Payment, PaymentMethod } from '@/types/database'
+import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
+import type { Payment, PaymentInstallment, PaymentInstallmentPlan, PaymentMethod } from '@/types/database'
 
 export interface PaymentInput {
   customer_id: string
@@ -70,4 +70,82 @@ export async function getInvoiceFileUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from('invoices').createSignedUrl(path, 60 * 10)
   if (error) throw error
   return data.signedUrl
+}
+
+export interface InstallmentPlanInput {
+  customer_id: string
+  total_amount: number
+  installment_count: number
+  late_fee_rate: number
+  description?: string | null
+  first_due_date: string
+  interval_days: number
+}
+
+export type InstallmentPlanWithCustomer = PaymentInstallmentPlan & { customers: { full_name: string } | null }
+export type InstallmentWithPlan = PaymentInstallment & { payment_installment_plans: InstallmentPlanWithCustomer | null }
+
+export async function fetchInstallmentPlans(customerId?: string): Promise<InstallmentPlanWithCustomer[]> {
+  let query = supabase
+    .from('payment_installment_plans')
+    .select('*, customers(full_name)')
+    .order('created_at', { ascending: false })
+  if (customerId) query = query.eq('customer_id', customerId)
+  const { data, error } = await query
+  if (error) throw error
+  return data as unknown as InstallmentPlanWithCustomer[]
+}
+
+export async function fetchAllInstallments(): Promise<InstallmentWithPlan[]> {
+  const { data, error } = await supabase
+    .from('payment_installments')
+    .select('*, payment_installment_plans(*, customers(full_name))')
+    .order('due_date', { ascending: true })
+  if (error) throw error
+  return data as unknown as InstallmentWithPlan[]
+}
+
+export async function createInstallmentPlan(input: InstallmentPlanInput): Promise<PaymentInstallmentPlan> {
+  const createdBy = await getCurrentUserId()
+  const plan = await offlineInsert<PaymentInstallmentPlan>(
+    'payment_installment_plans',
+    {
+      customer_id: input.customer_id,
+      total_amount: input.total_amount,
+      installment_count: input.installment_count,
+      late_fee_rate: input.late_fee_rate,
+      description: input.description ?? null,
+      created_by: createdBy,
+    },
+    `Taksit planı: ${input.total_amount} TL / ${input.installment_count} taksit`,
+  )
+
+  const baseAmount = Math.floor((input.total_amount / input.installment_count) * 100) / 100
+  const firstDue = new Date(input.first_due_date)
+  for (let i = 0; i < input.installment_count; i++) {
+    const dueDate = new Date(firstDue)
+    dueDate.setDate(dueDate.getDate() + i * input.interval_days)
+    const isLast = i === input.installment_count - 1
+    const amount = isLast ? input.total_amount - baseAmount * (input.installment_count - 1) : baseAmount
+    await offlineInsert(
+      'payment_installments',
+      {
+        plan_id: plan.id,
+        installment_no: i + 1,
+        due_date: dueDate.toISOString().slice(0, 10),
+        amount,
+      },
+      `Taksit ${i + 1}/${input.installment_count}`,
+    )
+  }
+
+  return plan
+}
+
+export async function markInstallmentPaid(installmentId: string, paymentId: string): Promise<void> {
+  await offlineUpdate('payment_installments', installmentId, { paid_payment_id: paymentId }, 'Taksit tahsilatı')
+}
+
+export async function deleteInstallmentPlan(id: string): Promise<void> {
+  return offlineDelete('payment_installment_plans', id, 'Taksit planı silme')
 }

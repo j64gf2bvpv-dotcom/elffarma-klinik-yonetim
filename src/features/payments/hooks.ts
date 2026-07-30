@@ -1,11 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  createInstallmentPlan,
   createPayment,
+  deleteInstallmentPlan,
   deletePayment,
+  fetchAllInstallments,
+  fetchInstallmentPlans,
   fetchPayments,
+  markInstallmentPaid,
   saveInvoiceInfo,
   uploadInvoiceFile,
+  type InstallmentPlanInput,
   type PaymentFilters,
   type PaymentInput,
   type PaymentWithCustomer,
@@ -72,5 +78,56 @@ export function useSaveInvoice() {
       toast.success('Fatura bilgisi kaydedildi')
     },
     onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
+  })
+}
+
+export function useInstallmentPlans(customerId?: string) {
+  return useQuery({
+    queryKey: ['payment_installment_plans', customerId],
+    queryFn: () => fetchInstallmentPlans(customerId),
+  })
+}
+
+export function useAllInstallments() {
+  return useQuery({ queryKey: ['payment_installments', 'all'], queryFn: fetchAllInstallments })
+}
+
+export function useCreateInstallmentPlan() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: InstallmentPlanInput) => createInstallmentPlan(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payment_installment_plans'] })
+      queryClient.invalidateQueries({ queryKey: ['payment_installments'] })
+      toast.success('Taksit planı oluşturuldu')
+    },
+    onError: (error: Error) => toast.error('Oluşturulamadı', { description: error.message }),
+  })
+}
+
+export function useDeleteInstallmentPlan() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteInstallmentPlan(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payment_installment_plans'] })
+      queryClient.invalidateQueries({ queryKey: ['payment_installments'] })
+      toast.success('Taksit planı silindi')
+    },
+    onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
+  })
+}
+
+export function useMarkInstallmentPaid() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ installmentId, paymentId }: { installmentId: string; paymentId: string }) =>
+      markInstallmentPaid(installmentId, paymentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payment_installments'] })
+      queryClient.invalidateQueries({ queryKey: ['payments'] })
+      toast.success('Taksit tahsil edildi')
+    },
+    onError: (error: Error) => toast.error('İşlem başarısız', { description: error.message }),
   })
 }
