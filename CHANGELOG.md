@@ -3,6 +3,13 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.11.0] - 2026-07-31
+
+**Raporlama genişletmesi (Faz 9)** — büyük ERP genişletmesinin dokuzuncu fazı:
+- Ana Panel'e 4 yeni sürüklenebilir/gizlenebilir widget eklendi: **Temsilci Performansı** (satış/tahsilat), **Prim Özeti** (bu ay, temsilci kırılımlı), **Numune Dönüşüm Oranı**, **Lot/SKT Riski** (90 gün içinde dolan lotlar + riskteki stok değeri).
+- Bölge bazlı satış zaten mevcut "Satış Haritası" widget'ında karşılanıyordu — yeni tablo/kolon eklenmedi, bu faz sadece mevcut hesaplama motorlarını (prim, numune dönüşümü, lot SKT) panelde görünür kıldı.
+- Şema değişikliği yok.
+
 ## [2.10.0] - 2026-07-30
 
 **CRM modülü (Faz 8)** — büyük ERP genişletmesinin sekizinci fazı:

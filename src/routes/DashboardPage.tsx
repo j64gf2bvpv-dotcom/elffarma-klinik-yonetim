@@ -46,6 +46,9 @@ import {
   CalendarClock,
   BellRing,
   Trophy,
+  Percent,
+  FlaskConical,
+  Layers,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -73,6 +76,14 @@ import { TurkeyMap } from '@/components/charts/TurkeyMap'
 import { StockStatusChart, type StockStatusPoint } from '@/components/charts/StockStatusChart'
 import { TopProductsChart } from '@/components/charts/TopProductsChart'
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
+import { useSalesReps } from '@/features/salesReps/hooks'
+import { useCommissionRules } from '@/features/commissions/hooks'
+import { calculateCommissions } from '@/features/commissions/calculateCommissions'
+import { useCustomers } from '@/features/customers/hooks'
+import { useAllProductLots } from '@/features/stock/hooks'
+import { useSampleRequests } from '@/features/samples/hooks'
+import { calculateSampleConversion } from '@/features/samples/calculateSampleConversion'
+import { getExpiryStatus } from '@/lib/expiry'
 import { tr } from '@/i18n/tr'
 
 const statTone = {
@@ -193,6 +204,10 @@ type WidgetId =
   | 'region_sales'
   | 'congress_prices'
   | 'recent_activity'
+  | 'rep_performance'
+  | 'commission_summary'
+  | 'sample_conversion'
+  | 'lot_expiry'
 
 interface LayoutItem {
   id: WidgetId
@@ -213,6 +228,10 @@ const defaultLayout: LayoutItem[] = [
   { id: 'region_sales', visible: true },
   { id: 'congress_prices', visible: true },
   { id: 'recent_activity', visible: true },
+  { id: 'rep_performance', visible: true },
+  { id: 'commission_summary', visible: true },
+  { id: 'sample_conversion', visible: true },
+  { id: 'lot_expiry', visible: true },
 ]
 
 const widgetLabels: Record<WidgetId, string> = {
@@ -229,6 +248,10 @@ const widgetLabels: Record<WidgetId, string> = {
   region_sales: 'Satış Haritası (İllere Göre)',
   congress_prices: 'Kongre Paket Fiyatları',
   recent_activity: 'Son İşlemler',
+  rep_performance: 'Temsilci Performansı',
+  commission_summary: 'Prim Özeti (Bu Ay)',
+  sample_conversion: 'Numune Dönüşüm Oranı',
+  lot_expiry: 'Lot / SKT Riski',
 }
 
 type ChartPeriod = 'day' | 'week' | 'month' | 'year'
@@ -320,6 +343,58 @@ export function DashboardPage() {
   const { data: sales = [] } = useSales()
   const { data: reminders = [] } = useReminders()
   const alerts = useAlertsSummary()
+  const { data: salesReps = [] } = useSalesReps()
+  const { data: commissionRules = [] } = useCommissionRules()
+  const { data: doctors = [] } = useCustomers('')
+  const { data: productLots = [] } = useAllProductLots()
+  const { data: sampleRequests = [] } = useSampleRequests()
+
+  const repPerformance = React.useMemo(() => {
+    const bySalesRep = new Map<string, { name: string; sold: number; collected: number }>()
+    for (const rep of salesReps) bySalesRep.set(rep.id, { name: rep.name, sold: 0, collected: 0 })
+    for (const s of sales) {
+      if (!s.sales_rep_id) continue
+      const entry = bySalesRep.get(s.sales_rep_id)
+      if (!entry) continue
+      entry.sold += (s.type === 'return' ? -1 : 1) * Number(s.quantity) * Number(s.unit_price)
+    }
+    for (const p of recentPayments) {
+      if (!p.sales_rep_id) continue
+      const entry = bySalesRep.get(p.sales_rep_id)
+      if (!entry) continue
+      entry.collected += Number(p.amount)
+    }
+    return Array.from(bySalesRep.values())
+      .filter((r) => r.sold !== 0 || r.collected !== 0)
+      .sort((a, b) => b.sold + b.collected - (a.sold + a.collected))
+      .slice(0, 5)
+  }, [salesReps, sales, recentPayments])
+
+  const commissionSummary = React.useMemo(
+    () => calculateCommissions(commissionRules, sales, monthPayments, products, doctors, salesReps, []),
+    [commissionRules, sales, monthPayments, products, doctors, salesReps],
+  )
+  const totalCommissionThisMonth = commissionSummary.reduce((sum, r) => sum + r.netTotal, 0)
+
+  const sampleConversion = React.useMemo(
+    () => calculateSampleConversion(sampleRequests, sales),
+    [sampleRequests, sales],
+  )
+
+  const expiringLotsCount = React.useMemo(
+    () => productLots.filter((lot) => lot.quantity > 0 && getExpiryStatus(lot.expiry_date, 90) !== 'ok' && getExpiryStatus(lot.expiry_date, 90) !== null).length,
+    [productLots],
+  )
+  const expiringLotsValue = React.useMemo(
+    () =>
+      productLots
+        .filter((lot) => lot.quantity > 0 && getExpiryStatus(lot.expiry_date, 90) !== 'ok' && getExpiryStatus(lot.expiry_date, 90) !== null)
+        .reduce((sum, lot) => {
+          const product = products.find((p) => p.id === lot.product_id)
+          return sum + lot.quantity * Number(product?.unit_price ?? 0)
+        }, 0),
+    [productLots, products],
+  )
   const [convertAmount, setConvertAmount] = React.useState('100')
   const [fromCurrency, setFromCurrency] = React.useState<'TRY' | 'USD' | 'EUR'>('TRY')
   const [toCurrency, setToCurrency] = React.useState<'TRY' | 'USD' | 'EUR'>('USD')
@@ -1065,6 +1140,129 @@ export function DashboardPage() {
                 </div>
               </Link>
             ))}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'rep_performance') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="size-4 text-primary" /> Temsilci Performansı
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/doktor-ziyaretleri">
+                Detaya git <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            {repPerformance.length === 0 && (
+              <p className="text-sm text-muted-foreground">Bu ay için temsilci bazlı satış/tahsilat verisi yok</p>
+            )}
+            {repPerformance.map((rep) => (
+              <div key={rep.name} className="flex items-center justify-between rounded-md border p-2.5 text-sm">
+                <span className="font-medium">{rep.name}</span>
+                <span className="flex gap-3 text-xs text-muted-foreground">
+                  <span>Satış: {rep.sold.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</span>
+                  <span>Tahsilat: {rep.collected.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</span>
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'commission_summary') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Percent className="size-4 text-primary" /> Prim Özeti (Bu Ay)
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/prim">
+                Prim sayfasına git <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            <p className="text-2xl font-semibold">
+              {totalCommissionThisMonth.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+            </p>
+            {commissionSummary.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Bu ay prim üreten kural/satış yok</p>
+            ) : (
+              commissionSummary.slice(0, 5).map((r) => (
+                <div key={r.salesRepId} className="flex items-center justify-between text-sm">
+                  <span>{r.salesRepName}</span>
+                  <span className="font-medium">{r.netTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'sample_conversion') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FlaskConical className="size-4 text-primary" /> Numune Dönüşüm Oranı
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/numuneler">
+                Numunelere git <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <p className="text-2xl font-semibold">{sampleConversion.totalItems}</p>
+              <p className="text-muted-foreground text-xs">Toplam Numune</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-success">{sampleConversion.convertedItems}</p>
+              <p className="text-muted-foreground text-xs">Satışa Döndü</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold">%{sampleConversion.percent.toFixed(1)}</p>
+              <p className="text-muted-foreground text-xs">Dönüşüm Oranı</p>
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'lot_expiry') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Layers className="size-4 text-destructive" /> Lot / SKT Riski
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/stok">
+                Stoğa git <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-3 text-center">
+            <div>
+              <p className="text-2xl font-semibold text-destructive">{expiringLotsCount}</p>
+              <p className="text-muted-foreground text-xs">90 gün içinde dolan lot</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold">
+                {expiringLotsValue.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+              </p>
+              <p className="text-muted-foreground text-xs">Riskteki stok değeri</p>
+            </div>
           </CardContent>
         </Card>
       )
