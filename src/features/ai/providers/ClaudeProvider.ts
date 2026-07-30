@@ -39,11 +39,23 @@ export class ClaudeProvider implements AIProvider {
     }
   }
 
-  private splitSystem(messages: AIMessage[]): { system?: string; rest: { role: 'user' | 'assistant'; content: string }[] } {
-    const system = messages.find((m) => m.role === 'system')?.content
+  /** Ortak `AIContentPart[]` şemasını (OpenAI-uyumlu) Anthropic'in kendi blok şemasına çevirir. */
+  private toClaudeContent(content: AIMessage['content']): unknown {
+    if (typeof content === 'string') return content
+    return content.map((part) => {
+      if (part.type === 'text') return { type: 'text', text: part.text }
+      const match = /^data:(.+);base64,(.*)$/.exec(part.image_url.url)
+      if (!match) return { type: 'text', text: '[görsel okunamadı]' }
+      return { type: 'image', source: { type: 'base64', media_type: match[1], data: match[2] } }
+    })
+  }
+
+  private splitSystem(messages: AIMessage[]): { system?: string; rest: { role: 'user' | 'assistant'; content: unknown }[] } {
+    const systemMsg = messages.find((m) => m.role === 'system')?.content
+    const system = typeof systemMsg === 'string' ? systemMsg : undefined
     const rest = messages
       .filter((m) => m.role !== 'system')
-      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: this.toClaudeContent(m.content) }))
     return { system, rest }
   }
 

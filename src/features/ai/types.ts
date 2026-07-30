@@ -8,9 +8,23 @@ export type AIProviderId = 'ollama' | 'openai' | 'gemini' | 'claude'
 
 export type AIMessageRole = 'system' | 'user' | 'assistant'
 
+/** Sohbete eklenen bir resmin AI'a gönderilecek biçimi — OpenAI-uyumlu `content` dizisi şeması. */
+export interface AIImagePart {
+  type: 'image_url'
+  image_url: { url: string }
+}
+
+export interface AITextPart {
+  type: 'text'
+  text: string
+}
+
+export type AIContentPart = AITextPart | AIImagePart
+
 export interface AIMessage {
   role: AIMessageRole
-  content: string
+  /** Düz metin veya (resim ekiyle gönderilen bir mesajda) metin+resim parçalarından oluşan bir dizi. */
+  content: string | AIContentPart[]
 }
 
 export interface AIChatOptions {

@@ -148,6 +148,17 @@
   .animate-map-province-pulse {
     animation: map-province-pulse 0.9s ease-in-out infinite;
   }
+  @keyframes ai-orb-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .animate-ai-orb-spin {
+    animation: ai-orb-spin 5s linear infinite;
+  }
 }
 
 /* Ajanda (FullCalendar) — uygulamanın tema değişkenleriyle premium görünüm */

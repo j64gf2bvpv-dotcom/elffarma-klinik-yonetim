@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAISettings, useSaveAISettings, useMyAIKeys, useSaveMyAIKeys } from './hooks'
 import { providerDefaults, providerLabels, getApiKeyForProvider, personalKeyFieldForProvider } from './config'
+import { useAIWidgetVisibility } from './useAIWidgetVisibility'
 import { AIService } from './AIService'
 import type { AIProviderId, AIConnectionTestResult } from './types'
 
@@ -18,6 +20,7 @@ export function AIProviderSettings() {
   const saveMutation = useSaveAISettings()
   const { data: myKeys } = useMyAIKeys()
   const saveKeyMutation = useSaveMyAIKeys()
+  const { hidden: widgetHidden, setHidden: setWidgetHidden } = useAIWidgetVisibility()
 
   const [provider, setProvider] = React.useState<AIProviderId>(settings.provider)
   const [baseUrl, setBaseUrl] = React.useState(settings.baseUrl)
@@ -194,6 +197,19 @@ export function AIProviderSettings() {
         {testResult?.availableModels && testResult.availableModels.length > 0 && (
           <p className="text-xs text-muted-foreground">
             Yüklü modeller: {testResult.availableModels.join(', ')}
+          </p>
+        )}
+
+        <label className="flex items-center gap-2 border-t pt-4 text-sm">
+          <Checkbox
+            checked={!widgetHidden}
+            onCheckedChange={(checked) => setWidgetHidden(!checked)}
+          />
+          Ana ekranda AI Asistan simgesini göster
+        </label>
+        {widgetHidden && (
+          <p className="text-muted-foreground text-xs">
+            Simge şu anda gizli (sağ alttaki simgenin üzerine gelip küçük X'e basarak da gizlenebilir/gösterilebilir).
           </p>
         )}
       </CardContent>

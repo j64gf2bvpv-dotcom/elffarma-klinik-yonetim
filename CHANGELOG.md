@@ -3,6 +3,14 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.7] - 2026-07-31
+
+**AI simgesi taşınabilir/gizlenebilir + Gemini varsayılan model düzeltmesi:** Sağ alttaki AI Asistan simgesi artık sürüklenip ekranda istenen bir konuma bırakılabiliyor (konum cihaza özel hatırlanıyor) ve simgenin üzerine gelip küçük X'e basarak ana ekrandan tamamen gizlenebiliyor — geri getirmek için Ayarlar > Yapay Zeka'daki "Ana ekranda AI Asistan simgesini göster" anahtarı kullanılıyor. Ayrıca Gemini sağlayıcısının varsayılan modeli, Google tarafından kullanımdan kaldırılmış olan `gemini-1.5-flash`'tan güncel `gemini-2.5-flash`'a değiştirildi — daha önce Ayarlar'dan eski model adını kaydetmiş olanların Model alanını elle güncellemesi gerekiyor. Şema değişikliği yok.
+
+## [2.12.6] - 2026-07-31
+
+**AI sohbet paneli yenilendi + dosya/resim ekleme:** Sağ alttaki AI Asistan simgesi ve sohbet paneli Gemini tarzı, uygulamanın kendi tema renkleriyle uyumlu bir görünüme kavuştu (dönen/parlayan ikon, balonsuz asistan mesajları, pill şeklinde giriş kutusu). Sohbete artık ataç ikonundan resim ve Excel/CSV/txt dosyası eklenebiliyor: resimler bulut sağlayıcılarda (Gemini/OpenAI/Claude) gerçekten görsel olarak analiz ediliyor, Excel/CSV/txt dosyalarının içeriği metne çevrilip AI'a gönderiliyor. Yerel Ollama modeli resim analizi yapamadığından resim eklenip yerel model seçiliyken hata alınırsa kullanıcıya bulut sağlayıcıya geçme önerisi gösteriliyor. PDF/Word ekleri bu sürümde desteklenmiyor. Şema değişikliği yok.
+
 ## [2.12.5] - 2026-07-31
 
 **Kişisel AI API anahtarı desteği:** Ayarlar > Yapay Zeka'da bulut sağlayıcı (OpenAI/Gemini/Claude) seçildiğinde artık her personel kendi API anahtarını "Kendi API Anahtarım" alanından girip kaydedebiliyor. Bu anahtar yeni `staff_ai_keys` tablosunda, sadece o personelin kendi hesabının okuyup yazabildiği bir satırda saklanıyor (diğer personel veya paylaşılan `app_settings` üzerinden görülemez) — paketlenmiş uygulamaya gömülen ortak bir anahtara gerek kalmadan her bilgisayarda, her personel kendi aboneliğiyle çalışabilir. Kişisel anahtar girilmezse (varsa) `.env`'deki ortak anahtara geri düşülür. Bu değişiklik şema değişikliği içerir — `supabase/schema.sql`'in TAMAMI yeniden SQL Editor'e yapıştırılıp çalıştırılmalı.

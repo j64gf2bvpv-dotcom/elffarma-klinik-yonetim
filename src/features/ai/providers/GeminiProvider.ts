@@ -2,7 +2,8 @@ import type { AIChatOptions, AIChatResult, AIConnectionTestResult, AIMessage, AI
 import { openaiCompatibleChat, openaiCompatibleStreamChat, openaiCompatibleTestConnection } from './openaiCompatible'
 
 export const GEMINI_DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai'
-export const GEMINI_DEFAULT_MODEL = 'gemini-1.5-flash'
+// gemini-1.5-flash Google tarafından kullanımdan kaldırıldı (deprecated) — güncel modele geçildi.
+export const GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash'
 
 /** Google'ın OpenAI-uyumlu katmanını kullanır — Gemini'ye özgü SDK'ya gerek yok. */
 export class GeminiProvider implements AIProvider {
