@@ -1288,6 +1288,33 @@ begin
 end;
 $$;
 
+-- =========================================================
+-- 29. DOKTOR ZİYARET PLANI GENİŞLETMESİ (Faz 6 ERP genişletmesi)
+-- =========================================================
+-- GPS: masaüstü bir uygulamada gerçek zamanlı konum takibi/rota optimizasyonu
+-- anlamlı değil — sadece check-in anında tarayıcı Geolocation API'siyle tek
+-- seferlik enlem/boylam kaydedilir (bkz. CLAUDE.md kapsam kararı).
+
+alter table public.doctor_visits add column if not exists customer_id uuid references public.customers (id) on delete set null;
+alter table public.doctor_visits add column if not exists check_in_at timestamptz;
+alter table public.doctor_visits add column if not exists check_out_at timestamptz;
+alter table public.doctor_visits add column if not exists check_in_lat numeric(9, 6);
+alter table public.doctor_visits add column if not exists check_in_lng numeric(9, 6);
+alter table public.doctor_visits add column if not exists discussed_products text;
+alter table public.doctor_visits add column if not exists competitor_products text;
+alter table public.doctor_visits add column if not exists next_visit_date date;
+alter table public.doctor_visits add column if not exists signature_data text;
+
+comment on column public.doctor_visits.customer_id is 'Opsiyonel: bu ziyaretin ilişkili olduğu cari kart (doktor_name serbest metin olarak kalmaya devam ediyor, bu FK varsa tahsilat/numune kısayolları ve doktor detayındaki Ziyaretler sekmesi bunu kullanır)';
+comment on column public.doctor_visits.check_in_lat is 'Check-in anında tarayıcı Geolocation API''sinden alınan enlem';
+comment on column public.doctor_visits.check_in_lng is 'Check-in anında tarayıcı Geolocation API''sinden alınan boylam';
+comment on column public.doctor_visits.signature_data is 'Doktorun ziyaret sırasında verdiği imza (canvas tabanlı, base64 PNG data URL)';
+
+-- attachments: doktor ziyareti foto/ses kaydı ekleri için yeni owner_type
+alter table public.attachments drop constraint if exists attachments_owner_type_check;
+alter table public.attachments add constraint attachments_owner_type_check
+  check (owner_type in ('customer', 'clinic', 'congress', 'workshop', 'doctor_visit'));
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

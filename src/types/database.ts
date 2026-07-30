@@ -212,6 +212,15 @@ export interface DoctorVisit {
   social_media: string | null
   notes: string | null
   sales_rep_id: string | null
+  customer_id: string | null
+  check_in_at: string | null
+  check_out_at: string | null
+  check_in_lat: number | null
+  check_in_lng: number | null
+  discussed_products: string | null
+  competitor_products: string | null
+  next_visit_date: string | null
+  signature_data: string | null
   created_at: string
   updated_at: string
 }
@@ -265,7 +274,7 @@ export interface Clinic {
   updated_at: string
 }
 
-export type AttachmentOwnerType = 'customer' | 'clinic' | 'congress' | 'workshop'
+export type AttachmentOwnerType = 'customer' | 'clinic' | 'congress' | 'workshop' | 'doctor_visit'
 
 export interface Attachment {
   id: string

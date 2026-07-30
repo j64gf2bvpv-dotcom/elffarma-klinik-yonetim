@@ -10,6 +10,15 @@ export interface DoctorVisitInput {
   social_media?: string | null
   notes?: string | null
   sales_rep_id: string
+  customer_id?: string | null
+  check_in_at?: string | null
+  check_out_at?: string | null
+  check_in_lat?: number | null
+  check_in_lng?: number | null
+  discussed_products?: string | null
+  competitor_products?: string | null
+  next_visit_date?: string | null
+  signature_data?: string | null
 }
 
 export async function fetchVisitsInRange(from: string, to: string, salesRepId?: string): Promise<DoctorVisit[]> {
