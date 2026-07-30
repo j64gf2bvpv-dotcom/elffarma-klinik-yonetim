@@ -3,6 +3,20 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.0] - 2026-07-31
+
+**Yapay Zeka özellikleri (Faz 10) — büyük ERP genişletmesinin son fazı:**
+- Yeni **Yapay Zeka Analiz** sayfası, mevcut `AIService` üzerine kurulu, tüm modüllerden (stok/SKT, satış-tahsilat, prim, numune dönüşümü, tahsilat riski, CRM fırsatları, kongreler) canlı hesaplanmış tek bir veri özetini ("business snapshot") temel alıyor — AI kendi sayı uydurmuyor, gerçek verilerle konuşuyor:
+  - **Doğal dil soru-cevap**: serbest metin soru sorup özet veriye dayalı yanıt alma.
+  - **Otomatik yönetim raporu**: günlük/haftalık/aylık seçilebilir, Word'e aktarılabilir.
+  - **Akıllı öneriler / anormallik tespiti**: öncelik sıralı aksiyon önerileri.
+  - **Excel dosyası özetleme**: yüklenen Excel/CSV'nin AI ile özetlenmesi (PDF/Word okuma bu sürümde kapsam dışı — yeni ayrıştırma kütüphaneleri gerektirdiği için ileriye bırakıldı).
+- AI sohbet widget'ına tarayıcı **SpeechRecognition** ile sesli metin girişi eklendi (mikrofon düğmesi) — tam "sesli komut yürütme" değil, konuşmayı yazıya çevirip sohbete ekleme.
+- **Hata düzeltmesi**: Tahsilat formundaki (`PaymentForm`) doğrulama şeması POS/Çek/Senet'i kabul etmiyordu (Faz 7'de eklenen yöntemler) — açılır listede görünüp seçilince kayıt başarısız oluyordu, düzeltildi.
+- Şema değişikliği yok.
+
+Bu sürümle birlikte kullanıcının talep ettiği 13 modüllük büyük ERP genişletmesinin tüm fazları (Doktor/Klinik/Bölge/Temsilci, Prim, Numune, Kongre/Workshop, Lot/SKT, Ziyaret Planı, Tahsilat, CRM, Raporlama, Yapay Zeka) tamamlanmıştır.
+
 ## [2.11.0] - 2026-07-31
 
 **Raporlama genişletmesi (Faz 9)** — büyük ERP genişletmesinin dokuzuncu fazı:

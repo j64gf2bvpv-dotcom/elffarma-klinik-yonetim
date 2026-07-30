@@ -74,6 +74,29 @@ export async function exportToWord<T>(
   saveAs(blob, `${filename}.docx`)
 }
 
+/** Tablo yerine serbest metin (AI tarafından üretilen rapor gibi) içeren belgeler için — paragraf paragraf Word'e aktarır. */
+export async function exportTextReportToWord(title: string, filename: string, bodyText: string) {
+  const paragraphs = bodyText
+    .split('\n')
+    .filter((line) => line.trim().length > 0)
+    .map((line) => new Paragraph({ text: line, spacing: { after: 120 } }))
+
+  const doc = new Document({
+    sections: [
+      {
+        children: [
+          new Paragraph({ text: title, heading: HeadingLevel.HEADING_1 }),
+          new Paragraph({ text: new Date().toLocaleDateString('tr-TR'), spacing: { after: 200 } }),
+          ...paragraphs,
+        ],
+      },
+    ],
+  })
+
+  const blob = await Packer.toBlob(doc)
+  saveAs(blob, `${filename}.docx`)
+}
+
 export function exportToPdf<T>(title: string, filename: string, columns: ExportColumn<T>[], rows: T[]) {
   const doc = new jsPDF({ orientation: columns.length > 5 ? 'landscape' : 'portrait', unit: 'pt' })
   registerTurkishFont(doc)

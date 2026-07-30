@@ -6,6 +6,7 @@ export const tr = {
     commissions: 'Prim Hesaplama',
     samples: 'Numune Takibi',
     crm: 'CRM',
+    aiInsights: 'Yapay Zeka Analiz',
     stock: 'Stok Yönetimi',
     payments: 'Tahsilatlar',
     congresses: 'Kongreler',

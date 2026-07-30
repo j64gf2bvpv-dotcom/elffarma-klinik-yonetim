@@ -45,6 +45,9 @@ import {
   Handshake,
   Users2,
   UserCheck,
+  Sparkles,
+  BrainCircuit,
+  Bot,
 } from 'lucide-react'
 
 export type NavKey =
@@ -54,6 +57,7 @@ export type NavKey =
   | 'commissions'
   | 'samples'
   | 'crm'
+  | 'aiInsights'
   | 'stock'
   | 'payments'
   | 'congresses'
@@ -89,6 +93,7 @@ export const iconSets: IconSet[] = [
       commissions: Percent,
       samples: FlaskConical,
       crm: Handshake,
+      aiInsights: Sparkles,
       stock: PackageSearch,
       payments: Banknote,
       congresses: Presentation,
@@ -114,6 +119,7 @@ export const iconSets: IconSet[] = [
       commissions: BadgePercent,
       samples: TestTube,
       crm: Users2,
+      aiInsights: BrainCircuit,
       stock: Boxes,
       payments: Wallet,
       congresses: GraduationCap,
@@ -139,6 +145,7 @@ export const iconSets: IconSet[] = [
       commissions: Award,
       samples: Beaker,
       crm: UserCheck,
+      aiInsights: Bot,
       stock: PackageCheck,
       payments: CircleDollarSign,
       congresses: Landmark,

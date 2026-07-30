@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Bot, Send, Loader2, User, X, Sparkles, Trash2 } from 'lucide-react'
+import { Bot, Send, Loader2, User, X, Sparkles, Trash2, Mic, MicOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,27 @@ import {
   useDeleteAIConversation,
 } from './hooks'
 import { AIServiceError, type AIMessage } from './types'
+
+interface SpeechRecognitionResultLike {
+  results: { [index: number]: { [index: number]: { transcript: string } } } & { length: number }
+}
+interface SpeechRecognitionLike {
+  lang: string
+  interimResults: boolean
+  onresult: ((event: SpeechRecognitionResultLike) => void) | null
+  onerror: (() => void) | null
+  onend: (() => void) | null
+  start(): void
+  stop(): void
+}
+
+function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
+  const w = window as unknown as {
+    SpeechRecognition?: new () => SpeechRecognitionLike
+    webkitSpeechRecognition?: new () => SpeechRecognitionLike
+  }
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
+}
 
 /**
  * Her sayfada görünen, açılıp kapanabilen yüzen AI sohbet paneli
@@ -35,8 +56,35 @@ export function AIChatWidget() {
   const [draft, setDraft] = React.useState('')
   const [streamingText, setStreamingText] = React.useState('')
   const [sending, setSending] = React.useState(false)
+  const [listening, setListening] = React.useState(false)
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const hasAutoSelectedRef = React.useRef(false)
+  const recognitionRef = React.useRef<SpeechRecognitionLike | null>(null)
+  const speechSupported = React.useMemo(() => getSpeechRecognition() !== null, [])
+
+  function toggleListening() {
+    if (listening) {
+      recognitionRef.current?.stop()
+      return
+    }
+    const SpeechRecognitionCtor = getSpeechRecognition()
+    if (!SpeechRecognitionCtor) {
+      toast.error('Bu tarayıcı sesli girişi desteklemiyor')
+      return
+    }
+    const recognition = new SpeechRecognitionCtor()
+    recognition.lang = 'tr-TR'
+    recognition.interimResults = false
+    recognition.onresult = (event) => {
+      const transcript = event.results[event.results.length - 1][0].transcript
+      setDraft((prev) => (prev ? `${prev} ${transcript}` : transcript))
+    }
+    recognition.onerror = () => setListening(false)
+    recognition.onend = () => setListening(false)
+    recognitionRef.current = recognition
+    recognition.start()
+    setListening(true)
+  }
 
   React.useEffect(() => {
     // Sadece ilk açılışta son konuşmayı otomatik geri yükle — "Yeni Sohbet"
@@ -181,6 +229,17 @@ export function AIChatWidget() {
             className="max-h-24 min-h-9 resize-none"
             disabled={sending}
           />
+          {speechSupported && (
+            <Button
+              size="icon"
+              variant={listening ? 'destructive' : 'outline'}
+              onClick={toggleListening}
+              title={listening ? 'Dinlemeyi durdur' : 'Sesli giriş'}
+              type="button"
+            >
+              {listening ? <MicOff /> : <Mic />}
+            </Button>
+          )}
           <Button size="icon" onClick={handleSend} disabled={sending || !draft.trim()}>
             {sending ? <Loader2 className="animate-spin" /> : <Send />}
           </Button>
