@@ -515,3 +515,12 @@ export interface AIUsageLog {
   created_by: string | null
   created_at: string
 }
+
+/** Sadece sahibi tarafından okunabilir/yazılabilir — app_settings gibi paylaşılan değil. */
+export interface StaffAIKeys {
+  staff_id: string
+  openai_api_key: string | null
+  gemini_api_key: string | null
+  anthropic_api_key: string | null
+  updated_at: string
+}

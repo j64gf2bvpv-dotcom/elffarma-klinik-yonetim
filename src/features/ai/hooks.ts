@@ -9,11 +9,13 @@ import {
   deleteConversation,
   fetchConversations,
   fetchMessages,
+  fetchMyAIKeys,
   fetchUsageLogs,
   renameConversation,
+  saveMyAIKeys,
   touchConversation,
 } from './api'
-import type { AIConversation, AIMessageRow, AIMessageRole } from '@/types/database'
+import type { AIConversation, AIMessageRow, AIMessageRole, StaffAIKeys } from '@/types/database'
 
 const AI_SETTINGS_KEY = 'ai_settings'
 
@@ -88,4 +90,19 @@ export function useAppendAIMessage() {
 
 export function useAIUsageLogs() {
   return useQuery({ queryKey: ['ai_usage_logs'], queryFn: () => fetchUsageLogs() })
+}
+
+/** Giriş yapmış personelin kendi bulut AI API anahtarları — sadece kendi hesabında saklanır, app_settings'te değil. */
+export function useMyAIKeys() {
+  return useQuery({ queryKey: ['staff_ai_keys', 'me'], queryFn: fetchMyAIKeys })
+}
+
+export function useSaveMyAIKeys() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: Partial<Pick<StaffAIKeys, 'openai_api_key' | 'gemini_api_key' | 'anthropic_api_key'>>) =>
+      saveMyAIKeys(input),
+    onSuccess: (saved) => queryClient.setQueryData(['staff_ai_keys', 'me'], saved),
+    onError: (error: Error) => toast.error('API anahtarı kaydedilemedi', { description: error.message }),
+  })
 }

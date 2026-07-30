@@ -46,3 +46,23 @@ export function getApiKeyForProvider(provider: AIProviderId): string | undefined
       return (import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined) || undefined
   }
 }
+
+/**
+ * Personel kendi bulut AI aboneliğinin API anahtarını `staff_ai_keys`'e (kendi
+ * satırına, RLS ile korumalı) kaydettiyse hangi kolonun ona karşılık geldiği.
+ * Ollama yerel çalıştığı için anahtar gerektirmez.
+ */
+export function personalKeyFieldForProvider(
+  provider: AIProviderId,
+): 'openai_api_key' | 'gemini_api_key' | 'anthropic_api_key' | null {
+  switch (provider) {
+    case 'ollama':
+      return null
+    case 'openai':
+      return 'openai_api_key'
+    case 'gemini':
+      return 'gemini_api_key'
+    case 'claude':
+      return 'anthropic_api_key'
+  }
+}

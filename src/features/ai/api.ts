@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { getCurrentUserId } from '@/lib/offlineMutation'
-import type { AIConversation, AIMessageRow, AIMessageRole, AIUsageLog } from '@/types/database'
+import type { AIConversation, AIMessageRow, AIMessageRole, AIUsageLog, StaffAIKeys } from '@/types/database'
 
 export async function fetchConversations(): Promise<AIConversation[]> {
   const { data, error } = await supabase
@@ -93,4 +93,29 @@ export async function fetchUsageLogs(limit = 100): Promise<AIUsageLog[]> {
     .limit(limit)
   if (error) throw error
   return data as AIUsageLog[]
+}
+
+/** RLS satır sahibiyle sınırlı — sadece giriş yapmış personelin kendi anahtarlarını döner. */
+export async function fetchMyAIKeys(): Promise<StaffAIKeys | null> {
+  const staffId = await getCurrentUserId()
+  if (!staffId) return null
+  const { data, error } = await supabase.from('staff_ai_keys').select('*').eq('staff_id', staffId).maybeSingle()
+  if (error) throw error
+  return data as StaffAIKeys | null
+}
+
+export async function saveMyAIKeys(input: {
+  openai_api_key?: string | null
+  gemini_api_key?: string | null
+  anthropic_api_key?: string | null
+}): Promise<StaffAIKeys> {
+  const staffId = await getCurrentUserId()
+  if (!staffId) throw new Error('Oturum bulunamadı')
+  const { data, error } = await supabase
+    .from('staff_ai_keys')
+    .upsert({ staff_id: staffId, ...input, updated_at: new Date().toISOString() })
+    .select()
+    .single()
+  if (error) throw error
+  return data as StaffAIKeys
 }

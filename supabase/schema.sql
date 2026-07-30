@@ -1453,6 +1453,42 @@ alter table public.customers drop constraint if exists customers_preferred_payme
 alter table public.customers add constraint customers_preferred_payment_method_check
   check (preferred_payment_method is null or preferred_payment_method in ('nakit', 'kredi_karti', 'havale', 'pos'));
 
+-- =========================================================
+-- 34. KİŞİSEL AI API ANAHTARLARI (staff_ai_keys)
+-- =========================================================
+-- Her personel, paylaşılan/embedded bir anahtar yerine kendi bulut AI
+-- aboneliğinin (OpenAI/Gemini/Claude) API anahtarını kendi hesabına
+-- kaydedebilsin diye eklendi. Bilerek app_settings'ten AYRI bir tablo:
+-- app_settings shared-trust'tır (tüm personel okur/yazar), bu tablodaki
+-- satırlar ise SADECE sahibi tarafından okunabilir/yazılabilir — bu yüzden
+-- diğer tüm tablolarda kullanılan is_active_staff() shared-trust deseni
+-- burada KASITLI olarak kullanılmıyor.
+create table if not exists public.staff_ai_keys (
+  staff_id uuid primary key references public.staff (id) on delete cascade,
+  openai_api_key text,
+  gemini_api_key text,
+  anthropic_api_key text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.staff_ai_keys enable row level security;
+
+drop policy if exists "staff_ai_keys_own_select" on public.staff_ai_keys;
+create policy "staff_ai_keys_own_select" on public.staff_ai_keys
+  for select using (staff_id = auth.uid());
+
+drop policy if exists "staff_ai_keys_own_insert" on public.staff_ai_keys;
+create policy "staff_ai_keys_own_insert" on public.staff_ai_keys
+  for insert with check (staff_id = auth.uid());
+
+drop policy if exists "staff_ai_keys_own_update" on public.staff_ai_keys;
+create policy "staff_ai_keys_own_update" on public.staff_ai_keys
+  for update using (staff_id = auth.uid()) with check (staff_id = auth.uid());
+
+drop policy if exists "staff_ai_keys_own_delete" on public.staff_ai_keys;
+create policy "staff_ai_keys_own_delete" on public.staff_ai_keys
+  for delete using (staff_id = auth.uid());
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

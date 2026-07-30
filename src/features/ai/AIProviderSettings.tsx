@@ -8,26 +8,35 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAISettings, useSaveAISettings } from './hooks'
-import { providerDefaults, providerLabels, getApiKeyForProvider } from './config'
+import { useAISettings, useSaveAISettings, useMyAIKeys, useSaveMyAIKeys } from './hooks'
+import { providerDefaults, providerLabels, getApiKeyForProvider, personalKeyFieldForProvider } from './config'
 import { AIService } from './AIService'
 import type { AIProviderId, AIConnectionTestResult } from './types'
 
 export function AIProviderSettings() {
   const { data: settings } = useAISettings()
   const saveMutation = useSaveAISettings()
+  const { data: myKeys } = useMyAIKeys()
+  const saveKeyMutation = useSaveMyAIKeys()
 
   const [provider, setProvider] = React.useState<AIProviderId>(settings.provider)
   const [baseUrl, setBaseUrl] = React.useState(settings.baseUrl)
   const [model, setModel] = React.useState(settings.model)
   const [testing, setTesting] = React.useState(false)
   const [testResult, setTestResult] = React.useState<AIConnectionTestResult | null>(null)
+  const [apiKeyDraft, setApiKeyDraft] = React.useState('')
 
   React.useEffect(() => {
     setProvider(settings.provider)
     setBaseUrl(settings.baseUrl)
     setModel(settings.model)
   }, [settings.provider, settings.baseUrl, settings.model])
+
+  const keyField = personalKeyFieldForProvider(provider)
+
+  React.useEffect(() => {
+    setApiKeyDraft((keyField && myKeys?.[keyField]) || '')
+  }, [keyField, myKeys])
 
   function handleProviderChange(next: AIProviderId) {
     setProvider(next)
@@ -42,11 +51,20 @@ export function AIProviderSettings() {
     setTestResult(null)
   }
 
+  async function handleSaveApiKey() {
+    if (!keyField) return
+    await saveKeyMutation.mutateAsync({ [keyField]: apiKeyDraft.trim() || null })
+    toast.success('API anahtarınız kaydedildi — sadece kendi hesabınızda saklanır, diğer personel göremez')
+    setTestResult(null)
+  }
+
+  const effectiveApiKey = apiKeyDraft.trim() || getApiKeyForProvider(provider)
+
   async function handleTestConnection() {
     setTesting(true)
     setTestResult(null)
     try {
-      const service = new AIService({ provider, baseUrl, model, apiKey: getApiKeyForProvider(provider) })
+      const service = new AIService({ provider, baseUrl, model, apiKey: effectiveApiKey })
       const result = await service.testConnection()
       setTestResult(result)
     } catch (err) {
@@ -56,7 +74,8 @@ export function AIProviderSettings() {
     }
   }
 
-  const hasApiKey = !!getApiKeyForProvider(provider)
+  const hasApiKey = !!effectiveApiKey
+  const keyDirty = apiKeyDraft.trim() !== ((keyField && myKeys?.[keyField]) || '')
   const dirty = provider !== settings.provider || baseUrl !== settings.baseUrl || model !== settings.model
 
   return (
@@ -106,16 +125,47 @@ export function AIProviderSettings() {
           />
         </div>
 
-        {provider !== 'ollama' && (
-          <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <KeyRound className="size-3.5" />
-            API anahtarı:{' '}
-            {hasApiKey ? (
-              <span className="text-success">.env dosyasında tanımlı</span>
-            ) : (
-              <span className="text-destructive">tanımlı değil — .env dosyasını doldurup uygulamayı yeniden başlatın</span>
-            )}
-          </p>
+        {provider !== 'ollama' && keyField && (
+          <div className="grid gap-1.5 rounded-lg border p-3">
+            <Label htmlFor="ai-personal-key" className="flex items-center gap-2">
+              <KeyRound className="size-3.5" /> Kendi API Anahtarım
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Buraya girdiğiniz anahtar sadece sizin hesabınıza kaydedilir — diğer personel göremez ve
+              paketlenmiş uygulamaya gömülmez. Boş bırakırsanız (varsa) uygulamanın ortak <code>.env</code>{' '}
+              anahtarı kullanılır.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                id="ai-personal-key"
+                type="password"
+                autoComplete="off"
+                value={apiKeyDraft}
+                onChange={(e) => setApiKeyDraft(e.target.value)}
+                placeholder="API anahtarınızı yapıştırın"
+                className="max-w-sm"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSaveApiKey}
+                disabled={!keyDirty || saveKeyMutation.isPending}
+              >
+                {saveKeyMutation.isPending && <Loader2 className="animate-spin" />}
+                Anahtarı Kaydet
+              </Button>
+            </div>
+            <p className="text-xs">
+              {hasApiKey ? (
+                <span className="text-success">
+                  Aktif bir anahtar var ({apiKeyDraft.trim() ? 'kişisel' : '.env (ortak)'}).
+                </span>
+              ) : (
+                <span className="text-destructive">Tanımlı bir anahtar yok.</span>
+              )}
+            </p>
+          </div>
         )}
 
         <div className="flex flex-wrap items-center gap-2">

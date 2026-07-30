@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.5] - 2026-07-31
+
+**Kişisel AI API anahtarı desteği:** Ayarlar > Yapay Zeka'da bulut sağlayıcı (OpenAI/Gemini/Claude) seçildiğinde artık her personel kendi API anahtarını "Kendi API Anahtarım" alanından girip kaydedebiliyor. Bu anahtar yeni `staff_ai_keys` tablosunda, sadece o personelin kendi hesabının okuyup yazabildiği bir satırda saklanıyor (diğer personel veya paylaşılan `app_settings` üzerinden görülemez) — paketlenmiş uygulamaya gömülen ortak bir anahtara gerek kalmadan her bilgisayarda, her personel kendi aboneliğiyle çalışabilir. Kişisel anahtar girilmezse (varsa) `.env`'deki ortak anahtara geri düşülür. Bu değişiklik şema değişikliği içerir — `supabase/schema.sql`'in TAMAMI yeniden SQL Editor'e yapıştırılıp çalıştırılmalı.
+
 ## [2.12.4] - 2026-07-31
 
 **Yapay Zeka performans/kalite düzeltmesi:** Yerel Ollama modeli `qwen2.5:7b`'den daha hafif `qwen2.5:3b`'ye düşürüldü — düşük RAM'li bilgisayarlarda AI kullanılınca yaşanan donma/yavaşlama şikayeti, modelin makinenin belleğine göre çok ağır olmasından kaynaklanıyordu. Ayrıca AI sohbet ve analiz ekranlarındaki sistem mesajlarına "sadece Türkçe yaz" talimatı eklendi (yanıtlara bazen karışan Çince karakterleri önlemek için). Şema değişikliği yok. Not: daha önce Ayarlar > Yapay Zeka'dan model kaydedilmişse, kayıtlı ayar `.env`'deki yeni varsayılanı geçersiz kılar — model alanının elle `qwen2.5:3b` olarak güncellenmesi gerekir.
