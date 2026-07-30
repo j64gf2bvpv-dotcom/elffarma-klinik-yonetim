@@ -367,6 +367,37 @@ export interface PaymentInstallment {
   created_at: string
 }
 
+export type CrmActivityType = 'arama' | 'whatsapp' | 'email' | 'toplanti' | 'video_gorusme' | 'not'
+
+export interface CrmActivity {
+  id: string
+  customer_id: string
+  activity_type: CrmActivityType
+  subject: string | null
+  note: string | null
+  occurred_at: string
+  follow_up_date: string | null
+  sales_rep_id: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type CrmOpportunityStage = 'yeni' | 'teklif' | 'muzakere' | 'kazanildi' | 'kaybedildi'
+
+export interface CrmOpportunity {
+  id: string
+  customer_id: string
+  title: string
+  stage: CrmOpportunityStage
+  amount: number | null
+  expected_close_date: string | null
+  sales_rep_id: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface CongressRemainingProduct {
   id: string
   congress_id: string

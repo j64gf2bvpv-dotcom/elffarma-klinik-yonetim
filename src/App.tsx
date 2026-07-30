@@ -12,6 +12,7 @@ import { ClinicsPage } from '@/routes/ClinicsPage'
 import { ClinicDetailPage } from '@/routes/ClinicDetailPage'
 import { PrimPage } from '@/routes/PrimPage'
 import { SamplesPage } from '@/routes/SamplesPage'
+import { CrmPage } from '@/routes/CrmPage'
 import { CariHesapPage } from '@/routes/CariHesapPage'
 import { CariHesapListPage } from '@/routes/CariHesapListPage'
 import { BudgetYearPage } from '@/routes/BudgetYearPage'
@@ -61,6 +62,7 @@ function App() {
             <Route path="klinikler/:id" element={<ClinicDetailPage />} />
             <Route path="prim" element={<PrimPage />} />
             <Route path="numuneler" element={<SamplesPage />} />
+            <Route path="crm" element={<CrmPage />} />
             <Route path="cari-hesap" element={<CariHesapListPage />} />
             <Route path="cari-hesap/:id" element={<CariHesapPage />} />
             <Route path="stok" element={<StockPage />} />

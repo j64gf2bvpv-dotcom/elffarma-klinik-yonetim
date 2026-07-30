@@ -1366,6 +1366,66 @@ create policy "payment_installments_all_staff" on public.payment_installments fo
 
 comment on table public.payment_installments is 'Bir taksidin vadesi/tutarı; paid_payment_id doluysa tahsil edilmiştir';
 
+-- =========================================================
+-- 31. CRM (Faz 8 ERP genişletmesi)
+-- =========================================================
+-- Müşteri segmentleri için ayrı bir tablo açılmadı — mevcut customers.tags
+-- (serbest metin etiket dizisi) segment olarak da kullanılıyor. Dosyalar için
+-- de mevcut genel `attachments` mekanizması (owner_type='customer') yeterli.
+-- "Yapay Zeka Önerileri" bu fazda değil, AI özellikleri fazında ele alınacak.
+
+create table if not exists public.crm_activities (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customers (id) on delete cascade,
+  activity_type text not null check (
+    activity_type in ('arama', 'whatsapp', 'email', 'toplanti', 'video_gorusme', 'not')
+  ),
+  subject text,
+  note text,
+  occurred_at timestamptz not null default now(),
+  follow_up_date date,
+  sales_rep_id uuid references public.sales_reps (id) on delete set null,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now()
+);
+create index if not exists crm_activities_customer_idx on public.crm_activities (customer_id, occurred_at desc);
+
+alter table public.crm_activities enable row level security;
+drop policy if exists "crm_activities_all_staff" on public.crm_activities;
+create policy "crm_activities_all_staff" on public.crm_activities for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.crm_activities is 'Arama/WhatsApp/e-posta/toplantı/video görüşme/not aktivite logu (CRM)';
+
+create table if not exists public.crm_opportunities (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customers (id) on delete cascade,
+  title text not null,
+  stage text not null default 'yeni' check (
+    stage in ('yeni', 'teklif', 'muzakere', 'kazanildi', 'kaybedildi')
+  ),
+  amount numeric(12, 2),
+  expected_close_date date,
+  sales_rep_id uuid references public.sales_reps (id) on delete set null,
+  notes text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists crm_opportunities_customer_idx on public.crm_opportunities (customer_id);
+create index if not exists crm_opportunities_stage_idx on public.crm_opportunities (stage);
+
+drop trigger if exists set_updated_at on public.crm_opportunities;
+create trigger set_updated_at before update on public.crm_opportunities
+  for each row execute function public.set_updated_at();
+
+alter table public.crm_opportunities enable row level security;
+drop policy if exists "crm_opportunities_all_staff" on public.crm_opportunities;
+create policy "crm_opportunities_all_staff" on public.crm_opportunities for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.crm_opportunities is 'Teklif/fırsat kayıtları — satış hunisi aşaması (stage) ile takip edilir';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

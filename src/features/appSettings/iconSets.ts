@@ -42,6 +42,9 @@ import {
   FlaskConical,
   TestTube,
   Beaker,
+  Handshake,
+  Users2,
+  UserCheck,
 } from 'lucide-react'
 
 export type NavKey =
@@ -50,6 +53,7 @@ export type NavKey =
   | 'clinics'
   | 'commissions'
   | 'samples'
+  | 'crm'
   | 'stock'
   | 'payments'
   | 'congresses'
@@ -84,6 +88,7 @@ export const iconSets: IconSet[] = [
       clinics: Building2,
       commissions: Percent,
       samples: FlaskConical,
+      crm: Handshake,
       stock: PackageSearch,
       payments: Banknote,
       congresses: Presentation,
@@ -108,6 +113,7 @@ export const iconSets: IconSet[] = [
       clinics: Building,
       commissions: BadgePercent,
       samples: TestTube,
+      crm: Users2,
       stock: Boxes,
       payments: Wallet,
       congresses: GraduationCap,
@@ -132,6 +138,7 @@ export const iconSets: IconSet[] = [
       clinics: Hospital,
       commissions: Award,
       samples: Beaker,
+      crm: UserCheck,
       stock: PackageCheck,
       payments: CircleDollarSign,
       congresses: Landmark,

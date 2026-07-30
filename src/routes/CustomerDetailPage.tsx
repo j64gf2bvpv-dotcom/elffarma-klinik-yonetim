@@ -53,6 +53,9 @@ import { useVisitsByDoctorName } from '@/features/doctorVisits/hooks'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { SampleRequestForm } from '@/features/samples/SampleRequestForm'
 import { useSampleRequests } from '@/features/samples/hooks'
+import { CrmActivityForm } from '@/features/crm/CrmActivityForm'
+import { CrmOpportunityForm } from '@/features/crm/CrmOpportunityForm'
+import { useCrmActivities, useCrmOpportunities } from '@/features/crm/hooks'
 import type { SampleRequestStatus } from '@/types/database'
 
 const sampleStatusLabels: Record<SampleRequestStatus, string> = {
@@ -84,6 +87,8 @@ export function CustomerDetailPage() {
   const { data: congressParticipations = [] } = useParticipationsByDoctorName(customer?.full_name)
   const { data: visits = [] } = useVisitsByDoctorName(customer?.full_name)
   const { data: sampleRequests = [] } = useSampleRequests({ customerId: id })
+  const { data: crmOpportunities = [] } = useCrmOpportunities({ customerId: id })
+  const { data: crmActivities = [] } = useCrmActivities({ customerId: id })
   const summary = useCustomerSummary(customer)
   const deletePendingMutation = useDeletePendingProduct()
   const deleteMutation = useDeleteCustomer()
@@ -680,8 +685,53 @@ export function CustomerDetailPage() {
         </TabsContent>
 
         <TabsContent value="crm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Fırsatlar</h2>
+            <CrmOpportunityForm defaultCustomerId={customer.id} />
+          </div>
+          <Card className="mb-6">
+            <CardContent className={crmOpportunities.length === 0 ? 'p-6' : 'grid gap-1.5 p-4'}>
+              {crmOpportunities.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Fırsat bulunamadı.</p>
+              ) : (
+                crmOpportunities.map((o) => (
+                  <div key={o.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                    <div>
+                      <p className="font-medium">{o.title}</p>
+                      <p className="text-muted-foreground text-xs">{tr.crmOpportunityStage[o.stage]}</p>
+                    </div>
+                    {o.amount != null && <span className="font-medium">{currency(Number(o.amount))}</span>}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Aktiviteler</h2>
+            <CrmActivityForm defaultCustomerId={customer.id} />
+          </div>
           <Card>
-            <CardContent className="p-6 text-sm text-muted-foreground">CRM modülü yakında eklenecek.</CardContent>
+            <CardContent className={crmActivities.length === 0 ? 'p-6' : 'grid gap-1.5 p-4'}>
+              {crmActivities.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Aktivite bulunamadı.</p>
+              ) : (
+                crmActivities.map((a) => (
+                  <div key={a.id} className="rounded-md border px-3 py-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">
+                        {tr.crmActivityType[a.activity_type]}
+                        {a.subject ? ` — ${a.subject}` : ''}
+                      </p>
+                      <span className="text-muted-foreground text-xs">
+                        {format(new Date(a.occurred_at), 'd MMM yyyy HH:mm', { locale: trLocale })}
+                      </span>
+                    </div>
+                    {a.note && <p className="text-muted-foreground mt-1 text-xs whitespace-pre-wrap">{a.note}</p>}
+                  </div>
+                ))
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>

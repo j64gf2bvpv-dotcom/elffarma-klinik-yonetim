@@ -3,6 +3,16 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.10.0] - 2026-07-30
+
+**CRM modülü (Faz 8)** — büyük ERP genişletmesinin sekizinci fazı:
+- Yeni **CRM** sayfası: fırsatlar satış hunisi aşamalarına göre (Yeni/Teklif/Müzakere/Kazanıldı/Kaybedildi) gruplanmış görünüyor, altında tüm doktorlara ait son aktiviteler akışı var.
+- **Aktivite logu** (arama, WhatsApp, e-posta, toplantı, video görüşme, not) — takip tarihi girilirse otomatik olarak Hatırlatmalar'a ekleniyor.
+- **Fırsat/teklif kayıtları** — tutar, beklenen kapanış tarihi, temsilci ile.
+- Doktor detay sayfasındaki CRM sekmesi artık gerçek veriyle doluyor (o doktora ait fırsatlar + aktiviteler, hızlı ekleme butonlarıyla).
+- Müşteri segmentleri ve dosyalar için mevcut etiket/Belgeler mekanizmaları yeniden kullanıldı — yeni tablo eklenmedi. Yapay zeka önerileri bu fazda değil, AI özellikleri fazında ele alınacak.
+- Bu faz şema değişikliği içerir — `supabase/schema.sql`'in TAMAMI Supabase SQL Editor'e yeniden yapıştırılıp çalıştırılmalı.
+
 ## [2.9.0] - 2026-07-30
 
 **Tahsilat Takibi genişletmesi (Faz 7)** — büyük ERP genişletmesinin yedinci fazı:
