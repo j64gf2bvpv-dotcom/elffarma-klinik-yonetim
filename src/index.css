@@ -148,16 +148,16 @@
   .animate-map-province-pulse {
     animation: map-province-pulse 0.9s ease-in-out infinite;
   }
-  @keyframes ai-orb-spin {
+  @keyframes ai-orb-hue-cycle {
     from {
-      transform: rotate(0deg);
+      filter: hue-rotate(0deg);
     }
     to {
-      transform: rotate(360deg);
+      filter: hue-rotate(360deg);
     }
   }
-  .animate-ai-orb-spin {
-    animation: ai-orb-spin 5s linear infinite;
+  .animate-ai-orb-hue {
+    animation: ai-orb-hue-cycle 4s linear infinite;
   }
 }
 

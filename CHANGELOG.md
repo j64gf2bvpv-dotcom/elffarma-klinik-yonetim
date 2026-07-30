@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.10] - 2026-07-31
+
+**AI simgesi görsel yenileme:** AI Asistan simgesi, dört uçlu, çok renkli, sürekli renk geçişi yapan parıldayan bir simgeye kavuştu (Google'ın gerçek Gemini logosu/asseti kullanılmadı — telif/marka nedeniyle sadece görsel dil benzer, kendi SVG'imiz ve gradyanımız). Panel başlığındaki ve sohbet mesajlarındaki küçük simgeler de aynı parıltı ikonuyla tutarlı hale getirildi. Şema değişikliği yok.
+
 ## [2.12.9] - 2026-07-31
 
 **Hata düzeltmesi:** Gemini varsayılan modeli `gemini-2.5-flash` de Google tarafından yeni hesaplar için kullanımdan kaldırılmıştı (404: "no longer available to new users"). Sabit bir model sürümü yerine Google'ın her zaman güncel önerilen flash modeline işaret eden `gemini-flash-latest` takma adına geçildi — bir sonraki model kullanımdan kaldırılmasında bu sorun tekrar yaşanmayacak. Daha önce Ayarlar'dan model adı kaydedilmişse Model alanının elle `gemini-flash-latest` yapılması gerekiyor. Şema değişikliği yok.

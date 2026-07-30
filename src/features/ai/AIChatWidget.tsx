@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Bot, Send, Loader2, X, Sparkles, Trash2, Mic, MicOff, Paperclip, Image as ImageIcon, FileSpreadsheet } from 'lucide-react'
+import { Send, Loader2, X, Trash2, Mic, MicOff, Paperclip, Image as ImageIcon, FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,38 @@ import {
   useDeleteAIConversation,
 } from './hooks'
 import { AIServiceError, type AIMessage, type AIContentPart } from './types'
+
+let sparkleGradientId = 0
+
+/**
+ * Çok renkli, dört uçlu parıltı simgesi — Gemini'nin animasyonundan ilham
+ * alan kendi SVG'imiz (lucide'nin genel "sparkle" şekli + kendi gradyanımız).
+ * Google'ın gerçek logosu/asset dosyası kullanılmıyor; sadece görsel dil
+ * benzer (renkli, dönen/parıldayan tek parıltı).
+ */
+function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
+  const gradientId = React.useRef(`ai-sparkle-gradient-${sparkleGradientId++}`).current
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={cn(className, animated && 'animate-ai-orb-hue')}
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f43f5e" />
+          <stop offset="35%" stopColor="#f59e0b" />
+          <stop offset="65%" stopColor="#22c55e" />
+          <stop offset="100%" stopColor="#3b82f6" />
+        </linearGradient>
+      </defs>
+      <path
+        fill={`url(#${gradientId})`}
+        d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"
+      />
+    </svg>
+  )
+}
 
 const WIDGET_BUTTON_SIZE = 56
 const WIDGET_OFFSET_KEY = 'ai_widget_offset'
@@ -367,8 +399,8 @@ export function AIChatWidget() {
       >
         <div className="flex items-center justify-between border-b bg-primary/5 px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary/70 to-primary/40 text-primary-foreground">
-              <Sparkles className="size-4" />
+            <span className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-black/5">
+              <AiSparkleIcon className="size-5" />
             </span>
             <div>
               <p className="text-sm font-semibold">AI Asistan</p>
@@ -396,8 +428,8 @@ export function AIChatWidget() {
           {storedMessages.map((m) => (
             <div key={m.id} className={cn('flex gap-2 text-sm', m.role === 'user' ? 'justify-end' : 'justify-start')}>
               {m.role === 'assistant' && (
-                <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary/70 to-primary/40 text-primary-foreground">
-                  <Sparkles className="size-3" />
+                <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-black/5">
+                  <AiSparkleIcon className="size-4" />
                 </span>
               )}
               <p
@@ -412,8 +444,8 @@ export function AIChatWidget() {
           ))}
           {streamingText && (
             <div className="flex items-start gap-2 text-sm">
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary/70 to-primary/40 text-primary-foreground">
-                <Sparkles className="size-3" />
+              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-black/5">
+                <AiSparkleIcon className="size-4" />
               </span>
               <p className="whitespace-pre-wrap px-0 py-0.5">
                 {streamingText}
@@ -505,14 +537,12 @@ export function AIChatWidget() {
           onPointerUp={handlePointerUp}
           title={open ? 'AI Asistanı kapat' : 'AI Asistanı aç (sürükleyerek taşıyabilirsiniz)'}
           className={cn(
-            'relative flex size-14 cursor-grab items-center justify-center rounded-full shadow-[0_8px_24px_-6px_var(--color-primary)] transition-all duration-300 ease-out select-none hover:scale-105 active:cursor-grabbing active:scale-95',
+            'relative flex size-14 cursor-grab items-center justify-center rounded-2xl bg-background shadow-lg ring-1 ring-black/10 transition-all duration-300 ease-out select-none hover:scale-105 active:cursor-grabbing active:scale-95',
             open && 'pointer-events-none scale-0 opacity-0',
           )}
         >
-          <span className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-primary/70 to-primary/40" />
-          <span className="animate-ai-orb-spin absolute -inset-1 rounded-full bg-[conic-gradient(from_0deg,transparent,var(--color-primary),transparent_65%)] opacity-70" />
-          <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
-          <Bot className="relative z-10 size-6 text-primary-foreground" />
+          <span className="absolute inset-0 animate-ping rounded-2xl bg-primary/15" />
+          <AiSparkleIcon className="relative z-10 size-8" animated />
         </button>
         {!open && (
           <button
