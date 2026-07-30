@@ -397,15 +397,15 @@ export function AIChatWidget() {
     <>
       <div
         className={cn(
-          'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-bottom-right flex-col overflow-hidden rounded-2xl border bg-popover text-popover-foreground shadow-2xl transition-all duration-300 ease-out',
+          'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-bottom-right flex-col overflow-hidden rounded-3xl border bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5 transition-all duration-300 ease-out',
           open ? 'h-[32rem] max-h-[calc(100vh-6rem)] scale-100 opacity-100' : 'h-0 scale-95 opacity-0',
         )}
         style={panelStyle}
         aria-hidden={!open}
       >
-        <div className="flex items-center justify-between border-b bg-primary/5 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-black/5">
+        <div className="flex items-center justify-between border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
               <AiSparkleIcon className="size-5" />
             </span>
             <div>
@@ -416,44 +416,69 @@ export function AIChatWidget() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="size-7" onClick={handleDeleteConversation} title="Sohbeti Sil">
+            <Button variant="ghost" size="icon" className="size-7 rounded-full" onClick={handleDeleteConversation} title="Sohbeti Sil">
               <Trash2 className="size-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="size-7" onClick={() => setOpen(false)} title="Kapat">
+            <Button variant="ghost" size="icon" className="size-7 rounded-full" onClick={() => setOpen(false)} title="Kapat">
               <X className="size-3.5" />
             </Button>
           </div>
         </div>
 
-        <div ref={scrollRef} className="grid flex-1 gap-3 overflow-y-auto p-4">
-          {storedMessages.length === 0 && !streamingText && (
-            <p className="text-muted-foreground mt-8 text-center text-sm">
-              Merhaba! Bir şey yazıp gönderin, birlikte deneyelim.
-            </p>
+        <div ref={scrollRef} className="grid flex-1 auto-rows-min gap-4 overflow-y-auto p-4">
+          {storedMessages.length === 0 && !streamingText && !sending && (
+            <div className="mt-10 flex flex-col items-center gap-3 text-center">
+              <span className="flex size-12 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
+                <AiSparkleIcon className="size-7" />
+              </span>
+              <p className="text-muted-foreground text-sm">
+                Merhaba! Bir şey yazıp gönderin, birlikte deneyelim.
+              </p>
+            </div>
           )}
           {storedMessages.map((m) => (
-            <div key={m.id} className={cn('flex gap-2 text-sm', m.role === 'user' ? 'justify-end' : 'justify-start')}>
+            <div
+              key={m.id}
+              className={cn(
+                'animate-in fade-in slide-in-from-bottom-1 flex gap-2 text-sm duration-300',
+                m.role === 'user' ? 'justify-end' : 'justify-start',
+              )}
+            >
               {m.role === 'assistant' && (
-                <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-black/5">
+                <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
                   <AiSparkleIcon className="size-4" />
                 </span>
               )}
               <p
                 className={cn(
-                  'max-w-[85%] whitespace-pre-wrap',
-                  m.role === 'user' ? 'rounded-2xl rounded-br-sm bg-primary/10 px-3 py-2' : 'px-0 py-0.5',
+                  'max-w-[85%] leading-relaxed whitespace-pre-wrap',
+                  m.role === 'user'
+                    ? 'rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-primary-foreground shadow-sm'
+                    : 'px-0 py-0.5 text-foreground/90',
                 )}
               >
                 {m.content}
               </p>
             </div>
           ))}
-          {streamingText && (
-            <div className="flex items-start gap-2 text-sm">
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-black/5">
-                <AiSparkleIcon className="size-4" />
+          {sending && !streamingText && (
+            <div className="animate-in fade-in flex items-start gap-2 text-sm duration-200">
+              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
+                <AiSparkleIcon className="size-4" animated />
               </span>
-              <p className="whitespace-pre-wrap px-0 py-0.5">
+              <div className="flex items-center gap-1 rounded-2xl bg-muted/60 px-3.5 py-3">
+                <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:-0.3s]" />
+                <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:-0.15s]" />
+                <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full" />
+              </div>
+            </div>
+          )}
+          {streamingText && (
+            <div className="animate-in fade-in flex items-start gap-2 text-sm duration-200">
+              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
+                <AiSparkleIcon className="size-4" animated />
+              </span>
+              <p className="leading-relaxed px-0 py-0.5 whitespace-pre-wrap text-foreground/90">
                 {streamingText}
                 <span className="animate-pulse">▍</span>
               </p>
@@ -479,59 +504,61 @@ export function AIChatWidget() {
           </div>
         )}
 
-        <div className="flex items-end gap-1.5 border-t p-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*,.xlsx,.xls,.csv,.txt"
-            className="hidden"
-            onChange={handleFilesSelected}
-          />
-          <Button
-            size="icon"
-            variant="ghost"
-            className="rounded-full"
-            onClick={() => fileInputRef.current?.click()}
-            title="Dosya/resim ekle"
-            type="button"
-          >
-            <Paperclip className="size-4" />
-          </Button>
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                handleSend()
-              }
-            }}
-            placeholder="Bir mesaj yazın..."
-            rows={1}
-            className="max-h-24 min-h-9 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
-            disabled={sending}
-          />
-          {speechSupported && (
+        <div className="border-t p-2.5">
+          <div className="flex items-end gap-1 rounded-3xl border bg-muted/30 pr-1 pl-1 shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-primary/30">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.xlsx,.xls,.csv,.txt"
+              className="hidden"
+              onChange={handleFilesSelected}
+            />
             <Button
               size="icon"
-              variant={listening ? 'destructive' : 'ghost'}
+              variant="ghost"
               className="rounded-full"
-              onClick={toggleListening}
-              title={listening ? 'Dinlemeyi durdur' : 'Sesli giriş'}
+              onClick={() => fileInputRef.current?.click()}
+              title="Dosya/resim ekle"
               type="button"
             >
-              {listening ? <MicOff /> : <Mic />}
+              <Paperclip className="size-4" />
             </Button>
-          )}
-          <Button
-            size="icon"
-            className="rounded-full"
-            onClick={handleSend}
-            disabled={sending || (!draft.trim() && attachments.length === 0)}
-          >
-            {sending ? <Loader2 className="animate-spin" /> : <Send />}
-          </Button>
+            <Textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSend()
+                }
+              }}
+              placeholder="Bir mesaj yazın..."
+              rows={1}
+              className="max-h-24 min-h-9 resize-none border-0 bg-transparent py-2.5 shadow-none focus-visible:ring-0"
+              disabled={sending}
+            />
+            {speechSupported && (
+              <Button
+                size="icon"
+                variant={listening ? 'destructive' : 'ghost'}
+                className="rounded-full"
+                onClick={toggleListening}
+                title={listening ? 'Dinlemeyi durdur' : 'Sesli giriş'}
+                type="button"
+              >
+                {listening ? <MicOff /> : <Mic />}
+              </Button>
+            )}
+            <Button
+              size="icon"
+              className="rounded-full"
+              onClick={handleSend}
+              disabled={sending || (!draft.trim() && attachments.length === 0)}
+            >
+              {sending ? <Loader2 className="animate-spin" /> : <Send />}
+            </Button>
+          </div>
         </div>
       </div>
 

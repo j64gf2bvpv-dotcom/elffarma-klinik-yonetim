@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.12] - 2026-07-31
+
+**AI sohbet paneli kalite iyileştirmesi:** Soru gönderildikten sonra, ilk yanıt jetonu gelene kadar "yazıyor..." tarzı zıplayan üç nokta animasyonu gösteriliyor (öncesinde yanıt gelene kadar hiçbir geri bildirim yoktu). Mesajlar artık yumuşak bir giriş animasyonuyla beliriyor, kullanıcı mesajları dolu/kontrast bir balonla, asistan yanıtları daha okunaklı satır aralığıyla gösteriliyor; giriş kutusu odaklanınca hafif bir halka efekti alan, daha "pill" şekilli bir kutuya kavuştu; panel genel olarak daha yuvarlak köşeli ve gölgeli, daha premium bir görünüme kavuştu. Şema değişikliği yok.
+
 ## [2.12.11] - 2026-07-31
 
 **AI simgesi görsel iyileştirme:** Önceki sürümdeki sert/gökkuşağı renk döngüsü animasyonu, uygulamanın kendi tema renklerinden (primary/gold/accent) oluşan yumuşak bir ışık kayması (shimmer) ile değiştirildi — simge artık hangi marka teması seçili olursa olsun panelle uyumlu görünüyor. Şema değişikliği yok.
