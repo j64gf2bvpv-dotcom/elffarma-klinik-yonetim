@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
-import { format, startOfMonth, subMonths, differenceInCalendarDays } from 'date-fns'
+import { format, startOfMonth, startOfDay, subMonths, differenceInCalendarDays } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import {
   Wallet,
@@ -28,6 +28,13 @@ import {
   BarChart3,
   PieChart,
   Landmark,
+  CalendarClock,
+  AlertTriangle,
+  Wrench,
+  Trophy,
+  UserRound,
+  History,
+  Undo2,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -43,7 +50,9 @@ import { useProducts } from '@/features/stock/hooks'
 import { useExchangeRates } from '@/features/exchangeRates/hooks'
 import { useCongresses } from '@/features/congresses/hooks'
 import { useAllParticipantProductSales } from '@/features/congresses/hooks'
+import { useWorkshops } from '@/features/workshops/hooks'
 import { useSales } from '@/features/sales/hooks'
+import { useCustomers } from '@/features/customers/hooks'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 import { RevenueChart, type RevenueChartPoint } from '@/components/charts/RevenueChart'
@@ -159,14 +168,20 @@ function useCountUp(value: number, duration = 700) {
 
 type WidgetId =
   | 'stats'
+  | 'extra_stats'
   | 'quick_actions'
   | 'stock_status'
   | 'upcoming_congresses'
+  | 'upcoming_workshops'
   | 'exchange_rates'
   | 'revenue_chart'
   | 'alerts'
+  | 'recent_transactions'
   | 'congress_prices'
   | 'region_sales'
+  | 'top_products'
+  | 'top_doctors'
+  | 'sales_rep_performance'
 
 interface LayoutItem {
   id: WidgetId
@@ -175,25 +190,37 @@ interface LayoutItem {
 
 const defaultLayout: LayoutItem[] = [
   { id: 'stats', visible: true },
+  { id: 'extra_stats', visible: true },
   { id: 'quick_actions', visible: true },
   { id: 'stock_status', visible: true },
   { id: 'upcoming_congresses', visible: true },
+  { id: 'upcoming_workshops', visible: true },
   { id: 'exchange_rates', visible: true },
   { id: 'revenue_chart', visible: true },
   { id: 'region_sales', visible: true },
+  { id: 'top_products', visible: true },
+  { id: 'top_doctors', visible: true },
+  { id: 'sales_rep_performance', visible: true },
   { id: 'congress_prices', visible: true },
+  { id: 'recent_transactions', visible: true },
   { id: 'alerts', visible: true },
 ]
 
 const widgetLabels: Record<WidgetId, string> = {
   stats: 'Özet Kartları',
+  extra_stats: 'Bugünkü Satış / Tahsil Edilecek / Kritik Stok',
   quick_actions: 'Hızlı Erişim',
   stock_status: 'Stok Durumu',
   upcoming_congresses: 'Yaklaşan Kongreler',
+  upcoming_workshops: 'Yaklaşan Workshoplar',
   exchange_rates: 'Döviz Kurları',
   revenue_chart: 'Tahsilat Trendi',
   region_sales: 'Satış Haritası (İllere Göre)',
+  top_products: 'En Çok Satan Ürünler',
+  top_doctors: 'En Çok Alış Yapan Doktorlar',
+  sales_rep_performance: 'Satış Temsilcisi Performansı',
   congress_prices: 'Kongre Paket Fiyatları',
+  recent_transactions: 'Son İşlemler',
   alerts: 'Son Tahsilatlar',
 }
 
@@ -206,8 +233,11 @@ export function DashboardPage() {
   const { data: recentPayments = [] } = usePayments({ from: sixMonthsAgo.toISOString() })
   const { data: exchangeRates = [], isLoading: ratesLoading } = useExchangeRates()
   const { data: congresses = [] } = useCongresses()
+  const { data: workshops = [] } = useWorkshops()
   const { data: participantSales = [] } = useAllParticipantProductSales()
   const { data: sales = [] } = useSales()
+  const { data: doctors = [] } = useCustomers('')
+  const { data: allPayments = [] } = usePayments({})
   const [convertAmount, setConvertAmount] = React.useState('100')
   const [fromCurrency, setFromCurrency] = React.useState<'TRY' | 'USD' | 'EUR'>('TRY')
   const [toCurrency, setToCurrency] = React.useState<'TRY' | 'USD' | 'EUR'>('USD')
@@ -314,6 +344,77 @@ export function DashboardPage() {
 
   const upcomingCongresses = congresses.filter((c) => c.start_date && new Date(c.start_date) >= new Date())
 
+  const todayStart = React.useMemo(() => startOfDay(new Date()), [])
+  const todayCongressSales = participantSales.filter((s) => new Date(s.created_at) >= todayStart)
+  const todayGeneralSales = sales.filter((s) => new Date(s.sale_date) >= todayStart)
+  const todaySalesTotal =
+    todayCongressSales.reduce((sum, s) => sum + Number(s.quantity) * Number(s.unit_price), 0) +
+    todayGeneralSales.reduce((sum, s) => sum + netAmount(s), 0)
+
+  const paidByCustomer = React.useMemo(() => {
+    const map = new Map<string, number>()
+    for (const p of allPayments) map.set(p.customer_id, (map.get(p.customer_id) ?? 0) + Number(p.amount))
+    return map
+  }, [allPayments])
+  const receivablesTotal = doctors.reduce((sum, d) => {
+    if (d.total_debt == null) return sum
+    const balance = Number(d.total_debt) - (paidByCustomer.get(d.id) ?? 0)
+    return sum + Math.max(0, balance)
+  }, 0)
+
+  const criticalStockCount = products.filter((p) => p.current_quantity <= p.critical_stock_threshold).length
+
+  const topProducts = React.useMemo<RevenueChartPoint[]>(() => {
+    const map = new Map<string, number>()
+    for (const s of sales) map.set(s.product_name, (map.get(s.product_name) ?? 0) + netAmount(s))
+    return Array.from(map.entries())
+      .map(([label, total]) => ({ label, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6)
+  }, [sales])
+
+  const topDoctors = React.useMemo(() => {
+    const map = new Map<string, number>()
+    for (const s of sales) {
+      const name = s.customers?.full_name ?? 'Bilinmeyen'
+      map.set(name, (map.get(name) ?? 0) + netAmount(s))
+    }
+    return Array.from(map.entries())
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6)
+  }, [sales])
+
+  const repPerformance = React.useMemo(() => {
+    const map = new Map<string, number>()
+    for (const s of sales) {
+      const name = s.sales_reps?.name ?? 'Belirtilmemiş'
+      map.set(name, (map.get(name) ?? 0) + netAmount(s))
+    }
+    return Array.from(map.entries())
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6)
+  }, [sales])
+
+  const recentTransactions = React.useMemo(() => {
+    const fromSales = sales.slice(0, 8).map((s) => ({
+      id: `sale-${s.id}`,
+      date: s.sale_date,
+      label: `${s.customers?.full_name ?? 'Doktor'} — ${s.product_name}`,
+      amount: netAmount(s),
+      kind: s.type === 'sale' ? ('sale' as const) : ('return' as const),
+    }))
+    const fromPayments = recentPayments.slice(0, 8).map((p) => ({
+      id: `payment-${p.id}`,
+      date: p.paid_at,
+      label: p.customers?.full_name ?? 'Doktor',
+      amount: Number(p.amount),
+      kind: 'payment' as const,
+    }))
+    return [...fromSales, ...fromPayments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)
+  }, [sales, recentPayments])
+
   const monthTotalAnimated = useCountUp(monthTotal)
   const productCountAnimated = useCountUp(products.length)
   const upcomingCongressAnimated = useCountUp(upcomingCongresses.length)
@@ -392,6 +493,43 @@ export function DashboardPage() {
             deltaPct={pctDelta(salesTotal, salesPrevTotal)}
             delayMs={delayMs + 240}
             to="/satislar"
+          />
+        </div>
+      )
+    }
+
+    if (id === 'extra_stats') {
+      return (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCardV2
+            icon={ShoppingCart}
+            tone="blue"
+            label="Bugünkü Satış"
+            value={todaySalesTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+            sublabel="Bugün yapılan satış"
+            deltaPct={null}
+            delayMs={delayMs}
+            to="/satislar"
+          />
+          <StatCardV2
+            icon={CalendarClock}
+            tone="purple"
+            label="Tahsil Edilecek"
+            value={receivablesTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+            sublabel="Açık bakiyeli doktorlar"
+            deltaPct={null}
+            delayMs={delayMs + 80}
+            to="/cari-hesap"
+          />
+          <StatCardV2
+            icon={AlertTriangle}
+            tone="gold"
+            label="Kritik Stok"
+            value={criticalStockCount.toLocaleString('tr-TR')}
+            sublabel="Ürün çeşidi"
+            deltaPct={null}
+            delayMs={delayMs + 160}
+            to="/stok"
           />
         </div>
       )
@@ -506,6 +644,58 @@ export function DashboardPage() {
                     {c.start_date && (
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(c.start_date), 'd MMMM yyyy', { locale: trLocale })}
+                      </p>
+                    )}
+                  </div>
+                  {daysLeft != null && (
+                    <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary shrink-0">
+                      {daysLeft} Gün
+                    </Badge>
+                  )}
+                </Link>
+              )
+            })}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'upcoming_workshops') {
+      const upcoming = workshops
+        .filter((w) => w.workshop_date && new Date(w.workshop_date) >= new Date())
+        .sort((a, b) => (a.workshop_date ?? '').localeCompare(b.workshop_date ?? ''))
+        .slice(0, 4)
+
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wrench className="size-4 text-primary" /> Yaklaşan Workshoplar
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/workshoplar">
+                Tüm Workshoplar <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            {upcoming.length === 0 && <p className="text-sm text-muted-foreground">Yaklaşan workshop yok</p>}
+            {upcoming.map((w) => {
+              const daysLeft = w.workshop_date ? differenceInCalendarDays(new Date(w.workshop_date), new Date()) : null
+              return (
+                <Link
+                  key={w.id}
+                  to={`/workshoplar/${w.id}`}
+                  className="flex items-center gap-3 rounded-lg border p-2.5 transition-colors hover:bg-accent"
+                >
+                  <span className="flex size-14 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
+                    <Wrench className="size-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{w.name}</p>
+                    {w.workshop_date && (
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(w.workshop_date), 'd MMMM yyyy', { locale: trLocale })}
                       </p>
                     )}
                   </div>
@@ -670,6 +860,119 @@ export function DashboardPage() {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'top_products') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="size-4 text-primary" /> En Çok Satan Ürünler
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/satislar">
+                Raporlara git <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {topProducts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Henüz satış verisi yok</p>
+            ) : (
+              <RevenueChart data={topProducts} />
+            )}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'top_doctors') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="size-4 text-primary" /> En Çok Alış Yapan Doktorlar
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/musteriler">
+                Doktorlara git <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            {topDoctors.length === 0 && <p className="text-sm text-muted-foreground">Henüz satış verisi yok</p>}
+            {topDoctors.map((d) => (
+              <div key={d.name} className="flex items-center justify-between rounded-md border p-3 text-sm">
+                <span className="font-medium">{d.name}</span>
+                <Badge variant="outline">
+                  {d.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'sales_rep_performance') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <UserRound className="size-4 text-primary" /> Satış Temsilcisi Performansı
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/doktor-ziyaretleri">
+                Ziyaretlere git <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            {repPerformance.length === 0 && <p className="text-sm text-muted-foreground">Henüz satış verisi yok</p>}
+            {repPerformance.map((r) => (
+              <div key={r.name} className="flex items-center justify-between rounded-md border p-3 text-sm">
+                <span className="font-medium">{r.name}</span>
+                <Badge variant="outline">
+                  {r.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'recent_transactions') {
+      return (
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <History className="size-4 text-primary" /> Son İşlemler
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            {recentTransactions.length === 0 && <p className="text-sm text-muted-foreground">Henüz işlem yok</p>}
+            {recentTransactions.map((t) => (
+              <div key={t.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
+                <span className="flex items-center gap-2">
+                  {t.kind === 'payment' && <Wallet className="size-3.5 text-success" />}
+                  {t.kind === 'sale' && <ShoppingCart className="size-3.5 text-primary" />}
+                  {t.kind === 'return' && <Undo2 className="size-3.5 text-destructive" />}
+                  <span>
+                    <span className="font-medium">{t.label}</span>{' '}
+                    <span className="text-muted-foreground">
+                      — {format(new Date(t.date), 'd MMM yyyy', { locale: trLocale })}
+                    </span>
+                  </span>
+                </span>
+                <span className="font-medium">
+                  {t.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+                </span>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )
