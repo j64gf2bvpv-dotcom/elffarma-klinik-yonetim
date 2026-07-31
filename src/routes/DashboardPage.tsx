@@ -210,11 +210,12 @@ type WidgetId =
 // boyutlandırma mekanizmasıyla (Recharts ResponsiveContainer) çakışıp sonsuz bir
 // ölçüm döngüsüne girmiş ve uygulamayı kilitlemişti. Bu sabit-adımlı yaklaşım
 // hem "büyüt/küçült" ihtiyacını karşılıyor hem de o sınıf hataya kapalı.
-type WidgetSize = 'third' | 'half' | 'two_thirds' | 'full'
+type WidgetSize = 'quarter' | 'third' | 'half' | 'two_thirds' | 'full'
 
-const SIZE_ORDER: WidgetSize[] = ['third', 'half', 'two_thirds', 'full']
+const SIZE_ORDER: WidgetSize[] = ['quarter', 'third', 'half', 'two_thirds', 'full']
 
 const SIZE_CLASS: Record<WidgetSize, string> = {
+  quarter: 'w-full md:w-[calc(25%-0.75rem)]',
   third: 'w-full md:w-[calc(33.333%-0.667rem)]',
   half: 'w-full md:w-[calc(50%-0.5rem)]',
   two_thirds: 'w-full md:w-[calc(66.667%-0.333rem)]',
