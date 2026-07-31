@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.32] - 2026-08-01
+
+**AI orb simgesine "chat" yazısı ve parıldayan aksan eklendi:** Kırmızı kürenin üstünde "AI", altında "chat" yazısı, ikisinin arasında (animasyonlu halinde) yanıp sönen küçük bir parıltı var; yazı boyutları daha okunaklı olacak şekilde büyütüldü. Şema değişikliği yok.
+
 ## [2.12.31] - 2026-08-01
 
 **AI orb simgesi kırmızıya çevrildi + üzerine "AI" yazısı eklendi:** Parıldayan küre artık mavi/mor yerine kırmızı gradyanla (Elffarma marka rengiyle uyumlu) çiziliyor, ortasında beyaz "AI" yazısı var. Şema değişikliği yok.

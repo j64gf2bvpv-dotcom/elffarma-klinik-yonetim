@@ -23,13 +23,13 @@ import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 let aiIconGradientId = 0
 
 /**
- * Parıldayan, kırmızı bir "orb" (küre) simgesi, üzerinde "AI" yazısı —
- * birçok premium AI asistan ürününde (Siri, Copilot vb.) yaygın olan, tek
- * bir şirketin tescilli logosuna ait olmayan genel bir görsel dil. En küçük
- * boyutta bile (mesaj avatarı gibi) okunaklı kalan bir gradyan küre +
- * yumuşak dış parıltı (glow) + döngüsel iç ışık vurgusu. `animated`
- * verilirse dış parıltı nefes alır gibi büyüyüp küçülür ve iç ışık vurgusu
- * yavaşça küre etrafında döner; verilmezse tamamen sabit durur.
+ * Parıldayan, kırmızı bir "orb" (küre) simgesi — üstte "AI", altında "chat"
+ * yazısı, ikisinin arasında yanıp sönen küçük bir parıltı aksanı. Birçok
+ * premium AI asistan ürününde (Siri, Copilot vb.) yaygın olan, tek bir
+ * şirketin tescilli logosuna ait olmayan genel bir görsel dil. `animated`
+ * verilirse dış parıltı nefes alır gibi büyüyüp küçülür, iç ışık vurgusu
+ * yavaşça küre etrafında döner ve aradaki parıltı yanıp söner; verilmezse
+ * tamamen sabit durur.
  */
 function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
@@ -59,7 +59,7 @@ function AiSparkleIcon({ className, animated = false }: { className?: string; an
       </g>
       <text
         x="50"
-        y="61"
+        y="45"
         textAnchor="middle"
         fontFamily="Inter, system-ui, sans-serif"
         fontWeight="800"
@@ -67,6 +67,28 @@ function AiSparkleIcon({ className, animated = false }: { className?: string; an
         fill="white"
       >
         AI
+      </text>
+      <rect
+        x="46"
+        y="49"
+        width="9"
+        height="9"
+        fill="white"
+        opacity="0.85"
+        transform="rotate(45 50.5 53.5)"
+        className={cn(animated && 'animate-pulse')}
+      />
+      <text
+        x="50"
+        y="72"
+        textAnchor="middle"
+        fontFamily="Inter, system-ui, sans-serif"
+        fontWeight="700"
+        fontSize="16"
+        letterSpacing="0.3"
+        fill="white"
+      >
+        chat
       </text>
     </svg>
   )
