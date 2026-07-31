@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.36] - 2026-08-01
+
+**AI simgesi artık üst çubukta (wifi/ayarlar/profil ile aynı satırda) sabit duruyor:** Sağ alt köşede sürüklenebilen/gizlenebilen yüzen AI simgesi kaldırıldı — bunun yerine üst çubukta, bağlantı göstergesinin hemen solunda, ayarlar ve profil menüsüyle aynı sırada, daha büyük sabit bir AI ikonu var. Tıklanınca aynı sohbet paneli açılıyor; panel hâlâ sürüklenip yeniden konumlandırılabiliyor ve kenarından boyutlandırılabiliyor, sadece TETİKLEYİCİ ikon artık sabit. Işık huzmesi animasyonu artık sürekli değil, birkaç saniyede bir "arada" parlayacak şekilde ayarlandı. "Ayarlar > Yapay Zeka"daki simgeyi gösterme/gizleme anahtarı kaldırıldı (artık geçerli değil — diğer üst çubuk ikonları gibi her zaman görünür). Şema değişikliği yok.
+
 ## [2.12.35] - 2026-08-01
 
 **AI simgesi arka planı tamamen şeffaf hale getirildi, "AI" yazısına premium ışık huzmesi eklendi:** Simgenin arkasındaki daire/kare kaldırıldı — artık sadece kırmızı gradyanlı, kalın "AI" yazısı şeffaf bir arka plan üzerinde duruyor. Animasyonlu halinde harflerin üzerinden parlak bir ışık huzmesi tekrar tekrar geçiyor (premium "buton shine" efekti). Şema değişikliği yok.

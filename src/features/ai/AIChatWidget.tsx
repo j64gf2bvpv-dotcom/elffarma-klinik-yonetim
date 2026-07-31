@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { readExcelFile } from '@/lib/importData'
 import { useAIService } from './useAIService'
-import { useAIWidgetVisibility } from './useAIWidgetVisibility'
+import { useAIChatOpen } from './useAIChatOpen'
 import { useBusinessSnapshot } from './useBusinessSnapshot'
 import { snapshotSystemMessage } from './snapshotSystemMessage'
 import {
@@ -28,7 +28,7 @@ let aiIconGradientId = 0
  * üzerinden parlak bir ışık huzmesi tekrar tekrar geçer (klasik "premium
  * buton shine" efekti); verilmezse tamamen sabit durur.
  */
-function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
+export function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
   return (
     <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
@@ -76,27 +76,15 @@ function AiSparkleIcon({ className, animated = false }: { className?: string; an
   )
 }
 
-const WIDGET_BUTTON_SIZE = 56
-const WIDGET_OFFSET_KEY = 'ai_widget_offset'
-const DEFAULT_OFFSET = { right: 24, bottom: 24 }
-// Panel için nominal boyutlar (w-96 / h-[32rem] ile eşleşir) — simge ekranın
-// neresine sürüklenirse sürüklensin panelin görünür alanın dışına taşmaması
-// için konum hesabında kullanılır.
+// Panel için nominal boyutlar (w-96 / h-[32rem] ile eşleşir) — TopBar'daki
+// sabit AI ikonunun altında, görünür alanın dışına taşmadan açılması için
+// konum hesabında kullanılır.
 const PANEL_WIDTH = 384
 const PANEL_HEIGHT = 512
 const PANEL_MARGIN = 12
-
-function loadOffset(): { right: number; bottom: number } {
-  try {
-    const raw = localStorage.getItem(WIDGET_OFFSET_KEY)
-    if (!raw) return DEFAULT_OFFSET
-    const parsed = JSON.parse(raw)
-    if (typeof parsed?.right === 'number' && typeof parsed?.bottom === 'number') return parsed
-  } catch {
-    // bozuk kayıt varsa varsayılana düş
-  }
-  return DEFAULT_OFFSET
-}
+// AppShell'deki TopBar'ın yüksekliği (h-16) — panel varsayılan olarak bunun
+// hemen altında açılır.
+const TOPBAR_HEIGHT = 64
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max))
@@ -176,7 +164,7 @@ export function AIChatWidget() {
   const appendMessageMutation = useAppendAIMessage()
   const deleteConversationMutation = useDeleteAIConversation()
 
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = useAIChatOpen()
   const [conversationId, setConversationId] = React.useState<string | undefined>(undefined)
   const { data: storedMessages = [] } = useAIMessages(conversationId)
   const [draft, setDraft] = React.useState('')
@@ -190,29 +178,6 @@ export function AIChatWidget() {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const speechSupported = React.useMemo(() => getSpeechRecognition() !== null, [])
 
-  const { hidden, setHidden } = useAIWidgetVisibility()
-  const [offset, setOffset] = React.useState(loadOffset)
-  const dragStateRef = React.useRef<{
-    startX: number
-    startY: number
-    startRight: number
-    startBottom: number
-    moved: boolean
-  } | null>(null)
-
-  React.useEffect(() => {
-    // Ekran/pencere boyutu değiştiyse (örn. farklı bir monitöre geçildiyse) simge
-    // görünür alanın dışında kalmasın diye tekrar sınırlar içine çekilir.
-    setOffset((prev) => ({
-      right: clamp(prev.right, 8, window.innerWidth - WIDGET_BUTTON_SIZE - 8),
-      bottom: clamp(prev.bottom, 8, window.innerHeight - WIDGET_BUTTON_SIZE - 8),
-    }))
-  }, [])
-
-  React.useEffect(() => {
-    localStorage.setItem(WIDGET_OFFSET_KEY, JSON.stringify(offset))
-  }, [offset])
-
   const [viewport, setViewport] = React.useState({ width: window.innerWidth, height: window.innerHeight })
   React.useEffect(() => {
     function handleResize() {
@@ -222,28 +187,14 @@ export function AIChatWidget() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const anchorStyle: React.CSSProperties = { right: offset.right, bottom: offset.bottom }
-
-  // Panel varsayılan olarak simgenin yakınında açılır (simge ekranın neresine
-  // sürüklenirse sürüklensin taşmadan). Kullanıcı paneli kendi sürüklediğinde
-  // bu varsayılan yerine panelOffset kullanılır ve konum hatırlanır.
+  // Panel varsayılan olarak TopBar'daki sabit AI ikonunun altında, sağa
+  // yaslı açılır. Kullanıcı paneli kendi sürüklediğinde bu varsayılan yerine
+  // panelOffset kullanılır ve konum hatırlanır.
   const defaultPanelPosition = React.useMemo<{ left: number; top: number }>(() => {
-    const buttonLeft = viewport.width - offset.right - WIDGET_BUTTON_SIZE
-    const buttonTop = viewport.height - offset.bottom - WIDGET_BUTTON_SIZE
-    const buttonRight = buttonLeft + WIDGET_BUTTON_SIZE
-    const buttonBottom = buttonTop + WIDGET_BUTTON_SIZE
-
-    let left = buttonRight - PANEL_WIDTH
-    let top = buttonTop - PANEL_HEIGHT - 8
-    if (top < PANEL_MARGIN) {
-      top = Math.min(buttonBottom + 8, viewport.height - PANEL_HEIGHT - PANEL_MARGIN)
-    }
-
-    left = clamp(left, PANEL_MARGIN, viewport.width - PANEL_WIDTH - PANEL_MARGIN)
-    top = clamp(top, PANEL_MARGIN, viewport.height - PANEL_HEIGHT - PANEL_MARGIN)
-
+    const left = clamp(viewport.width - PANEL_WIDTH - PANEL_MARGIN, PANEL_MARGIN, viewport.width - PANEL_WIDTH - PANEL_MARGIN)
+    const top = clamp(TOPBAR_HEIGHT + 8, PANEL_MARGIN, viewport.height - PANEL_HEIGHT - PANEL_MARGIN)
     return { left, top }
-  }, [offset, viewport])
+  }, [viewport])
 
   const [panelOffset, setPanelOffset] = React.useState<{ left: number; top: number } | null>(loadPanelPosition)
   const panelDragStateRef = React.useRef<{
@@ -253,12 +204,11 @@ export function AIChatWidget() {
     startTop: number
     moved: boolean
   } | null>(null)
-  // Sürükleme sırasında true — hem panelin/simgenin konum geçişini (transition)
-  // anlık takip etsin diye kapatmak (aksi halde 300ms'lik ease imleci "kovalar"
-  // gibi gecikmeli/doğal olmayan bir his verir) hem de sürüklenirken hafif
+  // Sürükleme sırasında true — panelin konum geçişini (transition) anlık
+  // takip etsin diye kapatmak (aksi halde 300ms'lik ease imleci "kovalar"
+  // gibi gecikmeli/doğal olmayan bir his verir) ve sürüklenirken hafif
   // şeffaflaşma göstermek için kullanılıyor.
   const [panelDragging, setPanelDragging] = React.useState(false)
-  const [buttonDragging, setButtonDragging] = React.useState(false)
 
   React.useEffect(() => {
     if (panelOffset) localStorage.setItem(PANEL_POSITION_KEY, JSON.stringify(panelOffset))
@@ -298,35 +248,6 @@ export function AIChatWidget() {
   function handlePanelPointerUp() {
     panelDragStateRef.current = null
     setPanelDragging(false)
-  }
-
-  function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
-    e.currentTarget.setPointerCapture(e.pointerId)
-    dragStateRef.current = { startX: e.clientX, startY: e.clientY, startRight: offset.right, startBottom: offset.bottom, moved: false }
-  }
-
-  function handlePointerMove(e: React.PointerEvent<HTMLButtonElement>) {
-    const drag = dragStateRef.current
-    if (!drag) return
-    const dx = e.clientX - drag.startX
-    const dy = e.clientY - drag.startY
-    if (!drag.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
-      drag.moved = true
-      setButtonDragging(true)
-    }
-    if (!drag.moved) return
-    setOffset({
-      right: clamp(drag.startRight - dx, 8, window.innerWidth - WIDGET_BUTTON_SIZE - 8),
-      bottom: clamp(drag.startBottom - dy, 8, window.innerHeight - WIDGET_BUTTON_SIZE - 8),
-    })
-  }
-
-  function handlePointerUp() {
-    setButtonDragging(false)
-    const drag = dragStateRef.current
-    dragStateRef.current = null
-    if (drag?.moved) return
-    setOpen((v) => !v)
   }
 
   function toggleListening() {
@@ -482,13 +403,11 @@ export function AIChatWidget() {
     setConversationId(undefined)
   }
 
-  if (hidden) return null
-
   return (
     <>
       <div
         className={cn(
-          'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-bottom-right flex-col overflow-hidden rounded-3xl border bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5',
+          'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-top-right flex-col overflow-hidden rounded-3xl border bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5',
           panelDragging ? '' : 'transition-all duration-300 ease-out',
           open ? 'h-[32rem] max-h-[calc(100vh-6rem)] scale-100 opacity-100' : 'h-0 scale-95 opacity-0',
           panelDragging && 'opacity-70',
@@ -661,33 +580,6 @@ export function AIChatWidget() {
         </div>
       </div>
 
-      <div className="group fixed z-50" style={{ ...anchorStyle, touchAction: 'none' }}>
-        <button
-          type="button"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          title={open ? 'AI Asistanı kapat' : 'AI Asistanı aç (sürükleyerek taşıyabilirsiniz)'}
-          className={cn(
-            'relative flex size-14 cursor-grab items-center justify-center rounded-2xl select-none hover:scale-105 active:cursor-grabbing active:scale-95',
-            buttonDragging ? '' : 'transition-all duration-300 ease-out',
-            open && 'pointer-events-none scale-0 opacity-0',
-            buttonDragging && 'opacity-70',
-          )}
-        >
-          <AiSparkleIcon className="relative z-10 size-8" animated />
-        </button>
-        {!open && (
-          <button
-            type="button"
-            onClick={() => setHidden(true)}
-            title="AI Asistan simgesini ana ekrandan gizle (Ayarlar > Yapay Zeka'dan geri açabilirsiniz)"
-            className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full border bg-background text-muted-foreground opacity-0 shadow transition-opacity group-hover:opacity-100 hover:text-foreground"
-          >
-            <X className="size-3" />
-          </button>
-        )}
-      </div>
     </>
   )
 }
