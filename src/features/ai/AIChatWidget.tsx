@@ -32,32 +32,27 @@ let aiIconGradientId = 0
 function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
   return (
-    <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
+    <svg viewBox="0 0 100 100" className={className} style={{ color: 'var(--color-primary)' }} aria-hidden="true">
       <defs>
-        <radialGradient id={`${uid}-eye`} cx="35%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#bfdbfe" />
-          <stop offset="60%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#1d4ed8" />
-        </radialGradient>
         <radialGradient id={`${uid}-glow`} cx="50%" cy="45%" r="55%">
-          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+          <stop offset="0%" stopColor="white" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="white" stopOpacity="0" />
         </radialGradient>
       </defs>
       {/* dış parıltı */}
       <circle cx="50" cy="45" r="46" fill={`url(#${uid}-glow)`} className={cn(animated && 'animate-ai-orb-breathe')} />
       {/* konuşma balonu kuyruğu */}
-      <path d="M32 78 L20 92 L40 79 Z" fill="none" stroke="#2563eb" strokeWidth="6" strokeLinejoin="round" />
+      <path d="M32 78 L20 92 L40 79 Z" fill="none" stroke="white" strokeWidth="6" strokeLinejoin="round" />
       {/* balon halkası */}
-      <circle cx="50" cy="45" r="38" fill="white" fillOpacity="0.06" stroke="#2563eb" strokeWidth="6" />
+      <circle cx="50" cy="45" r="38" fill="white" fillOpacity="0.08" stroke="white" strokeWidth="6" />
       {/* kulaklar */}
-      <circle cx="12" cy="45" r="6" fill="#2563eb" />
-      <circle cx="88" cy="45" r="6" fill="#2563eb" />
+      <circle cx="12" cy="45" r="6" fill="white" />
+      <circle cx="88" cy="45" r="6" fill="white" />
       {/* robot kafası */}
-      <rect x="24" y="22" width="52" height="46" rx="23" fill="white" stroke="#2563eb" strokeWidth="4" />
-      {/* gözler */}
-      <circle cx="39" cy="45" r="7" fill={`url(#${uid}-eye)`} className={cn(animated && 'animate-pulse')} />
-      <circle cx="61" cy="45" r="7" fill={`url(#${uid}-eye)`} className={cn(animated && 'animate-pulse')} />
+      <rect x="24" y="22" width="52" height="46" rx="23" fill="white" />
+      {/* gözler (arka planla aynı renk — beyaz kafada "oyulmuş" gibi görünür) */}
+      <circle cx="39" cy="45" r="7" fill="currentColor" className={cn(animated && 'animate-pulse')} />
+      <circle cx="61" cy="45" r="7" fill="currentColor" className={cn(animated && 'animate-pulse')} />
     </svg>
   )
 }
@@ -490,7 +485,7 @@ export function AIChatWidget() {
           title="Sürükleyerek taşıyabilirsiniz"
         >
           <div className="flex items-center gap-2.5">
-            <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
+            <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-primary shadow-sm ring-1 ring-black/5">
               <AiSparkleIcon className="size-5" animated />
             </span>
             <div>
@@ -513,7 +508,7 @@ export function AIChatWidget() {
         <div ref={scrollRef} className="grid flex-1 auto-rows-min gap-4 overflow-y-auto p-4">
           {storedMessages.length === 0 && !streamingText && !sending && (
             <div className="mt-10 flex flex-col items-center gap-3 text-center">
-              <span className="flex size-12 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
+              <span className="flex size-12 items-center justify-center rounded-full bg-primary shadow-sm ring-1 ring-black/5">
                 <AiSparkleIcon className="size-7" animated />
               </span>
               <p className="text-muted-foreground text-sm">
@@ -530,7 +525,7 @@ export function AIChatWidget() {
               )}
             >
               {m.role === 'assistant' && (
-                <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
+                <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary shadow-sm ring-1 ring-black/5">
                   <AiSparkleIcon className="size-4" animated />
                 </span>
               )}
@@ -548,7 +543,7 @@ export function AIChatWidget() {
           ))}
           {sending && !streamingText && (
             <div className="animate-in fade-in flex items-start gap-2 text-sm duration-200">
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
+              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary shadow-sm ring-1 ring-black/5">
                 <AiSparkleIcon className="size-4" animated />
               </span>
               <div className="flex items-center gap-1 rounded-2xl bg-muted/60 px-3.5 py-3">
@@ -560,7 +555,7 @@ export function AIChatWidget() {
           )}
           {streamingText && (
             <div className="animate-in fade-in flex items-start gap-2 text-sm duration-200">
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
+              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary shadow-sm ring-1 ring-black/5">
                 <AiSparkleIcon className="size-4" animated />
               </span>
               <p className="leading-relaxed px-0 py-0.5 whitespace-pre-wrap text-foreground/90">
@@ -655,7 +650,7 @@ export function AIChatWidget() {
           onPointerUp={handlePointerUp}
           title={open ? 'AI Asistanı kapat' : 'AI Asistanı aç (sürükleyerek taşıyabilirsiniz)'}
           className={cn(
-            'relative flex size-14 cursor-grab items-center justify-center rounded-2xl bg-background shadow-lg ring-1 ring-black/10 select-none hover:scale-105 active:cursor-grabbing active:scale-95',
+            'relative flex size-14 cursor-grab items-center justify-center rounded-2xl bg-primary shadow-lg ring-1 ring-black/10 select-none hover:scale-105 active:cursor-grabbing active:scale-95',
             buttonDragging ? '' : 'transition-all duration-300 ease-out',
             open && 'pointer-events-none scale-0 opacity-0',
             buttonDragging && 'opacity-70',

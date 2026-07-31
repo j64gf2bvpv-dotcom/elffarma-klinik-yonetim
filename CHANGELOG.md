@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.34] - 2026-08-01
+
+**AI simgesi renkleri ters çevrildi: kırmızı arka plan, beyaz simge:** Simgenin arkasındaki daire/kare artık kırmızı (marka rengi), önündeki robot-konuşma-balonu çizgileri beyaz; gözler arka planla aynı kırmızı tonda kalıp beyaz kafanın üzerinde "oyulmuş" gibi görünüyor. Şema değişikliği yok.
+
 ## [2.12.33] - 2026-08-01
 
 **AI simgesi "konuşma balonu içinde robot yüzü" tasarımına geçirildi:** Kırmızı küre yerine, arka planı şeffaf, mavi tonlarında bir konuşma balonu içinde basit bir robot yüzü (parlayan mavi gözler, yan kulaklar, alt kuyruk) simgesine geçildi. Animasyonlu halinde gözler yumuşakça parlayıp sönüyor, dış halka nefes alır gibi büyüyüp küçülüyor. Şema değişikliği yok.
