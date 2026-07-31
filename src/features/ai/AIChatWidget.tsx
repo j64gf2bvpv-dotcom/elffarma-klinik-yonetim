@@ -31,14 +31,14 @@ const SPARKLE_MASK_URL =
 /**
  * Dört uçlu bir parıltı simgesi — Google'ın Gemini logosu/asset dosyası
  * kullanılmadan (telif/marka), uygulamanın kendi marka rengiyle (primary)
- * sabit/düz olarak dolduruluyor — parlama/shimmer animasyonu kasıtlı olarak
- * yok, sakin ve profesyonel durması için.
+ * dolduruluyor. `animated` verilirse konuşma ekranındaki gibi yanıp sönerek
+ * (twinkle) parıldar; verilmezse sabit/düz durur (ör. ana ekrandaki simge).
  */
-function AiSparkleIcon({ className }: { className?: string }) {
+function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className={cn('bg-primary inline-block', className)}
+      className={cn('bg-primary inline-block', animated && 'animate-ai-sparkle-twinkle', className)}
       style={{
         WebkitMaskImage: SPARKLE_MASK_URL,
         maskImage: SPARKLE_MASK_URL,
@@ -482,7 +482,7 @@ export function AIChatWidget() {
         >
           <div className="flex items-center gap-2.5">
             <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
-              <AiSparkleIcon className="size-5" />
+              <AiSparkleIcon className="size-5" animated />
             </span>
             <div>
               <p className="text-sm font-semibold">AI Asistan</p>
@@ -505,7 +505,7 @@ export function AIChatWidget() {
           {storedMessages.length === 0 && !streamingText && !sending && (
             <div className="mt-10 flex flex-col items-center gap-3 text-center">
               <span className="flex size-12 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
-                <AiSparkleIcon className="size-7" />
+                <AiSparkleIcon className="size-7" animated />
               </span>
               <p className="text-muted-foreground text-sm">
                 Merhaba! Bir şey yazıp gönderin, birlikte deneyelim.
@@ -522,7 +522,7 @@ export function AIChatWidget() {
             >
               {m.role === 'assistant' && (
                 <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
-                  <AiSparkleIcon className="size-4" />
+                  <AiSparkleIcon className="size-4" animated />
                 </span>
               )}
               <p
@@ -540,7 +540,7 @@ export function AIChatWidget() {
           {sending && !streamingText && (
             <div className="animate-in fade-in flex items-start gap-2 text-sm duration-200">
               <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
-                <AiSparkleIcon className="size-4" />
+                <AiSparkleIcon className="size-4" animated />
               </span>
               <div className="flex items-center gap-1 rounded-2xl bg-muted/60 px-3.5 py-3">
                 <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:-0.3s]" />
@@ -552,7 +552,7 @@ export function AIChatWidget() {
           {streamingText && (
             <div className="animate-in fade-in flex items-start gap-2 text-sm duration-200">
               <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
-                <AiSparkleIcon className="size-4" />
+                <AiSparkleIcon className="size-4" animated />
               </span>
               <p className="leading-relaxed px-0 py-0.5 whitespace-pre-wrap text-foreground/90">
                 {streamingText}

@@ -148,6 +148,18 @@
   .animate-map-province-pulse {
     animation: map-province-pulse 0.9s ease-in-out infinite;
   }
+  @keyframes ai-sparkle-twinkle {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+  .animate-ai-sparkle-twinkle {
+    animation: ai-sparkle-twinkle 1.8s ease-in-out infinite;
+  }
 }
 
 /* Ajanda (FullCalendar) — uygulamanın tema değişkenleriyle premium görünüm */
