@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAIService } from '@/features/ai/useAIService'
 import { useBusinessSnapshot } from '@/features/ai/useBusinessSnapshot'
-import { AIServiceError, type AIMessage } from '@/features/ai/types'
+import { snapshotSystemMessage } from '@/features/ai/snapshotSystemMessage'
+import { AIServiceError } from '@/features/ai/types'
 import { readExcelFile } from '@/lib/importData'
 import { exportTextReportToWord } from '@/lib/exportData'
 
@@ -19,19 +20,6 @@ const periodLabels: Record<ReportPeriod, string> = {
   gunluk: 'Günlük',
   haftalik: 'Haftalık',
   aylik: 'Aylık',
-}
-
-function snapshotSystemMessage(snapshot: unknown): AIMessage {
-  return {
-    role: 'system',
-    content:
-      'Sen Elffarma Paket Programı için çalışan bir işletme analisti asistanısın. ' +
-      'Aşağıda uygulamanın güncel verilerinden hesaplanmış gerçek bir özet (JSON) var. ' +
-      'Sadece bu veriye dayanarak yanıt ver. Veride olmayan sayıları uydurma; ' +
-      'eksik bilgi varsa bunu açıkça belirt. SADECE TÜRKÇE yaz — başka bir dilde (Çince, İngilizce vb.) ' +
-      'tek kelime bile yazma.\n\nVERİ ÖZETİ:\n' +
-      JSON.stringify(snapshot, null, 2),
-  }
 }
 
 export function AIInsightsPage() {

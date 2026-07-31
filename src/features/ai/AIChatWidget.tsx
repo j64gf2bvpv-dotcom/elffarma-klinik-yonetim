@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils'
 import { readExcelFile } from '@/lib/importData'
 import { useAIService } from './useAIService'
 import { useAIWidgetVisibility } from './useAIWidgetVisibility'
+import { useBusinessSnapshot } from './useBusinessSnapshot'
+import { snapshotSystemMessage } from './snapshotSystemMessage'
 import {
   useAISettings,
   useAIConversations,
@@ -136,6 +138,7 @@ async function documentToText(file: File): Promise<string> {
 export function AIChatWidget() {
   const { data: settings } = useAISettings()
   const aiService = useAIService()
+  const businessSnapshot = useBusinessSnapshot()
   const { data: conversations = [] } = useAIConversations()
   const createConversationMutation = useCreateAIConversation()
   const appendMessageMutation = useAppendAIMessage()
@@ -356,10 +359,7 @@ export function AIChatWidget() {
           : { role: 'user', content: userTextPart }
 
       const history: AIMessage[] = [
-        {
-          role: 'system',
-          content: 'Sadece Türkçe yanıt ver. Başka bir dilde (Çince, İngilizce vb.) tek kelime bile yazma.',
-        },
+        snapshotSystemMessage(businessSnapshot),
         ...storedMessages.map((m) => ({ role: m.role, content: m.content })),
         currentUserMessage,
       ]
