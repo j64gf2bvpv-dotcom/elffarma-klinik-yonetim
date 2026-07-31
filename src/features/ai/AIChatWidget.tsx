@@ -20,49 +20,44 @@ import {
 } from './hooks'
 import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 
-// Dört uçlu "parıltı" şekli (lucide'nin genel sparkle path'i) — büyük ve küçük
-// parıltı aksanları için ortak path.
-const SPARKLE_PATH =
-  'M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z'
-
 let aiIconGradientId = 0
 
 /**
- * Yuvarlak köşeli bir çerçeve içinde "AI" yazısı + sağ üst köşede büyük/küçük
- * parıltı aksanı olan simge — Google'ın Gemini logosu/asset dosyası
- * kullanılmadan (telif/marka), kendi SVG'imiz ve gradyanımızla çiziliyor.
- * `animated` verilirse konuşma ekranındaki gibi yanıp sönerek (twinkle)
- * parıldar; verilmezse sabit/düz durur (ör. ana ekrandaki simge).
+ * Parıldayan bir "orb" (gezegen/küre) simgesi — birçok premium AI asistan
+ * ürününde (Siri, Copilot vb.) yaygın olan, tek bir şirketin tescilli
+ * logosuna ait olmayan genel bir görsel dil. Sabit bir "AI" yazısı veya
+ * dört uçlu parıltıdan farklı olarak, en küçük boyutta bile (mesaj
+ * avatarı gibi) okunaklı kalan bir gradyan küre + yumuşak dış parıltı
+ * (glow) + döngüsel iç ışık vurgusu. `animated` verilirse dış parıltı
+ * nefes alır gibi büyüyüp küçülür ve iç ışık vurgusu yavaşça küre
+ * etrafında döner; verilmezse tamamen sabit durur.
  */
 function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
-  const gradientId = React.useRef(`ai-icon-gradient-${aiIconGradientId++}`).current
+  const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
   return (
-    <svg
-      viewBox="0 0 100 100"
-      className={cn(animated && 'animate-ai-sparkle-twinkle', className)}
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
       <defs>
-        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#2dd4bf" />
-          <stop offset="55%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#a855f7" />
-        </linearGradient>
+        <radialGradient id={`${uid}-core`} cx="36%" cy="32%" r="75%">
+          <stop offset="0%" stopColor="#a5f3fc" />
+          <stop offset="45%" stopColor="#3b82f6" />
+          <stop offset="100%" stopColor="#7c3aed" />
+        </radialGradient>
+        <radialGradient id={`${uid}-glow`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
+        </radialGradient>
       </defs>
-      <rect x="8" y="8" width="70" height="84" rx="18" fill="none" stroke={`url(#${gradientId})`} strokeWidth="6" />
-      <text
-        x="43"
-        y="70"
-        textAnchor="middle"
-        fontFamily="Inter, system-ui, sans-serif"
-        fontWeight="800"
-        fontSize="42"
-        fill={`url(#${gradientId})`}
-      >
-        AI
-      </text>
-      <path d={SPARKLE_PATH} fill={`url(#${gradientId})`} transform="translate(62,6) scale(1.55)" />
-      <path d={SPARKLE_PATH} fill={`url(#${gradientId})`} transform="translate(80,28) scale(0.8)" />
+      <circle
+        cx="50"
+        cy="50"
+        r="48"
+        fill={`url(#${uid}-glow)`}
+        className={cn(animated && 'animate-ai-orb-breathe')}
+      />
+      <circle cx="50" cy="50" r="34" fill={`url(#${uid}-core)`} />
+      <g className={cn(animated && 'animate-ai-orb-spin')} style={{ transformOrigin: '50px 50px' }}>
+        <ellipse cx="37" cy="34" rx="13" ry="8" fill="white" opacity="0.4" />
+      </g>
     </svg>
   )
 }
@@ -666,7 +661,7 @@ export function AIChatWidget() {
             buttonDragging && 'opacity-70',
           )}
         >
-          <AiSparkleIcon className="relative z-10 size-8" />
+          <AiSparkleIcon className="relative z-10 size-8" animated />
         </button>
         {!open && (
           <button

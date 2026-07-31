@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.30] - 2026-08-01
+
+**AI simgesi parıldayan bir "orb" (küre) tasarımına geçirildi:** Önceki "AI" yazılı çerçeve/parıltı yerine, birçok premium AI asistan ürününde (Siri, Copilot vb.) yaygın olan, tek bir şirkete ait olmayan genel bir görsel dil kullanan gradyanlı, parıldayan bir küre simgesine geçildi — en küçük boyutlarda (mesaj avatarı gibi) bile okunaklı. Animasyonlu halinde dış parıltı nefes alır gibi büyüyüp küçülüyor, iç ışık vurgusu yavaşça küre etrafında dönüyor. Şema değişikliği yok.
+
 ## [2.12.29] - 2026-08-01
 
 **AI simgesi "AI" yazılı çerçeve tasarımına güncellendi:** Yuvarlak köşeli bir çerçeve içinde "AI" yazısı ve sağ üstte büyük/küçük parıltı aksanından oluşan yeni bir simgeye geçildi (teal-mavi-mor gradyan) — kullanıcının paylaştığı referansla aynı kompozisyon, kendi SVG'imiz ve gradyanımızla çizildi. Ana ekrandaki simge, panel başlığı ve mesaj avatarlarının hepsinde tutarlı şekilde kullanılıyor. Şema değişikliği yok.

@@ -148,17 +148,32 @@
   .animate-map-province-pulse {
     animation: map-province-pulse 0.9s ease-in-out infinite;
   }
-  @keyframes ai-sparkle-twinkle {
+  @keyframes ai-orb-breathe {
     0%,
     100% {
+      transform: scale(1);
       opacity: 1;
     }
     50% {
-      opacity: 0.35;
+      transform: scale(1.12);
+      opacity: 0.7;
     }
   }
-  .animate-ai-sparkle-twinkle {
-    animation: ai-sparkle-twinkle 1.8s ease-in-out infinite;
+  .animate-ai-orb-breathe {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: ai-orb-breathe 3s ease-in-out infinite;
+  }
+  @keyframes ai-orb-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .animate-ai-orb-spin {
+    animation: ai-orb-spin 4s linear infinite;
   }
 }
 
