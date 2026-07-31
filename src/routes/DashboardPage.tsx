@@ -26,6 +26,7 @@ import {
   EyeOff,
   Pencil,
   Save,
+  LayoutGrid,
   X,
   Coins,
   ArrowLeftRight,
@@ -457,6 +458,8 @@ export function DashboardPage() {
   const [editMode, setEditMode] = React.useState(false)
   const [draftLayout, setDraftLayout] = React.useState<LayoutItem[] | null>(null)
   const dragIndexRef = React.useRef<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null)
+  const gridContainerRef = React.useRef<HTMLDivElement>(null)
 
   const validWidgetIds = React.useMemo(() => new Set(defaultLayout.map((i) => i.id)), [])
 
@@ -500,6 +503,7 @@ export function DashboardPage() {
   function handleDrop(targetIndex: number) {
     const from = dragIndexRef.current
     dragIndexRef.current = null
+    setDragOverIndex(null)
     if (from === null || from === targetIndex) return
     setDraftLayout((prev) => {
       const list = [...(prev ?? layout)]
@@ -507,6 +511,45 @@ export function DashboardPage() {
       list.splice(targetIndex, 0, moved)
       return list
     })
+  }
+
+  // "Ekrana Sığdır": mevcut satırları (DOM'daki offsetTop'a göre) bir kerelik
+  // ölçüp, her satırdaki widget'lara o satırı tam dolduracak eşit genişlik
+  // veriyor — böylece elle sürükle-boyutlandırma sonucu oluşan boşluk/taşma
+  // tek tıkla düzeltilebiliyor. Sürekli bir ölçüm/gözlem YOK, sadece tıklama
+  // anında bir kerelik okuma yapılıyor.
+  function handleFitToScreen() {
+    const container = gridContainerRef.current
+    if (!container) return
+    const containerWidth = container.clientWidth
+    const gap = 16
+
+    const itemEls = Array.from(container.children) as HTMLElement[]
+    const rows: HTMLElement[][] = []
+    for (const el of itemEls) {
+      const lastRow = rows[rows.length - 1]
+      if (lastRow && Math.abs(lastRow[0].offsetTop - el.offsetTop) < 4) {
+        lastRow.push(el)
+      } else {
+        rows.push([el])
+      }
+    }
+
+    const widthById = new Map<string, number>()
+    for (const row of rows) {
+      const count = row.length
+      const widthPerItem = Math.floor((containerWidth - gap * (count - 1)) / count)
+      for (const el of row) {
+        const id = el.dataset.widgetId
+        if (id) widthById.set(id, widthPerItem)
+      }
+    }
+
+    setDraftLayout((prev) =>
+      (prev ?? layout).map((item) =>
+        widthById.has(item.id) ? { ...item, width: widthById.get(item.id)!, height: null } : item,
+      ),
+    )
   }
 
   const monthTotal = monthPayments.reduce((sum, p) => sum + Number(p.amount), 0)
@@ -1378,6 +1421,9 @@ export function DashboardPage() {
             )}
             {isAdmin && editMode && (
               <>
+                <Button variant="outline" size="sm" onClick={handleFitToScreen}>
+                  <LayoutGrid className="size-3.5" /> Ekrana Sığdır
+                </Button>
                 <Button variant="outline" size="sm" onClick={cancelEditing}>
                   <X className="size-3.5" /> Vazgeç
                 </Button>
@@ -1454,19 +1500,27 @@ export function DashboardPage() {
 
       {editMode && (
         <p className="text-muted-foreground text-xs">
-          Çerçeveleri sürükleyerek yerini değiştirebilir, sağ-alt köşesinden tutup kenarlarından çekerek
-          büyütüp küçültebilir, göz ikonuyla gizleyip gösterebilirsiniz.
+          Çerçeveleri sürükleyerek yerini değiştirebilir (bırakacağınız yer vurgulanır), sağ-alt
+          köşesinden tutup kenarlarından çekerek büyütüp küçültebilir, göz ikonuyla gizleyip
+          gösterebilir, "Ekrana Sığdır" ile aynı satırdaki çerçeveleri otomatik eşit genişliğe
+          getirebilirsiniz.
         </p>
       )}
 
-      <div className="flex flex-wrap items-start gap-4">
+      <div ref={gridContainerRef} className="flex flex-wrap items-start gap-4">
         {visibleItems.map((item, index) => (
           <div
             key={item.id}
+            data-widget-id={item.id}
             draggable={editMode}
             onDragStart={() => (dragIndexRef.current = index)}
             onDragOver={(e) => {
-              if (editMode) e.preventDefault()
+              if (!editMode) return
+              e.preventDefault()
+              if (dragOverIndex !== index) setDragOverIndex(index)
+            }}
+            onDragLeave={() => {
+              if (dragOverIndex === index) setDragOverIndex(null)
             }}
             onDrop={() => editMode && handleDrop(index)}
             onMouseUp={editMode ? (e) => handleResizeEnd(item.id, e.currentTarget) : undefined}
@@ -1477,8 +1531,9 @@ export function DashboardPage() {
               maxWidth: '100%',
             }}
             className={cn(
-              editMode && 'resize overflow-auto rounded-lg border border-dashed border-border/60 p-1',
+              editMode && 'resize overflow-auto rounded-lg border border-dashed border-border/60 p-1 transition-colors',
               editMode && !item.visible && 'opacity-40',
+              editMode && dragOverIndex === index && 'border-primary bg-primary/5',
             )}
           >
             {editMode && (

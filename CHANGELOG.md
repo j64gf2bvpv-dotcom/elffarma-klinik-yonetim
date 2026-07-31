@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.28] - 2026-08-01
+
+**Panel'de çerçeveleri yan yana yerleştirmek kolaylaştı + "Ekrana Sığdır" eklendi:** "Paneli Düzenle" modunda bir çerçeveyi sürüklerken artık bırakacağınız yer (hangi çerçevenin yerine geleceği) anlık olarak vurgulanıyor — önceden hedefi görmeden tahminle bırakmak gerekiyordu. Ayrıca yeni "Ekrana Sığdır" butonu, aynı satırda duran çerçeveleri tek tıkla o satırı tam dolduracak şekilde eşit genişliğe getiriyor — elle sürükle-boyutlandırma sonucu oluşan boşluk/taşmayı otomatik düzeltiyor (sürekli bir ölçüm/gözlem yok, sadece tıklama anında bir kerelik ölçüm). Şema değişikliği yok.
+
 ## [2.12.27] - 2026-08-01
 
 **AI konuşma ekranındaki yıldız simgeleri yanıp sönüyor:** Panel açıkken başlıktaki, karşılama ekranındaki ve her mesajın yanındaki parıltı simgeleri artık yumuşak bir şekilde yanıp sönerek (twinkle) canlı duruyor. Ana ekrandaki (kapalı panel) simge sakin/sabit kalmaya devam ediyor. Şema değişikliği yok.
