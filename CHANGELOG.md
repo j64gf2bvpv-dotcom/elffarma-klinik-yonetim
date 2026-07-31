@@ -3,7 +3,11 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
-## [2.12.18] - 2026-08-01
+## [2.12.19] - 2026-08-01
+
+**Hızlı İşlemler referans tasarıma göre güncellendi:** "Hızlı Erişim" bölümü "Hızlı İşlemler" olarak yeniden adlandırıldı ve içeriği kullanıcının paylaştığı referans tasarımdaki 8 işlemle eşleşecek şekilde değiştirildi: Fatura Oluştur, Tahsilat Ekle, Yeni Cari, Raporlar, Ajandaya Ekle, Hatırlatma Ekle, Prim Hesapla, Stok Durumu. Şema değişikliği yok.
+
+Not: "Paneli Düzenle" ile daha önce açılmış olan Stok Durumu / Kongre Paket Fiyatları gibi ek widget'lar bu güncellemeyle otomatik kapanmaz (kişiye özel kayıtlı tercih) — referans tasarımdaki sade görünüm için Paneli Düzenle'den elle kapatılması gerekir.
 
 **Panel'e ince/uzun döviz çevirici şeridi eklendi:** "Hoş geldiniz" başlığının hemen altına, tüm genişliği kaplayan ama az yer kaplayan (tek satır, pill şeklinde) bir döviz kuru + çevirici şeridi eklendi — USD/EUR güncel kur, tutar girişi, kaynak/hedef para birimi seçimi ve sonucu tek satırda gösteriyor. Alt bölümlerdeki "Döviz Kurları" widget'ı (daha büyük kart hali) aynen duruyor, admin isterse onu da ayrıca açabilir. Şema değişikliği yok.
 

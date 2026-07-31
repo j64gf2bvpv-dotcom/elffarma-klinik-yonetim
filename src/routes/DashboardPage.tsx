@@ -33,7 +33,6 @@ import {
   MapPin,
   ShoppingCart,
   PackagePlus,
-  ListPlus,
   CalendarPlus,
   UserPlus,
   FileText,
@@ -235,7 +234,7 @@ const defaultLayout: LayoutItem[] = [
 
 const widgetLabels: Record<WidgetId, string> = {
   stats: 'Özet Kartları',
-  quick_actions: 'Hızlı Erişim',
+  quick_actions: 'Hızlı İşlemler',
   critical_alerts: 'Kritik Uyarılar',
   upcoming_reminders: 'Yaklaşan Hatırlatmalar',
   revenue_chart: 'Tahsilat Trendi',
@@ -706,19 +705,18 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Hızlı Erişim</CardTitle>
+            <CardTitle className="text-base">Hızlı İşlemler</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <QuickAction to="/stok" icon={PackagePlus} label="Stok Ekle" />
-              <QuickAction to="/stok" icon={ListPlus} label="Ürün Listele" />
-              <QuickAction to="/kongreler" icon={CalendarPlus} label="Kongre Ekle" />
+              <QuickAction to="/satislar" icon={FileText} label="Fatura Oluştur" />
               <QuickAction to="/tahsilatlar" icon={Wallet} label="Tahsilat Ekle" />
-              <QuickAction to="/satislar" icon={ShoppingCart} label="Satış Yap" />
-              <QuickAction to="/satislar" icon={FileText} label="Fatura Kes" />
-              <QuickAction to="/musteriler" icon={UserPlus} label="Doktor Ekle" />
-              <QuickAction to="/cari-hesap" icon={Landmark} label="Cari Hesap" />
-              <QuickAction to="/satislar" icon={BarChart3} label="Raporla" />
+              <QuickAction to="/musteriler" icon={UserPlus} label="Yeni Cari" />
+              <QuickAction to="/ai-analiz" icon={BarChart3} label="Raporlar" />
+              <QuickAction to="/ajanda" icon={CalendarPlus} label="Ajandaya Ekle" />
+              <QuickAction to="/hatirlatmalar" icon={BellRing} label="Hatırlatma Ekle" />
+              <QuickAction to="/prim" icon={Percent} label="Prim Hesapla" />
+              <QuickAction to="/stok" icon={PackagePlus} label="Stok Durumu" />
             </div>
           </CardContent>
         </Card>
