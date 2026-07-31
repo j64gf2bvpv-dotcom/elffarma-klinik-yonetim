@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.26] - 2026-08-01
+
+**AI simgesi/paneli sürüklerken daha doğal hareket ediyor:** Panel açıkken başlık çubuğundan tutup taşırken, konum geçişine uygulanan 300ms'lik animasyon (transition) fare imlecini gecikmeli "kovalıyormuş" gibi hissettiriyordu — artık sürükleme sırasında bu animasyon kapatılıp konum anlık takip ediyor, bırakınca yeniden yumuşak geçişe dönüyor. Hem simge hem panel, sürüklenirken hafifçe şeffaflaşarak (opacity düşerek) taşındığına dair görsel geri bildirim veriyor. Şema değişikliği yok.
+
 ## [2.12.25] - 2026-08-01
 
 **Panel widget boyutlandırması gerçek kenar/köşe sürüklemeye geçirildi:** Önceki "boyut ikonuna tıkla, adım adım büyüsün" yöntemi kaldırıldı — "Paneli Düzenle" modunda artık her çerçevenin sağ-alt köşesinden tutup istenilen genişlik/yüksekliğe serbestçe sürüklenebiliyor (tarayıcının kendi native `resize` mekanizması). Sürükleme sırasında hiçbir sürekli JS ölçümü/ResizeObserver çalışmıyor — son boyut sadece bırakıldığında bir kerelik okunup kaydediliyor, bu yüzden react-grid-layout'ta yaşanan donma sınıfı hataya kapalı. Şema değişikliği yok.

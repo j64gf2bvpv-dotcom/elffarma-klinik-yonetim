@@ -230,6 +230,12 @@ export function AIChatWidget() {
     startTop: number
     moved: boolean
   } | null>(null)
+  // Sürükleme sırasında true — hem panelin/simgenin konum geçişini (transition)
+  // anlık takip etsin diye kapatmak (aksi halde 300ms'lik ease imleci "kovalar"
+  // gibi gecikmeli/doğal olmayan bir his verir) hem de sürüklenirken hafif
+  // şeffaflaşma göstermek için kullanılıyor.
+  const [panelDragging, setPanelDragging] = React.useState(false)
+  const [buttonDragging, setButtonDragging] = React.useState(false)
 
   React.useEffect(() => {
     if (panelOffset) localStorage.setItem(PANEL_POSITION_KEY, JSON.stringify(panelOffset))
@@ -255,7 +261,10 @@ export function AIChatWidget() {
     if (!drag) return
     const dx = e.clientX - drag.startX
     const dy = e.clientY - drag.startY
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) drag.moved = true
+    if (!drag.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+      drag.moved = true
+      setPanelDragging(true)
+    }
     if (!drag.moved) return
     setPanelOffset({
       left: clamp(drag.startLeft + dx, PANEL_MARGIN, window.innerWidth - PANEL_WIDTH - PANEL_MARGIN),
@@ -265,6 +274,7 @@ export function AIChatWidget() {
 
   function handlePanelPointerUp() {
     panelDragStateRef.current = null
+    setPanelDragging(false)
   }
 
   function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
@@ -277,7 +287,10 @@ export function AIChatWidget() {
     if (!drag) return
     const dx = e.clientX - drag.startX
     const dy = e.clientY - drag.startY
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) drag.moved = true
+    if (!drag.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+      drag.moved = true
+      setButtonDragging(true)
+    }
     if (!drag.moved) return
     setOffset({
       right: clamp(drag.startRight - dx, 8, window.innerWidth - WIDGET_BUTTON_SIZE - 8),
@@ -286,6 +299,7 @@ export function AIChatWidget() {
   }
 
   function handlePointerUp() {
+    setButtonDragging(false)
     const drag = dragStateRef.current
     dragStateRef.current = null
     if (drag?.moved) return
@@ -451,8 +465,10 @@ export function AIChatWidget() {
     <>
       <div
         className={cn(
-          'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-bottom-right flex-col overflow-hidden rounded-3xl border bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5 transition-all duration-300 ease-out',
+          'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-bottom-right flex-col overflow-hidden rounded-3xl border bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5',
+          panelDragging ? '' : 'transition-all duration-300 ease-out',
           open ? 'h-[32rem] max-h-[calc(100vh-6rem)] scale-100 opacity-100' : 'h-0 scale-95 opacity-0',
+          panelDragging && 'opacity-70',
         )}
         style={panelStyle}
         aria-hidden={!open}
@@ -630,8 +646,10 @@ export function AIChatWidget() {
           onPointerUp={handlePointerUp}
           title={open ? 'AI Asistanı kapat' : 'AI Asistanı aç (sürükleyerek taşıyabilirsiniz)'}
           className={cn(
-            'relative flex size-14 cursor-grab items-center justify-center rounded-2xl bg-background shadow-lg ring-1 ring-black/10 transition-all duration-300 ease-out select-none hover:scale-105 active:cursor-grabbing active:scale-95',
+            'relative flex size-14 cursor-grab items-center justify-center rounded-2xl bg-background shadow-lg ring-1 ring-black/10 select-none hover:scale-105 active:cursor-grabbing active:scale-95',
+            buttonDragging ? '' : 'transition-all duration-300 ease-out',
             open && 'pointer-events-none scale-0 opacity-0',
+            buttonDragging && 'opacity-70',
           )}
         >
           <AiSparkleIcon className="relative z-10 size-8" />
