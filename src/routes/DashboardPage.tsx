@@ -292,9 +292,6 @@ const ROW_SECTION_LABEL: Record<number, string> = {
   5: 'Hızlı İşlemler',
 }
 
-// stats ve quick_actions kendi satırlarında tek başına, doğal yüksekliğinde durur;
-// diğer satırlar kalan dikey alanı bu oranlarla paylaşır (fr birimine benzer flex-grow).
-const ROW_FLEX_GROW: Record<number, number> = { 2: 1.3, 3: 1, 4: 0.9 }
 
 type ChartPeriod = 'day' | 'week' | 'month' | 'year'
 
@@ -1402,37 +1399,51 @@ export function DashboardPage() {
       />
 
       {!editMode ? (() => {
-        // Satırların yüksekliğini flex-grow yerine doğrudan CSS Grid'in
-        // grid-template-rows'una veriyoruz — bu, mevcut içerik satırın payından
-        // taşarsa bir alttaki satırın üzerine görsel olarak bindiği (overlap)
-        // bir hataya yol açmıştı. Her hücreye eklenen overflow-hidden, taşan
-        // içeriği (scroll göstermeden) kırparak bunu kesin olarak engelliyor.
+        // Bilinçli olarak sade tutuluyor: satır/sütun yerleşimi tamamen bu
+        // uygulamanın her yerde zaten sorunsuz kullandığı SABİT Tailwind grid
+        // class'larıyla yapılıyor (grid-cols-2/3/4 vb.) — inline stille hesaplanan
+        // fr/flex-basis değerleri (önceki sürüm) bazı ekranlarda kartların bir
+        // alttaki satırın üzerine binmesine yol açıyordu. overflow-hidden her
+        // hücrede taşmayı (scroll göstermeden) kırpar, üst üste binmeyi engeller.
+        const gridColsClass: Record<number, string> = {
+          1: 'grid-cols-1',
+          2: 'grid-cols-2',
+          3: 'grid-cols-3',
+          4: 'grid-cols-4',
+          5: 'grid-cols-5',
+          6: 'grid-cols-6',
+        }
         const presentRows = [1, 2, 3, 4, 5].filter((rowNum) => (rowGroups.get(rowNum) ?? []).length > 0)
-        const rowTemplate = presentRows
-          .map((rowNum) => (rowNum === 1 || rowNum === 5 ? 'auto' : `${ROW_FLEX_GROW[rowNum] ?? 1}fr`))
-          .join(' ')
 
         return (
-          <div className="grid min-h-0 flex-1 gap-4 overflow-hidden" style={{ gridTemplateRows: rowTemplate }}>
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
             {presentRows.map((rowNum) => {
               const ids = rowGroups.get(rowNum)!
 
               if (rowNum === 1 || rowNum === 5) {
                 return (
-                  <div key={rowNum} className="min-h-0 overflow-hidden">
+                  <div key={rowNum} className="shrink-0 overflow-hidden">
                     {renderWidget(ids[0], 0)}
                   </div>
                 )
               }
 
+              // 2. satırda (Aylık Satış grafiği + Hatırlatmalar) sadece bu ikisi
+              // varsa, grafiğe referans görseldeki gibi daha geniş pay (2/3) verilir.
+              const useWideFirstColumn = rowNum === 2 && ids.length === 2
               return (
                 <div
                   key={rowNum}
-                  className="grid min-h-0 items-stretch gap-4 overflow-hidden"
-                  style={{ gridTemplateColumns: `repeat(${ids.length}, minmax(0, 1fr))` }}
+                  className={cn(
+                    'grid min-h-0 flex-1 items-stretch gap-4 overflow-hidden',
+                    useWideFirstColumn ? 'grid-cols-3' : (gridColsClass[ids.length] ?? 'grid-cols-1'),
+                  )}
                 >
                   {ids.map((id, i) => (
-                    <div key={id} className="min-h-0 min-w-0 overflow-hidden">
+                    <div
+                      key={id}
+                      className={cn('min-h-0 min-w-0 overflow-hidden', useWideFirstColumn && i === 0 && 'col-span-2')}
+                    >
                       {renderWidget(id, i * 60)}
                     </div>
                   ))}

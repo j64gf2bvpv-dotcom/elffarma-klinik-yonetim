@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.15] - 2026-07-31
+
+**Panel yerleşimi inline-hesaplanan grid'den sabit Tailwind grid class'larına geçirildi:** Bir önceki sürümdeki `grid-template-rows`/`gridTemplateColumns` inline stilleri bazı ekranlarda kartların üst üste binmesine yol açmaya devam ediyordu; artık satır/sütun yerleşimi tamamen bu projede zaten yaygın kullanılan sabit `grid-cols-*` class'larıyla yapılıyor (Aylık Satış grafiği + Hatırlatmalar satırı `grid-cols-3` üzerinden grafiğe 2/3 pay veriyor). Her hücrede `overflow-hidden` taşmayı kırpmaya devam ediyor.
+
 ## [2.12.14] - 2026-07-31
 
 **Panel'de kartların üst üste binme hatası düzeltildi:** Bir önceki sürümdeki sabit yerleşimde, satırlara ayrılan yükseklik `flex-basis:0` ile hesaplandığından ve taşan içerik kırpılmadığından, kartlar bazen bir alttaki satırın üzerine görsel olarak biniyordu. Satır yükseklikleri artık doğrudan CSS Grid `grid-template-rows` ile ayrılıyor ve her hücreye taşmayı kırpan bir sınır eklendi — artık üst üste binme olmuyor. Grafik/liste boyutları da biraz daha güvenli bir dengeye çekildi.
