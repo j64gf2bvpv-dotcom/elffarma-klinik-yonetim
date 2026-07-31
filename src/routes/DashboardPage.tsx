@@ -1,5 +1,8 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
+import GridLayoutBase, { WidthProvider } from 'react-grid-layout/legacy'
+import type { Layout as RGLLayout } from 'react-grid-layout/legacy'
+import 'react-grid-layout/css/styles.css'
 import {
   format,
   startOfMonth,
@@ -26,6 +29,7 @@ import {
   EyeOff,
   Pencil,
   Save,
+  RotateCcw,
   X,
   Coins,
   ArrowLeftRight,
@@ -84,6 +88,8 @@ import { useSampleRequests } from '@/features/samples/hooks'
 import { calculateSampleConversion } from '@/features/samples/calculateSampleConversion'
 import { getExpiryStatus } from '@/lib/expiry'
 import { tr } from '@/i18n/tr'
+
+const GridLayout = WidthProvider(GridLayoutBase)
 
 const statTone = {
   gold: 'bg-primary/15 text-primary',
@@ -206,30 +212,38 @@ type WidgetId =
 interface LayoutItem {
   id: WidgetId
   visible: boolean
+  x: number
+  y: number
+  w: number
+  h: number
 }
 
-// Varsayılan görünüm sade tutuluyor (Özet + Aylık Satış + Hatırlatmalar + En Çok
-// Satan + Yaklaşan Kongreler + Temsilci Performansı + Hızlı İşlemler) — geri kalan
-// widget'lar SİLİNMEDİ, sadece varsayılan olarak gizli; "Paneli Düzenle" ile admin
-// istediği an geri açabilir.
+// Widget'ların çerçeveleri "Paneli Düzenle" modunda react-grid-layout ile
+// serbestçe sürüklenip yukarı/aşağı/sağa/sola büyütülüp küçültülebilir — x/y/w/h
+// burada sadece İLK (varsayılan) konum/boyutu belirler, kullanıcı sürükle-bırak
+// ile değiştirdikçe kaydedilen değerler bunun yerine geçer. 12 sütunlu grid,
+// satır yüksekliği 30px. Varsayılan görünüm sade tutuluyor (Özet + Aylık Satış +
+// Hatırlatmalar + En Çok Satan + Yaklaşan Kongreler + Temsilci Performansı +
+// Hızlı İşlemler) — geri kalan widget'lar SİLİNMEDİ, sadece varsayılan olarak
+// gizli; "Paneli Düzenle" ile admin istediği an geri açabilir.
 const defaultLayout: LayoutItem[] = [
-  { id: 'stats', visible: true },
-  { id: 'revenue_chart', visible: true },
-  { id: 'upcoming_reminders', visible: true },
-  { id: 'top_products', visible: true },
-  { id: 'upcoming_congresses', visible: true },
-  { id: 'rep_performance', visible: true },
-  { id: 'quick_actions', visible: true },
-  { id: 'critical_alerts', visible: false },
-  { id: 'sales_trend', visible: false },
-  { id: 'stock_status', visible: false },
-  { id: 'exchange_rates', visible: false },
-  { id: 'region_sales', visible: false },
-  { id: 'congress_prices', visible: false },
-  { id: 'recent_activity', visible: false },
-  { id: 'commission_summary', visible: false },
-  { id: 'sample_conversion', visible: false },
-  { id: 'lot_expiry', visible: false },
+  { id: 'stats', visible: true, x: 0, y: 0, w: 12, h: 4 },
+  { id: 'revenue_chart', visible: true, x: 0, y: 4, w: 8, h: 9 },
+  { id: 'upcoming_reminders', visible: true, x: 8, y: 4, w: 4, h: 9 },
+  { id: 'top_products', visible: true, x: 0, y: 13, w: 4, h: 8 },
+  { id: 'upcoming_congresses', visible: true, x: 4, y: 13, w: 4, h: 8 },
+  { id: 'rep_performance', visible: true, x: 8, y: 13, w: 4, h: 8 },
+  { id: 'quick_actions', visible: true, x: 0, y: 21, w: 12, h: 5 },
+  { id: 'critical_alerts', visible: false, x: 0, y: 26, w: 6, h: 7 },
+  { id: 'sales_trend', visible: false, x: 6, y: 26, w: 6, h: 8 },
+  { id: 'stock_status', visible: false, x: 0, y: 33, w: 6, h: 6 },
+  { id: 'exchange_rates', visible: false, x: 6, y: 33, w: 6, h: 8 },
+  { id: 'region_sales', visible: false, x: 0, y: 41, w: 6, h: 8 },
+  { id: 'congress_prices', visible: false, x: 6, y: 41, w: 6, h: 8 },
+  { id: 'recent_activity', visible: false, x: 0, y: 49, w: 12, h: 8 },
+  { id: 'commission_summary', visible: false, x: 0, y: 57, w: 6, h: 7 },
+  { id: 'sample_conversion', visible: false, x: 6, y: 57, w: 6, h: 7 },
+  { id: 'lot_expiry', visible: false, x: 0, y: 64, w: 6, h: 6 },
 ]
 
 const widgetLabels: Record<WidgetId, string> = {
@@ -251,41 +265,6 @@ const widgetLabels: Record<WidgetId, string> = {
   sample_conversion: 'Numune Dönüşüm Oranı',
   lot_expiry: 'Lot / SKT Riski',
 }
-
-// Panel sabit, kaydırmasız, tek ekrana (1920×1080) sığan bir yerleşim kullanıyor.
-// Her widget'ın hangi satırda göründüğü buradan belirlenir — sürükle-bırak yeniden
-// sıralama sadece AYNI satırdaki widget'lar arasında anlamlıdır. Varsayılan olarak
-// gizli widget'lar da (bkz. defaultLayout) burada bir satıra atanmış durumda —
-// admin "Paneli Düzenle"den onları tekrar görünür yaparsa, ait olduğu satıra
-// eklenip o satırdaki diğer kartlarla payını otomatik paylaşır.
-const WIDGET_ROW: Record<WidgetId, number> = {
-  stats: 1,
-  revenue_chart: 2,
-  sales_trend: 2,
-  upcoming_reminders: 2,
-  top_products: 3,
-  upcoming_congresses: 3,
-  rep_performance: 3,
-  stock_status: 3,
-  region_sales: 3,
-  congress_prices: 3,
-  critical_alerts: 4,
-  exchange_rates: 4,
-  recent_activity: 4,
-  commission_summary: 4,
-  sample_conversion: 4,
-  lot_expiry: 4,
-  quick_actions: 5,
-}
-
-const ROW_SECTION_LABEL: Record<number, string> = {
-  1: 'Üst KPI Şeridi',
-  2: 'Aylık Satış Performansı / Hatırlatmalar',
-  3: 'Ürünler / Kongreler / Temsilci Performansı',
-  4: 'Ek Bilgi Kartları (varsayılan gizli)',
-  5: 'Hızlı İşlemler',
-}
-
 
 type ChartPeriod = 'day' | 'week' | 'month' | 'year'
 
@@ -457,7 +436,6 @@ export function DashboardPage() {
   const saveLayoutMutation = useSaveAppSetting<LayoutItem[]>('dashboard_layout')
   const [editMode, setEditMode] = React.useState(false)
   const [draftLayout, setDraftLayout] = React.useState<LayoutItem[] | null>(null)
-  const dragIndexRef = React.useRef<number | null>(null)
 
   const validWidgetIds = React.useMemo(() => new Set(defaultLayout.map((i) => i.id)), [])
 
@@ -489,15 +467,18 @@ export function DashboardPage() {
     setDraftLayout((prev) => (prev ?? layout).map((item) => (item.id === id ? { ...item, visible: !item.visible } : item)))
   }
 
-  function handleDrop(targetIndex: number) {
-    const from = dragIndexRef.current
-    dragIndexRef.current = null
-    if (from === null || from === targetIndex) return
+  // react-grid-layout'ta kullanıcı bir çerçeveyi sürükleyip taşıdığında veya
+  // kenarından tutup büyütüp küçülttüğünde tetiklenir — yeni x/y/w/h değerlerini
+  // ilgili widget'a uygular (visible durumu değişmez).
+  function handleGridLayoutChange(rglLayout: RGLLayout) {
     setDraftLayout((prev) => {
-      const list = [...(prev ?? layout)]
-      const [moved] = list.splice(from, 1)
-      list.splice(targetIndex, 0, moved)
-      return list
+      const base = prev ?? layout
+      const byId = new Map(rglLayout.map((item) => [item.i as WidgetId, item]))
+      return base.map((item) => {
+        const rglItem = byId.get(item.id)
+        if (!rglItem) return item
+        return { ...item, x: rglItem.x, y: rglItem.y, w: rglItem.w, h: rglItem.h }
+      })
     })
   }
 
@@ -1339,17 +1320,17 @@ export function DashboardPage() {
     )
   }
 
-  // Görünür widget'ları sabit satır numaralarına (WIDGET_ROW) göre grupla; her
-  // grup içindeki SIRA, layout dizisindeki göreli sıradan gelir — böylece sürükle-
-  // bırak (aşağıdaki editMode listesi) değişmeden aynı state/kalıcılık mekanizmasını
-  // kullanmaya devam eder, sadece normal görünümde satır satır (bento-grid) çiziliyor.
-  const rowGroups = new Map<number, WidgetId[]>()
-  for (const item of layout) {
-    if (!item.visible) continue
-    const row = WIDGET_ROW[item.id]
-    if (!rowGroups.has(row)) rowGroups.set(row, [])
-    rowGroups.get(row)!.push(item.id)
-  }
+  // Düzenleme modunda TÜM widget'lar (gizli olanlar da soluk halde) grid'de kalır
+  // ki kullanıcı konum/boyutunu ayarlayabilsin ve göz ikonuyla geri açabilsin;
+  // normal görünümde sadece görünür olanlar render edilir.
+  const gridItems = editMode ? layout : layout.filter((item) => item.visible)
+  const rglLayout: RGLLayout = gridItems.map((item) => ({
+    i: item.id,
+    x: item.x,
+    y: item.y,
+    w: item.w,
+    h: item.h,
+  }))
 
   return (
     <div className="flex flex-col gap-4">
@@ -1374,6 +1355,9 @@ export function DashboardPage() {
             )}
             {isAdmin && editMode && (
               <>
+                <Button variant="outline" size="sm" onClick={() => setDraftLayout([...defaultLayout])}>
+                  <RotateCcw className="size-3.5" /> Varsayılana Sıfırla
+                </Button>
                 <Button variant="outline" size="sm" onClick={cancelEditing}>
                   <X className="size-3.5" /> Vazgeç
                 </Button>
@@ -1448,98 +1432,48 @@ export function DashboardPage() {
         </span>
       </div>
 
-      {!editMode ? (() => {
-        // Satır/sütun yerleşimi SABİT Tailwind grid class'larıyla yapılıyor
-        // (grid-cols-2/3 vb.). Her satır kendi içeriğine göre doğal yüksekliğini
-        // alır — sayfa gerektiğinde normal şekilde kayar, tıpkı uygulamanın diğer
-        // tüm sayfaları gibi. Bir bölümde (WIDGET_ROW aynı satır numarasında)
-        // kullanıcı "Paneli Düzenle"den 3'ten fazla widget'ı görünür yaparsa,
-        // hepsini tek bir dar grid'e sıkıştırıp kartların üst üste binmesine
-        // izin vermek yerine, en fazla MAX_COLS_PER_SUBROW genişliğinde alt
-        // satırlara bölünüyor (kaç widget görünür olursa olsun asla taşma/binme
-        // olmaz).
-        const MAX_COLS_PER_SUBROW = 3
-        const gridColsClass: Record<number, string> = {
-          1: 'grid-cols-1',
-          2: 'grid-cols-1 md:grid-cols-2',
-          3: 'grid-cols-1 md:grid-cols-3',
-        }
-        const presentRows = [1, 2, 3, 4, 5].filter((rowNum) => (rowGroups.get(rowNum) ?? []).length > 0)
-
-        return (
-          <div className="grid gap-4">
-            {presentRows.map((rowNum) => {
-              const ids = rowGroups.get(rowNum)!
-
-              if (rowNum === 1 || rowNum === 5) {
-                return <div key={rowNum}>{renderWidget(ids[0])}</div>
-              }
-
-              // 2. satırda (Aylık Satış grafiği + Hatırlatmalar) sadece bu ikisi
-              // varsa, grafiğe referans görseldeki gibi daha geniş pay (2/3) verilir.
-              const useWideFirstColumn = rowNum === 2 && ids.length === 2
-              const chunks: WidgetId[][] = useWideFirstColumn
-                ? [ids]
-                : Array.from({ length: Math.ceil(ids.length / MAX_COLS_PER_SUBROW) }, (_, i) =>
-                    ids.slice(i * MAX_COLS_PER_SUBROW, (i + 1) * MAX_COLS_PER_SUBROW),
-                  )
-
-              return (
-                <div key={rowNum} className="grid gap-4">
-                  {chunks.map((chunkIds, chunkIndex) => (
-                    <div
-                      key={chunkIndex}
-                      className={cn(
-                        'grid items-stretch gap-4',
-                        useWideFirstColumn ? 'grid-cols-1 lg:grid-cols-3' : (gridColsClass[chunkIds.length] ?? 'grid-cols-1'),
-                      )}
-                    >
-                      {chunkIds.map((id, i) => (
-                        <div key={id} className={cn('min-w-0', useWideFirstColumn && i === 0 && 'lg:col-span-2')}>
-                          {renderWidget(id)}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-        )
-      })() : (
-        <div className="grid gap-3">
-          <p className="text-muted-foreground text-xs">
-            Widget'ları yukarı/aşağı sürükleyerek <b>kendi bölümü içinde</b> sırasını değiştirebilir,
-            göz ikonuyla gizleyip gösterebilirsiniz. Bölümlerin kendisi (satır yerleşimi) sabittir.
-          </p>
-          {layout.map((item, index) => (
-            <div
-              key={item.id}
-              draggable
-              onDragStart={() => (dragIndexRef.current = index)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDrop(index)}
-              className={cn(
-                'rounded-xl border-2 border-dashed p-3 transition-opacity',
-                item.visible ? 'border-border' : 'border-border/50 opacity-40',
-              )}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <span className="flex cursor-grab items-center gap-1.5 text-xs font-medium text-muted-foreground active:cursor-grabbing">
-                  <GripVertical className="size-3.5" /> {widgetLabels[item.id]}
-                  <Badge variant="outline" className="ml-1 text-[10px] font-normal">
-                    {ROW_SECTION_LABEL[WIDGET_ROW[item.id]]}
-                  </Badge>
-                </span>
-                <Button size="icon" variant="ghost" className="size-7" onClick={() => toggleVisible(item.id)}>
-                  {item.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-                </Button>
-              </div>
-              {renderWidget(item.id)}
-            </div>
-          ))}
-        </div>
+      {editMode && (
+        <p className="text-muted-foreground text-xs">
+          Çerçeveleri sürükleyerek taşıyabilir, kenarlarından tutup yukarı/aşağı/sağa/sola büyütüp
+          küçültebilirsiniz. Soluk görünen widget'lar şu an gizli — göz ikonuyla açıp kapatabilirsiniz.
+        </p>
       )}
+
+      <GridLayout
+        layout={rglLayout}
+        cols={12}
+        rowHeight={30}
+        margin={[16, 16]}
+        isDraggable={editMode}
+        isResizable={editMode}
+        draggableHandle=".widget-drag-handle"
+        resizeHandles={['s', 'w', 'e', 'n', 'sw', 'se', 'nw', 'ne']}
+        onLayoutChange={editMode ? handleGridLayoutChange : undefined}
+        useCSSTransforms
+      >
+        {gridItems.map((item) => (
+          <div key={item.id} className={cn('overflow-hidden', editMode && !item.visible && 'opacity-40')}>
+            <div className="flex h-full flex-col gap-1.5">
+              {editMode && (
+                <div className="widget-drag-handle flex shrink-0 cursor-grab items-center justify-between rounded-lg border bg-muted/50 px-2 py-1 text-xs active:cursor-grabbing">
+                  <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
+                    <GripVertical className="size-3.5" /> {widgetLabels[item.id]}
+                  </span>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={() => toggleVisible(item.id)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {item.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                  </button>
+                </div>
+              )}
+              <div className="min-h-0 flex-1 overflow-y-auto">{renderWidget(item.id)}</div>
+            </div>
+          </div>
+        ))}
+      </GridLayout>
     </div>
   )
 }

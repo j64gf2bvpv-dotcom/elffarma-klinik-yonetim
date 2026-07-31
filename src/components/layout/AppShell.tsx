@@ -25,6 +25,7 @@ import {
 
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
+import { CLINIC_NAME } from '@/lib/supabaseClient'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useApplyBrandTheme } from '@/features/appSettings/useApplyBrandTheme'
 import { useAIStartupCheck } from '@/features/ai/useAIStartupCheck'
@@ -547,6 +548,16 @@ export function AppShell() {
           >
             {mode === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
           </button>
+        </div>
+
+        <div className="relative z-10 mx-3 mb-3 rounded-lg bg-white/5 px-3 py-2.5 text-center">
+          <p className="text-xs font-medium text-sidebar-foreground/80">{CLINIC_NAME}</p>
+          <p className="text-[11px] text-sidebar-foreground/50">Sürüm {__APP_VERSION__}</p>
+          <p className="mt-1.5 text-[10px] text-sidebar-foreground/40">
+            © {new Date().getFullYear()} Elffarma Medikal Estetik
+            <br />
+            Tüm hakları saklıdır.
+          </p>
         </div>
       </aside>
 

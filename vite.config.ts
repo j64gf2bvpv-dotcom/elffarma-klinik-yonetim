@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite'
 import path from 'node:path'
+import { readFileSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import electron from 'vite-plugin-electron/simple'
 import renderer from 'vite-plugin-electron-renderer'
+
+const pkg = JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8')) as { version: string }
 
 // Electron's native `electron` binding does not interop reliably with
 // Node's ESM loader for the main-process entry point (named *and* default
@@ -34,6 +37,9 @@ function cjsOutput(input: string) {
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   plugins: [
     react(),
     tailwindcss(),

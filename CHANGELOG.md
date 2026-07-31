@@ -3,6 +3,16 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.21] - 2026-08-01
+
+**Panel widget'ları artık gerçekten sürüklenip her yönden yeniden boyutlandırılabiliyor:** Önceki sabit satır/sütun (Tailwind grid) yerleşimi `react-grid-layout` tabanlı serbest bir grid'e geçirildi — "Paneli Düzenle" modunda her çerçeve tutup taşınabiliyor, kenarlarından (yukarı/aşağı/sağa/sola, köşelerden de) büyütülüp küçültülebiliyor. Konum/boyut kaydediliyor (mevcut widget göster/gizle mekanizmasıyla aynı `dashboard_layout` ayarında). Sürükleme sadece widget başlığındaki tutamaçtan başlıyor, böylece içerideki linkler/butonlar/inputlar (ör. döviz çevirici) düzenleme modunda da tıklanabilir kalıyor.
+
+**Sol menüye sürüm/telif bilgisi eklendi:** Sidebar'ın en altına klinik adı, uygulamanın gerçek sürüm numarası (`package.json`'dan derleme zamanında okunuyor) ve "© {yıl} Elffarma Medikal Estetik — Tüm hakları saklıdır" satırı eklendi; menü listesi kendi içinde kayar, bu blok her zaman sayfanın en altında sabit kalır. Şema değişikliği yok.
+
+## [2.12.20] - 2026-08-01
+
+**Panel'e "Varsayılana Sıfırla" butonu eklendi:** "Paneli Düzenle" moduna girildiğinde artık tek tıkla tüm widget görünürlük/sıra tercihlerini kod varsayılanına (Stok Durumu kapalı, En Çok Satan Ürünler açık vb.) döndüren bir buton var — önceden kaydedilmiş widget tercihleri (ör. daha önce açılmış Stok Durumu) veritabanında saklandığı için koddaki varsayılan değişikliklerinden etkilenmiyordu, bu buton tek tıkla eski hâle dönmeyi sağlıyor. Şema değişikliği yok.
+
 ## [2.12.19] - 2026-08-01
 
 **Hızlı İşlemler referans tasarıma göre güncellendi:** "Hızlı Erişim" bölümü "Hızlı İşlemler" olarak yeniden adlandırıldı ve içeriği kullanıcının paylaştığı referans tasarımdaki 8 işlemle eşleşecek şekilde değiştirildi: Fatura Oluştur, Tahsilat Ekle, Yeni Cari, Raporlar, Ajandaya Ekle, Hatırlatma Ekle, Prim Hesapla, Stok Durumu. Şema değişikliği yok.
