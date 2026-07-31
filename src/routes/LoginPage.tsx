@@ -7,8 +7,11 @@ import { isSupabaseConfigured } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription } from '@/components/ui/card'
 import { ElffarmaLogo } from '@/components/brand/ElffarmaLogo'
+
+const REMEMBERED_EMAIL_KEY = 'elffarma-remembered-email'
 
 function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
   const { sendPasswordReset } = useAuth()
@@ -72,9 +75,34 @@ export function LoginPage() {
   const { session, signIn } = useAuth()
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [rememberMe, setRememberMe] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [submitting, setSubmitting] = React.useState(false)
   const [mode, setMode] = React.useState<'signin' | 'forgot'>('signin')
+
+  React.useEffect(() => {
+    let cancelled = false
+    async function loadRemembered() {
+      if (window.electronAPI) {
+        const creds = await window.electronAPI.loadCredentials()
+        if (!cancelled && creds) {
+          setEmail(creds.email)
+          setPassword(creds.password)
+          setRememberMe(true)
+          return
+        }
+      }
+      const savedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY)
+      if (!cancelled && savedEmail) {
+        setEmail(savedEmail)
+        setRememberMe(true)
+      }
+    }
+    void loadRemembered()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   if (session) return <Navigate to="/" replace />
 
@@ -83,8 +111,21 @@ export function LoginPage() {
     setSubmitting(true)
     setError(null)
     const { error } = await signIn(email, password)
-    if (error) setError(error)
     setSubmitting(false)
+    if (error) {
+      setError(error)
+      return
+    }
+    if (rememberMe) {
+      if (window.electronAPI) {
+        await window.electronAPI.saveCredentials(email, password)
+      } else {
+        localStorage.setItem(REMEMBERED_EMAIL_KEY, email)
+      }
+    } else {
+      if (window.electronAPI) await window.electronAPI.clearCredentials()
+      localStorage.removeItem(REMEMBERED_EMAIL_KEY)
+    }
   }
 
   return (
@@ -138,6 +179,16 @@ export function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={(v) => setRememberMe(v === true)}
+                />
+                <Label htmlFor="remember-me" className="text-sm font-normal">
+                  Beni Hatırla
+                </Label>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" disabled={submitting} className="mt-2">

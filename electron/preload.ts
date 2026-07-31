@@ -18,4 +18,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('deep-link-recovery', listener)
     return () => ipcRenderer.removeListener('deep-link-recovery', listener)
   },
+  saveCredentials: (email: string, password: string): Promise<boolean> =>
+    ipcRenderer.invoke('credentials:save', email, password),
+  loadCredentials: (): Promise<{ email: string; password: string } | null> =>
+    ipcRenderer.invoke('credentials:load'),
+  clearCredentials: (): Promise<boolean> => ipcRenderer.invoke('credentials:clear'),
 })

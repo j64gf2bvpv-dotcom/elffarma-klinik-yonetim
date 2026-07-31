@@ -1,5 +1,6 @@
-import { app, BrowserWindow, Menu, shell, Notification, ipcMain } from 'electron'
+import { app, BrowserWindow, Menu, shell, Notification, ipcMain, safeStorage } from 'electron'
 import path from 'node:path'
+import fs from 'node:fs'
 
 process.env.APP_ROOT = path.join(__dirname, '..')
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
@@ -123,6 +124,40 @@ ipcMain.handle('app:notify', (_event, title: string, body: string) => {
   if (Notification.isSupported()) {
     new Notification({ title, body }).show()
   }
+})
+
+// Giriş ekranındaki "Beni Hatırla" özelliği: e-posta düz metin, şifre ise
+// işletim sisteminin anahtarlık şifrelemesiyle (safeStorage) diskte saklanır —
+// hiçbir zaman düz metin olarak yazılmaz veya renderer'a/localStorage'a geçmez.
+const credentialsFile = () => path.join(app.getPath('userData'), 'remembered-login.json')
+
+ipcMain.handle('credentials:save', (_event, email: string, password: string) => {
+  if (typeof email !== 'string' || typeof password !== 'string') return false
+  if (!safeStorage.isEncryptionAvailable()) return false
+  const encrypted = safeStorage.encryptString(password).toString('base64')
+  fs.writeFileSync(credentialsFile(), JSON.stringify({ email, encrypted }), 'utf-8')
+  return true
+})
+
+ipcMain.handle('credentials:load', () => {
+  try {
+    const raw = fs.readFileSync(credentialsFile(), 'utf-8')
+    const { email, encrypted } = JSON.parse(raw) as { email: string; encrypted: string }
+    if (!safeStorage.isEncryptionAvailable()) return null
+    const password = safeStorage.decryptString(Buffer.from(encrypted, 'base64'))
+    return { email, password }
+  } catch {
+    return null
+  }
+})
+
+ipcMain.handle('credentials:clear', () => {
+  try {
+    fs.unlinkSync(credentialsFile())
+  } catch {
+    // Dosya zaten yoksa yapılacak bir şey yok.
+  }
+  return true
 })
 
 app.on('window-all-closed', () => {
