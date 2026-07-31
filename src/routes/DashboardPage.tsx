@@ -26,7 +26,6 @@ import {
   EyeOff,
   Pencil,
   Save,
-  Maximize2,
   X,
   Coins,
   ArrowLeftRight,
@@ -208,24 +207,39 @@ type WidgetId =
 // sürekli piksel bazlı sürükle-boyutlandırma KASITLI OLARAK kullanılmıyor: bir
 // önceki denemede (react-grid-layout + WidthProvider) grafiklerin kendi otomatik
 // boyutlandırma mekanizmasıyla (Recharts ResponsiveContainer) çakışıp sonsuz bir
-// ölçüm döngüsüne girmiş ve uygulamayı kilitlemişti. Bu sabit-adımlı yaklaşım
-// hem "büyüt/küçült" ihtiyacını karşılıyor hem de o sınıf hataya kapalı.
-type WidgetSize = 'quarter' | 'third' | 'half' | 'two_thirds' | 'full'
-
-const SIZE_ORDER: WidgetSize[] = ['quarter', 'third', 'half', 'two_thirds', 'full']
-
-const SIZE_CLASS: Record<WidgetSize, string> = {
-  quarter: 'w-full md:w-[calc(25%-0.75rem)]',
-  third: 'w-full md:w-[calc(33.333%-0.667rem)]',
-  half: 'w-full md:w-[calc(50%-0.5rem)]',
-  two_thirds: 'w-full md:w-[calc(66.667%-0.333rem)]',
-  full: 'w-full',
-}
-
+// ölçüm döngüsüne girmiş ve uygulamayı kilitlemişti. Burada JS tarafında SÜREKLİ
+// bir ölçüm/gözlem YOK — genişlik/yükseklik tarayıcının kendi native CSS `resize`
+// mekanizmasıyla (köşeden/kenardan sürükleyerek) değiştiriliyor, biz sadece
+// kullanıcı sürüklemeyi BIRAKTIĞINDA (mouse up) son boyutu bir kerelik okuyup
+// kaydediyoruz — iki ayrı oto-boyutlandırma sisteminin birbirini beslediği o
+// çökme sınıfına kapalı.
 interface LayoutItem {
   id: WidgetId
   visible: boolean
-  size: WidgetSize
+  /** px cinsinden — null ise DEFAULT_WIDTH_PCT'teki varsayılan yüzde genişlik kullanılır. */
+  width: number | null
+  /** px cinsinden — null ise içeriğe göre doğal (auto) yükseklik kullanılır. */
+  height: number | null
+}
+
+const DEFAULT_WIDTH_PCT: Record<WidgetId, number> = {
+  stats: 100,
+  revenue_chart: 67,
+  upcoming_reminders: 33,
+  top_products: 33,
+  upcoming_congresses: 33,
+  rep_performance: 33,
+  quick_actions: 100,
+  critical_alerts: 50,
+  sales_trend: 50,
+  stock_status: 50,
+  exchange_rates: 50,
+  region_sales: 50,
+  congress_prices: 50,
+  recent_activity: 100,
+  commission_summary: 50,
+  sample_conversion: 50,
+  lot_expiry: 50,
 }
 
 // Varsayılan görünüm sade tutuluyor (Özet + Aylık Satış + Hatırlatmalar + En Çok
@@ -233,23 +247,23 @@ interface LayoutItem {
 // widget'lar SİLİNMEDİ, sadece varsayılan olarak gizli; "Paneli Düzenle" ile admin
 // istediği an geri açıp yerini/boyutunu değiştirebilir.
 const defaultLayout: LayoutItem[] = [
-  { id: 'stats', visible: true, size: 'full' },
-  { id: 'revenue_chart', visible: true, size: 'two_thirds' },
-  { id: 'upcoming_reminders', visible: true, size: 'third' },
-  { id: 'top_products', visible: true, size: 'third' },
-  { id: 'upcoming_congresses', visible: true, size: 'third' },
-  { id: 'rep_performance', visible: true, size: 'third' },
-  { id: 'quick_actions', visible: true, size: 'full' },
-  { id: 'critical_alerts', visible: false, size: 'half' },
-  { id: 'sales_trend', visible: false, size: 'half' },
-  { id: 'stock_status', visible: false, size: 'half' },
-  { id: 'exchange_rates', visible: false, size: 'half' },
-  { id: 'region_sales', visible: false, size: 'half' },
-  { id: 'congress_prices', visible: false, size: 'half' },
-  { id: 'recent_activity', visible: false, size: 'full' },
-  { id: 'commission_summary', visible: false, size: 'half' },
-  { id: 'sample_conversion', visible: false, size: 'half' },
-  { id: 'lot_expiry', visible: false, size: 'half' },
+  { id: 'stats', visible: true, width: null, height: null },
+  { id: 'revenue_chart', visible: true, width: null, height: null },
+  { id: 'upcoming_reminders', visible: true, width: null, height: null },
+  { id: 'top_products', visible: true, width: null, height: null },
+  { id: 'upcoming_congresses', visible: true, width: null, height: null },
+  { id: 'rep_performance', visible: true, width: null, height: null },
+  { id: 'quick_actions', visible: true, width: null, height: null },
+  { id: 'critical_alerts', visible: false, width: null, height: null },
+  { id: 'sales_trend', visible: false, width: null, height: null },
+  { id: 'stock_status', visible: false, width: null, height: null },
+  { id: 'exchange_rates', visible: false, width: null, height: null },
+  { id: 'region_sales', visible: false, width: null, height: null },
+  { id: 'congress_prices', visible: false, width: null, height: null },
+  { id: 'recent_activity', visible: false, width: null, height: null },
+  { id: 'commission_summary', visible: false, width: null, height: null },
+  { id: 'sample_conversion', visible: false, width: null, height: null },
+  { id: 'lot_expiry', visible: false, width: null, height: null },
 ]
 
 const widgetLabels: Record<WidgetId, string> = {
@@ -474,14 +488,13 @@ export function DashboardPage() {
     setDraftLayout((prev) => (prev ?? layout).map((item) => (item.id === id ? { ...item, visible: !item.visible } : item)))
   }
 
-  function cycleSize(id: WidgetId) {
-    setDraftLayout((prev) =>
-      (prev ?? layout).map((item) => {
-        if (item.id !== id) return item
-        const nextIndex = (SIZE_ORDER.indexOf(item.size) + 1) % SIZE_ORDER.length
-        return { ...item, size: SIZE_ORDER[nextIndex] }
-      }),
-    )
+  // Kullanıcı kenardan/köşeden tutup native CSS resize ile boyutu değiştirip
+  // bıraktığında (mouseUp) çağrılır — sürükleme SIRASINDA hiçbir React state
+  // güncellenmiyor, sadece BİTİNCE son boyut bir kerelik okunup kaydediliyor.
+  function handleResizeEnd(id: WidgetId, el: HTMLDivElement) {
+    const width = Math.round(el.offsetWidth)
+    const height = Math.round(el.offsetHeight)
+    setDraftLayout((prev) => (prev ?? layout).map((item) => (item.id === id ? { ...item, width, height } : item)))
   }
 
   function handleDrop(targetIndex: number) {
@@ -1441,8 +1454,8 @@ export function DashboardPage() {
 
       {editMode && (
         <p className="text-muted-foreground text-xs">
-          Çerçeveleri sürükleyerek yerini değiştirebilir, boyut ikonuyla üçte bir → yarım → üçte iki →
-          tam genişlik arasında büyütüp küçültebilir, göz ikonuyla gizleyip gösterebilirsiniz.
+          Çerçeveleri sürükleyerek yerini değiştirebilir, sağ-alt köşesinden tutup kenarlarından çekerek
+          büyütüp küçültebilir, göz ikonuyla gizleyip gösterebilirsiniz.
         </p>
       )}
 
@@ -1456,31 +1469,31 @@ export function DashboardPage() {
               if (editMode) e.preventDefault()
             }}
             onDrop={() => editMode && handleDrop(index)}
-            className={cn(SIZE_CLASS[item.size], editMode && !item.visible && 'opacity-40')}
+            onMouseUp={editMode ? (e) => handleResizeEnd(item.id, e.currentTarget) : undefined}
+            style={{
+              width: item.width ? `${item.width}px` : `${DEFAULT_WIDTH_PCT[item.id]}%`,
+              height: item.height ?? undefined,
+              minWidth: 260,
+              maxWidth: '100%',
+            }}
+            className={cn(
+              editMode && 'resize overflow-auto rounded-lg border border-dashed border-border/60 p-1',
+              editMode && !item.visible && 'opacity-40',
+            )}
           >
             {editMode && (
               <div className="mb-1.5 flex cursor-grab items-center justify-between rounded-lg border bg-muted/50 px-2 py-1 text-xs active:cursor-grabbing">
                 <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
                   <GripVertical className="size-3.5" /> {widgetLabels[item.id]}
                 </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => cycleSize(item.id)}
-                    title="Boyutu değiştir"
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <Maximize2 className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleVisible(item.id)}
-                    title={item.visible ? 'Gizle' : 'Göster'}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {item.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleVisible(item.id)}
+                  title={item.visible ? 'Gizle' : 'Göster'}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  {item.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                </button>
               </div>
             )}
             {renderWidget(item.id)}
