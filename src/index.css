@@ -164,17 +164,6 @@
     transform-origin: center;
     animation: ai-orb-breathe 3s ease-in-out infinite;
   }
-  @keyframes ai-orb-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  .animate-ai-orb-spin {
-    animation: ai-orb-spin 4s linear infinite;
-  }
 }
 
 /* Ajanda (FullCalendar) — uygulamanın tema değişkenleriyle premium görünüm */

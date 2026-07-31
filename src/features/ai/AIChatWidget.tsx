@@ -23,73 +23,41 @@ import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 let aiIconGradientId = 0
 
 /**
- * Parıldayan, kırmızı bir "orb" (küre) simgesi — üstte "AI", altında "chat"
- * yazısı, ikisinin arasında yanıp sönen küçük bir parıltı aksanı. Birçok
- * premium AI asistan ürününde (Siri, Copilot vb.) yaygın olan, tek bir
- * şirketin tescilli logosuna ait olmayan genel bir görsel dil. `animated`
- * verilirse dış parıltı nefes alır gibi büyüyüp küçülür, iç ışık vurgusu
- * yavaşça küre etrafında döner ve aradaki parıltı yanıp söner; verilmezse
- * tamamen sabit durur.
+ * Konuşma balonu içinde basit bir robot yüzü — arka planı şeffaf. Belirli bir
+ * stüdyoya/görsele ait bir 3D illüstrasyonun birebir kopyası değil, "robot +
+ * konuşma balonu" genel AI-asistan motifinin kendi SVG'imizle yorumu.
+ * `animated` verilirse gözler yumuşakça parlayıp sönerken dış halka hafifçe
+ * nefes alır gibi büyüyüp küçülür; verilmezse tamamen sabit durur.
  */
 function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
   return (
     <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
       <defs>
-        <radialGradient id={`${uid}-core`} cx="36%" cy="32%" r="75%">
-          <stop offset="0%" stopColor="#fca5a5" />
-          <stop offset="45%" stopColor="#ef4444" />
-          <stop offset="100%" stopColor="#991b1b" />
+        <radialGradient id={`${uid}-eye`} cx="35%" cy="35%" r="65%">
+          <stop offset="0%" stopColor="#bfdbfe" />
+          <stop offset="60%" stopColor="#3b82f6" />
+          <stop offset="100%" stopColor="#1d4ed8" />
         </radialGradient>
-        <radialGradient id={`${uid}-glow`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#ef4444" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+        <radialGradient id={`${uid}-glow`} cx="50%" cy="45%" r="55%">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
         </radialGradient>
       </defs>
-      <circle
-        cx="50"
-        cy="50"
-        r="48"
-        fill={`url(#${uid}-glow)`}
-        className={cn(animated && 'animate-ai-orb-breathe')}
-      />
-      <circle cx="50" cy="50" r="34" fill={`url(#${uid}-core)`} />
-      <g className={cn(animated && 'animate-ai-orb-spin')} style={{ transformOrigin: '50px 50px' }}>
-        <ellipse cx="37" cy="34" rx="13" ry="8" fill="white" opacity="0.35" />
-      </g>
-      <text
-        x="50"
-        y="45"
-        textAnchor="middle"
-        fontFamily="Inter, system-ui, sans-serif"
-        fontWeight="800"
-        fontSize="30"
-        fill="white"
-      >
-        AI
-      </text>
-      <rect
-        x="46"
-        y="49"
-        width="9"
-        height="9"
-        fill="white"
-        opacity="0.85"
-        transform="rotate(45 50.5 53.5)"
-        className={cn(animated && 'animate-pulse')}
-      />
-      <text
-        x="50"
-        y="72"
-        textAnchor="middle"
-        fontFamily="Inter, system-ui, sans-serif"
-        fontWeight="700"
-        fontSize="16"
-        letterSpacing="0.3"
-        fill="white"
-      >
-        chat
-      </text>
+      {/* dış parıltı */}
+      <circle cx="50" cy="45" r="46" fill={`url(#${uid}-glow)`} className={cn(animated && 'animate-ai-orb-breathe')} />
+      {/* konuşma balonu kuyruğu */}
+      <path d="M32 78 L20 92 L40 79 Z" fill="none" stroke="#2563eb" strokeWidth="6" strokeLinejoin="round" />
+      {/* balon halkası */}
+      <circle cx="50" cy="45" r="38" fill="white" fillOpacity="0.06" stroke="#2563eb" strokeWidth="6" />
+      {/* kulaklar */}
+      <circle cx="12" cy="45" r="6" fill="#2563eb" />
+      <circle cx="88" cy="45" r="6" fill="#2563eb" />
+      {/* robot kafası */}
+      <rect x="24" y="22" width="52" height="46" rx="23" fill="white" stroke="#2563eb" strokeWidth="4" />
+      {/* gözler */}
+      <circle cx="39" cy="45" r="7" fill={`url(#${uid}-eye)`} className={cn(animated && 'animate-pulse')} />
+      <circle cx="61" cy="45" r="7" fill={`url(#${uid}-eye)`} className={cn(animated && 'animate-pulse')} />
     </svg>
   )
 }

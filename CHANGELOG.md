@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.33] - 2026-08-01
+
+**AI simgesi "konuşma balonu içinde robot yüzü" tasarımına geçirildi:** Kırmızı küre yerine, arka planı şeffaf, mavi tonlarında bir konuşma balonu içinde basit bir robot yüzü (parlayan mavi gözler, yan kulaklar, alt kuyruk) simgesine geçildi. Animasyonlu halinde gözler yumuşakça parlayıp sönüyor, dış halka nefes alır gibi büyüyüp küçülüyor. Şema değişikliği yok.
+
 ## [2.12.32] - 2026-08-01
 
 **AI orb simgesine "chat" yazısı ve parıldayan aksan eklendi:** Kırmızı kürenin üstünde "AI", altında "chat" yazısı, ikisinin arasında (animasyonlu halinde) yanıp sönen küçük bir parıltı var; yazı boyutları daha okunaklı olacak şekilde büyütüldü. Şema değişikliği yok.
