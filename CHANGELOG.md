@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.18] - 2026-08-01
+
+**Panel'e ince/uzun döviz çevirici şeridi eklendi:** "Hoş geldiniz" başlığının hemen altına, tüm genişliği kaplayan ama az yer kaplayan (tek satır, pill şeklinde) bir döviz kuru + çevirici şeridi eklendi — USD/EUR güncel kur, tutar girişi, kaynak/hedef para birimi seçimi ve sonucu tek satırda gösteriyor. Alt bölümlerdeki "Döviz Kurları" widget'ı (daha büyük kart hali) aynen duruyor, admin isterse onu da ayrıca açabilir. Şema değişikliği yok.
+
 ## [2.12.17] - 2026-08-01
 
 **Panel'de kartların üst üste binme hatası kalıcı olarak düzeltildi:** Bir bölümde (ör. "Ürünler / Kongreler / Temsilci Performansı" satırı) kullanıcı "Paneli Düzenle"den 3'ten fazla widget'ı görünür yaparsa (ör. 5 widget), hepsi tek bir dar grid'e sıkışıp kartların metinleri/gölgeleri birbirinin üzerine biniyordu. Artık her bölüm en fazla 3 sütunluk alt satırlara bölünüyor — kaç widget görünür olursa olsun (4, 5, 6...) asla taşma/binme olmuyor, fazlalar otomatik olarak bir alt satıra geçiyor. Ayrıca üstteki 4 özet kart Toplam Satış / Tahsilatlar / Toplam Cari (tüm doktorların açık bakiye toplamı) / Aktif Temsilci sayısı gösterecek şekilde güncellendi. Şema değişikliği yok.

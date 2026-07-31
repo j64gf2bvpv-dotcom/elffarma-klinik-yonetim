@@ -1389,6 +1389,67 @@ export function DashboardPage() {
         }
       />
 
+      <div className="flex flex-wrap items-center gap-2.5 rounded-full border bg-muted/30 px-4 py-2 text-sm">
+        <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
+          <Coins className="size-4 text-primary" /> Döviz:
+        </span>
+        {ratesLoading ? (
+          <span className="text-xs text-muted-foreground">Yükleniyor...</span>
+        ) : exchangeRates.length === 0 ? (
+          <span className="text-xs text-muted-foreground">Kur bilgisi alınamadı</span>
+        ) : (
+          exchangeRates.map((r) => (
+            <span key={r.currency} className="shrink-0 tabular-nums">
+              <span className="font-semibold">{r.currency}</span>{' '}
+              {r.rate.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ₺
+            </span>
+          ))
+        )}
+        <span className="text-border">|</span>
+        <Input
+          type="text"
+          inputMode="numeric"
+          value={convertAmountDisplay}
+          onChange={(e) => handleConvertAmountChange(e.target.value)}
+          className="h-7 w-20 px-2 text-sm"
+        />
+        <Select value={fromCurrency} onValueChange={(v) => setFromCurrency(v as typeof fromCurrency)}>
+          <SelectTrigger className="h-7 w-[4.5rem] px-2 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="TRY">TRY</SelectItem>
+            <SelectItem value="USD">USD</SelectItem>
+            <SelectItem value="EUR">EUR</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-6 shrink-0"
+          onClick={() => {
+            setFromCurrency(toCurrency)
+            setToCurrency(fromCurrency)
+          }}
+        >
+          <ArrowLeftRight className="size-3.5" />
+        </Button>
+        <Select value={toCurrency} onValueChange={(v) => setToCurrency(v as typeof toCurrency)}>
+          <SelectTrigger className="h-7 w-[4.5rem] px-2 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="TRY">TRY</SelectItem>
+            <SelectItem value="USD">USD</SelectItem>
+            <SelectItem value="EUR">EUR</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="shrink-0 font-semibold tabular-nums">
+          = {convertedAmount.toLocaleString('tr-TR', { style: 'currency', currency: toCurrency })}
+        </span>
+      </div>
+
       {!editMode ? (() => {
         // Satır/sütun yerleşimi SABİT Tailwind grid class'larıyla yapılıyor
         // (grid-cols-2/3 vb.). Her satır kendi içeriğine göre doğal yüksekliğini
