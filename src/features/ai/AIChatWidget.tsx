@@ -20,36 +20,50 @@ import {
 } from './hooks'
 import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 
-// lucide'nin genel "sparkle" (dört uçlu parıltı) şekli — CSS mask olarak kullanmak için data URI.
-const SPARKLE_MASK_URL =
-  'url("data:image/svg+xml;utf8,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/></svg>',
-  ) +
-  '")'
+// Dört uçlu "parıltı" şekli (lucide'nin genel sparkle path'i) — büyük ve küçük
+// parıltı aksanları için ortak path.
+const SPARKLE_PATH =
+  'M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z'
+
+let aiIconGradientId = 0
 
 /**
- * Dört uçlu bir parıltı simgesi — Google'ın Gemini logosu/asset dosyası
- * kullanılmadan (telif/marka), uygulamanın kendi marka rengiyle (primary)
- * dolduruluyor. `animated` verilirse konuşma ekranındaki gibi yanıp sönerek
- * (twinkle) parıldar; verilmezse sabit/düz durur (ör. ana ekrandaki simge).
+ * Yuvarlak köşeli bir çerçeve içinde "AI" yazısı + sağ üst köşede büyük/küçük
+ * parıltı aksanı olan simge — Google'ın Gemini logosu/asset dosyası
+ * kullanılmadan (telif/marka), kendi SVG'imiz ve gradyanımızla çiziliyor.
+ * `animated` verilirse konuşma ekranındaki gibi yanıp sönerek (twinkle)
+ * parıldar; verilmezse sabit/düz durur (ör. ana ekrandaki simge).
  */
 function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
+  const gradientId = React.useRef(`ai-icon-gradient-${aiIconGradientId++}`).current
   return (
-    <span
+    <svg
+      viewBox="0 0 100 100"
+      className={cn(animated && 'animate-ai-sparkle-twinkle', className)}
       aria-hidden="true"
-      className={cn('bg-primary inline-block', animated && 'animate-ai-sparkle-twinkle', className)}
-      style={{
-        WebkitMaskImage: SPARKLE_MASK_URL,
-        maskImage: SPARKLE_MASK_URL,
-        WebkitMaskRepeat: 'no-repeat',
-        maskRepeat: 'no-repeat',
-        WebkitMaskSize: 'contain',
-        maskSize: 'contain',
-        WebkitMaskPosition: 'center',
-        maskPosition: 'center',
-      }}
-    />
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#2dd4bf" />
+          <stop offset="55%" stopColor="#3b82f6" />
+          <stop offset="100%" stopColor="#a855f7" />
+        </linearGradient>
+      </defs>
+      <rect x="8" y="8" width="70" height="84" rx="18" fill="none" stroke={`url(#${gradientId})`} strokeWidth="6" />
+      <text
+        x="43"
+        y="70"
+        textAnchor="middle"
+        fontFamily="Inter, system-ui, sans-serif"
+        fontWeight="800"
+        fontSize="42"
+        fill={`url(#${gradientId})`}
+      >
+        AI
+      </text>
+      <path d={SPARKLE_PATH} fill={`url(#${gradientId})`} transform="translate(62,6) scale(1.55)" />
+      <path d={SPARKLE_PATH} fill={`url(#${gradientId})`} transform="translate(80,28) scale(0.8)" />
+    </svg>
   )
 }
 

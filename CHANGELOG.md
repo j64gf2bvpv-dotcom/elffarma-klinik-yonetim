@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.29] - 2026-08-01
+
+**AI simgesi "AI" yazılı çerçeve tasarımına güncellendi:** Yuvarlak köşeli bir çerçeve içinde "AI" yazısı ve sağ üstte büyük/küçük parıltı aksanından oluşan yeni bir simgeye geçildi (teal-mavi-mor gradyan) — kullanıcının paylaştığı referansla aynı kompozisyon, kendi SVG'imiz ve gradyanımızla çizildi. Ana ekrandaki simge, panel başlığı ve mesaj avatarlarının hepsinde tutarlı şekilde kullanılıyor. Şema değişikliği yok.
+
 ## [2.12.28] - 2026-08-01
 
 **Panel'de çerçeveleri yan yana yerleştirmek kolaylaştı + "Ekrana Sığdır" eklendi:** "Paneli Düzenle" modunda bir çerçeveyi sürüklerken artık bırakacağınız yer (hangi çerçevenin yerine geleceği) anlık olarak vurgulanıyor — önceden hedefi görmeden tahminle bırakmak gerekiyordu. Ayrıca yeni "Ekrana Sığdır" butonu, aynı satırda duran çerçeveleri tek tıkla o satırı tam dolduracak şekilde eşit genişliğe getiriyor — elle sürükle-boyutlandırma sonucu oluşan boşluk/taşmayı otomatik düzeltiyor (sürekli bir ölçüm/gözlem yok, sadece tıklama anında bir kerelik ölçüm). Şema değişikliği yok.
