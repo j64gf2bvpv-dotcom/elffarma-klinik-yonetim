@@ -148,21 +148,16 @@
   .animate-map-province-pulse {
     animation: map-province-pulse 0.9s ease-in-out infinite;
   }
-  @keyframes ai-orb-breathe {
-    0%,
-    100% {
-      transform: scale(1);
-      opacity: 1;
+  @keyframes ai-shine-sweep {
+    0% {
+      transform: translateX(0);
     }
-    50% {
-      transform: scale(1.12);
-      opacity: 0.7;
+    100% {
+      transform: translateX(160px);
     }
   }
-  .animate-ai-orb-breathe {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: ai-orb-breathe 3s ease-in-out infinite;
+  .animate-ai-shine-sweep {
+    animation: ai-shine-sweep 2.2s ease-in-out infinite;
   }
 }
 

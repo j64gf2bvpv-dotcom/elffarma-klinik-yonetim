@@ -23,36 +23,55 @@ import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 let aiIconGradientId = 0
 
 /**
- * Konuşma balonu içinde basit bir robot yüzü — arka planı şeffaf. Belirli bir
- * stüdyoya/görsele ait bir 3D illüstrasyonun birebir kopyası değil, "robot +
- * konuşma balonu" genel AI-asistan motifinin kendi SVG'imizle yorumu.
- * `animated` verilirse gözler yumuşakça parlayıp sönerken dış halka hafifçe
- * nefes alır gibi büyüyüp küçülür; verilmezse tamamen sabit durur.
+ * Arka planı tamamen şeffaf, gradyanlı kalın "AI" yazısı — hiçbir kutu/daire
+ * arka planı yok, sadece harflerin kendisi. `animated` verilirse harflerin
+ * üzerinden parlak bir ışık huzmesi tekrar tekrar geçer (klasik "premium
+ * buton shine" efekti); verilmezse tamamen sabit durur.
  */
 function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
   return (
-    <svg viewBox="0 0 100 100" className={className} style={{ color: 'var(--color-primary)' }} aria-hidden="true">
+    <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
       <defs>
-        <radialGradient id={`${uid}-glow`} cx="50%" cy="45%" r="55%">
-          <stop offset="0%" stopColor="white" stopOpacity="0.4" />
+        <linearGradient id={`${uid}-fill`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fca5a5" />
+          <stop offset="50%" stopColor="#ef4444" />
+          <stop offset="100%" stopColor="#7f1d1d" />
+        </linearGradient>
+        <linearGradient id={`${uid}-shine`} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="white" stopOpacity="0" />
+          <stop offset="50%" stopColor="white" stopOpacity="0.95" />
           <stop offset="100%" stopColor="white" stopOpacity="0" />
-        </radialGradient>
+        </linearGradient>
+        <mask id={`${uid}-textmask`}>
+          <rect x="0" y="0" width="100" height="100" fill="black" />
+          <text x="50" y="65" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontWeight="800" fontSize="52" fill="white">
+            AI
+          </text>
+        </mask>
       </defs>
-      {/* dış parıltı */}
-      <circle cx="50" cy="45" r="46" fill={`url(#${uid}-glow)`} className={cn(animated && 'animate-ai-orb-breathe')} />
-      {/* konuşma balonu kuyruğu */}
-      <path d="M32 78 L20 92 L40 79 Z" fill="none" stroke="white" strokeWidth="6" strokeLinejoin="round" />
-      {/* balon halkası */}
-      <circle cx="50" cy="45" r="38" fill="white" fillOpacity="0.08" stroke="white" strokeWidth="6" />
-      {/* kulaklar */}
-      <circle cx="12" cy="45" r="6" fill="white" />
-      <circle cx="88" cy="45" r="6" fill="white" />
-      {/* robot kafası */}
-      <rect x="24" y="22" width="52" height="46" rx="23" fill="white" />
-      {/* gözler (arka planla aynı renk — beyaz kafada "oyulmuş" gibi görünür) */}
-      <circle cx="39" cy="45" r="7" fill="currentColor" className={cn(animated && 'animate-pulse')} />
-      <circle cx="61" cy="45" r="7" fill="currentColor" className={cn(animated && 'animate-pulse')} />
+      <text
+        x="50"
+        y="65"
+        textAnchor="middle"
+        fontFamily="Inter, system-ui, sans-serif"
+        fontWeight="800"
+        fontSize="52"
+        fill={`url(#${uid}-fill)`}
+      >
+        AI
+      </text>
+      {animated && (
+        <rect
+          x="-30"
+          y="0"
+          width="35"
+          height="100"
+          fill={`url(#${uid}-shine)`}
+          mask={`url(#${uid}-textmask)`}
+          className="animate-ai-shine-sweep"
+        />
+      )}
     </svg>
   )
 }
@@ -485,7 +504,7 @@ export function AIChatWidget() {
           title="Sürükleyerek taşıyabilirsiniz"
         >
           <div className="flex items-center gap-2.5">
-            <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-primary shadow-sm ring-1 ring-black/5">
+            <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full">
               <AiSparkleIcon className="size-5" animated />
             </span>
             <div>
@@ -508,7 +527,7 @@ export function AIChatWidget() {
         <div ref={scrollRef} className="grid flex-1 auto-rows-min gap-4 overflow-y-auto p-4">
           {storedMessages.length === 0 && !streamingText && !sending && (
             <div className="mt-10 flex flex-col items-center gap-3 text-center">
-              <span className="flex size-12 items-center justify-center rounded-full bg-primary shadow-sm ring-1 ring-black/5">
+              <span className="flex size-12 items-center justify-center rounded-full">
                 <AiSparkleIcon className="size-7" animated />
               </span>
               <p className="text-muted-foreground text-sm">
@@ -525,7 +544,7 @@ export function AIChatWidget() {
               )}
             >
               {m.role === 'assistant' && (
-                <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary shadow-sm ring-1 ring-black/5">
+                <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full">
                   <AiSparkleIcon className="size-4" animated />
                 </span>
               )}
@@ -543,7 +562,7 @@ export function AIChatWidget() {
           ))}
           {sending && !streamingText && (
             <div className="animate-in fade-in flex items-start gap-2 text-sm duration-200">
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary shadow-sm ring-1 ring-black/5">
+              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full">
                 <AiSparkleIcon className="size-4" animated />
               </span>
               <div className="flex items-center gap-1 rounded-2xl bg-muted/60 px-3.5 py-3">
@@ -555,7 +574,7 @@ export function AIChatWidget() {
           )}
           {streamingText && (
             <div className="animate-in fade-in flex items-start gap-2 text-sm duration-200">
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary shadow-sm ring-1 ring-black/5">
+              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full">
                 <AiSparkleIcon className="size-4" animated />
               </span>
               <p className="leading-relaxed px-0 py-0.5 whitespace-pre-wrap text-foreground/90">
@@ -650,7 +669,7 @@ export function AIChatWidget() {
           onPointerUp={handlePointerUp}
           title={open ? 'AI Asistanı kapat' : 'AI Asistanı aç (sürükleyerek taşıyabilirsiniz)'}
           className={cn(
-            'relative flex size-14 cursor-grab items-center justify-center rounded-2xl bg-primary shadow-lg ring-1 ring-black/10 select-none hover:scale-105 active:cursor-grabbing active:scale-95',
+            'relative flex size-14 cursor-grab items-center justify-center rounded-2xl select-none hover:scale-105 active:cursor-grabbing active:scale-95',
             buttonDragging ? '' : 'transition-all duration-300 ease-out',
             open && 'pointer-events-none scale-0 opacity-0',
             buttonDragging && 'opacity-70',

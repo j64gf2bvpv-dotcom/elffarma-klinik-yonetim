@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.35] - 2026-08-01
+
+**AI simgesi arka planı tamamen şeffaf hale getirildi, "AI" yazısına premium ışık huzmesi eklendi:** Simgenin arkasındaki daire/kare kaldırıldı — artık sadece kırmızı gradyanlı, kalın "AI" yazısı şeffaf bir arka plan üzerinde duruyor. Animasyonlu halinde harflerin üzerinden parlak bir ışık huzmesi tekrar tekrar geçiyor (premium "buton shine" efekti). Şema değişikliği yok.
+
 ## [2.12.34] - 2026-08-01
 
 **AI simgesi renkleri ters çevrildi: kırmızı arka plan, beyaz simge:** Simgenin arkasındaki daire/kare artık kırmızı (marka rengi), önündeki robot-konuşma-balonu çizgileri beyaz; gözler arka planla aynı kırmızı tonda kalıp beyaz kafanın üzerinde "oyulmuş" gibi görünüyor. Şema değişikliği yok.
