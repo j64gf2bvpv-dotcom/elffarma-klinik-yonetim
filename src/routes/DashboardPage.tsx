@@ -31,7 +31,6 @@ import {
   ArrowLeftRight,
   Presentation,
   MapPin,
-  Boxes,
   ShoppingCart,
   PackagePlus,
   ListPlus,
@@ -49,6 +48,7 @@ import {
   Percent,
   FlaskConical,
   Layers,
+  Users,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -553,12 +553,13 @@ export function DashboardPage() {
   const salesTotal = congressSalesTotal + generalSalesTotal
   const salesPrevTotal = congressSalesPrevTotal + generalSalesPrevTotal
 
-  const upcomingCongresses = congresses.filter((c) => c.start_date && new Date(c.start_date) >= new Date())
+  const totalReceivable = doctors.reduce((sum, d) => sum + (d.total_debt ?? 0), 0)
+  const activeSalesRepsCount = salesReps.filter((r) => r.is_active).length
 
   const monthTotalAnimated = useCountUp(monthTotal)
-  const productCountAnimated = useCountUp(products.length)
-  const upcomingCongressAnimated = useCountUp(upcomingCongresses.length)
   const salesTotalAnimated = useCountUp(salesTotal)
+  const totalReceivableAnimated = useCountUp(totalReceivable)
+  const activeSalesRepsAnimated = useCountUp(activeSalesRepsCount)
 
   const revenueData = React.useMemo<RevenueChartPoint[]>(
     () =>
@@ -662,40 +663,40 @@ export function DashboardPage() {
       return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCardV2
-            icon={Boxes}
-            tone="gold"
-            label="Toplam Stok"
-            value={Math.round(productCountAnimated).toLocaleString('tr-TR')}
-            sublabel="Ürün çeşidi"
-            deltaPct={null}
-            to="/stok"
-          />
-          <StatCardV2
-            icon={Presentation}
-            tone="purple"
-            label="Kongre Sayısı"
-            value={Math.round(upcomingCongressAnimated).toLocaleString('tr-TR')}
-            sublabel="Yaklaşan kongre"
-            deltaPct={null}
-            to="/kongreler"
+            icon={ShoppingCart}
+            tone="blue"
+            label="Toplam Satış"
+            value={salesTotalAnimated.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+            sublabel="Bu ay"
+            deltaPct={pctDelta(salesTotal, salesPrevTotal)}
+            to="/satislar"
           />
           <StatCardV2
             icon={Wallet}
             tone="green"
-            label="Tahsilat Tutarı"
+            label="Tahsilatlar"
             value={monthTotalAnimated.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
-            sublabel="Bu ay tahsilat"
+            sublabel="Bu ay"
             deltaPct={pctDelta(monthTotal, prevMonthTotal)}
             to="/tahsilatlar"
           />
           <StatCardV2
-            icon={ShoppingCart}
-            tone="blue"
-            label="Satış Tutarı"
-            value={salesTotalAnimated.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
-            sublabel="Bu ay ürün satışı"
-            deltaPct={pctDelta(salesTotal, salesPrevTotal)}
-            to="/satislar"
+            icon={Landmark}
+            tone="gold"
+            label="Toplam Cari"
+            value={totalReceivableAnimated.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+            sublabel="Açık bakiye"
+            deltaPct={null}
+            to="/cari-hesap"
+          />
+          <StatCardV2
+            icon={Users}
+            tone="purple"
+            label="Aktif Temsilci"
+            value={Math.round(activeSalesRepsAnimated).toLocaleString('tr-TR')}
+            sublabel="Toplam"
+            deltaPct={null}
+            to="/doktor-ziyaretleri"
           />
         </div>
       )
@@ -1390,19 +1391,19 @@ export function DashboardPage() {
 
       {!editMode ? (() => {
         // Satır/sütun yerleşimi SABİT Tailwind grid class'larıyla yapılıyor
-        // (grid-cols-2/3/4 vb.). Her satır kendi içeriğine göre doğal
-        // yüksekliğini alır (flex-1/overflow-hidden ile zorlanmıyor) — sayfa
-        // gerektiğinde normal şekilde kayar, tıpkı uygulamanın diğer tüm
-        // sayfaları gibi. Önceki "tek ekrana zorla sığdırma" yaklaşımı, dar
-        // ekranlarda kartların neredeyse sıfır yüksekliğe sıkışıp içeriklerinin
-        // görünmez olmasına yol açıyordu.
+        // (grid-cols-2/3 vb.). Her satır kendi içeriğine göre doğal yüksekliğini
+        // alır — sayfa gerektiğinde normal şekilde kayar, tıpkı uygulamanın diğer
+        // tüm sayfaları gibi. Bir bölümde (WIDGET_ROW aynı satır numarasında)
+        // kullanıcı "Paneli Düzenle"den 3'ten fazla widget'ı görünür yaparsa,
+        // hepsini tek bir dar grid'e sıkıştırıp kartların üst üste binmesine
+        // izin vermek yerine, en fazla MAX_COLS_PER_SUBROW genişliğinde alt
+        // satırlara bölünüyor (kaç widget görünür olursa olsun asla taşma/binme
+        // olmaz).
+        const MAX_COLS_PER_SUBROW = 3
         const gridColsClass: Record<number, string> = {
           1: 'grid-cols-1',
           2: 'grid-cols-1 md:grid-cols-2',
           3: 'grid-cols-1 md:grid-cols-3',
-          4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
-          5: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5',
-          6: 'grid-cols-1 md:grid-cols-3 lg:grid-cols-6',
         }
         const presentRows = [1, 2, 3, 4, 5].filter((rowNum) => (rowGroups.get(rowNum) ?? []).length > 0)
 
@@ -1418,17 +1419,27 @@ export function DashboardPage() {
               // 2. satırda (Aylık Satış grafiği + Hatırlatmalar) sadece bu ikisi
               // varsa, grafiğe referans görseldeki gibi daha geniş pay (2/3) verilir.
               const useWideFirstColumn = rowNum === 2 && ids.length === 2
+              const chunks: WidgetId[][] = useWideFirstColumn
+                ? [ids]
+                : Array.from({ length: Math.ceil(ids.length / MAX_COLS_PER_SUBROW) }, (_, i) =>
+                    ids.slice(i * MAX_COLS_PER_SUBROW, (i + 1) * MAX_COLS_PER_SUBROW),
+                  )
+
               return (
-                <div
-                  key={rowNum}
-                  className={cn(
-                    'grid items-stretch gap-4',
-                    useWideFirstColumn ? 'grid-cols-1 lg:grid-cols-3' : (gridColsClass[ids.length] ?? 'grid-cols-1'),
-                  )}
-                >
-                  {ids.map((id, i) => (
-                    <div key={id} className={cn('min-w-0', useWideFirstColumn && i === 0 && 'lg:col-span-2')}>
-                      {renderWidget(id)}
+                <div key={rowNum} className="grid gap-4">
+                  {chunks.map((chunkIds, chunkIndex) => (
+                    <div
+                      key={chunkIndex}
+                      className={cn(
+                        'grid items-stretch gap-4',
+                        useWideFirstColumn ? 'grid-cols-1 lg:grid-cols-3' : (gridColsClass[chunkIds.length] ?? 'grid-cols-1'),
+                      )}
+                    >
+                      {chunkIds.map((id, i) => (
+                        <div key={id} className={cn('min-w-0', useWideFirstColumn && i === 0 && 'lg:col-span-2')}>
+                          {renderWidget(id)}
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
