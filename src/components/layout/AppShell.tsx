@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, Link } from 'react-router-dom'
 import {
   Wifi,
   WifiOff,
@@ -403,11 +403,6 @@ function TopBar() {
 
 export function AppShell() {
   const { staff } = useAuth()
-  const location = useLocation()
-  // Panel (Dashboard) sabit, kaydırmasız, tek ekrana sığan bir yerleşim kullanıyor;
-  // diğer tüm sayfalar bu değişiklikten etkilenmeden normal (mx-auto max-w-7xl,
-  // dikey kaydırmalı) davranışını koruyor.
-  const isDashboardRoute = location.pathname === '/'
   useApplyBrandTheme()
   useAIStartupCheck()
   const { mode, toggle: toggleColorMode } = useColorMode()
@@ -557,13 +552,8 @@ export function AppShell() {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar />
-        <main
-          className={cn(
-            'relative flex-1 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--accent),transparent)]',
-            isDashboardRoute ? 'overflow-hidden' : 'overflow-y-auto',
-          )}
-        >
-          <div className={cn(isDashboardRoute ? 'h-full p-4 md:p-6' : 'mx-auto max-w-7xl p-6 md:p-8')}>
+        <main className="relative flex-1 overflow-y-auto bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--accent),transparent)]">
+          <div className="mx-auto max-w-7xl p-6 md:p-8">
             <Outlet />
           </div>
         </main>

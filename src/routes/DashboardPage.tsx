@@ -100,7 +100,6 @@ function StatCardV2({
   value,
   sublabel,
   deltaPct,
-  delayMs,
   to,
 }: {
   icon: React.ElementType
@@ -109,15 +108,11 @@ function StatCardV2({
   value: string
   sublabel: string
   deltaPct: number | null
-  delayMs: number
   to: string
 }) {
   return (
     <Link to={to} className="block">
-      <Card
-        className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700 transition-all hover:-translate-y-0.5 hover:shadow-md"
-        style={{ animationDelay: `${delayMs}ms` }}
-      >
+      <Card className="transition-all hover:-translate-y-0.5 hover:shadow-md">
       <CardContent className="flex items-start gap-3 pt-6">
         <span className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl', statTone[tone])}>
           <Icon className="size-5" />
@@ -662,8 +657,7 @@ export function DashboardPage() {
       .slice(0, 5)
   }, [recentPayments, last6MonthsStart])
 
-  function renderWidget(id: WidgetId, delayMs: number) {
-    const delayStyle = { animationDelay: `${delayMs}ms` }
+  function renderWidget(id: WidgetId) {
     if (id === 'stats') {
       return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -674,7 +668,6 @@ export function DashboardPage() {
             value={Math.round(productCountAnimated).toLocaleString('tr-TR')}
             sublabel="Ürün çeşidi"
             deltaPct={null}
-            delayMs={delayMs}
             to="/stok"
           />
           <StatCardV2
@@ -684,7 +677,6 @@ export function DashboardPage() {
             value={Math.round(upcomingCongressAnimated).toLocaleString('tr-TR')}
             sublabel="Yaklaşan kongre"
             deltaPct={null}
-            delayMs={delayMs + 80}
             to="/kongreler"
           />
           <StatCardV2
@@ -694,7 +686,6 @@ export function DashboardPage() {
             value={monthTotalAnimated.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
             sublabel="Bu ay tahsilat"
             deltaPct={pctDelta(monthTotal, prevMonthTotal)}
-            delayMs={delayMs + 160}
             to="/tahsilatlar"
           />
           <StatCardV2
@@ -704,7 +695,6 @@ export function DashboardPage() {
             value={salesTotalAnimated.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
             sublabel="Bu ay ürün satışı"
             deltaPct={pctDelta(salesTotal, salesPrevTotal)}
-            delayMs={delayMs + 240}
             to="/satislar"
           />
         </div>
@@ -713,7 +703,7 @@ export function DashboardPage() {
 
     if (id === 'quick_actions') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader>
             <CardTitle className="text-base">Hızlı Erişim</CardTitle>
           </CardHeader>
@@ -736,7 +726,7 @@ export function DashboardPage() {
 
     if (id === 'critical_alerts') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <AlertTriangle className="size-4 text-destructive" /> Kritik Uyarılar
@@ -774,7 +764,7 @@ export function DashboardPage() {
 
     if (id === 'upcoming_reminders') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <BellRing className="size-4 text-primary" /> Yaklaşan Hatırlatmalar
@@ -835,7 +825,7 @@ export function DashboardPage() {
       ]
 
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <PieChart className="size-4 text-primary" /> Stok Durumu
@@ -848,7 +838,7 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="grid flex-1 items-center gap-3 sm:grid-cols-2">
-              <StockStatusChart data={stockStatusData} height={100} />
+              <StockStatusChart data={stockStatusData} />
               <div className="grid gap-1.5">
                 {stockStatusData.map((point) => (
                   <div key={point.key} className="flex items-center justify-between text-sm">
@@ -877,7 +867,7 @@ export function DashboardPage() {
         .slice(0, 4)
 
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <Presentation className="size-4 text-primary" /> Yaklaşan Kongreler
@@ -932,7 +922,7 @@ export function DashboardPage() {
 
     if (id === 'exchange_rates') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <Coins className="size-4 text-primary" /> Günlük Döviz Kurları
@@ -1020,7 +1010,7 @@ export function DashboardPage() {
 
     if (id === 'revenue_chart') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <TrendingUp className="size-4 text-primary" /> Tahsilat Trendi
@@ -1035,7 +1025,7 @@ export function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <RevenueChart data={revenueData} height={200} />
+            <RevenueChart data={revenueData} />
           </CardContent>
         </Card>
       )
@@ -1043,7 +1033,7 @@ export function DashboardPage() {
 
     if (id === 'sales_trend') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <ShoppingCart className="size-4 text-primary" /> Satış Trendi
@@ -1058,7 +1048,7 @@ export function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <RevenueChart data={salesTrendData} height={130} />
+            <RevenueChart data={salesTrendData} />
           </CardContent>
         </Card>
       )
@@ -1066,7 +1056,7 @@ export function DashboardPage() {
 
     if (id === 'top_products') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 overflow-hidden duration-700" style={delayStyle}>
+        <Card className="overflow-hidden">
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <Trophy className="size-4 text-[oklch(0.72_0.16_70)]" /> En Çok Satan Ürünler
@@ -1082,7 +1072,7 @@ export function DashboardPage() {
             {topProducts.length === 0 ? (
               <p className="text-sm text-muted-foreground">Bu ay henüz ürün satışı yok</p>
             ) : (
-              <TopProductsChart data={topProducts} rowHeight={28} minHeight={130} />
+              <TopProductsChart data={topProducts} />
             )}
           </CardContent>
         </Card>
@@ -1091,7 +1081,7 @@ export function DashboardPage() {
 
     if (id === 'region_sales') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <MapPin className="size-4 text-primary" /> Satış Haritası — İllere Göre (Son 6 Ay)
@@ -1141,7 +1131,7 @@ export function DashboardPage() {
         .slice(0, 4)
 
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <Presentation className="size-4 text-primary" /> Kongre Paket Fiyatları
@@ -1193,7 +1183,7 @@ export function DashboardPage() {
 
     if (id === 'rep_performance') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <Trophy className="size-4 text-primary" /> Temsilci Performansı
@@ -1224,7 +1214,7 @@ export function DashboardPage() {
 
     if (id === 'commission_summary') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <Percent className="size-4 text-primary" /> Prim Özeti (Bu Ay)
@@ -1256,7 +1246,7 @@ export function DashboardPage() {
 
     if (id === 'sample_conversion') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <FlaskConical className="size-4 text-primary" /> Numune Dönüşüm Oranı
@@ -1287,7 +1277,7 @@ export function DashboardPage() {
 
     if (id === 'lot_expiry') {
       return (
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <Layers className="size-4 text-destructive" /> Lot / SKT Riski
@@ -1316,7 +1306,7 @@ export function DashboardPage() {
 
     return (
       <div>
-        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="text-base">Son İşlemler</CardTitle>
             <Button variant="ghost" size="sm" asChild>
@@ -1363,7 +1353,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <PageHeader
         title={
           <span className="flex items-center gap-2.5">
@@ -1399,33 +1389,30 @@ export function DashboardPage() {
       />
 
       {!editMode ? (() => {
-        // Bilinçli olarak sade tutuluyor: satır/sütun yerleşimi tamamen bu
-        // uygulamanın her yerde zaten sorunsuz kullandığı SABİT Tailwind grid
-        // class'larıyla yapılıyor (grid-cols-2/3/4 vb.) — inline stille hesaplanan
-        // fr/flex-basis değerleri (önceki sürüm) bazı ekranlarda kartların bir
-        // alttaki satırın üzerine binmesine yol açıyordu. overflow-hidden her
-        // hücrede taşmayı (scroll göstermeden) kırpar, üst üste binmeyi engeller.
+        // Satır/sütun yerleşimi SABİT Tailwind grid class'larıyla yapılıyor
+        // (grid-cols-2/3/4 vb.). Her satır kendi içeriğine göre doğal
+        // yüksekliğini alır (flex-1/overflow-hidden ile zorlanmıyor) — sayfa
+        // gerektiğinde normal şekilde kayar, tıpkı uygulamanın diğer tüm
+        // sayfaları gibi. Önceki "tek ekrana zorla sığdırma" yaklaşımı, dar
+        // ekranlarda kartların neredeyse sıfır yüksekliğe sıkışıp içeriklerinin
+        // görünmez olmasına yol açıyordu.
         const gridColsClass: Record<number, string> = {
           1: 'grid-cols-1',
-          2: 'grid-cols-2',
-          3: 'grid-cols-3',
-          4: 'grid-cols-4',
-          5: 'grid-cols-5',
-          6: 'grid-cols-6',
+          2: 'grid-cols-1 md:grid-cols-2',
+          3: 'grid-cols-1 md:grid-cols-3',
+          4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+          5: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5',
+          6: 'grid-cols-1 md:grid-cols-3 lg:grid-cols-6',
         }
         const presentRows = [1, 2, 3, 4, 5].filter((rowNum) => (rowGroups.get(rowNum) ?? []).length > 0)
 
         return (
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+          <div className="grid gap-4">
             {presentRows.map((rowNum) => {
               const ids = rowGroups.get(rowNum)!
 
               if (rowNum === 1 || rowNum === 5) {
-                return (
-                  <div key={rowNum} className="shrink-0 overflow-hidden">
-                    {renderWidget(ids[0], 0)}
-                  </div>
-                )
+                return <div key={rowNum}>{renderWidget(ids[0])}</div>
               }
 
               // 2. satırda (Aylık Satış grafiği + Hatırlatmalar) sadece bu ikisi
@@ -1435,16 +1422,13 @@ export function DashboardPage() {
                 <div
                   key={rowNum}
                   className={cn(
-                    'grid min-h-0 flex-1 items-stretch gap-4 overflow-hidden',
-                    useWideFirstColumn ? 'grid-cols-3' : (gridColsClass[ids.length] ?? 'grid-cols-1'),
+                    'grid items-stretch gap-4',
+                    useWideFirstColumn ? 'grid-cols-1 lg:grid-cols-3' : (gridColsClass[ids.length] ?? 'grid-cols-1'),
                   )}
                 >
                   {ids.map((id, i) => (
-                    <div
-                      key={id}
-                      className={cn('min-h-0 min-w-0 overflow-hidden', useWideFirstColumn && i === 0 && 'col-span-2')}
-                    >
-                      {renderWidget(id, i * 60)}
+                    <div key={id} className={cn('min-w-0', useWideFirstColumn && i === 0 && 'lg:col-span-2')}>
+                      {renderWidget(id)}
                     </div>
                   ))}
                 </div>
@@ -1453,7 +1437,7 @@ export function DashboardPage() {
           </div>
         )
       })() : (
-        <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto pr-1">
+        <div className="grid gap-3">
           <p className="text-muted-foreground text-xs">
             Widget'ları yukarı/aşağı sürükleyerek <b>kendi bölümü içinde</b> sırasını değiştirebilir,
             göz ikonuyla gizleyip gösterebilirsiniz. Bölümlerin kendisi (satır yerleşimi) sabittir.
@@ -1481,7 +1465,7 @@ export function DashboardPage() {
                   {item.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
                 </Button>
               </div>
-              {renderWidget(item.id, 0)}
+              {renderWidget(item.id)}
             </div>
           ))}
         </div>

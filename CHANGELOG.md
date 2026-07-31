@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.16] - 2026-07-31
+
+**Panel'deki boş/görünmez kart hatası kalıcı olarak düzeltildi:** Önceki üç sürümde denenen "tek ekrana sığdırma" yaklaşımı (sayfa kaydırması kapalı, satırlar `flex-1` ile kalan boşluğu paylaşıyordu) dar/kısa ekranlarda kartların neredeyse sıfır yüksekliğe sıkışıp içeriklerinin (grafik/liste) tamamen görünmez, boş gri şeritler halinde kalmasına yol açıyordu — kullanıcının ekran görüntüsünde bildirdiği tam olarak buydu. Panel artık uygulamanın diğer tüm sayfaları gibi normal şekilde kayan, her satırın kendi içeriğine göre doğal yüksekliğini aldığı bir sayfa; grafikler (Tahsilat Trendi, Stok Durumu, En Çok Satan Ürünler) da zorla küçültülmüş yükseklikleri yerine standart/okunaklı boyutlarına döndü. Widget'ları gösterme/gizleme ve kendi bölümü içinde sıralama özelliği aynen duruyor. Şema değişikliği yok.
+
 ## [2.12.15] - 2026-07-31
 
 **Panel yerleşimi inline-hesaplanan grid'den sabit Tailwind grid class'larına geçirildi:** Bir önceki sürümdeki `grid-template-rows`/`gridTemplateColumns` inline stilleri bazı ekranlarda kartların üst üste binmesine yol açmaya devam ediyordu; artık satır/sütun yerleşimi tamamen bu projede zaten yaygın kullanılan sabit `grid-cols-*` class'larıyla yapılıyor (Aylık Satış grafiği + Hatırlatmalar satırı `grid-cols-3` üzerinden grafiğe 2/3 pay veriyor). Her hücrede `overflow-hidden` taşmayı kırpmaya devam ediyor.
