@@ -84,6 +84,20 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max))
 }
 
+const PANEL_POSITION_KEY = 'ai_panel_position'
+
+function loadPanelPosition(): { left: number; top: number } | null {
+  try {
+    const raw = localStorage.getItem(PANEL_POSITION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (typeof parsed?.left === 'number' && typeof parsed?.top === 'number') return parsed
+  } catch {
+    // bozuk kayıt varsa yok say
+  }
+  return null
+}
+
 interface SpeechRecognitionResultLike {
   results: { [index: number]: { [index: number]: { transcript: string } } } & { length: number }
 }
@@ -192,10 +206,10 @@ export function AIChatWidget() {
 
   const anchorStyle: React.CSSProperties = { right: offset.right, bottom: offset.bottom }
 
-  // Panel her zaman görünür alanın (pencerenin) içinde kalsın diye kendi konumu
-  // simgenin konumundan ayrı hesaplanır — simge ekranın neresine sürüklenirse
-  // sürüklensin (üst kenar, sol kenar vb.) panel taşmadan açılır/kapanır.
-  const panelStyle = React.useMemo<React.CSSProperties>(() => {
+  // Panel varsayılan olarak simgenin yakınında açılır (simge ekranın neresine
+  // sürüklenirse sürüklensin taşmadan). Kullanıcı paneli kendi sürüklediğinde
+  // bu varsayılan yerine panelOffset kullanılır ve konum hatırlanır.
+  const defaultPanelPosition = React.useMemo<{ left: number; top: number }>(() => {
     const buttonLeft = viewport.width - offset.right - WIDGET_BUTTON_SIZE
     const buttonTop = viewport.height - offset.bottom - WIDGET_BUTTON_SIZE
     const buttonRight = buttonLeft + WIDGET_BUTTON_SIZE
@@ -212,6 +226,51 @@ export function AIChatWidget() {
 
     return { left, top }
   }, [offset, viewport])
+
+  const [panelOffset, setPanelOffset] = React.useState<{ left: number; top: number } | null>(loadPanelPosition)
+  const panelDragStateRef = React.useRef<{
+    startX: number
+    startY: number
+    startLeft: number
+    startTop: number
+    moved: boolean
+  } | null>(null)
+
+  React.useEffect(() => {
+    if (panelOffset) localStorage.setItem(PANEL_POSITION_KEY, JSON.stringify(panelOffset))
+  }, [panelOffset])
+
+  const panelStyle = React.useMemo<React.CSSProperties>(() => {
+    const base = panelOffset ?? defaultPanelPosition
+    return {
+      left: clamp(base.left, PANEL_MARGIN, viewport.width - PANEL_WIDTH - PANEL_MARGIN),
+      top: clamp(base.top, PANEL_MARGIN, viewport.height - PANEL_HEIGHT - PANEL_MARGIN),
+    }
+  }, [panelOffset, defaultPanelPosition, viewport])
+
+  function handlePanelPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if ((e.target as HTMLElement).closest('button')) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    const current = panelOffset ?? defaultPanelPosition
+    panelDragStateRef.current = { startX: e.clientX, startY: e.clientY, startLeft: current.left, startTop: current.top, moved: false }
+  }
+
+  function handlePanelPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const drag = panelDragStateRef.current
+    if (!drag) return
+    const dx = e.clientX - drag.startX
+    const dy = e.clientY - drag.startY
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) drag.moved = true
+    if (!drag.moved) return
+    setPanelOffset({
+      left: clamp(drag.startLeft + dx, PANEL_MARGIN, window.innerWidth - PANEL_WIDTH - PANEL_MARGIN),
+      top: clamp(drag.startTop + dy, PANEL_MARGIN, window.innerHeight - PANEL_HEIGHT - PANEL_MARGIN),
+    })
+  }
+
+  function handlePanelPointerUp() {
+    panelDragStateRef.current = null
+  }
 
   function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -403,7 +462,13 @@ export function AIChatWidget() {
         style={panelStyle}
         aria-hidden={!open}
       >
-        <div className="flex items-center justify-between border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3 shadow-sm">
+        <div
+          className="flex cursor-grab items-center justify-between border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3 shadow-sm touch-none select-none active:cursor-grabbing"
+          onPointerDown={handlePanelPointerDown}
+          onPointerMove={handlePanelPointerMove}
+          onPointerUp={handlePanelPointerUp}
+          title="Sürükleyerek taşıyabilirsiniz"
+        >
           <div className="flex items-center gap-2.5">
             <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5">
               <AiSparkleIcon className="size-5" />
