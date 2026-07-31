@@ -29,9 +29,17 @@ function ChartTooltip({ active, payload }: ChartTooltipProps) {
   )
 }
 
-export function TopProductsChart({ data }: { data: TopProductPoint[] }) {
+export function TopProductsChart({
+  data,
+  rowHeight = 46,
+  minHeight = 160,
+}: {
+  data: TopProductPoint[]
+  rowHeight?: number
+  minHeight?: number
+}) {
   return (
-    <ResponsiveContainer width="100%" height={Math.max(160, data.length * 46)}>
+    <ResponsiveContainer width="100%" height={Math.max(minHeight, data.length * rowHeight)}>
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 20, left: 4, bottom: 0 }} barCategoryGap="30%">
         <defs>
           {data.map((_, i) => (

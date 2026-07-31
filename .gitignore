@@ -15,8 +15,9 @@ release
 *.local
 .env
 
-# Claude Code yerel (bu makineye özel) izin ayarları
+# Claude Code yerel (bu makineye özel) izin ayarları ve çalışma zamanı kilit dosyaları
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # Editor directories and files
 .vscode/*

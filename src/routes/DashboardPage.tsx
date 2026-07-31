@@ -214,24 +214,28 @@ interface LayoutItem {
   visible: boolean
 }
 
+// Varsayılan görünüm sade tutuluyor (Özet + Aylık Satış + Hatırlatmalar + En Çok
+// Satan + Yaklaşan Kongreler + Temsilci Performansı + Hızlı İşlemler) — geri kalan
+// widget'lar SİLİNMEDİ, sadece varsayılan olarak gizli; "Paneli Düzenle" ile admin
+// istediği an geri açabilir.
 const defaultLayout: LayoutItem[] = [
   { id: 'stats', visible: true },
-  { id: 'quick_actions', visible: true },
-  { id: 'critical_alerts', visible: true },
-  { id: 'upcoming_reminders', visible: true },
   { id: 'revenue_chart', visible: true },
-  { id: 'sales_trend', visible: true },
+  { id: 'upcoming_reminders', visible: true },
   { id: 'top_products', visible: true },
-  { id: 'stock_status', visible: true },
   { id: 'upcoming_congresses', visible: true },
-  { id: 'exchange_rates', visible: true },
-  { id: 'region_sales', visible: true },
-  { id: 'congress_prices', visible: true },
-  { id: 'recent_activity', visible: true },
   { id: 'rep_performance', visible: true },
-  { id: 'commission_summary', visible: true },
-  { id: 'sample_conversion', visible: true },
-  { id: 'lot_expiry', visible: true },
+  { id: 'quick_actions', visible: true },
+  { id: 'critical_alerts', visible: false },
+  { id: 'sales_trend', visible: false },
+  { id: 'stock_status', visible: false },
+  { id: 'exchange_rates', visible: false },
+  { id: 'region_sales', visible: false },
+  { id: 'congress_prices', visible: false },
+  { id: 'recent_activity', visible: false },
+  { id: 'commission_summary', visible: false },
+  { id: 'sample_conversion', visible: false },
+  { id: 'lot_expiry', visible: false },
 ]
 
 const widgetLabels: Record<WidgetId, string> = {
@@ -253,6 +257,44 @@ const widgetLabels: Record<WidgetId, string> = {
   sample_conversion: 'Numune Dönüşüm Oranı',
   lot_expiry: 'Lot / SKT Riski',
 }
+
+// Panel sabit, kaydırmasız, tek ekrana (1920×1080) sığan bir yerleşim kullanıyor.
+// Her widget'ın hangi satırda göründüğü buradan belirlenir — sürükle-bırak yeniden
+// sıralama sadece AYNI satırdaki widget'lar arasında anlamlıdır. Varsayılan olarak
+// gizli widget'lar da (bkz. defaultLayout) burada bir satıra atanmış durumda —
+// admin "Paneli Düzenle"den onları tekrar görünür yaparsa, ait olduğu satıra
+// eklenip o satırdaki diğer kartlarla payını otomatik paylaşır.
+const WIDGET_ROW: Record<WidgetId, number> = {
+  stats: 1,
+  revenue_chart: 2,
+  sales_trend: 2,
+  upcoming_reminders: 2,
+  top_products: 3,
+  upcoming_congresses: 3,
+  rep_performance: 3,
+  stock_status: 3,
+  region_sales: 3,
+  congress_prices: 3,
+  critical_alerts: 4,
+  exchange_rates: 4,
+  recent_activity: 4,
+  commission_summary: 4,
+  sample_conversion: 4,
+  lot_expiry: 4,
+  quick_actions: 5,
+}
+
+const ROW_SECTION_LABEL: Record<number, string> = {
+  1: 'Üst KPI Şeridi',
+  2: 'Aylık Satış Performansı / Hatırlatmalar',
+  3: 'Ürünler / Kongreler / Temsilci Performansı',
+  4: 'Ek Bilgi Kartları (varsayılan gizli)',
+  5: 'Hızlı İşlemler',
+}
+
+// stats ve quick_actions kendi satırlarında tek başına, doğal yüksekliğinde durur;
+// diğer satırlar kalan dikey alanı bu oranlarla paylaşır (fr birimine benzer flex-grow).
+const ROW_FLEX_GROW: Record<number, number> = { 2: 1.3, 3: 1, 4: 0.9 }
 
 type ChartPeriod = 'day' | 'week' | 'month' | 'year'
 
@@ -487,7 +529,7 @@ export function DashboardPage() {
       amount: (s.type === 'return' ? -1 : 1) * s.quantity * Number(s.unit_price),
       to: '/satislar',
     }))
-    return [...paymentItems, ...saleItems].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)
+    return [...paymentItems, ...saleItems].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4)
   }, [recentPayments, sales])
 
   const monthStart = React.useMemo(() => startOfMonth(new Date()), [])
@@ -604,7 +646,7 @@ export function DashboardPage() {
         to: `/musteriler/${d.id}`,
       })
     }
-    return items.slice(0, 6)
+    return items.slice(0, 4)
   }, [alerts.criticalStock, alerts.expiringProducts, alerts.paymentDue])
 
   const last6MonthsStart = React.useMemo(() => startOfMonth(subMonths(new Date(), 5)), [])
@@ -620,7 +662,7 @@ export function DashboardPage() {
     return Array.from(byProvince.entries())
       .map(([province, total]) => ({ province, total }))
       .sort((a, b) => b.total - a.total)
-      .slice(0, 8)
+      .slice(0, 5)
   }, [recentPayments, last6MonthsStart])
 
   function renderWidget(id: WidgetId, delayMs: number) {
@@ -808,9 +850,9 @@ export function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="grid items-center gap-4 sm:grid-cols-2">
-              <StockStatusChart data={stockStatusData} />
-              <div className="grid gap-2">
+            <div className="grid flex-1 items-center gap-3 sm:grid-cols-2">
+              <StockStatusChart data={stockStatusData} height={100} />
+              <div className="grid gap-1.5">
                 {stockStatusData.map((point) => (
                   <div key={point.key} className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
@@ -828,8 +870,12 @@ export function DashboardPage() {
     }
 
     if (id === 'upcoming_congresses') {
+      const today = new Date()
       const upcoming = congresses
-        .filter((c) => c.start_date && new Date(c.start_date) >= new Date())
+        .filter((c) => {
+          const end = c.end_date ?? c.start_date
+          return end && new Date(end) >= startOfDay(today)
+        })
         .sort((a, b) => (a.start_date ?? '').localeCompare(b.start_date ?? ''))
         .slice(0, 4)
 
@@ -841,42 +887,44 @@ export function DashboardPage() {
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/kongreler">
-                Tüm Kongreler <ArrowRight className="size-3.5" />
+                Tümü <ArrowRight className="size-3.5" />
               </Link>
             </Button>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent className="grid gap-2">
             {upcoming.length === 0 && <p className="text-sm text-muted-foreground">Yaklaşan kongre yok</p>}
             {upcoming.map((c) => {
-              const daysLeft = c.start_date ? differenceInCalendarDays(new Date(c.start_date), new Date()) : null
+              const start = c.start_date ? new Date(c.start_date) : null
+              const end = c.end_date ? new Date(c.end_date) : start
+              const daysLeft = start ? differenceInCalendarDays(start, today) : null
+              const isOngoingToday = !!(start && end && start <= today && today <= end)
+              const status: { label: string; className: string } = isOngoingToday
+                ? { label: 'Bugün', className: 'border-destructive/30 bg-destructive/10 text-destructive' }
+                : { label: 'Yaklaşıyor', className: 'border-primary/30 bg-primary/10 text-primary' }
               return (
                 <Link
                   key={c.id}
                   to={`/kongreler/${c.id}`}
-                  className="flex items-center gap-3 rounded-lg border p-2.5 transition-colors hover:bg-accent"
+                  className="flex items-center gap-2.5 rounded-lg border p-2 text-sm transition-colors hover:bg-accent"
                 >
-                  {c.image_url ? (
-                    <span className="flex size-14 shrink-0 items-center justify-center rounded-md border bg-muted p-1">
-                      <img src={c.image_url} alt={c.name} className="size-full object-contain" />
-                    </span>
-                  ) : (
-                    <span className="flex size-14 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
-                      <Presentation className="size-5" />
-                    </span>
-                  )}
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
+                    <Presentation className="size-4" />
+                  </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{c.name}</p>
-                    {c.start_date && (
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(c.start_date), 'd MMMM yyyy', { locale: trLocale })}
-                      </p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {start && format(start, 'd MMM', { locale: trLocale })}
+                      {c.city ? ` · ${c.city}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <Badge variant="outline" className={cn('text-[10px]', status.className)}>
+                      {status.label}
+                    </Badge>
+                    {daysLeft != null && daysLeft >= 0 && (
+                      <span className="text-muted-foreground text-[10px]">{daysLeft} gün</span>
                     )}
                   </div>
-                  {daysLeft != null && (
-                    <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary shrink-0">
-                      {daysLeft} Gün
-                    </Badge>
-                  )}
                 </Link>
               )
             })}
@@ -989,8 +1037,8 @@ export function DashboardPage() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
-            <RevenueChart data={revenueData} />
+          <CardContent className="flex-1">
+            <RevenueChart data={revenueData} height={240} />
           </CardContent>
         </Card>
       )
@@ -1012,8 +1060,8 @@ export function DashboardPage() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
-            <RevenueChart data={salesTrendData} />
+          <CardContent className="flex-1">
+            <RevenueChart data={salesTrendData} height={130} />
           </CardContent>
         </Card>
       )
@@ -1037,7 +1085,7 @@ export function DashboardPage() {
             {topProducts.length === 0 ? (
               <p className="text-sm text-muted-foreground">Bu ay henüz ürün satışı yok</p>
             ) : (
-              <TopProductsChart data={topProducts} />
+              <TopProductsChart data={topProducts} rowHeight={34} minHeight={160} />
             )}
           </CardContent>
         </Card>
@@ -1093,6 +1141,7 @@ export function DashboardPage() {
       const pricedCongresses = congresses
         .filter((c) => c.single_person_price != null || c.two_person_price != null)
         .sort((a, b) => (a.start_date ?? '9999').localeCompare(b.start_date ?? '9999'))
+        .slice(0, 4)
 
       return (
         <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700" style={delayStyle}>
@@ -1304,8 +1353,20 @@ export function DashboardPage() {
     )
   }
 
+  // Görünür widget'ları sabit satır numaralarına (WIDGET_ROW) göre grupla; her
+  // grup içindeki SIRA, layout dizisindeki göreli sıradan gelir — böylece sürükle-
+  // bırak (aşağıdaki editMode listesi) değişmeden aynı state/kalıcılık mekanizmasını
+  // kullanmaya devam eder, sadece normal görünümde satır satır (bento-grid) çiziliyor.
+  const rowGroups = new Map<number, WidgetId[]>()
+  for (const item of layout) {
+    if (!item.visible) continue
+    const row = WIDGET_ROW[item.id]
+    if (!rowGroups.has(row)) rowGroups.set(row, [])
+    rowGroups.get(row)!.push(item.id)
+  }
+
   return (
-    <div>
+    <div className="flex h-full flex-col gap-3">
       <PageHeader
         title={
           <span className="flex items-center gap-2.5">
@@ -1340,12 +1401,48 @@ export function DashboardPage() {
         }
       />
 
-      <div className="grid gap-6">
-        {layout.map((item, index) => {
-          if (!editMode && !item.visible) return null
-          if (!editMode) return <div key={item.id}>{renderWidget(item.id, index * 80)}</div>
+      {!editMode ? (
+        <div className="flex min-h-0 flex-1 flex-col gap-4">
+          {[1, 2, 3, 4, 5].map((rowNum) => {
+            const ids = rowGroups.get(rowNum) ?? []
+            if (ids.length === 0) return null
 
-          return (
+            // 1. satır (Özet Kartları) ve 5. satır (Hızlı Erişim) zaten kendi
+            // içinde tam genişlikte bir grid çiziyor — ekstra bir sarmalayıcı
+            // grid'e ihtiyaçları yok, doğal yüksekliklerinde kalırlar.
+            if (rowNum === 1 || rowNum === 5) {
+              return (
+                <div key={rowNum} className="shrink-0">
+                  {renderWidget(ids[0], 0)}
+                </div>
+              )
+            }
+
+            return (
+              <div
+                key={rowNum}
+                className="grid min-h-0 items-stretch gap-4"
+                style={{
+                  flex: ROW_FLEX_GROW[rowNum] ?? 1,
+                  gridTemplateColumns: `repeat(${ids.length}, minmax(0, 1fr))`,
+                }}
+              >
+                {ids.map((id, i) => (
+                  <div key={id} className="min-h-0 min-w-0">
+                    {renderWidget(id, i * 60)}
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto pr-1">
+          <p className="text-muted-foreground text-xs">
+            Widget'ları yukarı/aşağı sürükleyerek <b>kendi bölümü içinde</b> sırasını değiştirebilir,
+            göz ikonuyla gizleyip gösterebilirsiniz. Bölümlerin kendisi (satır yerleşimi) sabittir.
+          </p>
+          {layout.map((item, index) => (
             <div
               key={item.id}
               draggable
@@ -1360,6 +1457,9 @@ export function DashboardPage() {
               <div className="mb-3 flex items-center justify-between">
                 <span className="flex cursor-grab items-center gap-1.5 text-xs font-medium text-muted-foreground active:cursor-grabbing">
                   <GripVertical className="size-3.5" /> {widgetLabels[item.id]}
+                  <Badge variant="outline" className="ml-1 text-[10px] font-normal">
+                    {ROW_SECTION_LABEL[WIDGET_ROW[item.id]]}
+                  </Badge>
                 </span>
                 <Button size="icon" variant="ghost" className="size-7" onClick={() => toggleVisible(item.id)}>
                   {item.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
@@ -1367,9 +1467,9 @@ export function DashboardPage() {
               </div>
               {renderWidget(item.id, 0)}
             </div>
-          )
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

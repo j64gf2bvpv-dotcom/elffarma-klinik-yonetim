@@ -7,7 +7,31 @@
       "Bash(export PATH=\"$HOME/.local/node/bin:$PATH\")",
       "Bash(command -v *)",
       "Bash(npm -v)",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "Bash(npm ls *)",
+      "Bash(grep -a \"postgres://\\\\|postgresql://\\\\|SUPABASE_DB\\\\|pooler.supabase\" ~/.zsh_history ~/.bash_history 2>/dev/null | tail -20 *)",
+      "Read(//Users/erkankongul/**)",
+      "Read(//private/tmp/**)",
+      "Bash(find / -maxdepth 4 -iname \"*.pgpass\")",
+      "Bash(env)",
+      "Bash(node -e \"const m = require\\('lucide-react'\\); console.log\\('Building2' in m, 'Building' in m, 'Hospital' in m\\)\")",
+      "Bash(node -e \"const m = require\\('lucide-react'\\); console.log\\(Object.keys\\(m\\).filter\\(k => /insta/i.test\\(k\\)\\)\\)\")",
+      "Bash(git commit -m ' *)",
+      "Bash(node -e \"const m = require\\('lucide-react'\\); console.log\\('Percent' in m, 'BadgePercent' in m, 'Award' in m\\)\")",
+      "Bash(node -e \"const m = require\\('lucide-react'\\); console.log\\('FlaskConical' in m, 'TestTube' in m, 'Beaker' in m\\)\")",
+      "Bash(grep -n \"kasaRows.length > 0\\\\|^      <Card>$\" /Users/erkankongul/Downloads/elffarma-klinik-yonetim-main/src/routes/PaymentsPage.tsx)",
+      "Bash(node -e \"const m = require\\('lucide-react'\\); console.log\\('Handshake' in m, 'Users2' in m, 'Target' in m\\)\")",
+      "Bash(node -e \"const m = require\\('lucide-react'\\); console.log\\('Contact' in m, 'UserCheck' in m, 'Rss' in m\\)\")",
+      "Bash(grep -n \"if \\(id === 'congress_prices'\\\\|^  }$\" /Users/erkankongul/Downloads/elffarma-klinik-yonetim-main/src/routes/DashboardPage.tsx)",
+      "WebFetch(domain:app.swaggerhub.com)",
+      "Bash(node -e \"const m = require\\('lucide-react'\\); console.log\\('Sparkles' in m, 'BrainCircuit' in m, 'Bot' in m\\)\")",
+      "Bash(curl -s -m 3 http://localhost:11434/api/version)",
+      "Bash(grep -n \"^-- ==*$\" /Users/erkankongul/Downloads/elffarma-klinik-yonetim-main/supabase/schema.sql)",
+      "Bash(sysctl -n hw.model)",
+      "Bash(sysctl -n hw.memsize)",
+      "Bash(awk '{print $1/1024/1024/1024 \" GB RAM\"}')",
+      "Bash(sysctl -n machdep.cpu.brand_string)",
+      "Bash(grep -n \"const anchorStyle\\\\|const { hidden, setHidden }\\\\|handlePointerUp\" src/features/ai/AIChatWidget.tsx)"
     ]
   }
 }

@@ -25,9 +25,9 @@ function ChartTooltip({ active, payload }: ChartTooltipProps) {
   )
 }
 
-export function RevenueChart({ data }: { data: RevenueChartPoint[] }) {
+export function RevenueChart({ data, height = 220 }: { data: RevenueChartPoint[]; height?: number }) {
   return (
-    <ResponsiveContainer width="100%" height={220}>
+    <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }} barCategoryGap="30%">
         <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
         <XAxis

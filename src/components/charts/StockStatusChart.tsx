@@ -23,11 +23,13 @@ function ChartTooltip({ active, payload }: ChartTooltipProps) {
   )
 }
 
-export function StockStatusChart({ data }: { data: StockStatusPoint[] }) {
+export function StockStatusChart({ data, height = 160 }: { data: StockStatusPoint[]; height?: number }) {
+  const outerRadius = Math.min(72, Math.round(height / 2) - 8)
+  const innerRadius = Math.round(outerRadius * 0.62)
   return (
-    <ResponsiveContainer width="100%" height={160}>
+    <ResponsiveContainer width="100%" height={height}>
       <PieChart>
-        <Pie data={data} dataKey="value" nameKey="label" innerRadius={45} outerRadius={72} paddingAngle={2}>
+        <Pie data={data} dataKey="value" nameKey="label" innerRadius={innerRadius} outerRadius={outerRadius} paddingAngle={2}>
           {data.map((point) => (
             <Cell key={point.key} fill={point.color} stroke="var(--color-card)" strokeWidth={2} />
           ))}

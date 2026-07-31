@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.13] - 2026-07-31
+
+**Panel (Dashboard) sadeleştirildi, tek ekrana sığan sabit yerleşime geçti:** Panel artık kaydırma gerektirmiyor; Özet Kartları (Toplam Satış/Tahsilatlar/Toplam Cari/Aktif Temsilci), Aylık Satış Performansı grafiği, Yaklaşan Hatırlatmalar, En Çok Satan Ürünler, yeni **Yaklaşan Kongreler** kartı (şehir + Yaklaşıyor/Bugün rozeti — kongrelerde zaten var olan `city` alanını kullanıyor), Temsilci Performansı ve Hızlı İşlemler varsayılan olarak görünür. Diğer 10 widget (Kritik Uyarılar, Satış Trendi, Stok Durumu, Döviz Kurları, Satış Haritası, Kongre Fiyatları, Son İşlemler, Prim Özeti, Numune Dönüşümü, Lot/SKT Riski) **silinmedi** — varsayılan olarak gizli, "Paneli Düzenle"den admin istediği an geri açabilir/sıralayabilir. Sürükle-bırak yeniden sıralama artık widget'ın ait olduğu bölüm (satır) içinde çalışıyor. Sadece Panel sayfası için sayfa kaydırması kapatıldı (`AppShell.tsx`, diğer tüm sayfalar eskisi gibi kaydırmalı kalıyor); `RevenueChart`/`StockStatusChart`/`TopProductsChart` artık isteğe bağlı `height`/`rowHeight` parametresi alıyor (varsayılanlar korunduğu için Satışlar sayfası etkilenmedi). Şema değişikliği yok (`city` alanı zaten mevcuttu).
+
 ## [2.12.12] - 2026-07-31
 
 **AI sohbet paneli kalite iyileştirmesi:** Soru gönderildikten sonra, ilk yanıt jetonu gelene kadar "yazıyor..." tarzı zıplayan üç nokta animasyonu gösteriliyor (öncesinde yanıt gelene kadar hiçbir geri bildirim yoktu). Mesajlar artık yumuşak bir giriş animasyonuyla beliriyor, kullanıcı mesajları dolu/kontrast bir balonla, asistan yanıtları daha okunaklı satır aralığıyla gösteriliyor; giriş kutusu odaklanınca hafif bir halka efekti alan, daha "pill" şekilli bir kutuya kavuştu; panel genel olarak daha yuvarlak köşeli ve gölgeli, daha premium bir görünüme kavuştu. Şema değişikliği yok.
