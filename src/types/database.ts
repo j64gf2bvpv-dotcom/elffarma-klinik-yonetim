@@ -211,6 +211,7 @@ export interface DoctorVisit {
   id: string
   visit_date: string
   doctor_name: string
+  customer_id: string | null
   phone: string | null
   email: string | null
   social_media: string | null
@@ -218,6 +219,15 @@ export interface DoctorVisit {
   sales_rep_id: string | null
   created_at: string
   updated_at: string
+}
+
+export interface CustomerFile {
+  id: string
+  customer_id: string
+  file_name: string
+  file_path: string
+  uploaded_by: string | null
+  created_at: string
 }
 
 export interface SalesRep {

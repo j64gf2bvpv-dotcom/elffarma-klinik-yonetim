@@ -17,6 +17,16 @@ import {
   Eye,
   Presentation,
   Files,
+  ShoppingCart,
+  Wallet,
+  Banknote,
+  ReceiptText,
+  Stethoscope,
+  NotebookText,
+  CalendarDays,
+  FolderOpen,
+  Info,
+  UserRound,
 } from 'lucide-react'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 
@@ -25,6 +35,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { InvoicePdfViewer } from '@/components/InvoicePdfViewer'
 import { CustomerForm } from '@/features/customers/CustomerForm'
@@ -43,6 +54,8 @@ import { InvoiceForm } from '@/features/invoices/InvoiceForm'
 import { useParticipationsByCustomer } from '@/features/congresses/hooks'
 import { useWorkshopParticipationsByCustomer } from '@/features/workshops/hooks'
 import { useSales } from '@/features/sales/hooks'
+import { useVisitsByCustomer } from '@/features/doctorVisits/hooks'
+import { CustomerFilesPanel } from '@/features/customerFiles/CustomerFilesPanel'
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
 import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { tr } from '@/i18n/tr'
@@ -69,6 +82,7 @@ export function CustomerDetailPage() {
   const { data: congressParticipations = [] } = useParticipationsByCustomer(id)
   const { data: workshopParticipations = [] } = useWorkshopParticipationsByCustomer(id)
   const { data: allSales = [] } = useSales()
+  const { data: visits = [] } = useVisitsByCustomer(id)
   const customerSales = React.useMemo(() => allSales.filter((s) => s.customer_id === id), [allSales, id])
   const deletePendingMutation = useDeletePendingProduct()
   const deleteMutation = useDeleteCustomer()
@@ -105,6 +119,9 @@ export function CustomerDetailPage() {
   const lastPayment = payments[0]
   const remainingBalance = customer.total_debt != null ? Number(customer.total_debt) - totalPaid : null
   const totalPending = pendingProducts.reduce((sum, p) => sum + Number(p.quantity) * Number(p.unit_price), 0)
+  const hasTaxInfo =
+    customer.tc_no || customer.tax_number || customer.vat_rate != null || customer.preferred_payment_method
+  const hasClinicInfo = customer.hospital_name || customer.province || customer.address
 
   async function handleDelete() {
     await deleteMutation.mutateAsync(customer!.id)
@@ -153,111 +170,81 @@ export function CustomerDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="grid gap-6 md:col-span-1">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">İletişim Bilgileri</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 text-sm">
-            <div className="flex flex-wrap gap-1.5">
-              {customer.doctor_type === 'hastane' ? (
-                <Badge variant="outline">
-                  <Building2 className="size-3" /> {customer.hospital_name || 'Hastane'}
-                </Badge>
-              ) : (
-                <Badge variant="secondary">
-                  <User className="size-3" /> Şahıs
-                </Badge>
-              )}
-              {customer.province && (
-                <Badge variant="outline">
-                  <MapPin className="size-3" /> {customer.province}
-                </Badge>
-              )}
-            </div>
-            <p className="flex items-center gap-2">
-              <Phone className="size-4 text-muted-foreground" />
-              {formatTrPhoneForDisplay(customer.phone)}
-            </p>
-            {customer.next_payment_due &&
-              (() => {
-                const status = getPaymentDueStatus(customer.next_payment_due)
-                return (
-                  <Badge
-                    variant={status === 'overdue' ? 'destructive' : status === 'upcoming' ? 'warning' : 'outline'}
-                    className="w-fit"
-                  >
-                    <CalendarClock className="size-3" /> Ödeme Vadesi:{' '}
-                    {format(new Date(customer.next_payment_due), 'd MMMM yyyy', { locale: trLocale })}
-                  </Badge>
-                )
-              })()}
-            {customer.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-1">
-                {customer.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    <Tag className="size-3" />
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {customer.notes && (
-              <div className="pt-2">
-                <p className="mb-1 text-xs font-medium text-muted-foreground">NOTLAR</p>
-                <p className="whitespace-pre-wrap">{customer.notes}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="genel">
+        <TabsList className="mb-6 h-auto w-full flex-wrap justify-start gap-1">
+          <TabsTrigger value="genel"><Info className="size-3.5" /> Genel Bilgiler</TabsTrigger>
+          <TabsTrigger value="vergi"><ReceiptText className="size-3.5" /> Vergi Bilgileri</TabsTrigger>
+          <TabsTrigger value="klinik"><Stethoscope className="size-3.5" /> Klinik Bilgileri</TabsTrigger>
+          <TabsTrigger value="urunler"><ShoppingCart className="size-3.5" /> Satın Aldığı Ürünler</TabsTrigger>
+          <TabsTrigger value="cari"><Wallet className="size-3.5" /> Cari Hesap</TabsTrigger>
+          <TabsTrigger value="tahsilat"><Banknote className="size-3.5" /> Tahsilatlar</TabsTrigger>
+          <TabsTrigger value="fatura"><Files className="size-3.5" /> Faturalar</TabsTrigger>
+          <TabsTrigger value="kongre"><Presentation className="size-3.5" /> Kongre / Workshop</TabsTrigger>
+          <TabsTrigger value="ziyaret"><CalendarDays className="size-3.5" /> Ziyaret Geçmişi</TabsTrigger>
+          <TabsTrigger value="notlar"><NotebookText className="size-3.5" /> Notlar</TabsTrigger>
+          <TabsTrigger value="dosyalar"><FolderOpen className="size-3.5" /> Dosyalar</TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-sm text-muted-foreground">Cari Hesap</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to={`/cari-hesap/${customer.id}`}>Hesabı Görüntüle</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="grid gap-4 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-medium text-muted-foreground">TİCARİ ALACAKLAR</p>
-              <p className="text-lg font-semibold tabular-nums">
-                {customer.total_debt != null ? currency(Number(customer.total_debt)) : '—'}
-              </p>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">TAHSİLAT</p>
-                {lastPayment && (
-                  <p className="text-muted-foreground text-xs">
-                    Son: {format(new Date(lastPayment.paid_at), 'd MMMM yyyy', { locale: trLocale })}
-                  </p>
-                )}
-              </div>
-              <p className="text-lg font-semibold tabular-nums text-success">{currency(totalPaid)}</p>
-            </div>
-            <div className="flex items-center justify-between gap-3 border-t pt-3">
-              <p className="text-xs font-medium text-muted-foreground">BAKİYE</p>
-              <p
-                className={`text-lg font-semibold tabular-nums ${remainingBalance && remainingBalance > 0 ? 'text-destructive' : 'text-success'}`}
-              >
-                {remainingBalance != null ? currency(remainingBalance) : '—'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {(customer.tc_no ||
-          customer.address ||
-          customer.tax_number ||
-          customer.vat_rate != null ||
-          customer.preferred_payment_method) && (
+        <TabsContent value="genel">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Fatura Bilgileri</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Genel Bilgiler</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm">
+              <div className="flex flex-wrap gap-1.5">
+                {customer.doctor_type === 'hastane' ? (
+                  <Badge variant="outline">
+                    <Building2 className="size-3" /> {customer.hospital_name || 'Hastane'}
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary">
+                    <User className="size-3" /> Şahıs
+                  </Badge>
+                )}
+                {customer.province && (
+                  <Badge variant="outline">
+                    <MapPin className="size-3" /> {customer.province}
+                  </Badge>
+                )}
+              </div>
+              <p className="flex items-center gap-2">
+                <Phone className="size-4 text-muted-foreground" />
+                {formatTrPhoneForDisplay(customer.phone)}
+              </p>
+              {customer.next_payment_due &&
+                (() => {
+                  const status = getPaymentDueStatus(customer.next_payment_due)
+                  return (
+                    <Badge
+                      variant={status === 'overdue' ? 'destructive' : status === 'upcoming' ? 'warning' : 'outline'}
+                      className="w-fit"
+                    >
+                      <CalendarClock className="size-3" /> Ödeme Vadesi:{' '}
+                      {format(new Date(customer.next_payment_due), 'd MMMM yyyy', { locale: trLocale })}
+                    </Badge>
+                  )
+                })()}
+              {customer.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {customer.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      <Tag className="size-3" />
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="vergi">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-muted-foreground">Vergi Bilgileri</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 text-sm">
+              {!hasTaxInfo && <p className="text-muted-foreground">Vergi bilgisi girilmedi.</p>}
               {customer.tc_no && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">TC KİMLİK NO</p>
@@ -282,6 +269,35 @@ export function CustomerDetailPage() {
                   <p>{tr.paymentMethod[customer.preferred_payment_method]}</p>
                 </div>
               )}
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">FATURA DURUMU</p>
+                <Badge variant={customer.is_invoiced ? 'success' : 'outline'} className="mt-1 w-fit">
+                  {customer.is_invoiced ? 'Faturalı' : 'Faturasız'}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="klinik">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-muted-foreground">Klinik Bilgileri</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 text-sm">
+              {!hasClinicInfo && <p className="text-muted-foreground">Klinik bilgisi girilmedi.</p>}
+              {customer.hospital_name && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">HASTANE / KLİNİK</p>
+                  <p>{customer.hospital_name}</p>
+                </div>
+              )}
+              {customer.province && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">İL</p>
+                  <p>{customer.province}</p>
+                </div>
+              )}
               {customer.address && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">ADRES</p>
@@ -290,13 +306,9 @@ export function CustomerDetailPage() {
               )}
             </CardContent>
           </Card>
-        )}
-        </div>
+        </TabsContent>
 
-        <div className="md:col-span-2">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold">Satın Alınan Ürünler</h2>
-          </div>
+        <TabsContent value="urunler">
           <Card>
             <CardContent className="p-0">
               <Table>
@@ -340,9 +352,48 @@ export function CustomerDetailPage() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          <div className="mt-6 mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold">Tahsilatlar</h2>
+        <TabsContent value="cari">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle className="text-sm text-muted-foreground">Cari Hesap</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to={`/cari-hesap/${customer.id}`}>Hesabı Görüntüle</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="grid max-w-sm gap-4 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-medium text-muted-foreground">TİCARİ ALACAKLAR</p>
+                <p className="text-lg font-semibold tabular-nums">
+                  {customer.total_debt != null ? currency(Number(customer.total_debt)) : '—'}
+                </p>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">TAHSİLAT</p>
+                  {lastPayment && (
+                    <p className="text-muted-foreground text-xs">
+                      Son: {format(new Date(lastPayment.paid_at), 'd MMMM yyyy', { locale: trLocale })}
+                    </p>
+                  )}
+                </div>
+                <p className="text-lg font-semibold tabular-nums text-success">{currency(totalPaid)}</p>
+              </div>
+              <div className="flex items-center justify-between gap-3 border-t pt-3">
+                <p className="text-xs font-medium text-muted-foreground">BAKİYE</p>
+                <p
+                  className={`text-lg font-semibold tabular-nums ${remainingBalance && remainingBalance > 0 ? 'text-destructive' : 'text-success'}`}
+                >
+                  {remainingBalance != null ? currency(remainingBalance) : '—'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tahsilat">
+          <div className="mb-3 flex items-center justify-end">
             <PaymentForm defaultCustomerId={customer.id} />
           </div>
           <Card>
@@ -378,9 +429,10 @@ export function CustomerDetailPage() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          <div className="mt-6 mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold">Faturalar</h2>
+        <TabsContent value="fatura">
+          <div className="mb-3 flex items-center justify-end">
             <InvoiceForm defaultCustomerId={customer.id} />
           </div>
           <Card>
@@ -430,52 +482,88 @@ export function CustomerDetailPage() {
               getUrl={() => getInvoiceFileUrl(viewingInvoice.filePath!)}
             />
           )}
+        </TabsContent>
 
-          {(congressParticipations.length > 0 || workshopParticipations.length > 0) && (
-            <>
-              <div className="mt-6 mb-3">
-                <h2 className="text-base font-semibold">Kongre / Workshop Katılımları</h2>
-              </div>
-              <Card>
-                <CardContent className="grid gap-1.5 p-4">
-                  {congressParticipations.map((p) => (
-                    <Link
-                      key={`congress-${p.id}`}
-                      to={`/kongreler/${p.congress_id}`}
-                      className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-accent"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Presentation className="text-muted-foreground size-3.5" />
-                        {p.congresses?.name ?? 'Kongre'}
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {p.congresses?.start_date
-                          ? format(new Date(p.congresses.start_date), 'd MMM yyyy', { locale: trLocale })
-                          : ''}
-                      </span>
-                    </Link>
-                  ))}
-                  {workshopParticipations.map((p) => (
-                    <Link
-                      key={`workshop-${p.id}`}
-                      to={`/workshoplar/${p.workshop_id}`}
-                      className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-accent"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Files className="text-muted-foreground size-3.5" />
-                        {p.workshops?.name ?? 'Workshop'}
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {p.workshops?.workshop_date
-                          ? format(new Date(p.workshops.workshop_date), 'd MMM yyyy', { locale: trLocale })
-                          : ''}
-                      </span>
-                    </Link>
-                  ))}
-                </CardContent>
-              </Card>
-            </>
-          )}
+        <TabsContent value="kongre">
+          <Card>
+            <CardContent className="grid gap-1.5 p-4">
+              {congressParticipations.length === 0 && workshopParticipations.length === 0 && (
+                <p className="text-muted-foreground p-2 text-sm">Kongre veya workshop katılımı yok.</p>
+              )}
+              {congressParticipations.map((p) => (
+                <Link
+                  key={`congress-${p.id}`}
+                  to={`/kongreler/${p.congress_id}`}
+                  className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                >
+                  <span className="flex items-center gap-2">
+                    <Presentation className="text-muted-foreground size-3.5" />
+                    {p.congresses?.name ?? 'Kongre'}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {p.congresses?.start_date
+                      ? format(new Date(p.congresses.start_date), 'd MMM yyyy', { locale: trLocale })
+                      : ''}
+                  </span>
+                </Link>
+              ))}
+              {workshopParticipations.map((p) => (
+                <Link
+                  key={`workshop-${p.id}`}
+                  to={`/workshoplar/${p.workshop_id}`}
+                  className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                >
+                  <span className="flex items-center gap-2">
+                    <Files className="text-muted-foreground size-3.5" />
+                    {p.workshops?.name ?? 'Workshop'}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {p.workshops?.workshop_date
+                      ? format(new Date(p.workshops.workshop_date), 'd MMM yyyy', { locale: trLocale })
+                      : ''}
+                  </span>
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ziyaret">
+          <Card>
+            <CardContent className="grid gap-1.5 p-4">
+              {visits.length === 0 && (
+                <p className="text-muted-foreground p-2 text-sm">Ziyaret kaydı bulunamadı.</p>
+              )}
+              {visits.map((v) => (
+                <div key={v.id} className="rounded-md border px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 font-medium">
+                      <CalendarDays className="text-muted-foreground size-3.5" />
+                      {format(new Date(v.visit_date), 'd MMMM yyyy', { locale: trLocale })}
+                    </span>
+                    {v.sales_reps?.name && (
+                      <Badge variant="secondary">
+                        <UserRound className="size-3" /> {v.sales_reps.name}
+                      </Badge>
+                    )}
+                  </div>
+                  {v.notes && <p className="text-muted-foreground mt-1">{v.notes}</p>}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notlar">
+          <Card>
+            <CardContent className="p-4 text-sm">
+              {customer.notes ? (
+                <p className="whitespace-pre-wrap">{customer.notes}</p>
+              ) : (
+                <p className="text-muted-foreground">Not eklenmedi.</p>
+              )}
+            </CardContent>
+          </Card>
 
           <div className="mt-6 mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold">Eksik Ürünler</h2>
@@ -484,16 +572,11 @@ export function CustomerDetailPage() {
           <Card>
             <CardContent className={pendingProducts.length === 0 ? '' : 'grid gap-1.5 p-4'}>
               {pendingProducts.length === 0 ? (
-                <p className="p-4 text-sm text-muted-foreground">
-                  Eksik/teslim edilmemiş ürün yok.
-                </p>
+                <p className="p-4 text-sm text-muted-foreground">Eksik/teslim edilmemiş ürün yok.</p>
               ) : (
                 <>
                   {pendingProducts.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-                    >
+                    <div key={p.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                       <span className="flex items-center gap-2">
                         <Package className="size-3.5 text-muted-foreground" />
                         {p.product_name}{' '}
@@ -503,14 +586,8 @@ export function CustomerDetailPage() {
                         {p.note && <span className="text-xs text-muted-foreground">({p.note})</span>}
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">
-                          {currency(Number(p.quantity) * Number(p.unit_price))}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deletePendingMutation.mutate(p.id)}
-                        >
+                        <span className="font-medium">{currency(Number(p.quantity) * Number(p.unit_price))}</span>
+                        <Button variant="ghost" size="icon" onClick={() => deletePendingMutation.mutate(p.id)}>
                           <Trash2 className="size-3.5 text-destructive" />
                         </Button>
                       </div>
@@ -521,8 +598,12 @@ export function CustomerDetailPage() {
               )}
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="dosyalar">
+          <CustomerFilesPanel customerId={customer.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

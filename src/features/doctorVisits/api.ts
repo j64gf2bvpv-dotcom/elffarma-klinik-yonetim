@@ -5,11 +5,24 @@ import type { DoctorVisit } from '@/types/database'
 export interface DoctorVisitInput {
   visit_date: string
   doctor_name: string
+  customer_id?: string | null
   phone?: string | null
   email?: string | null
   social_media?: string | null
   notes?: string | null
   sales_rep_id: string
+}
+
+export type DoctorVisitWithRep = DoctorVisit & { sales_reps: { name: string } | null }
+
+export async function fetchVisitsByCustomer(customerId: string): Promise<DoctorVisitWithRep[]> {
+  const { data, error } = await supabase
+    .from('doctor_visits')
+    .select('*, sales_reps(name)')
+    .eq('customer_id', customerId)
+    .order('visit_date', { ascending: false })
+  if (error) throw error
+  return data as unknown as DoctorVisitWithRep[]
 }
 
 export async function fetchVisitsInRange(from: string, to: string, salesRepId?: string): Promise<DoctorVisit[]> {

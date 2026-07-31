@@ -16,11 +16,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
+import { useCustomers } from '@/features/customers/hooks'
 import { useCreateVisit, useDeleteVisit, useUpdateVisit } from './hooks'
 import type { DoctorVisit } from '@/types/database'
 
 const schema = z.object({
   doctor_name: z.string().min(2, 'Doktor adı gerekli'),
+  customer_id: z.string().optional(),
   phone: z.string().optional(),
   email: z.union([z.literal(''), z.string().email('Geçerli bir e-posta girin')]).optional(),
   social_media: z.string().optional(),
@@ -42,11 +45,13 @@ export function DoctorVisitDialog({
   const createMutation = useCreateVisit()
   const updateMutation = useUpdateVisit()
   const deleteMutation = useDeleteVisit()
+  const { data: customers = [] } = useCustomers('')
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       doctor_name: visit?.doctor_name ?? '',
+      customer_id: visit?.customer_id ?? undefined,
       phone: visit?.phone ?? '',
       email: visit?.email ?? '',
       social_media: visit?.social_media ?? '',
@@ -59,6 +64,7 @@ export function DoctorVisitDialog({
       visit_date: visitDate,
       sales_rep_id: salesRepId,
       doctor_name: values.doctor_name,
+      customer_id: values.customer_id || null,
       phone: values.phone || null,
       email: values.email || null,
       social_media: values.social_media || null,
@@ -68,7 +74,7 @@ export function DoctorVisitDialog({
       await updateMutation.mutateAsync({ id: visit.id, input })
     } else {
       await createMutation.mutateAsync(input)
-      form.reset({ doctor_name: '', phone: '', email: '', social_media: '', notes: '' })
+      form.reset({ doctor_name: '', customer_id: undefined, phone: '', email: '', social_media: '', notes: '' })
     }
     setOpen(false)
   }
@@ -100,6 +106,27 @@ export function DoctorVisitDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+            <FormField
+              control={form.control}
+              name="customer_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cari Karttan Doktor Seç (opsiyonel)</FormLabel>
+                  <FormControl>
+                    <CustomerCombobox
+                      value={field.value}
+                      onChange={(customerId) => {
+                        field.onChange(customerId)
+                        const customer = customers.find((c) => c.id === customerId)
+                        if (customer) form.setValue('doctor_name', customer.full_name)
+                      }}
+                      placeholder="Kayıtlıysa cari karttan seçin"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="doctor_name"
