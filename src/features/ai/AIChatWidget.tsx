@@ -23,14 +23,13 @@ import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 let aiIconGradientId = 0
 
 /**
- * Parıldayan bir "orb" (gezegen/küre) simgesi — birçok premium AI asistan
- * ürününde (Siri, Copilot vb.) yaygın olan, tek bir şirketin tescilli
- * logosuna ait olmayan genel bir görsel dil. Sabit bir "AI" yazısı veya
- * dört uçlu parıltıdan farklı olarak, en küçük boyutta bile (mesaj
- * avatarı gibi) okunaklı kalan bir gradyan küre + yumuşak dış parıltı
- * (glow) + döngüsel iç ışık vurgusu. `animated` verilirse dış parıltı
- * nefes alır gibi büyüyüp küçülür ve iç ışık vurgusu yavaşça küre
- * etrafında döner; verilmezse tamamen sabit durur.
+ * Parıldayan, kırmızı bir "orb" (küre) simgesi, üzerinde "AI" yazısı —
+ * birçok premium AI asistan ürününde (Siri, Copilot vb.) yaygın olan, tek
+ * bir şirketin tescilli logosuna ait olmayan genel bir görsel dil. En küçük
+ * boyutta bile (mesaj avatarı gibi) okunaklı kalan bir gradyan küre +
+ * yumuşak dış parıltı (glow) + döngüsel iç ışık vurgusu. `animated`
+ * verilirse dış parıltı nefes alır gibi büyüyüp küçülür ve iç ışık vurgusu
+ * yavaşça küre etrafında döner; verilmezse tamamen sabit durur.
  */
 function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
@@ -38,13 +37,13 @@ function AiSparkleIcon({ className, animated = false }: { className?: string; an
     <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
       <defs>
         <radialGradient id={`${uid}-core`} cx="36%" cy="32%" r="75%">
-          <stop offset="0%" stopColor="#a5f3fc" />
-          <stop offset="45%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#7c3aed" />
+          <stop offset="0%" stopColor="#fca5a5" />
+          <stop offset="45%" stopColor="#ef4444" />
+          <stop offset="100%" stopColor="#991b1b" />
         </radialGradient>
         <radialGradient id={`${uid}-glow`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
+          <stop offset="0%" stopColor="#ef4444" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
         </radialGradient>
       </defs>
       <circle
@@ -56,8 +55,19 @@ function AiSparkleIcon({ className, animated = false }: { className?: string; an
       />
       <circle cx="50" cy="50" r="34" fill={`url(#${uid}-core)`} />
       <g className={cn(animated && 'animate-ai-orb-spin')} style={{ transformOrigin: '50px 50px' }}>
-        <ellipse cx="37" cy="34" rx="13" ry="8" fill="white" opacity="0.4" />
+        <ellipse cx="37" cy="34" rx="13" ry="8" fill="white" opacity="0.35" />
       </g>
+      <text
+        x="50"
+        y="61"
+        textAnchor="middle"
+        fontFamily="Inter, system-ui, sans-serif"
+        fontWeight="800"
+        fontSize="30"
+        fill="white"
+      >
+        AI
+      </text>
     </svg>
   )
 }
