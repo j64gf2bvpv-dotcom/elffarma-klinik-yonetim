@@ -26,6 +26,7 @@ import {
   EyeOff,
   Pencil,
   Save,
+  Maximize2,
   X,
   Coins,
   ArrowLeftRight,
@@ -203,33 +204,51 @@ type WidgetId =
   | 'sample_conversion'
   | 'lot_expiry'
 
+// Widget genişliği sabit birkaç seçenekten biri (üçte bir/yarım/üçte iki/tam) —
+// sürekli piksel bazlı sürükle-boyutlandırma KASITLI OLARAK kullanılmıyor: bir
+// önceki denemede (react-grid-layout + WidthProvider) grafiklerin kendi otomatik
+// boyutlandırma mekanizmasıyla (Recharts ResponsiveContainer) çakışıp sonsuz bir
+// ölçüm döngüsüne girmiş ve uygulamayı kilitlemişti. Bu sabit-adımlı yaklaşım
+// hem "büyüt/küçült" ihtiyacını karşılıyor hem de o sınıf hataya kapalı.
+type WidgetSize = 'third' | 'half' | 'two_thirds' | 'full'
+
+const SIZE_ORDER: WidgetSize[] = ['third', 'half', 'two_thirds', 'full']
+
+const SIZE_CLASS: Record<WidgetSize, string> = {
+  third: 'w-full md:w-[calc(33.333%-0.667rem)]',
+  half: 'w-full md:w-[calc(50%-0.5rem)]',
+  two_thirds: 'w-full md:w-[calc(66.667%-0.333rem)]',
+  full: 'w-full',
+}
+
 interface LayoutItem {
   id: WidgetId
   visible: boolean
+  size: WidgetSize
 }
 
 // Varsayılan görünüm sade tutuluyor (Özet + Aylık Satış + Hatırlatmalar + En Çok
 // Satan + Yaklaşan Kongreler + Temsilci Performansı + Hızlı İşlemler) — geri kalan
 // widget'lar SİLİNMEDİ, sadece varsayılan olarak gizli; "Paneli Düzenle" ile admin
-// istediği an geri açabilir.
+// istediği an geri açıp yerini/boyutunu değiştirebilir.
 const defaultLayout: LayoutItem[] = [
-  { id: 'stats', visible: true },
-  { id: 'revenue_chart', visible: true },
-  { id: 'upcoming_reminders', visible: true },
-  { id: 'top_products', visible: true },
-  { id: 'upcoming_congresses', visible: true },
-  { id: 'rep_performance', visible: true },
-  { id: 'quick_actions', visible: true },
-  { id: 'critical_alerts', visible: false },
-  { id: 'sales_trend', visible: false },
-  { id: 'stock_status', visible: false },
-  { id: 'exchange_rates', visible: false },
-  { id: 'region_sales', visible: false },
-  { id: 'congress_prices', visible: false },
-  { id: 'recent_activity', visible: false },
-  { id: 'commission_summary', visible: false },
-  { id: 'sample_conversion', visible: false },
-  { id: 'lot_expiry', visible: false },
+  { id: 'stats', visible: true, size: 'full' },
+  { id: 'revenue_chart', visible: true, size: 'two_thirds' },
+  { id: 'upcoming_reminders', visible: true, size: 'third' },
+  { id: 'top_products', visible: true, size: 'third' },
+  { id: 'upcoming_congresses', visible: true, size: 'third' },
+  { id: 'rep_performance', visible: true, size: 'third' },
+  { id: 'quick_actions', visible: true, size: 'full' },
+  { id: 'critical_alerts', visible: false, size: 'half' },
+  { id: 'sales_trend', visible: false, size: 'half' },
+  { id: 'stock_status', visible: false, size: 'half' },
+  { id: 'exchange_rates', visible: false, size: 'half' },
+  { id: 'region_sales', visible: false, size: 'half' },
+  { id: 'congress_prices', visible: false, size: 'half' },
+  { id: 'recent_activity', visible: false, size: 'full' },
+  { id: 'commission_summary', visible: false, size: 'half' },
+  { id: 'sample_conversion', visible: false, size: 'half' },
+  { id: 'lot_expiry', visible: false, size: 'half' },
 ]
 
 const widgetLabels: Record<WidgetId, string> = {
@@ -251,41 +270,6 @@ const widgetLabels: Record<WidgetId, string> = {
   sample_conversion: 'Numune Dönüşüm Oranı',
   lot_expiry: 'Lot / SKT Riski',
 }
-
-// Panel sabit, kaydırmasız, tek ekrana (1920×1080) sığan bir yerleşim kullanıyor.
-// Her widget'ın hangi satırda göründüğü buradan belirlenir — sürükle-bırak yeniden
-// sıralama sadece AYNI satırdaki widget'lar arasında anlamlıdır. Varsayılan olarak
-// gizli widget'lar da (bkz. defaultLayout) burada bir satıra atanmış durumda —
-// admin "Paneli Düzenle"den onları tekrar görünür yaparsa, ait olduğu satıra
-// eklenip o satırdaki diğer kartlarla payını otomatik paylaşır.
-const WIDGET_ROW: Record<WidgetId, number> = {
-  stats: 1,
-  revenue_chart: 2,
-  sales_trend: 2,
-  upcoming_reminders: 2,
-  top_products: 3,
-  upcoming_congresses: 3,
-  rep_performance: 3,
-  stock_status: 3,
-  region_sales: 3,
-  congress_prices: 3,
-  critical_alerts: 4,
-  exchange_rates: 4,
-  recent_activity: 4,
-  commission_summary: 4,
-  sample_conversion: 4,
-  lot_expiry: 4,
-  quick_actions: 5,
-}
-
-const ROW_SECTION_LABEL: Record<number, string> = {
-  1: 'Üst KPI Şeridi',
-  2: 'Aylık Satış Performansı / Hatırlatmalar',
-  3: 'Ürünler / Kongreler / Temsilci Performansı',
-  4: 'Ek Bilgi Kartları (varsayılan gizli)',
-  5: 'Hızlı İşlemler',
-}
-
 
 type ChartPeriod = 'day' | 'week' | 'month' | 'year'
 
@@ -487,6 +471,16 @@ export function DashboardPage() {
 
   function toggleVisible(id: WidgetId) {
     setDraftLayout((prev) => (prev ?? layout).map((item) => (item.id === id ? { ...item, visible: !item.visible } : item)))
+  }
+
+  function cycleSize(id: WidgetId) {
+    setDraftLayout((prev) =>
+      (prev ?? layout).map((item) => {
+        if (item.id !== id) return item
+        const nextIndex = (SIZE_ORDER.indexOf(item.size) + 1) % SIZE_ORDER.length
+        return { ...item, size: SIZE_ORDER[nextIndex] }
+      }),
+    )
   }
 
   function handleDrop(targetIndex: number) {
@@ -1339,17 +1333,13 @@ export function DashboardPage() {
     )
   }
 
-  // Görünür widget'ları sabit satır numaralarına (WIDGET_ROW) göre grupla; her
-  // grup içindeki SIRA, layout dizisindeki göreli sıradan gelir — böylece sürükle-
-  // bırak (aşağıdaki editMode listesi) değişmeden aynı state/kalıcılık mekanizmasını
-  // kullanmaya devam eder, sadece normal görünümde satır satır (bento-grid) çiziliyor.
-  const rowGroups = new Map<number, WidgetId[]>()
-  for (const item of layout) {
-    if (!item.visible) continue
-    const row = WIDGET_ROW[item.id]
-    if (!rowGroups.has(row)) rowGroups.set(row, [])
-    rowGroups.get(row)!.push(item.id)
-  }
+  // Düzenleme modunda TÜM widget'lar (gizli olanlar soluk halde) listede kalır ki
+  // kullanıcı yerini/boyutunu ayarlayabilsin ve göz ikonuyla geri açabilsin; normal
+  // görünümde sadece görünür olanlar render edilir. flex-wrap + sabit genişlik
+  // class'ları (SIZE_CLASS) ile aynı satıra sığan widget'lar otomatik yan yana
+  // dizilir — bilinçli olarak sürekli JS ölçümü/ResizeObserver YOK (bkz. yukarıdaki
+  // WidgetSize açıklaması).
+  const visibleItems = editMode ? layout : layout.filter((item) => item.visible)
 
   return (
     <div className="flex flex-col gap-4">
@@ -1448,98 +1438,54 @@ export function DashboardPage() {
         </span>
       </div>
 
-      {!editMode ? (() => {
-        // Satır/sütun yerleşimi SABİT Tailwind grid class'larıyla yapılıyor
-        // (grid-cols-2/3 vb.). Her satır kendi içeriğine göre doğal yüksekliğini
-        // alır — sayfa gerektiğinde normal şekilde kayar, tıpkı uygulamanın diğer
-        // tüm sayfaları gibi. Bir bölümde (WIDGET_ROW aynı satır numarasında)
-        // kullanıcı "Paneli Düzenle"den 3'ten fazla widget'ı görünür yaparsa,
-        // hepsini tek bir dar grid'e sıkıştırıp kartların üst üste binmesine
-        // izin vermek yerine, en fazla MAX_COLS_PER_SUBROW genişliğinde alt
-        // satırlara bölünüyor (kaç widget görünür olursa olsun asla taşma/binme
-        // olmaz).
-        const MAX_COLS_PER_SUBROW = 3
-        const gridColsClass: Record<number, string> = {
-          1: 'grid-cols-1',
-          2: 'grid-cols-1 md:grid-cols-2',
-          3: 'grid-cols-1 md:grid-cols-3',
-        }
-        const presentRows = [1, 2, 3, 4, 5].filter((rowNum) => (rowGroups.get(rowNum) ?? []).length > 0)
-
-        return (
-          <div className="grid gap-4">
-            {presentRows.map((rowNum) => {
-              const ids = rowGroups.get(rowNum)!
-
-              if (rowNum === 1 || rowNum === 5) {
-                return <div key={rowNum}>{renderWidget(ids[0])}</div>
-              }
-
-              // 2. satırda (Aylık Satış grafiği + Hatırlatmalar) sadece bu ikisi
-              // varsa, grafiğe referans görseldeki gibi daha geniş pay (2/3) verilir.
-              const useWideFirstColumn = rowNum === 2 && ids.length === 2
-              const chunks: WidgetId[][] = useWideFirstColumn
-                ? [ids]
-                : Array.from({ length: Math.ceil(ids.length / MAX_COLS_PER_SUBROW) }, (_, i) =>
-                    ids.slice(i * MAX_COLS_PER_SUBROW, (i + 1) * MAX_COLS_PER_SUBROW),
-                  )
-
-              return (
-                <div key={rowNum} className="grid gap-4">
-                  {chunks.map((chunkIds, chunkIndex) => (
-                    <div
-                      key={chunkIndex}
-                      className={cn(
-                        'grid items-stretch gap-4',
-                        useWideFirstColumn ? 'grid-cols-1 lg:grid-cols-3' : (gridColsClass[chunkIds.length] ?? 'grid-cols-1'),
-                      )}
-                    >
-                      {chunkIds.map((id, i) => (
-                        <div key={id} className={cn('min-w-0', useWideFirstColumn && i === 0 && 'lg:col-span-2')}>
-                          {renderWidget(id)}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-        )
-      })() : (
-        <div className="grid gap-3">
-          <p className="text-muted-foreground text-xs">
-            Widget'ları yukarı/aşağı sürükleyerek <b>kendi bölümü içinde</b> sırasını değiştirebilir,
-            göz ikonuyla gizleyip gösterebilirsiniz. Bölümlerin kendisi (satır yerleşimi) sabittir.
-          </p>
-          {layout.map((item, index) => (
-            <div
-              key={item.id}
-              draggable
-              onDragStart={() => (dragIndexRef.current = index)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDrop(index)}
-              className={cn(
-                'rounded-xl border-2 border-dashed p-3 transition-opacity',
-                item.visible ? 'border-border' : 'border-border/50 opacity-40',
-              )}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <span className="flex cursor-grab items-center gap-1.5 text-xs font-medium text-muted-foreground active:cursor-grabbing">
-                  <GripVertical className="size-3.5" /> {widgetLabels[item.id]}
-                  <Badge variant="outline" className="ml-1 text-[10px] font-normal">
-                    {ROW_SECTION_LABEL[WIDGET_ROW[item.id]]}
-                  </Badge>
-                </span>
-                <Button size="icon" variant="ghost" className="size-7" onClick={() => toggleVisible(item.id)}>
-                  {item.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-                </Button>
-              </div>
-              {renderWidget(item.id)}
-            </div>
-          ))}
-        </div>
+      {editMode && (
+        <p className="text-muted-foreground text-xs">
+          Çerçeveleri sürükleyerek yerini değiştirebilir, boyut ikonuyla üçte bir → yarım → üçte iki →
+          tam genişlik arasında büyütüp küçültebilir, göz ikonuyla gizleyip gösterebilirsiniz.
+        </p>
       )}
+
+      <div className="flex flex-wrap items-start gap-4">
+        {visibleItems.map((item, index) => (
+          <div
+            key={item.id}
+            draggable={editMode}
+            onDragStart={() => (dragIndexRef.current = index)}
+            onDragOver={(e) => {
+              if (editMode) e.preventDefault()
+            }}
+            onDrop={() => editMode && handleDrop(index)}
+            className={cn(SIZE_CLASS[item.size], editMode && !item.visible && 'opacity-40')}
+          >
+            {editMode && (
+              <div className="mb-1.5 flex cursor-grab items-center justify-between rounded-lg border bg-muted/50 px-2 py-1 text-xs active:cursor-grabbing">
+                <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
+                  <GripVertical className="size-3.5" /> {widgetLabels[item.id]}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => cycleSize(item.id)}
+                    title="Boyutu değiştir"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Maximize2 className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleVisible(item.id)}
+                    title={item.visible ? 'Gizle' : 'Göster'}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {item.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                  </button>
+                </div>
+              </div>
+            )}
+            {renderWidget(item.id)}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

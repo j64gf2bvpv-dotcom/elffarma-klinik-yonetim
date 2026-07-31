@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.23] - 2026-08-01
+
+**Panel widget'ları güvenli bir yöntemle tekrar taşınabilir/boyutlandırılabilir yapıldı:** "Paneli Düzenle" modunda çerçeveler artık sürüklenip listede istenen konuma bırakılabiliyor (aynı satıra sığan widget'lar otomatik yan yana diziliyor) ve boyut ikonuyla üçte bir → yarım → üçte iki → tam genişlik arasında büyütülüp küçültülebiliyor. Bir önceki denemenin aksine (react-grid-layout, bkz. 2.12.22) bu sefer sürekli JS ölçümü/ResizeObserver KULLANILMIYOR — sabit birkaç genişlik adımı arasında geçiş yapan basit CSS class'ları ile çalışıyor, bu yüzden grafiklerle çakışıp donma riski yok. Şema değişikliği yok.
+
 ## [2.12.22] - 2026-08-01
 
 **ACİL DÜZELTME: bir önceki sürüm (2.12.21) Panel'i tamamen açılmaz hale getiriyordu.** `react-grid-layout` kütüphanesinin otomatik genişlik ölçümü (ResizeObserver), grafiklerin kendi otomatik boyutlandırma mekanizmasıyla (Recharts `ResponsiveContainer`) çakışıp sonsuz bir ölçüm döngüsüne giriyordu — bu da CPU'yu %100'e kilitleyip uygulamanın "yükleniyor" ekranında donmasına, sonunda render sürecinin çökmesine yol açıyordu. Panel, 2.12.20'deki bilinen-çalışan sabit Tailwind grid yerleşimine geri alındı; `react-grid-layout` bağımlılığı kaldırıldı. Sürükle/yeniden-boyutlandırma özelliği kaldırıldı — daha güvenli bir yöntemle (grafik bileşenlerini otomatik ölçüm yapmayan bir moda alarak) yeniden ele alınacak.
