@@ -1038,7 +1038,7 @@ export function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <RevenueChart data={revenueData} height={240} />
+            <RevenueChart data={revenueData} height={200} />
           </CardContent>
         </Card>
       )
@@ -1085,7 +1085,7 @@ export function DashboardPage() {
             {topProducts.length === 0 ? (
               <p className="text-sm text-muted-foreground">Bu ay henüz ürün satışı yok</p>
             ) : (
-              <TopProductsChart data={topProducts} rowHeight={34} minHeight={160} />
+              <TopProductsChart data={topProducts} rowHeight={28} minHeight={130} />
             )}
           </CardContent>
         </Card>
@@ -1401,42 +1401,47 @@ export function DashboardPage() {
         }
       />
 
-      {!editMode ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
-          {[1, 2, 3, 4, 5].map((rowNum) => {
-            const ids = rowGroups.get(rowNum) ?? []
-            if (ids.length === 0) return null
+      {!editMode ? (() => {
+        // Satırların yüksekliğini flex-grow yerine doğrudan CSS Grid'in
+        // grid-template-rows'una veriyoruz — bu, mevcut içerik satırın payından
+        // taşarsa bir alttaki satırın üzerine görsel olarak bindiği (overlap)
+        // bir hataya yol açmıştı. Her hücreye eklenen overflow-hidden, taşan
+        // içeriği (scroll göstermeden) kırparak bunu kesin olarak engelliyor.
+        const presentRows = [1, 2, 3, 4, 5].filter((rowNum) => (rowGroups.get(rowNum) ?? []).length > 0)
+        const rowTemplate = presentRows
+          .map((rowNum) => (rowNum === 1 || rowNum === 5 ? 'auto' : `${ROW_FLEX_GROW[rowNum] ?? 1}fr`))
+          .join(' ')
 
-            // 1. satır (Özet Kartları) ve 5. satır (Hızlı Erişim) zaten kendi
-            // içinde tam genişlikte bir grid çiziyor — ekstra bir sarmalayıcı
-            // grid'e ihtiyaçları yok, doğal yüksekliklerinde kalırlar.
-            if (rowNum === 1 || rowNum === 5) {
+        return (
+          <div className="grid min-h-0 flex-1 gap-4 overflow-hidden" style={{ gridTemplateRows: rowTemplate }}>
+            {presentRows.map((rowNum) => {
+              const ids = rowGroups.get(rowNum)!
+
+              if (rowNum === 1 || rowNum === 5) {
+                return (
+                  <div key={rowNum} className="min-h-0 overflow-hidden">
+                    {renderWidget(ids[0], 0)}
+                  </div>
+                )
+              }
+
               return (
-                <div key={rowNum} className="shrink-0">
-                  {renderWidget(ids[0], 0)}
+                <div
+                  key={rowNum}
+                  className="grid min-h-0 items-stretch gap-4 overflow-hidden"
+                  style={{ gridTemplateColumns: `repeat(${ids.length}, minmax(0, 1fr))` }}
+                >
+                  {ids.map((id, i) => (
+                    <div key={id} className="min-h-0 min-w-0 overflow-hidden">
+                      {renderWidget(id, i * 60)}
+                    </div>
+                  ))}
                 </div>
               )
-            }
-
-            return (
-              <div
-                key={rowNum}
-                className="grid min-h-0 items-stretch gap-4"
-                style={{
-                  flex: ROW_FLEX_GROW[rowNum] ?? 1,
-                  gridTemplateColumns: `repeat(${ids.length}, minmax(0, 1fr))`,
-                }}
-              >
-                {ids.map((id, i) => (
-                  <div key={id} className="min-h-0 min-w-0">
-                    {renderWidget(id, i * 60)}
-                  </div>
-                ))}
-              </div>
-            )
-          })}
-        </div>
-      ) : (
+            })}
+          </div>
+        )
+      })() : (
         <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto pr-1">
           <p className="text-muted-foreground text-xs">
             Widget'ları yukarı/aşağı sürükleyerek <b>kendi bölümü içinde</b> sırasını değiştirebilir,
