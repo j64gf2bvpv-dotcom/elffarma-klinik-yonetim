@@ -42,6 +42,7 @@ import { useInvoices } from '@/features/invoices/hooks'
 import { InvoiceForm } from '@/features/invoices/InvoiceForm'
 import { useParticipationsByCustomer } from '@/features/congresses/hooks'
 import { useWorkshopParticipationsByCustomer } from '@/features/workshops/hooks'
+import { useSales } from '@/features/sales/hooks'
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
 import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { tr } from '@/i18n/tr'
@@ -67,6 +68,8 @@ export function CustomerDetailPage() {
   const { data: allInvoices = [] } = useInvoices()
   const { data: congressParticipations = [] } = useParticipationsByCustomer(id)
   const { data: workshopParticipations = [] } = useWorkshopParticipationsByCustomer(id)
+  const { data: allSales = [] } = useSales()
+  const customerSales = React.useMemo(() => allSales.filter((s) => s.customer_id === id), [allSales, id])
   const deletePendingMutation = useDeletePendingProduct()
   const deleteMutation = useDeleteCustomer()
   const [confirmOpen, setConfirmOpen] = React.useState(false)
@@ -292,6 +295,53 @@ export function CustomerDetailPage() {
 
         <div className="md:col-span-2">
           <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Satın Alınan Ürünler</h2>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tarih</TableHead>
+                    <TableHead>Tür</TableHead>
+                    <TableHead>Ürün</TableHead>
+                    <TableHead>Adet</TableHead>
+                    <TableHead>Tutar</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {customerSales.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+                        Satın alınan ürün bulunamadı
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {customerSales.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {format(new Date(s.sale_date), 'd MMM yyyy', { locale: trLocale })}
+                      </TableCell>
+                      <TableCell>
+                        {s.type === 'sale' ? (
+                          <Badge variant="secondary">Satış</Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-destructive/30 text-destructive">
+                            İade
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{s.product_name}</TableCell>
+                      <TableCell>{s.quantity}</TableCell>
+                      <TableCell className="font-medium">{currency(s.quantity * Number(s.unit_price))}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <div className="mt-6 mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold">Tahsilatlar</h2>
             <PaymentForm defaultCustomerId={customer.id} />
           </div>

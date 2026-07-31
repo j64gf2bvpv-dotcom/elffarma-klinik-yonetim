@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
@@ -23,6 +24,8 @@ import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { useRecordStockMovement } from '@/features/stock/hooks'
+import { useCreatePayment } from '@/features/payments/hooks'
+import { tr } from '@/i18n/tr'
 import { useCreateSale } from './hooks'
 import type { Product } from '@/types/database'
 
@@ -44,6 +47,9 @@ const schema = z.object({
   unit_price: z.coerce.number().min(0),
   sale_date: z.string().min(1),
   note: z.string().optional(),
+  collect_payment: z.boolean(),
+  payment_amount: z.coerce.number().min(0).optional(),
+  payment_method: z.enum(['nakit', 'kredi_karti', 'havale']).optional(),
 })
 
 type FormInput = z.input<typeof schema>
@@ -53,25 +59,41 @@ export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) 
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateSale()
   const recordMovement = useRecordStockMovement()
+  const createPayment = useCreatePayment()
   const { data: doctors = [] } = useCustomers('')
   const { data: salesReps = [] } = useSalesReps()
 
+  const defaultValues: FormInput = {
+    type: 'sale',
+    customer_id: '',
+    sales_rep_id: defaultSalesRepId ?? NO_REP,
+    product_id: '',
+    product_name: '',
+    quantity: 1,
+    unit_price: 0,
+    sale_date: todayDate(),
+    note: '',
+    collect_payment: false,
+    payment_amount: undefined,
+    payment_method: 'nakit',
+  }
+
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      type: 'sale',
-      customer_id: '',
-      sales_rep_id: defaultSalesRepId ?? NO_REP,
-      product_id: '',
-      product_name: '',
-      quantity: 1,
-      unit_price: 0,
-      sale_date: todayDate(),
-      note: '',
-    },
+    defaultValues,
   })
 
   const saleType = form.watch('type')
+  const collectPayment = form.watch('collect_payment')
+  const quantity = form.watch('quantity')
+  const unitPrice = form.watch('unit_price')
+
+  React.useEffect(() => {
+    if (collectPayment) {
+      form.setValue('payment_amount', Number(quantity || 0) * Number(unitPrice || 0))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectPayment, quantity, unitPrice])
 
   function handleSelectProduct(product: Product) {
     form.setValue('product_id', product.id, { shouldValidate: true })
@@ -108,21 +130,22 @@ export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) 
           : `${doctorName} tarafından iade edildi${repName ? ` — ${repName} tarafından alındı` : ''}`,
     })
 
-    form.reset({
-      type: 'sale',
-      customer_id: '',
-      sales_rep_id: defaultSalesRepId ?? NO_REP,
-      product_id: '',
-      product_name: '',
-      quantity: 1,
-      unit_price: 0,
-      sale_date: todayDate(),
-      note: '',
-    })
+    if (values.type === 'sale' && values.collect_payment && values.payment_amount && values.payment_amount > 0) {
+      await createPayment.mutateAsync({
+        customer_id: values.customer_id,
+        amount: values.payment_amount,
+        payment_method: values.payment_method ?? 'nakit',
+        description: `Satış tahsilatı: ${values.product_name}`,
+        paid_at: new Date().toISOString(),
+        sales_rep_id: repId,
+      })
+    }
+
+    form.reset(defaultValues)
     setOpen(false)
   }
 
-  const submitting = createMutation.isPending || recordMovement.isPending
+  const submitting = createMutation.isPending || recordMovement.isPending || createPayment.isPending
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -267,6 +290,64 @@ export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) 
                 </FormItem>
               )}
             />
+            {saleType === 'sale' && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="collect_payment"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2">
+                      <FormControl>
+                        <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(v === true)} />
+                      </FormControl>
+                      <FormLabel className="!mt-0">Bu satış için hemen tahsilat al</FormLabel>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {collectPayment && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="payment_amount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tahsilat Tutarı</FormLabel>
+                          <FormControl>
+                            <CurrencyInput value={field.value} onChange={field.onChange} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="payment_method"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ödeme Yöntemi</FormLabel>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.entries(tr.paymentMethod).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+              </>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Vazgeç

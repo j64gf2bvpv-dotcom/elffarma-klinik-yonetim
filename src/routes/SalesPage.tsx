@@ -13,8 +13,10 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { RevenueChart, type RevenueChartPoint } from '@/components/charts/RevenueChart'
 import { SaleForm } from '@/features/sales/SaleForm'
 import { useSales, useDeleteSale } from '@/features/sales/hooks'
+import { useRecordStockMovement } from '@/features/stock/hooks'
 import { InvoiceForm } from '@/features/invoices/InvoiceForm'
 import { useInvoices, useDeleteInvoice } from '@/features/invoices/hooks'
+import type { SaleWithRelations } from '@/features/sales/api'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -27,11 +29,27 @@ function netAmount(s: { type: string; quantity: number; unit_price: number }) {
 function SalesTab() {
   const { data: sales = [], isLoading } = useSales()
   const deleteMutation = useDeleteSale()
+  const recordMovement = useRecordStockMovement()
 
   const totalSales = sales.filter((s) => s.type === 'sale').reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
   const totalReturns = sales
     .filter((s) => s.type === 'return')
     .reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
+
+  async function handleDelete(sale: SaleWithRelations) {
+    if (!confirm(`${sale.product_name} (${sale.quantity} adet) kaydı silinsin mi? Stok kaydı da geri alınacak.`)) return
+    if (sale.product_id) {
+      await recordMovement.mutateAsync({
+        product_id: sale.product_id,
+        movement_type: sale.type === 'sale' ? 'in' : 'out',
+        quantity: sale.quantity,
+        reason: sale.type === 'sale' ? 'Satış kaydı silindi' : 'İade kaydı silindi',
+        customer_id: sale.customer_id,
+        note: `${sale.customers?.full_name ?? 'Doktor'} — silinen kayıt için stok düzeltmesi`,
+      })
+    }
+    await deleteMutation.mutateAsync(sale.id)
+  }
 
   return (
     <div>
@@ -101,7 +119,7 @@ function SalesTab() {
                     <TableCell className="font-medium">{currency(s.quantity * Number(s.unit_price))}</TableCell>
                     <TableCell>{s.sales_reps?.name ?? '—'}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(s.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(s)}>
                         <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </TableCell>
