@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.37] - 2026-08-01
+
+**Stok sayfasında adet üzerine tıklayarak hızlı düzenleme:** Stok listesindeki her ürünün adet rozetine tıklanınca yerinde (inline) bir sayı kutusu açılıyor; yeni değer onaylanınca fark, `record_stock_movement` RPC'si üzerinden (artışta "adjustment", azalışta "out" hareket tipiyle) kaydediliyor — `products.current_quantity` hiçbir zaman doğrudan güncellenmiyor, stok hareket geçmişi bozulmuyor. Şema değişikliği yok.
+
 ## [2.12.36] - 2026-08-01
 
 **AI simgesi artık üst çubukta (wifi/ayarlar/profil ile aynı satırda) sabit duruyor:** Sağ alt köşede sürüklenebilen/gizlenebilen yüzen AI simgesi kaldırıldı — bunun yerine üst çubukta, bağlantı göstergesinin hemen solunda, ayarlar ve profil menüsüyle aynı sırada, daha büyük sabit bir AI ikonu var. Tıklanınca aynı sohbet paneli açılıyor; panel hâlâ sürüklenip yeniden konumlandırılabiliyor ve kenarından boyutlandırılabiliyor, sadece TETİKLEYİCİ ikon artık sabit. Işık huzmesi animasyonu artık sürekli değil, birkaç saniyede bir "arada" parlayacak şekilde ayarlandı. "Ayarlar > Yapay Zeka"daki simgeyi gösterme/gizleme anahtarı kaldırıldı (artık geçerli değil — diğer üst çubuk ikonları gibi her zaman görünür). Şema değişikliği yok.

@@ -13,7 +13,7 @@ import { ProductForm } from '@/features/stock/ProductForm'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
 import { ProductLotsDialog } from '@/features/stock/ProductLotsDialog'
-import { useDeactivateProduct, useProducts } from '@/features/stock/hooks'
+import { useDeactivateProduct, useProducts, useRecordStockMovement } from '@/features/stock/hooks'
 import { createProduct, recordStockMovement } from '@/features/stock/api'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { cn } from '@/lib/utils'
@@ -76,6 +76,80 @@ function ReorderSuggestions({ products }: { products: Product[] }) {
   )
 }
 
+/**
+ * Stok adedine tıklayınca yerinde (inline) düzenlenebilir hale gelir. Yeni
+ * değer doğrudan products.current_quantity'ye yazılmıyor — CLAUDE.md kuralı
+ * gereği fark, record_stock_movement RPC'si üzerinden (artışta 'adjustment',
+ * azalışta 'out' hareketi olarak) denetim kaydına işlenip uygulanıyor.
+ */
+function QuantityCell({ product }: { product: Product }) {
+  const [editing, setEditing] = React.useState(false)
+  const [value, setValue] = React.useState(String(product.current_quantity))
+  const mutation = useRecordStockMovement()
+  const isCritical = product.current_quantity <= product.critical_stock_threshold
+
+  React.useEffect(() => {
+    if (!editing) setValue(String(product.current_quantity))
+  }, [product.current_quantity, editing])
+
+  async function commit() {
+    const next = Number(value)
+    setEditing(false)
+    if (!Number.isFinite(next) || next < 0 || Math.round(next) !== next) {
+      setValue(String(product.current_quantity))
+      return
+    }
+    const diff = next - product.current_quantity
+    if (diff === 0) return
+    await mutation.mutateAsync({
+      product_id: product.id,
+      movement_type: diff > 0 ? 'adjustment' : 'out',
+      quantity: Math.abs(diff),
+      reason: 'Hızlı stok düzenleme',
+    })
+  }
+
+  if (editing) {
+    return (
+      <Input
+        type="number"
+        min="0"
+        step="1"
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit()
+          }
+          if (e.key === 'Escape') {
+            setValue(String(product.current_quantity))
+            setEditing(false)
+          }
+        }}
+        className="h-8 w-20"
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      title="Adedi düzenlemek için tıklayın"
+      className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent"
+    >
+      {isCritical && <AlertTriangle className="size-3.5 text-destructive" />}
+      <Badge variant={isCritical ? 'destructive' : 'secondary'}>
+        {product.current_quantity} {product.unit}
+      </Badge>
+    </button>
+  )
+}
+
 function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: (product: Product) => void }) {
   return (
     <Card>
@@ -130,12 +204,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                   </TableCell>
                   <TableCell className="text-muted-foreground">{product.category ?? '—'}</TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center gap-1.5">
-                      {isCritical && <AlertTriangle className="size-3.5 text-destructive" />}
-                      <Badge variant={isCritical ? 'destructive' : 'secondary'}>
-                        {product.current_quantity} {product.unit}
-                      </Badge>
-                    </span>
+                    <QuantityCell product={product} />
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {product.unit_price ? (
