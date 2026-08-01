@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.49] - 2026-08-01
+
+**Örnek veri artık lot/SKT, kongre paket fiyatı, numune talebi ve prim kuralı da ekliyor:** "Örnek Veri Ekle" özelliği genişletildi — ürünlerden birine SKT'si yaklaşan bir lot, demo kongreye tek/2 kişilik paket fiyatı, her doktor için satılan bir üründen numune talebi (satıştan önceki tarihle, dönüşüm olarak sayılsın diye) ve genel bir prim kuralı (%10, tüm satışlar) ekleniyor. Böylece Panel'deki "Lot / SKT Riski", "Kongre Paket Fiyatları", "Numune Dönüşüm Oranı" ve "Prim Özeti" widget'ları da artık örnek veriyle doluyor — daha önce bu dördü boş kalıyordu. Şema değişikliği yok.
+
 ## [2.12.48] - 2026-08-01
 
 **"En Çok Satan Ürünler" artık animasyonlu bir halka (donut) grafik:** Yatay çubuk grafik yerine, ortasında bu ayın toplam cirosunu gösteren, dönerek beliren (Recharts animasyonlu) bir halka grafik ve altında ürün adı/tutarını gösteren renkli bir liste var. Şema değişikliği yok.

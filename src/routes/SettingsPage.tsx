@@ -318,7 +318,7 @@ export function SettingsPage() {
       const result = await seedDemoData()
       await queryClient.invalidateQueries()
       toast.success('Örnek veri eklendi', {
-        description: `${result.customers} cari, ${result.products} ürün, ${result.payments} tahsilat, ${result.sales} satış, ${result.salesReps} temsilci, ${result.reminders} hatırlatma, ${result.congresses} kongre, ${result.visits} ziyaret, ${result.expenses} gider`,
+        description: `${result.customers} cari, ${result.products} ürün, ${result.payments} tahsilat, ${result.sales} satış, ${result.salesReps} temsilci, ${result.reminders} hatırlatma, ${result.congresses} kongre, ${result.visits} ziyaret, ${result.expenses} gider, ${result.sampleRequests} numune talebi, ${result.commissionRules} prim kuralı`,
       })
     } catch (err) {
       toast.error('Örnek veri eklenemedi', { description: err instanceof Error ? err.message : undefined })
@@ -334,7 +334,7 @@ export function SettingsPage() {
       const result = await clearDemoData()
       await queryClient.invalidateQueries()
       toast.success('Örnek veriler silindi', {
-        description: `${result.customersDeleted} cari, ${result.productsDeleted} ürün, ${result.salesRepsDeleted} temsilci, ${result.remindersDeleted} hatırlatma, ${result.congressesDeleted} kongre, ${result.visitsDeleted} ziyaret, ${result.expensesDeleted} gider kaldırıldı`,
+        description: `${result.customersDeleted} cari, ${result.productsDeleted} ürün, ${result.salesRepsDeleted} temsilci, ${result.remindersDeleted} hatırlatma, ${result.congressesDeleted} kongre, ${result.visitsDeleted} ziyaret, ${result.expensesDeleted} gider, ${result.commissionRulesDeleted} prim kuralı kaldırıldı`,
       })
     } catch (err) {
       toast.error('Örnek veriler silinemedi', { description: err instanceof Error ? err.message : undefined })
@@ -547,11 +547,12 @@ export function SettingsPage() {
               <div>
                 <CardTitle>Örnek/Deneme Verisi</CardTitle>
                 <CardDescription>
-                  Panel grafiklerini ve diğer ekranları gerçek veriyle görmek için birkaç örnek doktor, ürün,
-                  tahsilat, satış, temsilci, hatırlatma, kongre, ziyaret ve gider ekler — en çok satış yapan
-                  temsilci, yaklaşan hatırlatmalar, en çok satan ürünler gibi panel widget'ları da bu veriyle
-                  dolar. Adları/başlıkları "[Örnek]" ile işaretlenir, tek tıkla geri silinebilir — gerçek
-                  verilerinize dokunmaz.
+                  Panel grafiklerini ve diğer ekranları gerçek veriyle görmek için birkaç örnek doktor, ürün
+                  (SKT'si yaklaşan bir lot dahil), tahsilat, satış, temsilci, hatırlatma, kongre (paket
+                  fiyatlarıyla), ziyaret, gider, numune talebi ve bir prim kuralı ekler — Panel'deki hemen hemen
+                  tüm widget'lar (temsilci performansı, yaklaşan hatırlatmalar, en çok satan ürünler, SKT
+                  riski, numune dönüşümü, prim özeti vb.) bu veriyle dolar. Adları/başlıkları "[Örnek]" ile
+                  işaretlenir, tek tıkla geri silinebilir — gerçek verilerinize dokunmaz.
                 </CardDescription>
               </div>
             </CardHeader>

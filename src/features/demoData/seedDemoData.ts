@@ -9,8 +9,11 @@ import { createReminder, deleteReminder } from '@/features/reminders/api'
 import { createCongress, deleteCongress } from '@/features/congresses/api'
 import { createVisit, deleteVisit } from '@/features/doctorVisits/api'
 import { createExpense, deleteExpense } from '@/features/expenses/api'
+import { createCommissionRule, deleteCommissionRule } from '@/features/commissions/api'
+import { createSampleRequest } from '@/features/samples/api'
+import { createProductLot } from '@/features/stock/api'
 import { offlineDelete } from '@/lib/offlineMutation'
-import type { ExpenseCategory, PaymentMethod } from '@/types/database'
+import type { ExpenseCategory, PaymentMethod, Product } from '@/types/database'
 
 /**
  * Panel/grafikleri ve diğer sayfaları gerçek görünümüyle denemek için tek
@@ -66,7 +69,16 @@ const DEMO_REMINDERS = [
   { title: `${DEMO_LABEL_PREFIX} Tahsilat vadesi yaklaşıyor`, note: 'Deneme hatırlatması', daysAhead: 5 },
 ]
 
-const DEMO_CONGRESS = { name: `${DEMO_LABEL_PREFIX} Estetik Tıp Kongresi`, city: 'İstanbul', daysAhead: 20, durationDays: 3 }
+const DEMO_CONGRESS = {
+  name: `${DEMO_LABEL_PREFIX} Estetik Tıp Kongresi`,
+  city: 'İstanbul',
+  daysAhead: 20,
+  durationDays: 3,
+  single_person_price: 8500,
+  two_person_price: 15000,
+}
+
+const DEMO_COMMISSION_RULE = `${DEMO_LABEL_PREFIX} Genel Satış Primi`
 
 const DEMO_EXPENSES: { category: ExpenseCategory; amount: number; description: string }[] = [
   { category: 'hizmet_gideri', amount: 4500, description: `${DEMO_LABEL_PREFIX} Deneme kargo gideri` },
@@ -113,6 +125,8 @@ export interface SeedResult {
   congresses: number
   visits: number
   expenses: number
+  sampleRequests: number
+  commissionRules: number
 }
 
 export async function seedDemoData(): Promise<SeedResult> {
@@ -131,8 +145,8 @@ export async function seedDemoData(): Promise<SeedResult> {
     createdCustomers.push(created)
   }
 
-  const createdProducts = []
-  for (const p of DEMO_PRODUCTS) {
+  const createdProducts: Product[] = []
+  for (const [i, p] of DEMO_PRODUCTS.entries()) {
     const created = await createProduct({
       name: p.name,
       sku: p.sku,
@@ -147,6 +161,22 @@ export async function seedDemoData(): Promise<SeedResult> {
       quantity: randomInt(20, 50),
       reason: 'Örnek veri — başlangıç stoğu',
     })
+
+    // İlk ürüne SKT'si yaklaşan bir lot ekle ki "Lot / SKT Riski" widget'ı da
+    // boş görünmesin — diğerlerine uzak vadeli, risksiz bir lot.
+    const lot = await createProductLot({
+      product_id: created.id,
+      lot_no: `${DEMO_LABEL_PREFIX} LOT-${i + 1}`,
+      expiry_date: i === 0 ? dateDaysAhead(randomInt(10, 60)) : dateDaysAhead(randomInt(200, 400)),
+    })
+    await recordStockMovement({
+      product_id: created.id,
+      movement_type: 'in',
+      quantity: randomInt(5, 15),
+      reason: 'Örnek veri — lot stoğu',
+      lot_id: lot.id,
+    })
+
     createdProducts.push(created)
   }
 
@@ -157,6 +187,7 @@ export async function seedDemoData(): Promise<SeedResult> {
 
   let paymentsCount = 0
   let salesCount = 0
+  let sampleRequestsCount = 0
 
   for (const customer of createdCustomers) {
     const rep = createdSalesReps[randomInt(0, createdSalesReps.length - 1)]
@@ -177,6 +208,8 @@ export async function seedDemoData(): Promise<SeedResult> {
     // En az bir satış bu ay içinde olsun ki "En Çok Satan Ürünler" / "Temsilci
     // Performansı" gibi "bu ay" bazlı panel widget'ları boş görünmesin.
     const saleDaysAgo = [randomInt(1, 20), ...Array.from({ length: randomInt(0, 1) }, () => randomInt(21, 150))]
+    let lastSoldProduct: Product | null = null
+    let lastSoldDaysAgo = 0
     for (const daysAgo of saleDaysAgo) {
       const product = createdProducts[randomInt(0, createdProducts.length - 1)]
       await createSale({
@@ -191,6 +224,28 @@ export async function seedDemoData(): Promise<SeedResult> {
         note: 'Örnek veri — deneme satışı',
       })
       salesCount++
+      lastSoldProduct = product
+      lastSoldDaysAgo = daysAgo
+    }
+
+    // Numune talebi, satılan üründen biriyle ve satıştan ÖNCEKİ bir tarihle
+    // oluşturuluyor ki "Numune Dönüşüm Oranı" widget'ı bunu satışa dönüşmüş
+    // olarak görsün (bkz. calculateSampleConversion).
+    if (lastSoldProduct) {
+      await createSampleRequest({
+        customer_id: customer.id,
+        sales_rep_id: rep.id,
+        request_date: dateDaysAgo(lastSoldDaysAgo + randomInt(5, 15)),
+        note: `${DEMO_LABEL_PREFIX} Deneme numune talebi`,
+        items: [
+          {
+            product_id: lastSoldProduct.id,
+            quantity: randomInt(1, 2),
+            unit_price: Number(lastSoldProduct.unit_price ?? 0),
+          },
+        ],
+      })
+      sampleRequestsCount++
     }
 
     await createVisit({
@@ -215,6 +270,17 @@ export async function seedDemoData(): Promise<SeedResult> {
     end_date: dateDaysAhead(DEMO_CONGRESS.daysAhead + DEMO_CONGRESS.durationDays),
     will_attend: true,
     notes: `${DEMO_LABEL_PREFIX} Deneme kongre kaydı`,
+    single_person_price: DEMO_CONGRESS.single_person_price,
+    two_person_price: DEMO_CONGRESS.two_person_price,
+  })
+
+  await createCommissionRule({
+    name: DEMO_COMMISSION_RULE,
+    scope_type: 'all',
+    scope_value: null,
+    basis: 'satis',
+    rate_percent: 10,
+    is_active: true,
   })
 
   let expensesCount = 0
@@ -238,6 +304,8 @@ export async function seedDemoData(): Promise<SeedResult> {
     congresses: 1,
     visits: createdCustomers.length,
     expenses: expensesCount,
+    sampleRequests: sampleRequestsCount,
+    commissionRules: 1,
   }
 }
 
@@ -249,9 +317,13 @@ export interface ClearResult {
   congressesDeleted: number
   visitsDeleted: number
   expensesDeleted: number
+  commissionRulesDeleted: number
 }
 
-async function deleteAllByIlike(table: 'sales_reps' | 'reminders' | 'congresses' | 'doctor_visits' | 'expenses', column: string) {
+async function deleteAllByIlike(
+  table: 'sales_reps' | 'reminders' | 'congresses' | 'doctor_visits' | 'expenses' | 'commission_rules',
+  column: string,
+) {
   const { data, error } = await supabase.from(table).select('id').ilike(column, `${DEMO_LABEL_PREFIX}%`)
   if (error) throw error
   return data ?? []
@@ -292,6 +364,9 @@ export async function clearDemoData(): Promise<ClearResult> {
   const expenses = await deleteAllByIlike('expenses', 'description')
   for (const e of expenses) await deleteExpense(e.id)
 
+  const commissionRules = await deleteAllByIlike('commission_rules', 'name')
+  for (const r of commissionRules) await deleteCommissionRule(r.id)
+
   return {
     customersDeleted: customers?.length ?? 0,
     productsDeleted: products?.length ?? 0,
@@ -300,5 +375,6 @@ export async function clearDemoData(): Promise<ClearResult> {
     congressesDeleted: congresses.length,
     visitsDeleted: visits.length,
     expensesDeleted: expenses.length,
+    commissionRulesDeleted: commissionRules.length,
   }
 }
