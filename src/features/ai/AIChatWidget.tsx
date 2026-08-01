@@ -33,21 +33,27 @@ const AI_ICON_NODES = [
 
 /**
  * Arka planı tamamen şeffaf, gradyanlı, soyut bir "sinir ağı düğümü" simgesi
- * — harf/logo değil, birbirine ince çizgilerle bağlı bir çekirdek + üç
- * uydu düğüm. Düğümlerin arkasında yumuşak, bulanık kırmızı bir "ambient
- * glow" var. `animated` verilirse şeklin üzerinden parlak bir ışık huzmesi
- * arada bir (sürekli değil) geçer; verilmezse tamamen sabit durur.
+ * — harf/logo değil, birbirine altın tonlu ince çizgilerle bağlı bir
+ * çekirdek + üç uydu düğüm. Her düğüm radyal gradyanla camsı/mücevher gibi
+ * bir küre hissi verir (üst-solda parlak, alt-sağda koyu), üzerinde küçük
+ * bir parlak "glint" var. Düğümlerin arkasında yumuşak, bulanık kırmızı bir
+ * "ambient glow" var. `animated` verilirse şeklin üzerinden parlak bir ışık
+ * huzmesi arada bir (sürekli değil) geçer; verilmezse tamamen sabit durur.
  */
 export function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
   return (
     <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
       <defs>
-        <linearGradient id={`${uid}-fill`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fecaca" />
-          <stop offset="35%" stopColor="#f87171" />
-          <stop offset="70%" stopColor="#dc2626" />
-          <stop offset="100%" stopColor="#7f1d1d" />
+        <radialGradient id={`${uid}-orb`} cx="32%" cy="28%" r="80%">
+          <stop offset="0%" stopColor="#fff1f1" />
+          <stop offset="30%" stopColor="#fca5a5" />
+          <stop offset="65%" stopColor="#dc2626" />
+          <stop offset="100%" stopColor="#6b1414" />
+        </radialGradient>
+        <linearGradient id={`${uid}-wire`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fde68a" />
+          <stop offset="100%" stopColor="#b45309" />
         </linearGradient>
         <linearGradient id={`${uid}-shine`} x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="white" stopOpacity="0" />
@@ -74,6 +80,17 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
           <circle key={i} cx={n.x} cy={n.y} r={n.r} fill="#ef4444" />
         ))}
       </g>
+      {/* soluk "yörünge" halkası — üç uydu düğümü çevreleyen ince altın çember */}
+      <circle
+        cx={AI_ICON_CORE.x}
+        cy={AI_ICON_CORE.y}
+        r="32"
+        fill="none"
+        stroke={`url(#${uid}-wire)`}
+        strokeOpacity="0.25"
+        strokeWidth="0.75"
+        strokeDasharray="2 3"
+      />
       {AI_ICON_NODES.map((n, i) => (
         <line
           key={i}
@@ -81,8 +98,8 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
           y1={AI_ICON_CORE.y}
           x2={n.x}
           y2={n.y}
-          stroke={`url(#${uid}-fill)`}
-          strokeWidth="3"
+          stroke={`url(#${uid}-wire)`}
+          strokeWidth="2.25"
           strokeLinecap="round"
         />
       ))}
@@ -90,22 +107,32 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
         cx={AI_ICON_CORE.x}
         cy={AI_ICON_CORE.y}
         r={AI_ICON_CORE.r}
-        fill={`url(#${uid}-fill)`}
+        fill={`url(#${uid}-orb)`}
         stroke="#450a0a"
         strokeWidth="0.6"
         strokeOpacity="0.35"
       />
+      <ellipse
+        cx={AI_ICON_CORE.x - 5}
+        cy={AI_ICON_CORE.y - 6}
+        rx={AI_ICON_CORE.r * 0.32}
+        ry={AI_ICON_CORE.r * 0.2}
+        fill="white"
+        opacity="0.65"
+      />
       {AI_ICON_NODES.map((n, i) => (
-        <circle
-          key={i}
-          cx={n.x}
-          cy={n.y}
-          r={n.r}
-          fill={`url(#${uid}-fill)`}
-          stroke="#450a0a"
-          strokeWidth="0.6"
-          strokeOpacity="0.35"
-        />
+        <React.Fragment key={i}>
+          <circle
+            cx={n.x}
+            cy={n.y}
+            r={n.r}
+            fill={`url(#${uid}-orb)`}
+            stroke="#450a0a"
+            strokeWidth="0.6"
+            strokeOpacity="0.35"
+          />
+          <ellipse cx={n.x - 2.6} cy={n.y - 3} rx={n.r * 0.32} ry={n.r * 0.2} fill="white" opacity="0.65" />
+        </React.Fragment>
       ))}
       {animated && (
         <rect
