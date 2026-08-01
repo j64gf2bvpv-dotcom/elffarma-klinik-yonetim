@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.40] - 2026-08-01
+
+**Logo ışıltı animasyonu kaldırıldı, yerine hafif gölge eklendi:** Bir önceki sürümde eklenen harflerin içinden geçen yıldız ışıltısı animasyonu kaldırıldı; "elfFARMA" yazısının arkasına sabit, hafif bir düşen gölge (drop-shadow) eklendi. Büyütülmüş logo boyutu korunuyor. Şema değişikliği yok.
+
 ## [2.12.39] - 2026-08-01
 
 **Elffarma logosu büyütüldü, harflerin içinden geçen yıldız ışıltısı animasyonu eklendi:** "elfFARMA" yazı boyutu ve "Estetik Sanatı" alt yazısı biraz büyütüldü (giriş ekranı, şifre sıfırlama ve kenar çubuğu — hepsi aynı bileşeni kullanıyor). Yavaş, arada bir tekrarlayan (6 saniyede bir) dar ve parlak bir ışıltı harflerin şekline kırpılmış olarak (bg-clip-text) belirip kayboluyor — kutunun üzerinden geçen düz bir bant değil, harflerin içinden geçen yıldız parıltısı gibi. Şema değişikliği yok.
