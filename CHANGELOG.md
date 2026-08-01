@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.73] - 2026-08-01
+
+**Cari Hesap sayfasından doktor bilgileri düzenlenebiliyor:** Cari Hesap ekstre sayfasına "Bilgileri Düzenle" butonu eklendi — daha önce bu sayfa salt-okunurdu, bilgi güncellemek için Doktorlar sayfasına gitmek gerekiyordu. Şema değişikliği yok.
+
 ## [2.12.72] - 2026-08-01
 
 **Kongre/temsilci görselleri artık her çözünürlükte otomatik küçültülüyor:** Yüklenen kongre/workshop görseli ve temsilci fotoğrafı, çözünürlüğü/boyutu ne olursa olsun yüklenmeden önce tarayıcıda en uzun kenarı 480px'i aşmayacak şekilde küçük bir JPEG'e indirgeniyor — büyük orijinal dosyalar olduğu gibi Storage'a atılmıyor. Şema değişikliği yok.

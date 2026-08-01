@@ -2,7 +2,7 @@ import * as React from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ArrowLeft, Loader2, Wallet, ShoppingCart, Undo2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Wallet, ShoppingCart, Undo2, Pencil } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
+import { CustomerForm } from '@/features/customers/CustomerForm'
 import { useCustomer } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useSales } from '@/features/sales/hooks'
@@ -98,19 +99,29 @@ export function CariHesapPage() {
         title={`Cari Hesap — ${customer.full_name}`}
         description="Satış (borç) ve tahsilat/iade (alacak) hareketlerinin dökümü"
         actions={
-          <ExportMenu<(typeof rowsWithBalance)[number]>
-            title={`Cari Hesap Ekstresi — ${customer.full_name}`}
-            filename={`cari-hesap-${customer.full_name}`}
-            rows={rowsWithBalance}
-            columns={[
-              { header: 'Tarih', value: (r) => format(new Date(r.date), 'd MMM yyyy', { locale: trLocale }) },
-              { header: 'Tür', value: (r) => r.type },
-              { header: 'Açıklama', value: (r) => r.description },
-              { header: 'Borç', value: (r) => r.debit },
-              { header: 'Alacak', value: (r) => r.credit },
-              { header: 'Bakiye', value: (r) => r.balance },
-            ]}
-          />
+          <div className="flex gap-2">
+            <CustomerForm
+              customer={customer}
+              trigger={
+                <Button variant="outline" size="sm">
+                  <Pencil className="size-3.5" /> Bilgileri Düzenle
+                </Button>
+              }
+            />
+            <ExportMenu<(typeof rowsWithBalance)[number]>
+              title={`Cari Hesap Ekstresi — ${customer.full_name}`}
+              filename={`cari-hesap-${customer.full_name}`}
+              rows={rowsWithBalance}
+              columns={[
+                { header: 'Tarih', value: (r) => format(new Date(r.date), 'd MMM yyyy', { locale: trLocale }) },
+                { header: 'Tür', value: (r) => r.type },
+                { header: 'Açıklama', value: (r) => r.description },
+                { header: 'Borç', value: (r) => r.debit },
+                { header: 'Alacak', value: (r) => r.credit },
+                { header: 'Bakiye', value: (r) => r.balance },
+              ]}
+            />
+          </div>
         }
       />
 
