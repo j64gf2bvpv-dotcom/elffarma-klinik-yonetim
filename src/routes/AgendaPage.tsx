@@ -1,17 +1,15 @@
 import * as React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import trLocale from '@fullcalendar/core/locales/tr'
-import type { EventClickArg, EventContentArg } from '@fullcalendar/core'
-import { format, isToday, isTomorrow, isPast, differenceInCalendarDays } from 'date-fns'
-import { tr as trLocaleDate } from 'date-fns/locale/tr'
-import { Presentation, Wallet, BellRing, CalendarClock } from 'lucide-react'
+import type { EventClickArg, EventContentArg, EventInput } from '@fullcalendar/core'
+import { addDays, isToday, isPast, differenceInCalendarDays } from 'date-fns'
+import { Presentation, Wallet, BellRing } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { useReminders } from '@/features/reminders/hooks'
 import { useCongresses } from '@/features/congresses/hooks'
@@ -28,43 +26,31 @@ interface AgendaEvent {
   linkId: string | null
 }
 
-const typeMeta: Record<
-  AgendaEventType,
-  { icon: React.ElementType; label: string; color: string; iconBoxClass: string; badgeClass: string }
-> = {
+const typeMeta: Record<AgendaEventType, { icon: React.ElementType; label: string; color: string; badgeClass: string }> = {
   congress: {
     icon: Presentation,
     label: 'Kongre / Workshop',
     color: 'var(--color-primary)',
-    iconBoxClass: 'bg-gradient-to-br from-primary/25 to-primary/5 text-primary ring-1 ring-primary/15',
     badgeClass: 'border-primary/20 bg-primary/10 text-primary',
   },
   payment_due: {
     icon: Wallet,
     label: 'Ödeme Vadesi',
     color: 'var(--color-warning)',
-    iconBoxClass: 'bg-gradient-to-br from-warning/30 to-warning/5 text-warning-foreground ring-1 ring-warning/25',
     badgeClass: 'border-warning/25 bg-warning/15 text-warning-foreground',
   },
   reminder: {
     icon: BellRing,
     label: 'Hatırlatma',
     color: 'var(--color-destructive)',
-    iconBoxClass: 'bg-gradient-to-br from-destructive/25 to-destructive/5 text-destructive ring-1 ring-destructive/20',
     badgeClass: 'border-destructive/20 bg-destructive/10 text-destructive',
   },
 }
 
-function relativeDayLabel(dateStr: string): string {
+function isUrgent(dateStr: string): boolean {
   const date = new Date(dateStr)
-  if (isToday(date)) return 'Bugün'
-  if (isTomorrow(date)) return 'Yarın'
-  if (isPast(date)) {
-    const days = Math.abs(differenceInCalendarDays(date, new Date()))
-    return `${days} gün gecikti`
-  }
-  const days = differenceInCalendarDays(date, new Date())
-  return `${days} gün sonra`
+  if (isPast(date) && !isToday(date)) return true
+  return differenceInCalendarDays(date, new Date()) <= 3
 }
 
 export function AgendaPage() {
@@ -107,37 +93,62 @@ export function AgendaPage() {
     return list
   }, [reminders, congresses, doctors])
 
-  const upcomingEvents = React.useMemo(
-    () =>
-      events
-        .filter((e) => !isPast(new Date(e.start)) || isToday(new Date(e.start)))
-        .sort((a, b) => a.start.localeCompare(b.start))
-        .slice(0, 8),
-    [events],
-  )
-
   const overdueReminders = React.useMemo(
     () => events.filter((e) => e.type === 'reminder' && isPast(new Date(e.start)) && !isToday(new Date(e.start))),
     [events],
   )
 
-  function goToEvent(type: AgendaEventType, linkId: string | null) {
+  // Birden fazla gün süren kongre/workshop'lar için, sadece ince bir etkinlik
+  // çubuğu değil, o günlere denk gelen takvim kutucuklarının TAMAMI renkle
+  // boyansın diye FullCalendar'ın "background" etkinlik özelliği kullanılıyor.
+  // FullCalendar'da end tarihi HARİÇ olduğu için son günün de boyanması için
+  // end tarihine 1 gün ekleniyor.
+  const backgroundEvents = React.useMemo<EventInput[]>(() => {
+    return congresses
+      .filter((c) => c.start_date && c.end_date && c.end_date !== c.start_date)
+      .map((c) => ({
+        id: `congress-bg-${c.id}`,
+        start: c.start_date!,
+        end: addDays(new Date(c.end_date!), 1).toISOString().slice(0, 10),
+        display: 'background' as const,
+        backgroundColor: 'var(--color-primary)',
+      }))
+  }, [congresses])
+
+  const calendarEvents = React.useMemo<EventInput[]>(
+    () => [
+      ...events.map((e) => ({
+        id: e.id,
+        title: e.title,
+        start: e.start,
+        end: e.end,
+        extendedProps: { type: e.type, linkId: e.linkId, urgent: isUrgent(e.start) },
+      })),
+      ...backgroundEvents,
+    ],
+    [events, backgroundEvents],
+  )
+
+  function handleEventClick(arg: EventClickArg) {
+    const { type, linkId } = arg.event.extendedProps as { type?: AgendaEventType; linkId: string | null }
+    if (!type) return
     if (type === 'congress' && linkId) navigate(`/kongreler/${linkId}`)
     if (type === 'payment_due' && linkId) navigate(`/musteriler/${linkId}`)
     if (type === 'reminder') navigate('/hatirlatmalar')
   }
 
-  function handleEventClick(arg: EventClickArg) {
-    const { type, linkId } = arg.event.extendedProps as { type: AgendaEventType; linkId: string | null }
-    goToEvent(type, linkId)
+  function eventClassNames(arg: { event: { extendedProps: Record<string, unknown> } }) {
+    if (arg.event.extendedProps.urgent) return ['animate-alert-glow-red']
+    return []
   }
 
   function renderEventContent(arg: EventContentArg) {
-    const type = (arg.event.extendedProps as { type: AgendaEventType }).type
+    const type = arg.event.extendedProps.type as AgendaEventType | undefined
+    if (!type) return null
     const meta = typeMeta[type]
     const Icon = meta.icon
     return (
-      <span className="flex items-center gap-1 truncate px-0.5 py-px">
+      <span className="flex items-center gap-1 truncate rounded px-0.5 py-px">
         <span
           className="flex size-3.5 shrink-0 items-center justify-center rounded-full"
           style={{ backgroundColor: meta.color }}
@@ -157,10 +168,7 @@ export function AgendaPage() {
         {Object.entries(typeMeta).map(([key, meta]) => (
           <span
             key={key}
-            className={cn(
-              'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium',
-              meta.badgeClass,
-            )}
+            className={cn('flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium', meta.badgeClass)}
           >
             <meta.icon className="size-3.5" />
             {meta.label}
@@ -174,82 +182,23 @@ export function AgendaPage() {
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardContent className="pt-6">
-            <FullCalendar
-              plugins={[dayGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              locale={trLocale}
-              height="auto"
-              events={events.map((e) => ({
-                id: e.id,
-                title: e.title,
-                start: e.start,
-                end: e.end,
-                extendedProps: { type: e.type, linkId: e.linkId },
-              }))}
-              eventClick={handleEventClick}
-              eventContent={renderEventContent}
-              headerToolbar={{ left: 'prev,next today', center: 'title', right: '' }}
-              dayMaxEvents={3}
-              moreLinkText={(n) => `+${n} daha`}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CalendarClock className="size-4 text-primary" /> Yaklaşan Etkinlikler
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            {upcomingEvents.length === 0 && (
-              <p className="text-sm text-muted-foreground">Yaklaşan bir etkinlik yok</p>
-            )}
-            {upcomingEvents.map((event) => {
-              const meta = typeMeta[event.type]
-              const overdue = event.type === 'reminder' && isPast(new Date(event.start)) && !isToday(new Date(event.start))
-              return (
-                <Link
-                  key={event.id}
-                  to="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    goToEvent(event.type, event.linkId)
-                  }}
-                  className={cn(
-                    'flex items-center gap-3 rounded-xl border p-2.5 text-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
-                    overdue && 'border-destructive/20 bg-destructive/5',
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'flex size-9 shrink-0 items-center justify-center rounded-lg',
-                      meta.iconBoxClass,
-                    )}
-                  >
-                    <meta.icon className="size-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{event.title}</p>
-                    <p className="text-muted-foreground truncate text-xs">
-                      {format(new Date(event.start), 'd MMMM yyyy', { locale: trLocaleDate })}
-                    </p>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={cn('shrink-0', overdue && 'animate-alert-glow-red border-transparent bg-destructive/15 text-destructive')}
-                  >
-                    {relativeDayLabel(event.start)}
-                  </Badge>
-                </Link>
-              )
-            })}
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <FullCalendar
+            plugins={[dayGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            locale={trLocale}
+            height="auto"
+            events={calendarEvents}
+            eventClick={handleEventClick}
+            eventContent={renderEventContent}
+            eventClassNames={eventClassNames}
+            headerToolbar={{ left: 'prev,next today', center: 'title', right: '' }}
+            dayMaxEvents={3}
+            moreLinkText={(n) => `+${n} daha`}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }

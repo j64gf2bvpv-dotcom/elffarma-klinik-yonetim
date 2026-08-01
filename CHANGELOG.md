@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.68] - 2026-08-01
+
+**Ajanda'da yan liste kaldırıldı, yaklaşan etkinlikler takvimin içinde yanıp sönüyor, çok günlü kongreler tüm günleri renkli boyuyor:** Bir önceki sürümde eklenen ayrı "Yaklaşan Etkinlikler" kutusu kaldırıldı — artık tek bir takvim var. Yaklaşan (3 gün içi) veya gecikmiş etkinlikler takvim içinde doğrudan mevcut kırmızı parıltı animasyonuyla (arada bir) yanıp sönüyor. 3-4 gün süren kongre/workshop'lar artık sadece ince bir çubuk değil, kapsadığı TÜM takvim kutucuklarını (background event) marka rengiyle boyayarak süreyi bir bakışta belli ediyor. Şema değişikliği yok.
+
 ## [2.12.67] - 2026-08-01
 
 **Ajanda sayfası baştan tasarlandı — artık çok daha anlaşılır:** Takvim + "Yaklaşan Etkinlikler" listesini yan yana gösteren iki kolonlu bir düzene geçildi. Takvimdeki etkinlikler artık küçük renkli ikon rozetleriyle gösteriliyor, `dayMaxEvents` ile kalabalık günlerde "+N daha" bağlantısına toplanıyor (dolayısıyla artık sıkışıp karman çorman görünmüyor). Renkler artık uygulamanın gerçek tema değişkenlerinden (primary/warning/destructive) geliyor. Üstteki tür etiketleri rozet haline getirildi, gecikmiş hatırlatma sayısı ayrı bir "arada parlayan" uyarı rozetiyle vurgulanıyor. Yaklaşan Etkinlikler listesindeki her satır ikon rozeti + "bugün/yarın/X gün sonra" gibi göreli tarih etiketiyle daha "klas" gösteriliyor, gecikmiş hatırlatmalar kırmızı parıltıyla dikkat çekiyor. Şema değişikliği yok.
