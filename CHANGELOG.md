@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.43] - 2026-08-01
+
+**Panel'de "Hoş geldiniz" yazısı düzenlenebilir, yanına canlı saat ve hava durumu eklendi:** Karşılama başlığının yanındaki kalem ikonuyla (sadece admin) karşılama metni ve hava durumu şehri özelleştirilebiliyor (app_settings'e kaydediliyor). Tarihin yanına her saniye güncellenen bir saat ve seçilen şehir için Open-Meteo üzerinden (API anahtarı gerekmeyen ücretsiz servis) çekilen anlık sıcaklık/hava durumu eklendi. Şema değişikliği yok.
+
 ## [2.12.42] - 2026-08-01
 
 **Panel'de "Yaklaşan Hatırlatmalar" widget'ı animasyonlu yanıp sönüyor:** Her hatırlatma satırındaki zil ikonu artık mevcut kırmızı parıltı animasyonuyla (uygulamanın geri kalanında gecikmiş/kritik uyarılar için zaten kullanılan aynı efekt) yanıp sönüyor; vadesi geçmiş hatırlatmaların tarih rozeti de aynı şekilde blink ediyor. Şema değişikliği yok.

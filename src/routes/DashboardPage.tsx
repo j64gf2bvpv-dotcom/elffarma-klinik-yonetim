@@ -49,6 +49,15 @@ import {
   FlaskConical,
   Layers,
   Users,
+  Clock,
+  Sun,
+  CloudSun,
+  Cloud,
+  CloudFog,
+  CloudDrizzle,
+  CloudRain,
+  CloudSnow,
+  CloudLightning,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -58,6 +67,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { useWeather } from '@/features/weather/hooks'
 import { CustomerForm } from '@/features/customers/CustomerForm'
 import { usePayments } from '@/features/payments/hooks'
 import { useProducts } from '@/features/stock/hooks'
@@ -85,6 +96,54 @@ import { useSampleRequests } from '@/features/samples/hooks'
 import { calculateSampleConversion } from '@/features/samples/calculateSampleConversion'
 import { getExpiryStatus } from '@/lib/expiry'
 import { tr } from '@/i18n/tr'
+
+// Ayrı bir yaprak bileşen: saat her saniye kendi içinde güncelleniyor, bu
+// yüzden sadece bu küçük bileşen yeniden render oluyor — tüm Dashboard'ı
+// saniyede bir yeniden çizmiyor.
+function LiveClock() {
+  const [now, setNow] = React.useState(() => new Date())
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  return (
+    <span className="flex shrink-0 items-center gap-1.5 tabular-nums">
+      <Clock className="size-3.5" />
+      {format(now, 'HH:mm:ss')}
+    </span>
+  )
+}
+
+function getWeatherDisplay(code: number): { Icon: React.ElementType; label: string } {
+  if (code === 0) return { Icon: Sun, label: 'Açık' }
+  if (code === 1 || code === 2) return { Icon: CloudSun, label: 'Parçalı bulutlu' }
+  if (code === 3) return { Icon: Cloud, label: 'Kapalı' }
+  if (code === 45 || code === 48) return { Icon: CloudFog, label: 'Sisli' }
+  if ([51, 53, 55, 56, 57].includes(code)) return { Icon: CloudDrizzle, label: 'Çisenti' }
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { Icon: CloudRain, label: 'Yağmurlu' }
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return { Icon: CloudSnow, label: 'Karlı' }
+  if ([95, 96, 99].includes(code)) return { Icon: CloudLightning, label: 'Fırtınalı' }
+  return { Icon: Cloud, label: 'Bilinmiyor' }
+}
+
+function WeatherWidget({ city }: { city: string }) {
+  const { data, isLoading, isError } = useWeather(city)
+
+  if (isLoading) {
+    return <span className="text-muted-foreground text-xs">Hava durumu yükleniyor...</span>
+  }
+  if (isError || !data) {
+    return <span className="text-muted-foreground text-xs">Hava durumu alınamadı</span>
+  }
+
+  const { Icon, label } = getWeatherDisplay(data.weatherCode)
+  return (
+    <span className="flex shrink-0 items-center gap-1.5">
+      <Icon className="size-3.5" />
+      {Math.round(data.temperature)}°C · {data.city} · {label}
+    </span>
+  )
+}
 
 const statTone = {
   gold: 'bg-primary/15 text-primary',
@@ -381,6 +440,25 @@ export function DashboardPage() {
   const { data: doctors = [] } = useCustomers('')
   const { data: productLots = [] } = useAllProductLots()
   const { data: sampleRequests = [] } = useSampleRequests()
+
+  const { data: welcomeSetting } = useAppSetting<{ text?: string; city?: string }>('dashboard_welcome')
+  const saveWelcomeMutation = useSaveAppSetting<{ text?: string; city?: string }>('dashboard_welcome')
+  const welcomeText = welcomeSetting?.text?.trim() || 'Hoş geldiniz'
+  const weatherCity = welcomeSetting?.city?.trim() || 'İstanbul'
+  const [welcomePopoverOpen, setWelcomePopoverOpen] = React.useState(false)
+  const [draftWelcomeText, setDraftWelcomeText] = React.useState('')
+  const [draftCity, setDraftCity] = React.useState('')
+
+  function openWelcomeEditor() {
+    setDraftWelcomeText(welcomeText)
+    setDraftCity(weatherCity)
+    setWelcomePopoverOpen(true)
+  }
+
+  async function saveWelcomeSettings() {
+    await saveWelcomeMutation.mutateAsync({ text: draftWelcomeText.trim(), city: draftCity.trim() })
+    setWelcomePopoverOpen(false)
+  }
 
   const repPerformance = React.useMemo(() => {
     const bySalesRep = new Map<string, { name: string; sold: number; collected: number }>()
@@ -1406,15 +1484,60 @@ export function DashboardPage() {
       <PageHeader
         title={
           <span className="flex items-center gap-2.5">
-            {`Hoş geldiniz${staff?.full_name ? ', ' + staff.full_name : ''}`}
+            {`${welcomeText}${staff?.full_name ? ', ' + staff.full_name : ''}`}
             {staff && (
               <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
                 {tr.staffRole[staff.role]}
               </Badge>
             )}
+            {isAdmin && (
+              <Popover open={welcomePopoverOpen} onOpenChange={setWelcomePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={openWelcomeEditor}
+                    title="Karşılama metni ve şehri düzenle"
+                    className="text-muted-foreground hover:text-foreground hover:bg-accent rounded-md p-1 transition-colors"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="grid gap-3">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="dashboard-welcome-text">Karşılama metni</Label>
+                    <Input
+                      id="dashboard-welcome-text"
+                      value={draftWelcomeText}
+                      onChange={(e) => setDraftWelcomeText(e.target.value)}
+                      placeholder="Hoş geldiniz"
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="dashboard-welcome-city">Hava durumu şehri</Label>
+                    <Input
+                      id="dashboard-welcome-city"
+                      value={draftCity}
+                      onChange={(e) => setDraftCity(e.target.value)}
+                      placeholder="İstanbul"
+                    />
+                  </div>
+                  <Button size="sm" onClick={saveWelcomeSettings} disabled={saveWelcomeMutation.isPending}>
+                    <Save className="size-3.5" /> Kaydet
+                  </Button>
+                </PopoverContent>
+              </Popover>
+            )}
           </span>
         }
-        description={format(new Date(), 'd MMMM yyyy, EEEE', { locale: trLocale })}
+        description={
+          <span className="flex flex-wrap items-center gap-3">
+            {format(new Date(), 'd MMMM yyyy, EEEE', { locale: trLocale })}
+            <span className="text-border">|</span>
+            <LiveClock />
+            <span className="text-border">|</span>
+            <WeatherWidget city={weatherCity} />
+          </span>
+        }
         actions={
           <div className="flex gap-2">
             {isAdmin && !editMode && (

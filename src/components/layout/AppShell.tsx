@@ -595,7 +595,7 @@ export function PageHeader({
   actions,
 }: {
   title: React.ReactNode
-  description?: string
+  description?: React.ReactNode
   actions?: React.ReactNode
 }) {
   return (
