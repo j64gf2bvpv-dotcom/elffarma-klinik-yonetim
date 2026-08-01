@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.57] - 2026-08-01
+
+**Yapay Zeka simgesi daha kaliteli bir görünüme kavuştu:** "AI" yazısının arkasına yumuşak, bulanık kırmızı bir ışık taşması (ambient glow) eklendi; gradyan dört durağa çıkarılıp harflere ince koyu bir kontur eklenerek daha mücevher/derinlikli bir görünüm kazandırıldı. Arka plan hâlâ tamamen şeffaf — kutu/daire yok. Mevcut ışık huzmesi animasyonu (arada bir parlama) korunuyor. Şema değişikliği yok.
+
 ## [2.12.56] - 2026-08-01
 
 **AI tetikleyicisi yeniden yüzen, sürüklenebilir bir düğmeye dönüştürüldü:** Üst çubuktaki sabit AI ikonu kaldırıldı; yerine ekranın sağ-alt köşesinde duran, sürükleyerek istenilen yere taşınabilen, arada bir yumuşakça yukarı-aşağı süzülen (yeni `animate-ai-button-float` animasyonu) ve üzerinde ışık huzmesi geçen bir yüzen düğme geldi. Tıklandığında (sürüklenmediyse) sohbet paneli düğmenin hemen üstünde açılıyor; panel konumu da düğmenin o anki yerine göre hesaplanıyor. Konum tercihleri (düğme + panel) ayrı ayrı localStorage'da hatırlanıyor. Şema değişikliği yok.

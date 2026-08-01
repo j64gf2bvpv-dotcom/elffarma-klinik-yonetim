@@ -23,10 +23,12 @@ import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 let aiIconGradientId = 0
 
 /**
- * Arka planı tamamen şeffaf, gradyanlı kalın "AI" yazısı — hiçbir kutu/daire
- * arka planı yok, sadece harflerin kendisi. `animated` verilirse harflerin
- * üzerinden parlak bir ışık huzmesi tekrar tekrar geçer (klasik "premium
- * buton shine" efekti); verilmezse tamamen sabit durur.
+ * Arka planı tamamen şeffaf, mücevher gibi derinlik hissi veren gradyanlı
+ * kalın "AI" yazısı — hiçbir kutu/daire arka planı yok, sadece harflerin
+ * kendisi. Harflerin arkasında yumuşak, bulanık kırmızı bir "ambient glow"
+ * (ışık taşması) var; harf kenarlarında ince koyu bir kontur derinlik/
+ * netlik katıyor. `animated` verilirse harflerin üzerinden parlak bir ışık
+ * huzmesi arada bir (sürekli değil) geçer; verilmezse tamamen sabit durur.
  */
 export function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
@@ -34,8 +36,9 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
     <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
       <defs>
         <linearGradient id={`${uid}-fill`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fca5a5" />
-          <stop offset="50%" stopColor="#ef4444" />
+          <stop offset="0%" stopColor="#fecaca" />
+          <stop offset="35%" stopColor="#f87171" />
+          <stop offset="70%" stopColor="#dc2626" />
           <stop offset="100%" stopColor="#7f1d1d" />
         </linearGradient>
         <linearGradient id={`${uid}-shine`} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -49,6 +52,9 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
             AI
           </text>
         </mask>
+        <filter id={`${uid}-glow`} x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="3.2" />
+        </filter>
       </defs>
       <text
         x="50"
@@ -57,7 +63,23 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
         fontFamily="Inter, system-ui, sans-serif"
         fontWeight="800"
         fontSize="52"
+        fill="#ef4444"
+        opacity="0.5"
+        filter={`url(#${uid}-glow)`}
+      >
+        AI
+      </text>
+      <text
+        x="50"
+        y="65"
+        textAnchor="middle"
+        fontFamily="Inter, system-ui, sans-serif"
+        fontWeight="800"
+        fontSize="52"
         fill={`url(#${uid}-fill)`}
+        stroke="#450a0a"
+        strokeWidth="0.6"
+        strokeOpacity="0.35"
       >
         AI
       </text>
