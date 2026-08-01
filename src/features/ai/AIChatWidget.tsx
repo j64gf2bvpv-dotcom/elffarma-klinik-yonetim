@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { readExcelFile } from '@/lib/importData'
 import { useAIService } from './useAIService'
 import { useAIChatOpen } from './useAIChatOpen'
+import { useColorMode } from '@/features/appSettings/useColorMode'
 import { useBusinessSnapshot } from './useBusinessSnapshot'
 import { snapshotSystemMessage } from './snapshotSystemMessage'
 import {
@@ -149,6 +150,21 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
   )
 }
 
+// Koyu modda AI düğmesi/paneli koyu zemin yerine yarı-şeffaf beyaz bir cam
+// yüzey olarak görünsün diye, o alt-ağaçta CSS değişkenlerini (metin/kenar/
+// vurgu renkleri) açık temanın karşılıklarına EZEREK yeniden tanımlıyoruz —
+// böylece içerideki tüm text-popover-foreground/text-muted-foreground gibi
+// Tailwind sınıfları otomatik olarak okunaklı koyu renklere döner.
+const LIGHT_GLASS_VARS = {
+  '--popover-foreground': 'oklch(0.2 0.02 20)',
+  '--foreground': 'oklch(0.2 0.02 20)',
+  '--muted': 'oklch(0.96 0.008 20)',
+  '--muted-foreground': 'oklch(0.48 0.02 20)',
+  '--accent': 'oklch(0.93 0.05 20)',
+  '--accent-foreground': 'oklch(0.3 0.14 20)',
+  '--border': 'oklch(0.9 0.015 20)',
+} as React.CSSProperties
+
 // Panel için nominal boyutlar (w-96 / h-[32rem] ile eşleşir) — yüzen
 // tetikleyici düğmenin hemen üstünde, görünür alanın dışına taşmadan
 // açılması için konum hesabında kullanılır.
@@ -239,6 +255,8 @@ export function AIChatWidget() {
   const deleteConversationMutation = useDeleteAIConversation()
 
   const [open, setOpen] = useAIChatOpen()
+  const { mode: colorMode } = useColorMode()
+  const isDarkGlass = colorMode === 'dark'
   const [conversationId, setConversationId] = React.useState<string | undefined>(undefined)
   const { data: storedMessages = [] } = useAIMessages(conversationId)
   const [draft, setDraft] = React.useState('')
@@ -556,23 +574,25 @@ export function AIChatWidget() {
         onPointerUp={handleButtonPointerUp}
         title="Yapay Zeka Asistanı — sürükleyerek taşıyabilirsiniz"
         className={cn(
-          'fixed z-50 flex touch-none items-center justify-center rounded-2xl border bg-popover/95 text-popover-foreground shadow-2xl ring-1 ring-black/5 backdrop-blur-xl select-none',
+          'fixed z-50 flex touch-none items-center justify-center rounded-2xl border shadow-2xl ring-1 ring-black/5 backdrop-blur-xl select-none',
+          isDarkGlass ? 'bg-white/80' : 'bg-popover/95 text-popover-foreground',
           buttonDragging ? 'cursor-grabbing' : 'cursor-grab',
           !buttonDragging && 'animate-ai-button-float',
         )}
-        style={{ ...buttonStyle, width: BUTTON_SIZE, height: BUTTON_SIZE }}
+        style={{ ...buttonStyle, width: BUTTON_SIZE, height: BUTTON_SIZE, ...(isDarkGlass ? LIGHT_GLASS_VARS : null) }}
       >
         <AiSparkleIcon className="size-9" animated />
       </button>
 
       <div
         className={cn(
-          'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-bottom-right flex-col overflow-hidden rounded-3xl border bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5',
+          'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-bottom-right flex-col overflow-hidden rounded-3xl border shadow-2xl ring-1 ring-black/5',
+          isDarkGlass ? 'bg-white/85 backdrop-blur-xl' : 'bg-popover text-popover-foreground',
           panelDragging ? '' : 'transition-all duration-300 ease-out',
           open ? 'h-[32rem] max-h-[calc(100vh-6rem)] scale-100 opacity-100' : 'h-0 scale-95 opacity-0',
           panelDragging && 'opacity-70',
         )}
-        style={panelStyle}
+        style={{ ...panelStyle, ...(isDarkGlass ? LIGHT_GLASS_VARS : null) }}
         aria-hidden={!open}
       >
         <div

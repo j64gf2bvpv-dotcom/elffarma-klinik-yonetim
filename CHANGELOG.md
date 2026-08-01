@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.63] - 2026-08-01
+
+**Koyu modda AI düğmesi ve sohbet paneli yarı-şeffaf beyaz cam yüzeye dönüşüyor:** Uygulama koyu temadayken yüzen AI tetikleyici düğmesi ve açılan sohbet paneli artık koyu zemin yerine `bg-white/80`–`/85` + `backdrop-blur-xl` ile yarı-şeffaf beyaz görünüyor; içerideki metin renkleri (mesajlar, zaman damgaları, kenarlıklar) bu alt-ağaçta otomatik olarak açık temanın okunaklı koyu tonlarına dönüyor. Açık modda davranış değişmedi. Şema değişikliği yok.
+
 ## [2.12.62] - 2026-08-01
 
 **Kenar Çubuğu Rengi paletindeki "Beyaz / Nötr" artık gerçekten beyaz:** Daha önce bu seçenek koyu tonu koruyup sadece rengi soldurduğu için hâlâ koyu-gri görünüyordu; metin de beyaz kaldığından okunmuyordu. Şimdi "Beyaz / Nötr" seçilince kenar çubuğu gerçekten açık/beyaz oluyor ve yazılar otomatik koyu renge dönüyor (ElffarmaLogo'nun sidebar varyantı da artık sabit beyaz yerine tema değişkenini kullanıyor). Şema değişikliği yok.
