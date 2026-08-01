@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.67] - 2026-08-01
+
+**Ajanda sayfası baştan tasarlandı — artık çok daha anlaşılır:** Takvim + "Yaklaşan Etkinlikler" listesini yan yana gösteren iki kolonlu bir düzene geçildi. Takvimdeki etkinlikler artık küçük renkli ikon rozetleriyle gösteriliyor, `dayMaxEvents` ile kalabalık günlerde "+N daha" bağlantısına toplanıyor (dolayısıyla artık sıkışıp karman çorman görünmüyor). Renkler artık uygulamanın gerçek tema değişkenlerinden (primary/warning/destructive) geliyor. Üstteki tür etiketleri rozet haline getirildi, gecikmiş hatırlatma sayısı ayrı bir "arada parlayan" uyarı rozetiyle vurgulanıyor. Yaklaşan Etkinlikler listesindeki her satır ikon rozeti + "bugün/yarın/X gün sonra" gibi göreli tarih etiketiyle daha "klas" gösteriliyor, gecikmiş hatırlatmalar kırmızı parıltıyla dikkat çekiyor. Şema değişikliği yok.
+
 ## [2.12.66] - 2026-08-01
 
 **Kongre/workshop görselleri ve temsilci fotoğrafları artık bilgisayardan yüklenebiliyor:** Kongre formundaki "Görsel URL" alanının yanına tıklanabilir bir önizleme eklendi — tıklayınca bilgisayardan resim seçilip yeni `profile-images` (public) Supabase Storage bucket'ına yükleniyor, kalıcı URL otomatik dolduruluyor. Aynı bucket satış temsilcisi fotoğrafları için de kullanılıyor: Temsilci Ziyaretleri sayfasındaki her temsilci kartının baş harflerinden oluşan rozetine tıklayınca (veya "Temsilci Ekle" formunda) fotoğraf yüklenip temsilcinin adının yanında gösterilebiliyor. **Not: Bu özelliğin çalışması için güncellenmiş `supabase/schema.sql`'in Supabase SQL editöründe çalıştırılması gerekiyor** (yeni `profile-images` bucket'ı ve RLS politikaları içeriyor).
