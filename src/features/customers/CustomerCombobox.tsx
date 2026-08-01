@@ -1,11 +1,12 @@
 import * as React from 'react'
-import { Check, ChevronsUpDown, User } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus, User } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { useCustomers } from './hooks'
+import { CustomerForm } from './CustomerForm'
 
 interface CustomerComboboxProps {
   value: string | undefined
@@ -66,6 +67,22 @@ export function CustomerCombobox({ value, onChange, placeholder }: CustomerCombo
               ))}
             </CommandGroup>
           </CommandList>
+          <div className="border-t p-1">
+            <CustomerForm
+              trigger={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary w-full justify-start gap-2"
+                  onClick={() => setOpen(false)}
+                >
+                  <Plus className="size-4" /> Yeni Doktor Ekle
+                </Button>
+              }
+              onCreated={(created) => onChange(created.id)}
+            />
+          </div>
         </Command>
       </PopoverContent>
     </Popover>

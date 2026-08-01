@@ -99,6 +99,8 @@ type FormValues = z.output<typeof schema>
 interface CustomerFormProps {
   customer?: Customer
   trigger?: React.ReactNode
+  /** Sadece yeni doktor oluşturulduğunda (düzenleme değil) çağrılır — ör. bir combobox'tan hızlıca doktor eklerken oluşturulanı otomatik seçmek için. */
+  onCreated?: (customer: Customer) => void
 }
 
 function defaultValues(customer: Customer | undefined): FormInput {
@@ -139,7 +141,7 @@ function defaultValues(customer: Customer | undefined): FormInput {
   }
 }
 
-export function CustomerForm({ customer, trigger }: CustomerFormProps) {
+export function CustomerForm({ customer, trigger, onCreated }: CustomerFormProps) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateCustomer()
   const updateMutation = useUpdateCustomer()
@@ -208,6 +210,7 @@ export function CustomerForm({ customer, trigger }: CustomerFormProps) {
       await updateMutation.mutateAsync({ id: customer.id, input })
     } else {
       const created = await createMutation.mutateAsync(input)
+      onCreated?.(created)
       for (const product of values.products) {
         await createSaleMutation.mutateAsync({
           type: 'sale',
