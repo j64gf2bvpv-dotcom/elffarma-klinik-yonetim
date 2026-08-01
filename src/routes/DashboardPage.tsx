@@ -99,8 +99,6 @@ import { useSampleRequests } from '@/features/samples/hooks'
 import { calculateSampleConversion } from '@/features/samples/calculateSampleConversion'
 import { getExpiryStatus } from '@/lib/expiry'
 import { tr } from '@/i18n/tr'
-import { AiSparkleIcon } from '@/features/ai/AIChatWidget'
-import { useAIChatOpen } from '@/features/ai/useAIChatOpen'
 
 // Ayrı bir yaprak bileşen: saat her saniye kendi içinde güncelleniyor, bu
 // yüzden sadece bu küçük bileşen yeniden render oluyor — tüm Dashboard'ı
@@ -297,7 +295,6 @@ type WidgetId =
   | 'commission_summary'
   | 'sample_conversion'
   | 'lot_expiry'
-  | 'ai_assistant'
 
 // Widget'lar 12 sütunlu bir CSS Grid'e yerleşiyor; her widget'ın genişliği
 // sabit birkaç sütun-genişliği (span) seçeneğinden biri (¼/⅓/½/⅔/Tam) — asla
@@ -334,7 +331,6 @@ const DEFAULT_SPAN: Record<WidgetId, number> = {
   commission_summary: 6,
   sample_conversion: 6,
   lot_expiry: 6,
-  ai_assistant: 3,
 }
 
 const SPAN_OPTIONS: { value: number; label: string }[] = [
@@ -357,7 +353,6 @@ const defaultLayout: LayoutItem[] = [
   { id: 'upcoming_congresses', visible: true, span: null },
   { id: 'rep_performance', visible: true, span: null },
   { id: 'quick_actions', visible: true, span: null },
-  { id: 'ai_assistant', visible: true, span: null },
   { id: 'critical_alerts', visible: false, span: null },
   { id: 'sales_trend', visible: false, span: null },
   { id: 'stock_status', visible: false, span: null },
@@ -388,7 +383,6 @@ const widgetLabels: Record<WidgetId, string> = {
   commission_summary: 'Prim Özeti (Bu Ay)',
   sample_conversion: 'Numune Dönüşüm Oranı',
   lot_expiry: 'Lot / SKT Riski',
-  ai_assistant: 'Yapay Zeka Asistanı',
 }
 
 type ChartPeriod = 'day' | 'week' | 'month' | 'year'
@@ -471,7 +465,6 @@ function PeriodToggle({ value, onChange }: { value: ChartPeriod; onChange: (p: C
 export function DashboardPage() {
   const { staff } = useAuth()
   const isAdmin = staff?.role === 'admin'
-  const [, setAiChatOpen] = useAIChatOpen()
   const { data: products = [] } = useProducts('')
   const { data: monthPayments = [] } = usePayments({ from: startOfMonth(new Date()).toISOString() })
   const { data: recentPayments = [] } = usePayments({})
@@ -850,24 +843,6 @@ export function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-      )
-    }
-
-    if (id === 'ai_assistant') {
-      return (
-        <button
-          type="button"
-          onClick={() => setAiChatOpen(true)}
-          title="Yapay Zeka Asistanını Aç"
-          className="group relative flex aspect-square w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-border/60 bg-card/90 shadow-[0_1px_0_rgba(255,255,255,0.5)_inset,0_1px_2px_rgba(0,0,0,0.04),0_20px_44px_-24px_rgba(0,0,0,0.22)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_1px_0_rgba(255,255,255,0.5)_inset,0_28px_56px_-24px_rgba(0,0,0,0.28)]"
-        >
-          <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent"
-            aria-hidden
-          />
-          <AiSparkleIcon className="relative size-12 transition-transform duration-300 group-hover:scale-110" animated />
-          <span className="relative text-xs font-medium text-muted-foreground">Yapay Zeka</span>
-        </button>
       )
     }
 

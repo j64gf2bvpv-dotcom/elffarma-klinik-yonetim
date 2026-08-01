@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.55] - 2026-08-01
+
+**"Yapay Zeka Asistanı" Panel widget'ı kaldırıldı:** AI'nin Panel'de bir çerçeve/kutucuk olarak durması yerine, önceki (üst çubuktaki sabit ikonla açılan, ekranın üzerinde yüzen sürüklenebilir sohbet paneli) davranışı korunuyor — bu widget kaldırıldı, üst çubuktaki AI ikonu ve sohbet paneli değişmeden duruyor. Şema değişikliği yok.
+
 ## [2.12.54] - 2026-08-01
 
 **Yapay Zeka Asistanı widget'ı küçük, kare, tek tıkla açılan bir kutucuğa dönüştürüldü:** Önceki metin/butonlu geniş kart yerine, animasyonlu AI ikonunu içeren küçük kare bir kutucuk — tıklanınca doğrudan sohbet panelini açıyor. Diğer tüm widget'lar gibi "Paneli Düzenle" modunda sürükleyerek yeri değiştirilebiliyor. Şema değişikliği yok.
