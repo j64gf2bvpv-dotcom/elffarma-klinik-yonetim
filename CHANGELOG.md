@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.84] - 2026-08-02
+
+**Günlük Hareket Excel içe aktarma, kullanıcının gerçek şablonunu artık okuyor:** "Günlük Hareket Yükle (Excel)" özelliği, "ÜRÜN ADI" ve "kalan stoklar" gibi iki satırı kapsayan (dikey birleştirilmiş) başlık hücreleri içeren gerçek şablonu tanımıyordu — başlık tespiti düzeltildi. Ayrıca bir sütun başlığındaki isim sistemde kayıtlı bir doktor/temsilci ile eşleşmezse artık hata verip o satırı atlamıyor; yine de düz bir stok hareketi olarak işleniyor (stok doğruluğu önce geliyor). Şema değişikliği yok.
+
 ## [2.12.83] - 2026-08-02
 
 **Günlük Sayım dışa aktarma kullanıcının gerçek tablo formatına uyarlandı, Stok'a "Tüm Ürünleri Sıfırla" eklendi:** Günlük Sayım'ın Excel/Word/PDF/Yazdır çıktısı artık kullanıcının kullandığı gerçek format ile birebir aynı — ürün satırları, önceki sayım tarihindeki "STOKLAR" sütunu, o günün tarihi altında o gün satış yapan HER temsilci için ayrı bir sütun (o temsilcinin o üründen dağıttığı adet) ve sonda "kalan stoklar" sütunu (Excel'de gerçek birleştirilmiş başlık hücreleriyle). Stok sayfasına, her ürün için denetim kaydı bırakan bir "çıkış" hareketiyle (doğrudan veritabanı güncellemesi değil) tüm ürünlerin stoğunu 0'a çeken, onay istemli "Tüm Ürünleri Sıfırla" butonu eklendi. Şema değişikliği yok.

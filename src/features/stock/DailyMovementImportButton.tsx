@@ -11,12 +11,40 @@ import { recordStockMovement } from './api'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 
-function findHeaderRowIndex(matrix: unknown[][]): number {
+function findRowIndex(matrix: unknown[][], pattern: RegExp): number {
   for (let i = 0; i < Math.min(matrix.length, 6); i++) {
     const row = matrix[i] ?? []
-    if (row.some((cell) => /kalan\s*stok/i.test(String(cell)))) return i
+    if (row.some((cell) => pattern.test(String(cell).trim()))) return i
   }
   return -1
+}
+
+/**
+ * Kullanıcının gerçek şablonu iki satırlı bir başlık kullanıyor: "ÜRÜN ADI" ve
+ * "kalan stoklar" iki satırı kapsayan (dikey birleştirilmiş) hücreler olduğu
+ * için Excel'den okununca bu metinler ÜST satırda, tek başına duran "STOKLAR"
+ * ve kişi adları ise ALT satırda kalır. Bu yüzden "kalan stok" metnini değil,
+ * ayırt edici olan tek başına "STOKLAR" hücresini arıyoruz — kişi adlarının
+ * bulunduğu satırı (ve dolayısıyla bir üstündeki ürün/tarih/kalan-stok
+ * satırını) bu şekilde doğru tespit ediyoruz.
+ */
+function findHeaderRows(matrix: unknown[][]): { labelsRow: unknown[]; namesRowIdx: number; namesRow: string[] } | null {
+  const stoklarRowIdx = findRowIndex(matrix, /^stoklar$/i)
+  if (stoklarRowIdx !== -1 && stoklarRowIdx > 0) {
+    return {
+      labelsRow: matrix[stoklarRowIdx - 1] ?? [],
+      namesRowIdx: stoklarRowIdx,
+      namesRow: (matrix[stoklarRowIdx] ?? []).map((c) => String(c).trim()),
+    }
+  }
+  // Eski/tek satırlı başlık formatı: "kalan stok" ve kişi adları AYNI satırda.
+  const kalanRowIdx = findRowIndex(matrix, /kalan\s*stok/i)
+  if (kalanRowIdx === -1) return null
+  return {
+    labelsRow: matrix[kalanRowIdx] ?? [],
+    namesRowIdx: kalanRowIdx,
+    namesRow: (matrix[kalanRowIdx] ?? []).map((c) => String(c).trim()),
+  }
 }
 
 /**
@@ -36,18 +64,22 @@ export function DailyMovementImportButton() {
     const matrix = await readExcelSheetAsMatrix(file)
     const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
 
-    const headerIdx = findHeaderRowIndex(matrix)
-    if (headerIdx === -1) {
+    const headerInfo = findHeaderRows(matrix)
+    if (!headerInfo) {
       summary.errors.push('"KALAN STOKLAR" başlıklı bir sütun bulunamadı — dosya beklenen formatta değil')
       return summary
     }
-    const dateRow = matrix[headerIdx - 1] ?? []
-    const headerRow = (matrix[headerIdx] ?? []).map((c) => String(c).trim())
+    const { labelsRow, namesRowIdx, namesRow } = headerInfo
+    const dateRow = labelsRow
 
-    const productCol = headerRow.findIndex((h) => /ürün/i.test(h)) === -1 ? 0 : headerRow.findIndex((h) => /ürün/i.test(h))
-    const kalanCol = headerRow.findIndex((h) => /kalan\s*stok/i.test(h))
-    const stoklarCol = headerRow.findIndex((h, idx) => idx !== kalanCol && /stok/i.test(h))
-    const personCols = headerRow
+    const labelsRowStr = labelsRow.map((c) => String(c))
+    const productCol = labelsRowStr.findIndex((h) => /ürün/i.test(h)) === -1 ? 0 : labelsRowStr.findIndex((h) => /ürün/i.test(h))
+    const kalanCol = labelsRowStr.findIndex((h) => /kalan\s*stok/i.test(h))
+    const stoklarCol =
+      namesRow.findIndex((h) => /^stoklar$/i.test(h)) !== -1
+        ? namesRow.findIndex((h) => /^stoklar$/i.test(h))
+        : namesRow.findIndex((h, idx) => idx !== kalanCol && /stok/i.test(h))
+    const personCols = namesRow
       .map((h, idx) => ({ name: h, idx }))
       .filter(({ name, idx }) => name && idx !== productCol && idx !== kalanCol && idx !== stoklarCol)
 
@@ -56,7 +88,7 @@ export function DailyMovementImportButton() {
       return summary
     }
 
-    for (let r = headerIdx + 1; r < matrix.length; r++) {
+    for (let r = namesRowIdx + 1; r < matrix.length; r++) {
       const row = matrix[r] ?? []
       const productName = String(row[productCol] ?? '').trim()
       if (!productName) continue
@@ -102,18 +134,19 @@ export function DailyMovementImportButton() {
               customer_id: doctor.id,
               note: `${doctor.full_name} — Excel içe aktarma (${dateLabel || dateIso})`,
             })
-          } else if (rep) {
+          } else {
+            // Doktor değilse (temsilci eşleşse de eşleşmese de) sadece düz bir
+            // stok hareketi kaydedilir — sütun başlığı sistemde tanımlı bir
+            // doktor/temsilci adıyla eşleşmese bile stok miktarı yine de
+            // düşülür/eklenir, satır hata verip atlanmaz (stok doğruluğu önce gelir).
             const movementType = qty > 0 ? 'out' : 'in'
             await recordStockMovement({
               product_id: product.id,
               movement_type: movementType,
               quantity: Math.abs(qty),
-              reason: 'Satış temsilcisine teslim',
-              note: `${rep.name} — Excel içe aktarma (${dateLabel || dateIso})`,
+              reason: rep ? 'Satış temsilcisine teslim' : 'Excel içe aktarma',
+              note: `${rep?.name ?? personName} — Excel içe aktarma (${dateLabel || dateIso})`,
             })
-          } else {
-            summary.errors.push(`${productName} / ${personName}: doktor ya da satış temsilcisi olarak bulunamadı`)
-            continue
           }
           movedForProduct += qty
           summary.added++
