@@ -80,14 +80,12 @@ export function DailyMovementImportButton() {
       namesRow.findIndex((h) => /^stoklar$/i.test(h)) !== -1
         ? namesRow.findIndex((h) => /^stoklar$/i.test(h))
         : namesRow.findIndex((h, idx) => idx !== kalanCol && /stok/i.test(h))
+    // Doktor/temsilci sütunu yoksa (sadece ÜRÜN ADI + STOKLAR gibi sade bir
+    // liste yüklendiyse) hata verip durmuyoruz — o durumda sadece aşağıdaki
+    // STOKLAR eşitleme adımı çalışır, kişi bazlı hareket işlenmez.
     const personCols = namesRow
       .map((h, idx) => ({ name: h, idx }))
       .filter(({ name, idx }) => name && idx !== productCol && idx !== kalanCol && idx !== stoklarCol)
-
-    if (personCols.length === 0) {
-      summary.errors.push('Doktor/temsilci sütunu bulunamadı')
-      return summary
-    }
 
     // Genel stokta henüz olmayan bir ürün adı yüzünden o satırın verisi ATLANMAZ
     // — ürün otomatik olarak (varsayılan birim/kritik eşikle) oluşturulup hareket

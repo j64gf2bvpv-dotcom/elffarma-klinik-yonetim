@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.89] - 2026-08-02
+
+**Günlük Hareket içe aktarma, temsilci/doktor sütunu olmayan sade bir liste (sadece ÜRÜN ADI + STOKLAR) yüklendiğinde artık hata vermiyor:** Önceden dosyada hiç kişi sütunu yoksa "Doktor/temsilci sütunu bulunamadı" hatasıyla tamamen durup hiçbir şey işlemiyordu. Artık bu durumda sadece bir önceki sürümde eklenen STOKLAR eşitleme adımı çalışıyor — yani salt ürün+stok listesi de yüklenip stoklar güncellenebiliyor, kişi bazlı hareket olmadan. Şema değişikliği yok.
+
 ## [2.12.88] - 2026-08-02
 
 **Günlük Hareket içe aktarmada Excel'deki "STOKLAR" değeri artık gerçekten stoğa işleniyor:** Önceden bu sütun sadece satır tespiti için kullanılıyor, değeri hiçbir yere yazılmıyordu — özellikle yeni otomatik oluşturulan (0 stoklu) ürünlerde Excel'deki gerçek miktar sisteme hiç yansımıyordu. Artık ürünün sistemdeki mevcut miktarı Excel'deki "STOKLAR" değerinden farklıysa, aradaki fark bir düzeltme hareketi olarak kaydedilip stok o değere eşitleniyor. Şema değişikliği yok.
