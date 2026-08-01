@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.53] - 2026-08-01
+
+**Ana panele animasyonlu "Yapay Zeka Asistanı" widget'ı eklendi:** Panel'de artık büyük, animasyonlu ışıltılı AI simgesiyle yeni bir kart var — "Sohbeti Aç" butonu üst çubuktaki AI sohbet panelini açıyor, "AI Analiz" butonu ilgili sayfaya götürüyor. Varsayılan olarak görünür, "Paneli Düzenle" ile gizlenip boyutu değiştirilebilir. Şema değişikliği yok.
+
 ## [2.12.52] - 2026-08-01
 
 **"Temsilci Performansı" widget'ına avatar eklendi, tutarlar kalınlaştırıldı:** Her temsilcinin adının önünde fotoğrafı varsa fotoğrafı, yoksa isim baş harflerinden oluşan bir rozet gösteriliyor. "Satış:" ve "Tahsilat:" tutarları artık kalın (font-semibold). Şema değişikliği yok.
