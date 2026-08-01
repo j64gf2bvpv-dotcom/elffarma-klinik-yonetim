@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.80] - 2026-08-02
+
+**Dashboard'a otomatik "Yapay Zeka Uyarıları" widget'ı eklendi:** Ana panele, mevcut AIService/işletme özeti altyapısını kullanan yeni bir kart eklendi — sayfa her açıldığında (15 dakikada bir tazelenerek) yapay zeka güncel veriye (kritik stok, SKT, tahsilat riski, CRM, kongreler vb.) bakıp eksik/tutarsız görünen veya önemli olan kısa uyarı/hatırlatma maddeleri çıkarıyor; manuel "Yenile" butonu ve tam analiz sayfasına (Yapay Zeka Analiz) kısayol içeriyor. Önceden bu analiz sadece o sayfada elle tetiklenebiliyordu; artık ana panelde otomatik/pasif olarak görünüyor. AI sağlayıcısına ulaşılamazsa kart bunu açıkça belirtiyor, başka bir yeri etkilemiyor. Şema değişikliği yok.
+
 ## [2.12.79] - 2026-08-02
 
 **Stok içe aktarma artık ya hep ya hiç, Dashboard'da "yaklaşıyor" rozetleri yanıp sönüyor:** Stok'ta (hem şablonlu hem Akıllı İçe Aktar) bir satırda hata varsa (eksik ürün adı, sayı olmayan stok miktarı vb.) artık HİÇBİR ürün eklenmiyor — önce tüm satırlar yazma yapılmadan doğrulanıyor, sadece hepsi geçerliyse kayıtlar oluşturuluyor; böylece "15 doğru 1 hata" gibi karışık/kısmi bir sonuç yerine ya tam liste eklenir ya da hiçbiri eklenmez, hatalar düzeltilip yeniden denenebilir. Dashboard'da "Yaklaşan Kongreler" kartındaki "Yaklaşıyor"/"Bugün" rozeti ve "Kritik Uyarılar" kartındaki simgeler artık diğer uyarılar gibi yanıp sönüyor. Şema değişikliği yok.

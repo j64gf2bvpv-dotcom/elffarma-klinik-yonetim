@@ -60,7 +60,11 @@ import {
   AlarmClockPlus,
   Calculator,
   Boxes,
+  Sparkles,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -81,6 +85,9 @@ import { useAllParticipantProductSales } from '@/features/congresses/hooks'
 import { useSales } from '@/features/sales/hooks'
 import { useAlertsSummary } from '@/features/alerts/useAlertsSummary'
 import { useReminders } from '@/features/reminders/hooks'
+import { useAIService } from '@/features/ai/useAIService'
+import { useBusinessSnapshot } from '@/features/ai/useBusinessSnapshot'
+import { snapshotSystemMessage } from '@/features/ai/snapshotSystemMessage'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
@@ -295,6 +302,7 @@ type WidgetId =
   | 'commission_summary'
   | 'sample_conversion'
   | 'lot_expiry'
+  | 'ai_insights'
 
 // Widget'lar 12 sütunlu bir CSS Grid'e yerleşiyor; her widget'ın genişliği
 // sabit birkaç sütun-genişliği (span) seçeneğinden biri (¼/⅓/½/⅔/Tam) — asla
@@ -331,6 +339,7 @@ const DEFAULT_SPAN: Record<WidgetId, number> = {
   commission_summary: 6,
   sample_conversion: 6,
   lot_expiry: 6,
+  ai_insights: 6,
 }
 
 const SPAN_OPTIONS: { value: number; label: string }[] = [
@@ -346,6 +355,7 @@ const SPAN_OPTIONS: { value: number; label: string }[] = [
 // widget'lar SİLİNMEDİ, sadece varsayılan olarak gizli; "Paneli Düzenle" ile admin
 // istediği an geri açıp yerini/boyutunu değiştirebilir.
 const defaultLayout: LayoutItem[] = [
+  { id: 'ai_insights', visible: true, span: null },
   { id: 'stats', visible: true, span: null },
   { id: 'revenue_chart', visible: true, span: null },
   { id: 'upcoming_reminders', visible: true, span: null },
@@ -383,6 +393,7 @@ const widgetLabels: Record<WidgetId, string> = {
   commission_summary: 'Prim Özeti (Bu Ay)',
   sample_conversion: 'Numune Dönüşüm Oranı',
   lot_expiry: 'Lot / SKT Riski',
+  ai_insights: 'Yapay Zeka Uyarıları',
 }
 
 type ChartPeriod = 'day' | 'week' | 'month' | 'year'
@@ -587,6 +598,35 @@ export function DashboardPage() {
   }
 
   const layout = sanitizeLayout(draftLayout ?? savedLayout ?? defaultLayout)
+
+  const aiService = useAIService()
+  const businessSnapshot = useBusinessSnapshot()
+  const aiInsightsVisible = layout.some((item) => item.id === 'ai_insights' && item.visible)
+  const {
+    data: aiInsightsText,
+    isFetching: aiInsightsLoading,
+    error: aiInsightsError,
+    refetch: refetchAiInsights,
+  } = useQuery({
+    queryKey: ['ai-dashboard-insights'],
+    queryFn: async () => {
+      const result = await aiService.chat([
+        snapshotSystemMessage(businessSnapshot),
+        {
+          role: 'user',
+          content:
+            'Bu verilere bakarak şu anki duruma göre dikkat edilmesi gereken, yanlış/eksik görünen veya ' +
+            'önemli olan EN FAZLA 6 kısa uyarı/hatırlatma maddesi çıkar (ör. eksik/tutarsız veri, acil aksiyon ' +
+            'gereken bir durum, unutulmuş gibi görünen bir doktor/ödeme/kongre). Hiçbir sorun yoksa bunu belirt. ' +
+            'Her maddeyi "- " ile başlayan tek satırlık kısa bir cümle yap, başka açıklama/başlık ekleme.',
+        },
+      ])
+      return result.content
+    },
+    enabled: aiInsightsVisible,
+    staleTime: 15 * 60 * 1000,
+    retry: false,
+  })
 
   function startEditing() {
     setDraftLayout(layout)
@@ -841,6 +881,46 @@ export function DashboardPage() {
               <QuickAction to="/prim" icon={Calculator} label="Prim Hesapla" tone="gray" />
               <QuickAction to="/stok" icon={Boxes} label="Stok Durumu" tone="teal" />
             </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (id === 'ai_insights') {
+      return (
+        <Card>
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
+              <Sparkles className="size-4 text-primary" /> Yapay Zeka Uyarıları
+            </CardTitle>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" onClick={() => refetchAiInsights()} disabled={aiInsightsLoading}>
+                {aiInsightsLoading ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                Yenile
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/ai-analiz">
+                  Tam analiz <ArrowRight className="size-3.5" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {aiInsightsLoading && !aiInsightsText && (
+              <p className="text-muted-foreground flex items-center gap-2 text-sm">
+                <Loader2 className="size-3.5 animate-spin" /> Yapay zeka mevcut duruma bakıyor...
+              </p>
+            )}
+            {!aiInsightsLoading && aiInsightsError && (
+              <p className="text-destructive text-sm">
+                Yapay zekaya ulaşılamadı{aiInsightsError instanceof Error ? `: ${aiInsightsError.message}` : ''} —
+                Ayarlar &gt; Yapay Zekâ'dan sağlayıcıyı kontrol edin.
+              </p>
+            )}
+            {!aiInsightsLoading && !aiInsightsError && !aiInsightsText && (
+              <p className="text-muted-foreground text-sm">Henüz analiz yok — "Yenile"ye basın.</p>
+            )}
+            {aiInsightsText && <p className="text-sm whitespace-pre-wrap">{aiInsightsText}</p>}
           </CardContent>
         </Card>
       )
