@@ -29,8 +29,7 @@ import { CLINIC_NAME } from '@/lib/supabaseClient'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useApplyBrandTheme } from '@/features/appSettings/useApplyBrandTheme'
 import { useAIStartupCheck } from '@/features/ai/useAIStartupCheck'
-import { AIChatWidget, AiSparkleIcon } from '@/features/ai/AIChatWidget'
-import { useAIChatOpen } from '@/features/ai/useAIChatOpen'
+import { AIChatWidget } from '@/features/ai/AIChatWidget'
 import { useColorMode } from '@/features/appSettings/useColorMode'
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
 import { getIconSet, type IconVariant, type NavKey } from '@/features/appSettings/iconSets'
@@ -210,7 +209,6 @@ function TopBar() {
   const { dismissed, dismiss } = useDismissedAlerts()
   const deleteReminderMutation = useDeleteReminder()
   const { pendingCount, syncing, flush } = useOfflineSync()
-  const [aiOpen, setAiOpen] = useAIChatOpen()
 
   const visibleDueReminders = alerts.dueReminders.filter((r) => !dismissed.has(`reminder:${r.id}`))
   const visibleCriticalStock = alerts.criticalStock.filter((p) => !dismissed.has(`criticalStock:${p.id}`))
@@ -253,18 +251,6 @@ function TopBar() {
             {pendingCount} bekleyen kayıt
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => setAiOpen((v) => !v)}
-          title={aiOpen ? 'AI Asistanı kapat' : 'AI Asistan'}
-          className={cn(
-            'flex size-11 items-center justify-center rounded-lg transition-colors hover:bg-accent',
-            aiOpen && 'bg-accent',
-          )}
-        >
-          <AiSparkleIcon className="size-8" animated />
-        </button>
-
         <button
           type="button"
           title={isOnline ? 'Bağlantı var' : 'Bağlantı yok — kayıtlar yerelde bekletiliyor'}

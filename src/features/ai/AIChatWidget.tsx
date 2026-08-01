@@ -76,25 +76,26 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
   )
 }
 
-// Panel için nominal boyutlar (w-96 / h-[32rem] ile eşleşir) — TopBar'daki
-// sabit AI ikonunun altında, görünür alanın dışına taşmadan açılması için
-// konum hesabında kullanılır.
+// Panel için nominal boyutlar (w-96 / h-[32rem] ile eşleşir) — yüzen
+// tetikleyici düğmenin hemen üstünde, görünür alanın dışına taşmadan
+// açılması için konum hesabında kullanılır.
 const PANEL_WIDTH = 384
 const PANEL_HEIGHT = 512
 const PANEL_MARGIN = 12
-// AppShell'deki TopBar'ın yüksekliği (h-16) — panel varsayılan olarak bunun
-// hemen altında açılır.
-const TOPBAR_HEIGHT = 64
+
+// Yüzen, sürüklenebilir tetikleyici düğme.
+const BUTTON_SIZE = 64
+const BUTTON_MARGIN = 24
+const BUTTON_POSITION_KEY = 'ai_button_position'
+const PANEL_POSITION_KEY = 'ai_panel_position'
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max))
 }
 
-const PANEL_POSITION_KEY = 'ai_panel_position'
-
-function loadPanelPosition(): { left: number; top: number } | null {
+function loadPosition(key: string): { left: number; top: number } | null {
   try {
-    const raw = localStorage.getItem(PANEL_POSITION_KEY)
+    const raw = localStorage.getItem(key)
     if (!raw) return null
     const parsed = JSON.parse(raw)
     if (typeof parsed?.left === 'number' && typeof parsed?.top === 'number') return parsed
@@ -187,16 +188,86 @@ export function AIChatWidget() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Panel varsayılan olarak TopBar'daki sabit AI ikonunun altında, sağa
-  // yaslı açılır. Kullanıcı paneli kendi sürüklediğinde bu varsayılan yerine
-  // panelOffset kullanılır ve konum hatırlanır.
-  const defaultPanelPosition = React.useMemo<{ left: number; top: number }>(() => {
-    const left = clamp(viewport.width - PANEL_WIDTH - PANEL_MARGIN, PANEL_MARGIN, viewport.width - PANEL_WIDTH - PANEL_MARGIN)
-    const top = clamp(TOPBAR_HEIGHT + 8, PANEL_MARGIN, viewport.height - PANEL_HEIGHT - PANEL_MARGIN)
-    return { left, top }
-  }, [viewport])
+  // Yüzen tetikleyici düğme varsayılan olarak sağ-alt köşede durur;
+  // kullanıcı sürükleyince konum hatırlanır (localStorage).
+  const defaultButtonPosition = React.useMemo<{ left: number; top: number }>(
+    () => ({
+      left: clamp(viewport.width - BUTTON_SIZE - BUTTON_MARGIN, BUTTON_MARGIN, viewport.width - BUTTON_SIZE - BUTTON_MARGIN),
+      top: clamp(viewport.height - BUTTON_SIZE - BUTTON_MARGIN, BUTTON_MARGIN, viewport.height - BUTTON_SIZE - BUTTON_MARGIN),
+    }),
+    [viewport],
+  )
 
-  const [panelOffset, setPanelOffset] = React.useState<{ left: number; top: number } | null>(loadPanelPosition)
+  const [buttonOffset, setButtonOffset] = React.useState<{ left: number; top: number } | null>(() =>
+    loadPosition(BUTTON_POSITION_KEY),
+  )
+  const buttonDragStateRef = React.useRef<{
+    startX: number
+    startY: number
+    startLeft: number
+    startTop: number
+    moved: boolean
+  } | null>(null)
+  const [buttonDragging, setButtonDragging] = React.useState(false)
+
+  React.useEffect(() => {
+    if (buttonOffset) localStorage.setItem(BUTTON_POSITION_KEY, JSON.stringify(buttonOffset))
+  }, [buttonOffset])
+
+  const buttonStyle = React.useMemo<React.CSSProperties>(() => {
+    const base = buttonOffset ?? defaultButtonPosition
+    return {
+      left: clamp(base.left, BUTTON_MARGIN, viewport.width - BUTTON_SIZE - BUTTON_MARGIN),
+      top: clamp(base.top, BUTTON_MARGIN, viewport.height - BUTTON_SIZE - BUTTON_MARGIN),
+    }
+  }, [buttonOffset, defaultButtonPosition, viewport])
+
+  function handleButtonPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    const current = buttonOffset ?? defaultButtonPosition
+    buttonDragStateRef.current = { startX: e.clientX, startY: e.clientY, startLeft: current.left, startTop: current.top, moved: false }
+  }
+
+  function handleButtonPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+    const drag = buttonDragStateRef.current
+    if (!drag) return
+    const dx = e.clientX - drag.startX
+    const dy = e.clientY - drag.startY
+    if (!drag.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+      drag.moved = true
+      setButtonDragging(true)
+    }
+    if (!drag.moved) return
+    setButtonOffset({
+      left: clamp(drag.startLeft + dx, BUTTON_MARGIN, window.innerWidth - BUTTON_SIZE - BUTTON_MARGIN),
+      top: clamp(drag.startTop + dy, BUTTON_MARGIN, window.innerHeight - BUTTON_SIZE - BUTTON_MARGIN),
+    })
+  }
+
+  function handleButtonPointerUp() {
+    const drag = buttonDragStateRef.current
+    buttonDragStateRef.current = null
+    setButtonDragging(false)
+    if (!drag?.moved) setOpen((v) => !v)
+  }
+
+  // Panel varsayılan olarak yüzen düğmenin hemen üstünde, sağa yaslı açılır.
+  // Kullanıcı paneli kendi sürüklediğinde bu varsayılan yerine panelOffset
+  // kullanılır ve konum hatırlanır.
+  const defaultPanelPosition = React.useMemo<{ left: number; top: number }>(() => {
+    const buttonPos = buttonOffset ?? defaultButtonPosition
+    const left = clamp(
+      buttonPos.left + BUTTON_SIZE - PANEL_WIDTH,
+      PANEL_MARGIN,
+      viewport.width - PANEL_WIDTH - PANEL_MARGIN,
+    )
+    const top = clamp(buttonPos.top - PANEL_HEIGHT - 12, PANEL_MARGIN, viewport.height - PANEL_HEIGHT - PANEL_MARGIN)
+    return { left, top }
+  }, [viewport, buttonOffset, defaultButtonPosition])
+
+  const [panelOffset, setPanelOffset] = React.useState<{ left: number; top: number } | null>(() =>
+    loadPosition(PANEL_POSITION_KEY),
+  )
   const panelDragStateRef = React.useRef<{
     startX: number
     startY: number
@@ -405,9 +476,25 @@ export function AIChatWidget() {
 
   return (
     <>
+      <button
+        type="button"
+        onPointerDown={handleButtonPointerDown}
+        onPointerMove={handleButtonPointerMove}
+        onPointerUp={handleButtonPointerUp}
+        title="Yapay Zeka Asistanı — sürükleyerek taşıyabilirsiniz"
+        className={cn(
+          'fixed z-50 flex touch-none items-center justify-center rounded-2xl border bg-popover/95 text-popover-foreground shadow-2xl ring-1 ring-black/5 backdrop-blur-xl select-none',
+          buttonDragging ? 'cursor-grabbing' : 'cursor-grab',
+          !buttonDragging && 'animate-ai-button-float',
+        )}
+        style={{ ...buttonStyle, width: BUTTON_SIZE, height: BUTTON_SIZE }}
+      >
+        <AiSparkleIcon className="size-9" animated />
+      </button>
+
       <div
         className={cn(
-          'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-top-right flex-col overflow-hidden rounded-3xl border bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5',
+          'fixed z-50 flex w-96 max-w-[calc(100vw-3rem)] origin-bottom-right flex-col overflow-hidden rounded-3xl border bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5',
           panelDragging ? '' : 'transition-all duration-300 ease-out',
           open ? 'h-[32rem] max-h-[calc(100vh-6rem)] scale-100 opacity-100' : 'h-0 scale-95 opacity-0',
           panelDragging && 'opacity-70',

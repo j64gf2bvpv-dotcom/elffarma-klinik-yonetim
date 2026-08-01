@@ -163,6 +163,18 @@
   .animate-ai-shine-sweep {
     animation: ai-shine-sweep 3.5s ease-in-out infinite;
   }
+  @keyframes ai-button-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+  .animate-ai-button-float {
+    animation: ai-button-float 3s ease-in-out infinite;
+  }
 }
 
 /* Ajanda (FullCalendar) — uygulamanın tema değişkenleriyle premium görünüm */
