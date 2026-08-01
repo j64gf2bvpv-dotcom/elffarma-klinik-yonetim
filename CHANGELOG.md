@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.64] - 2026-08-01
+
+**Koyu modda AI düğmesi/paneli beyaz cam efekti geri alındı:** Bir önceki sürümde eklenen "koyu modda yarı-şeffaf beyaz cam yüzey" davranışı beğenilmedi, geri alındı — AI düğmesi ve sohbet paneli koyu modda yine standart koyu `bg-popover` zeminini kullanıyor. Şema değişikliği yok.
+
 ## [2.12.63] - 2026-08-01
 
 **Koyu modda AI düğmesi ve sohbet paneli yarı-şeffaf beyaz cam yüzeye dönüşüyor:** Uygulama koyu temadayken yüzen AI tetikleyici düğmesi ve açılan sohbet paneli artık koyu zemin yerine `bg-white/80`–`/85` + `backdrop-blur-xl` ile yarı-şeffaf beyaz görünüyor; içerideki metin renkleri (mesajlar, zaman damgaları, kenarlıklar) bu alt-ağaçta otomatik olarak açık temanın okunaklı koyu tonlarına dönüyor. Açık modda davranış değişmedi. Şema değişikliği yok.
