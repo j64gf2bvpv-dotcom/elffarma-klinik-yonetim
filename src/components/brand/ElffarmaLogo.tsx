@@ -18,11 +18,17 @@ export function ElffarmaLogo({ size = 'sm', tagline = false, className, variant 
   if (variant === 'premium') {
     return (
       <div className={cn('flex flex-col items-center', className)}>
-        <div className={cn('flex items-baseline leading-none font-sans tracking-tight text-white', textSize, wordmarkShadow)}>
+        <div
+          className={cn(
+            'text-sidebar-foreground flex items-baseline leading-none font-sans tracking-tight',
+            textSize,
+            wordmarkShadow,
+          )}
+        >
           <span className="font-light lowercase">elf</span>
           <span className="ml-1 font-bold">FARMA</span>
         </div>
-        <p className="mt-1 font-serif text-sm italic text-white/80">&quot;Estetik Sanatı&quot;</p>
+        <p className="text-sidebar-foreground/80 mt-1 font-serif text-sm italic">&quot;Estetik Sanatı&quot;</p>
       </div>
     )
   }

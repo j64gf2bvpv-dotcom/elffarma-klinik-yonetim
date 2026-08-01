@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.62] - 2026-08-01
+
+**Kenar Çubuğu Rengi paletindeki "Beyaz / Nötr" artık gerçekten beyaz:** Daha önce bu seçenek koyu tonu koruyup sadece rengi soldurduğu için hâlâ koyu-gri görünüyordu; metin de beyaz kaldığından okunmuyordu. Şimdi "Beyaz / Nötr" seçilince kenar çubuğu gerçekten açık/beyaz oluyor ve yazılar otomatik koyu renge dönüyor (ElffarmaLogo'nun sidebar varyantı da artık sabit beyaz yerine tema değişkenini kullanıyor). Şema değişikliği yok.
+
 ## [2.12.61] - 2026-08-01
 
 **Ayarlar > Görünüm'e ayrı Arkaplan ve Kenar Çubuğu renk paletleri eklendi:** Marka renginden bağımsız olarak ana içerik arkaplanı ve sol kenar çubuğu artık kendi renk paletlerinden ayrı ayrı seçilebiliyor ("Varsayılan" seçeneği marka rengini takip etmeye geri döndürür). Şema değişikliği yok (app_settings'te `background_theme`/`sidebar_theme` anahtarları).

@@ -155,6 +155,20 @@ export function backgroundCssVars(hue: number, chromaScale = 1, mode: ColorMode 
  */
 export function sidebarCssVars(hue: number, chromaScale = 1, mode: ColorMode = 'light'): Record<string, string> {
   const c = (base: number) => (base * chromaScale).toFixed(4)
+
+  // "Beyaz / Nötr" (chromaScale 0) seçildiğinde kenar çubuğu koyu-ama-gri
+  // kalmak yerine GERÇEKTEN beyaz/açık olsun — metin de buna göre koyu
+  // renge dönsün (aksi halde beyaz zemin üzerinde beyaz yazı okunmaz olur).
+  if (chromaScale === 0) {
+    return {
+      '--sidebar': 'oklch(0.99 0.002 0)',
+      '--sidebar-foreground': 'oklch(0.2 0.01 0)',
+      '--sidebar-border': 'oklch(0.9 0.008 0)',
+      '--sidebar-accent': 'oklch(0.94 0.006 0)',
+      '--sidebar-accent-foreground': 'oklch(0.2 0.01 0)',
+    }
+  }
+
   if (mode === 'dark') {
     return {
       '--sidebar': `oklch(0.2 ${c(0.04)} ${hue})`,
