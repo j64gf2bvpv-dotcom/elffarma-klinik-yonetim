@@ -4,7 +4,9 @@ import { Check, Plus, Trash2, ClipboardList, ListChecks } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/utils'
+import type { CongressChecklistItem } from '@/types/database'
 import {
   useChecklistItems,
   useCreateChecklistItem,
@@ -40,7 +42,7 @@ export function ChecklistPanel({ congressId }: { congressId: string }) {
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <ClipboardList className="size-4 text-primary" /> Hazırlık Kontrol Listesi
           {items.length > 0 && (
@@ -49,6 +51,17 @@ export function ChecklistPanel({ congressId }: { congressId: string }) {
             </span>
           )}
         </h3>
+        {items.length > 0 && (
+          <ExportMenu<CongressChecklistItem>
+            title="Hazırlık Kontrol Listesi"
+            filename="hazirlik-kontrol-listesi"
+            rows={items}
+            columns={[
+              { header: 'Madde', value: (i) => i.label },
+              { header: 'Durum', value: (i) => (i.is_done ? 'Tamamlandı' : 'Bekliyor') },
+            ]}
+          />
+        )}
       </div>
       <Card>
         <CardContent className="grid gap-3 p-4">

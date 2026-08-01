@@ -97,7 +97,7 @@ export async function exportTextReportToWord(title: string, filename: string, bo
   saveAs(blob, `${filename}.docx`)
 }
 
-export function exportToPdf<T>(title: string, filename: string, columns: ExportColumn<T>[], rows: T[]) {
+function buildPdfDoc<T>(title: string, columns: ExportColumn<T>[], rows: T[]): jsPDF {
   const doc = new jsPDF({ orientation: columns.length > 5 ? 'landscape' : 'portrait', unit: 'pt' })
   registerTurkishFont(doc)
 
@@ -120,5 +120,17 @@ export function exportToPdf<T>(title: string, filename: string, columns: ExportC
     alternateRowStyles: { fillColor: [248, 248, 248] },
   })
 
+  return doc
+}
+
+export function exportToPdf<T>(title: string, filename: string, columns: ExportColumn<T>[], rows: T[]) {
+  const doc = buildPdfDoc(title, columns, rows)
   saveAs(doc.output('blob'), `${filename}.pdf`)
+}
+
+/** Aynı PDF görünümünü indirmeden, doğrudan tarayıcının yazdırma diyaloğuyla açar (jsPDF autoPrint). */
+export function printRows<T>(title: string, columns: ExportColumn<T>[], rows: T[]) {
+  const doc = buildPdfDoc(title, columns, rows)
+  doc.autoPrint()
+  window.open(doc.output('bloburl'), '_blank')
 }

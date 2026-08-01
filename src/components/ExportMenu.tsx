@@ -1,4 +1,4 @@
-import { FileSpreadsheet, FileText, Download, FileType } from 'lucide-react'
+import { FileSpreadsheet, FileText, Download, FileType, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -6,9 +6,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { exportToExcel, exportToPdf, exportToWord, type ExportColumn } from '@/lib/exportData'
+import { exportToExcel, exportToPdf, exportToWord, printRows, type ExportColumn } from '@/lib/exportData'
 
 interface ExportMenuProps<T> {
   title: string
@@ -42,6 +43,14 @@ export function ExportMenu<T>({ title, filename, columns, rows }: ExportMenuProp
     exportToPdf(title, filename, columns, rows)
   }
 
+  function handlePrint() {
+    if (rows.length === 0) {
+      toast.error('Yazdırılacak veri yok')
+      return
+    }
+    printRows(title, columns, rows)
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -58,6 +67,10 @@ export function ExportMenu<T>({ title, filename, columns, rows }: ExportMenuProp
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={handlePdf}>
           <FileType className="text-destructive" /> PDF (.pdf)
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={handlePrint}>
+          <Printer className="text-muted-foreground" /> Yazdır
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

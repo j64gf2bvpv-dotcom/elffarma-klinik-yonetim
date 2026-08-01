@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.82] - 2026-08-02
+
+**Dışa Aktar menüsüne "Yazdır" eklendi, Hazırlık Kontrol Listesi ve Günlük Sayım'a dışa aktarma eklendi:** Paylaşılan `ExportMenu` bileşenine (Excel/Word/PDF'in kullanıldığı her ekranda otomatik) bir "Yazdır" seçeneği eklendi — PDF olarak oluşturup doğrudan tarayıcının yazdırma diyaloğunu açıyor, ayrıca dosya indirmeye gerek kalmıyor. Kongre/workshop Hazırlık Kontrol Listesi ve Stok > Günlük Sayım ekranlarına da aynı Excel/Word/PDF/Yazdır menüsü eklendi. Cari Kart ve Tahsilatlar zaten bu menüyü kullandığı için oradaki "Yazdır" seçeneği otomatik olarak devreye girdi. Şema değişikliği yok.
+
 ## [2.12.81] - 2026-08-02
 
 **Kongre kontrol listesine standart şablon eklendi, eksik hazırlıklar uyarı olarak gösteriliyor:** Bir kongre/workshop'un hazırlık kontrol listesi boşsa artık "Standart Listeyi Ekle" butonuyla genelde ihtiyaç duyulan maddeler (stand, numune, broşür, konaklama, ulaşım, ekipman vb.) tek seferde eklenebiliyor — serbest madde ekleme özelliği aynen duruyor. Kongre tarihi 14 gün içine girdiğinde, kontrol listesi hiç doldurulmamışsa veya tamamlanmamış maddesi varsa bu artık bildirim ziline, Hatırlatmalar sayfasına ve Dashboard'daki Kritik Uyarılar kartına otomatik uyarı olarak düşüyor. Şema değişikliği yok (mevcut congress_checklist_items tablosu kullanılıyor).

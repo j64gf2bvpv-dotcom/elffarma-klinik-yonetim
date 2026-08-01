@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ExportMenu } from '@/components/ExportMenu'
 import { useSales } from '@/features/sales/hooks'
 import { SaleForm } from '@/features/sales/SaleForm'
 import {
@@ -18,6 +19,7 @@ import {
   useTodayCount,
   useUpdateCountItem,
 } from './hooks'
+import type { StockCountItemWithProduct } from './api'
 
 function TodaySalesActivity({ countDate }: { countDate: string }) {
   const { data: sales = [] } = useSales()
@@ -202,24 +204,42 @@ export function DailyCountPanel() {
   return (
     <div className="grid gap-4">
       <Card>
-        <CardHeader className="flex-row items-center justify-between">
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">
             {format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })} Sayımı
           </CardTitle>
-          {isCompleted ? (
-            <Badge variant="success">
-              <CheckCircle2 className="size-3" /> Tamamlandı
-            </Badge>
-          ) : (
-            <Button
-              size="sm"
-              onClick={() => completeMutation.mutate(todayCount.id)}
-              disabled={completeMutation.isPending}
-            >
-              {completeMutation.isPending && <Loader2 className="animate-spin" />}
-              Sayımı Tamamla ve Stoğu Güncelle
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {items.length > 0 && (
+              <ExportMenu<StockCountItemWithProduct>
+                title={`${format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })} Sayımı`}
+                filename={`gunluk-sayim-${todayCount.count_date}`}
+                rows={items}
+                columns={[
+                  { header: 'Ürün', value: (i) => i.products.name },
+                  { header: 'Sistemdeki Miktar', value: (i) => `${i.expected_quantity} ${i.products.unit}` },
+                  { header: 'Sayılan', value: (i) => (i.counted_quantity ?? '—') as string | number },
+                  {
+                    header: 'Fark',
+                    value: (i) => (i.counted_quantity == null ? '' : i.counted_quantity - i.expected_quantity),
+                  },
+                ]}
+              />
+            )}
+            {isCompleted ? (
+              <Badge variant="success">
+                <CheckCircle2 className="size-3" /> Tamamlandı
+              </Badge>
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => completeMutation.mutate(todayCount.id)}
+                disabled={completeMutation.isPending}
+              >
+                {completeMutation.isPending && <Loader2 className="animate-spin" />}
+                Sayımı Tamamla ve Stoğu Güncelle
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
