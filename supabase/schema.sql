@@ -776,6 +776,18 @@ insert into storage.buckets (id, name, public)
 values ('invoices', 'invoices', false)
 on conflict (id) do nothing;
 
+-- storage.buckets bu projede RLS açık geliyor (Dashboard'un "New bucket"
+-- sihirbazı kullanılmadan, doğrudan SQL insert ile bucket oluşturulduğunda
+-- bu tabloya eşlik eden varsayılan select policy'si oluşmuyor) — policy
+-- olmadan storage.objects'e yapılan HER insert/upload, Storage servisinin
+-- bucket ayarlarını (public/file size/mime type) okuyamaması yüzünden RLS
+-- ihlali olarak reddediliyor, bucket_id/objects politikaları doğru olsa
+-- bile. Bucket satırları (isim/limit gibi) hassas değil, bu yüzden herkese
+-- select açılıyor.
+drop policy if exists "buckets_select_all" on storage.buckets;
+create policy "buckets_select_all" on storage.buckets for select
+  using (true);
+
 drop policy if exists "invoices_select_staff" on storage.objects;
 create policy "invoices_select_staff" on storage.objects for select
   using (bucket_id = 'invoices' and auth.uid() is not null);

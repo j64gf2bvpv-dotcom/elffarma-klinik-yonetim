@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.77] - 2026-08-01
+
+**`storage.buckets` için eksik SELECT politikası eklendi:** Bucket'lar Dashboard'un "New bucket" sihirbazı yerine doğrudan SQL ile oluşturulduğu için `storage.buckets` tablosunda RLS açık kalıp hiçbir politika eklenmemişti — bu, kongre görseli yükleme hatasının olası nedenlerinden biri olarak tespit edildi ve düzeltildi (bucket satırları hassas veri içermediği için herkese salt-okunur erişim açıldı). Görsel yükleme sorunu hâlâ araştırılıyor. Şema değişikliği: `storage.buckets` için yeni `buckets_select_all` politikası.
+
 ## [2.12.76] - 2026-08-01
 
 **Akıllı İçe Aktar'da Excel/CSV rakam hatası düzeltildi:** Excel/CSV yüklendiğinde artık satırlar yapay zekaya metin olarak yazdırılıp yeniden "okutulmuyor" — yapay zekadan SADECE hangi sütunun hangi hedef alana karşılık geldiğini (sütun eşlemesi) belirlemesi isteniyor, gerçek değerler koddan doğrudan orijinal Excel satırlarından alınıyor. Bu, küçük yerel modelin (qwen2.5:3b) rakamları yanlış yazma riskini ortadan kaldırıyor. PDF/Word/resim için davranış değişmedi. Şema değişikliği yok.
