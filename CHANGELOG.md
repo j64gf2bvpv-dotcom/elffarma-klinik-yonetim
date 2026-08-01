@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.88] - 2026-08-02
+
+**Günlük Hareket içe aktarmada Excel'deki "STOKLAR" değeri artık gerçekten stoğa işleniyor:** Önceden bu sütun sadece satır tespiti için kullanılıyor, değeri hiçbir yere yazılmıyordu — özellikle yeni otomatik oluşturulan (0 stoklu) ürünlerde Excel'deki gerçek miktar sisteme hiç yansımıyordu. Artık ürünün sistemdeki mevcut miktarı Excel'deki "STOKLAR" değerinden farklıysa, aradaki fark bir düzeltme hareketi olarak kaydedilip stok o değere eşitleniyor. Şema değişikliği yok.
+
 ## [2.12.87] - 2026-08-02
 
 **Günlük Sayım'a basit "Başlangıç Listesi" (ÜRÜN ADI / STOKLAR) dışa aktarma eklendi:** Günün başında, henüz temsilci dağıtımı girilmeden, sadece ürün adı ve mevcut stok miktarını gösteren sade bir tablo (Excel/Word/PDF/Yazdır) — tam gün sonu pivot tablosundan (temsilci sütunları + kalan stoklar) ayrı, "Başlangıç Listesi" butonuyla. ExportMenu artık birden fazla kullanıldığı sayfalarda ayırt edilebilmesi için özelleştirilebilir buton metni (triggerLabel) destekliyor. Şema değişikliği yok.

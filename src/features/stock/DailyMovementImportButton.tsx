@@ -112,6 +112,34 @@ export function DailyMovementImportButton() {
         }
       }
 
+      // Excel'deki "STOKLAR" sütunu (o ürünün o günkü başlangıç stoğu) sistemdeki
+      // current_quantity ile uyuşmuyorsa (özellikle az önce otomatik oluşturulan,
+      // dolayısıyla 0 stoklu yeni ürünlerde), fark bir düzeltme hareketiyle
+      // eşitlenir — kullanıcı "girdiğim liste stoğa yazılmıyor" derken tam olarak
+      // bunu kastediyor: dosyadaki miktarların gerçekten sisteme işlenmesi.
+      if (stoklarCol !== -1) {
+        const stokRaw = row[stoklarCol]
+        const stokValue = Number(stokRaw)
+        if (stokRaw !== '' && stokRaw != null && !Number.isNaN(stokValue) && stokValue !== product.current_quantity) {
+          const diff = stokValue - product.current_quantity
+          try {
+            await recordStockMovement({
+              product_id: product.id,
+              movement_type: diff > 0 ? 'in' : 'out',
+              quantity: Math.abs(diff),
+              reason: 'Excel içe aktarma — başlangıç stok eşitleme',
+              note: `Excel'deki STOKLAR değeriyle (${stokValue}) eşitlendi`,
+            })
+            product.current_quantity = stokValue
+            summary.added++
+          } catch (err) {
+            summary.errors.push(
+              `${productName}: başlangıç stok eşitlemesi başarısız — ${err instanceof Error ? err.message : 'bilinmeyen hata'}`,
+            )
+          }
+        }
+      }
+
       let movedForProduct = 0
 
       for (const { name: personName, idx } of personCols) {
