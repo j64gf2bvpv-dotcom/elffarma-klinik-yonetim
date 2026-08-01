@@ -407,6 +407,15 @@ export interface CongressRemainingProduct {
   created_at: string
 }
 
+export interface CongressChecklistItem {
+  id: string
+  congress_id: string
+  label: string
+  is_done: boolean
+  created_by: string | null
+  created_at: string
+}
+
 export interface CustomerPendingProduct {
   id: string
   customer_id: string

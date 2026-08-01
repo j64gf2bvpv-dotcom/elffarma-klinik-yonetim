@@ -1,20 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  createChecklistItem,
   createCongress,
   createParticipant,
   createParticipantProduct,
   createRemainingProduct,
+  deleteChecklistItem,
   deleteCongress,
   deleteParticipant,
   deleteParticipantProduct,
   deleteRemainingProduct,
   fetchAllParticipantProductSales,
+  fetchChecklistItems,
   fetchCongress,
   fetchCongresses,
   fetchParticipants,
   fetchParticipationsByDoctorName,
   fetchRemainingProducts,
+  setChecklistItemDone,
   updateCongress,
   updateParticipant,
   type CongressInput,
@@ -23,7 +27,7 @@ import {
   type ParticipantWithProducts,
   type RemainingProductInput,
 } from './api'
-import type { Congress, CongressRemainingProduct } from '@/types/database'
+import type { Congress, CongressChecklistItem, CongressRemainingProduct } from '@/types/database'
 
 export function useAllParticipantProductSales() {
   return useQuery({
@@ -240,6 +244,56 @@ export function useDeleteRemainingProduct() {
       )
       queryClient.invalidateQueries({ queryKey: ['congress_remaining_products', variables.congressId] })
       toast.success('Kalan ürün silindi')
+    },
+    onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
+  })
+}
+
+export function useChecklistItems(congressId: string | undefined) {
+  return useQuery({
+    queryKey: ['congress_checklist_items', congressId],
+    queryFn: () => fetchChecklistItems(congressId as string),
+    enabled: !!congressId,
+  })
+}
+
+export function useCreateChecklistItem(congressId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (label: string) => createChecklistItem(congressId, label),
+    onSuccess: (created) => {
+      queryClient.setQueryData<CongressChecklistItem[]>(['congress_checklist_items', congressId], (old) =>
+        old ? [...old, created] : old,
+      )
+      queryClient.invalidateQueries({ queryKey: ['congress_checklist_items', congressId] })
+    },
+    onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
+  })
+}
+
+export function useSetChecklistItemDone(congressId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, is_done }: { id: string; is_done: boolean }) => setChecklistItemDone(id, is_done),
+    onSuccess: (_data, { id, is_done }) => {
+      queryClient.setQueryData<CongressChecklistItem[]>(['congress_checklist_items', congressId], (old) =>
+        old?.map((item) => (item.id === id ? { ...item, is_done } : item)),
+      )
+      queryClient.invalidateQueries({ queryKey: ['congress_checklist_items', congressId] })
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useDeleteChecklistItem(congressId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteChecklistItem(id),
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData<CongressChecklistItem[]>(['congress_checklist_items', congressId], (old) =>
+        old?.filter((item) => item.id !== id),
+      )
+      queryClient.invalidateQueries({ queryKey: ['congress_checklist_items', congressId] })
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
   })

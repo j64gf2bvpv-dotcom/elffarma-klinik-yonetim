@@ -27,6 +27,7 @@ import { ParticipantDialog } from '@/features/congresses/ParticipantDialog'
 import { ParticipantProductDialog } from '@/features/congresses/ParticipantProductDialog'
 import { RemainingProductDialog } from '@/features/congresses/RemainingProductDialog'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
+import { ChecklistPanel } from '@/features/congresses/ChecklistPanel'
 import {
   useCongress,
   useDeleteCongress,
@@ -506,6 +507,8 @@ export function CongressDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <ChecklistPanel congressId={congress.id} />
 
       <AttachmentsPanel ownerType="congress" ownerId={congress.id} />
     </div>

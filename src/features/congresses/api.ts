@@ -3,6 +3,7 @@ import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@
 import type {
   AttendanceStatus,
   Congress,
+  CongressChecklistItem,
   CongressParticipant,
   CongressParticipantProduct,
   CongressRemainingProduct,
@@ -207,5 +208,32 @@ export async function createRemainingProduct(input: RemainingProductInput): Prom
 
 export async function deleteRemainingProduct(id: string): Promise<void> {
   return offlineDelete('congress_remaining_products', id, 'Kalan ürün silme')
+}
+
+export async function fetchChecklistItems(congressId: string): Promise<CongressChecklistItem[]> {
+  const { data, error } = await supabase
+    .from('congress_checklist_items')
+    .select('*')
+    .eq('congress_id', congressId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data as CongressChecklistItem[]
+}
+
+export async function createChecklistItem(congressId: string, label: string): Promise<CongressChecklistItem> {
+  const createdBy = await getCurrentUserId()
+  return offlineInsert<CongressChecklistItem>(
+    'congress_checklist_items',
+    { congress_id: congressId, label, created_by: createdBy },
+    `Kontrol listesi: ${label}`,
+  )
+}
+
+export async function setChecklistItemDone(id: string, is_done: boolean): Promise<void> {
+  await offlineUpdate('congress_checklist_items', id, { is_done }, 'Kontrol listesi öğesi güncelleme')
+}
+
+export async function deleteChecklistItem(id: string): Promise<void> {
+  return offlineDelete('congress_checklist_items', id, 'Kontrol listesi öğesi silme')
 }
 

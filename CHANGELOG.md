@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.69] - 2026-08-01
+
+**Kongre/workshop'lara hazırlık kontrol listesi eklendi:** Kongre detay sayfasına, tamamen serbest bir "Hazırlık Kontrol Listesi" eklendi — sabit bir madde seti yok, "ne gitmesi/hazırlanması gerekiyorsa" kullanıcı kendisi ekliyor (broşür, roll-up banner, numune kutusu vb.). İşaretlenen madde yeşil tık ile tamamlandı olarak gösteriliyor, tamamlanan/toplam sayısı başlıkta görünüyor. **Not: Bu özelliğin çalışması için güncellenmiş `supabase/schema.sql`'in Supabase SQL editöründe çalıştırılması gerekiyor** (yeni `congress_checklist_items` tablosu).
+
 ## [2.12.68] - 2026-08-01
 
 **Ajanda'da yan liste kaldırıldı, yaklaşan etkinlikler takvimin içinde yanıp sönüyor, çok günlü kongreler tüm günleri renkli boyuyor:** Bir önceki sürümde eklenen ayrı "Yaklaşan Etkinlikler" kutusu kaldırıldı — artık tek bir takvim var. Yaklaşan (3 gün içi) veya gecikmiş etkinlikler takvim içinde doğrudan mevcut kırmızı parıltı animasyonuyla (arada bir) yanıp sönüyor. 3-4 gün süren kongre/workshop'lar artık sadece ince bir çubuk değil, kapsadığı TÜM takvim kutucuklarını (background event) marka rengiyle boyayarak süreyi bir bakışta belli ediyor. Şema değişikliği yok.
