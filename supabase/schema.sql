@@ -933,6 +933,26 @@ drop policy if exists "documents_delete_staff" on storage.objects;
 create policy "documents_delete_staff" on storage.objects for delete
   using (bucket_id = 'documents' and auth.uid() is not null);
 
+-- profile-images storage bucket (PUBLIC — kongre/workshop tanıtım görselleri,
+-- satış temsilcisi fotoğrafları gibi gizli olmayan görseller; invoices/
+-- documents'ın aksine imzalı URL yerine kalıcı public URL üretmek için
+-- public=true. Path prefix'leriyle ayrılır: congress/..., sales-rep/...
+insert into storage.buckets (id, name, public)
+values ('profile-images', 'profile-images', true)
+on conflict (id) do nothing;
+
+drop policy if exists "profile_images_insert_staff" on storage.objects;
+create policy "profile_images_insert_staff" on storage.objects for insert
+  with check (bucket_id = 'profile-images' and public.is_active_staff());
+
+drop policy if exists "profile_images_update_staff" on storage.objects;
+create policy "profile_images_update_staff" on storage.objects for update
+  using (bucket_id = 'profile-images' and public.is_active_staff());
+
+drop policy if exists "profile_images_delete_staff" on storage.objects;
+create policy "profile_images_delete_staff" on storage.objects for delete
+  using (bucket_id = 'profile-images' and public.is_active_staff());
+
 -- customers (doktorlar): klinik/bölge/temsilci bağlantısı + genişletilmiş iletişim/idari alanlar
 alter table public.customers add column if not exists specialty text;
 alter table public.customers add column if not exists clinic_id uuid references public.clinics (id) on delete set null;

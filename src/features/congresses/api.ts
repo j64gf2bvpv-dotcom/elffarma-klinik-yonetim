@@ -32,6 +32,21 @@ export interface CongressInput {
   video_urls?: string[]
 }
 
+/**
+ * profile-images bucket'ı PUBLIC (invoices/documents'ın aksine) — kongre/
+ * workshop görselleri gizli belge değil, tanıtım görseli olduğu için imzalı
+ * URL yerine doğrudan kalıcı bir public URL alınıp congresses.image_url'e
+ * yazılıyor.
+ */
+export async function uploadCongressImage(file: File): Promise<string> {
+  const ext = file.name.split('.').pop() ?? 'jpg'
+  const path = `congress/${crypto.randomUUID()}.${ext}`
+  const { error } = await supabase.storage.from('profile-images').upload(path, file, { upsert: true })
+  if (error) throw error
+  const { data } = supabase.storage.from('profile-images').getPublicUrl(path)
+  return data.publicUrl
+}
+
 export async function fetchCongresses(): Promise<Congress[]> {
   const { data, error } = await supabase
     .from('congresses')

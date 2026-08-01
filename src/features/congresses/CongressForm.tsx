@@ -2,7 +2,8 @@ import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Loader2, Pencil } from 'lucide-react'
+import { Plus, Loader2, Pencil, ImagePlus, Presentation } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useCreateCongress, useUpdateCongress } from './hooks'
+import { uploadCongressImage } from './api'
 import type { Congress } from '@/types/database'
 
 const schema = z.object({
@@ -76,10 +78,27 @@ function defaults(congress: Congress | undefined): FormInput {
 
 export function CongressForm({ congress }: { congress?: Congress }) {
   const [open, setOpen] = React.useState(false)
+  const [uploadingImage, setUploadingImage] = React.useState(false)
+  const imageInputRef = React.useRef<HTMLInputElement>(null)
   const createMutation = useCreateCongress()
   const updateMutation = useUpdateCongress()
 
   const form = useForm<FormInput, unknown, FormValues>({ resolver: zodResolver(schema), defaultValues: defaults(congress) })
+
+  async function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploadingImage(true)
+    try {
+      const url = await uploadCongressImage(file)
+      form.setValue('image_url', url, { shouldDirty: true })
+    } catch (err) {
+      toast.error('Görsel yüklenemedi', { description: err instanceof Error ? err.message : undefined })
+    } finally {
+      setUploadingImage(false)
+    }
+  }
 
   React.useEffect(() => {
     if (open) form.reset(defaults(congress))
@@ -394,10 +413,37 @@ export function CongressForm({ congress }: { congress?: Congress }) {
               name="image_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Görsel URL (opsiyonel)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} />
-                  </FormControl>
+                  <FormLabel>Görsel (opsiyonel)</FormLabel>
+                  <div className="flex items-center gap-3">
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageSelected}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      title="Bilgisayardan görsel yükle"
+                      className="hover:border-primary/50 relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted transition-colors"
+                    >
+                      {uploadingImage ? (
+                        <Loader2 className="text-muted-foreground size-5 animate-spin" />
+                      ) : field.value ? (
+                        <img src={field.value} alt="Kongre görseli" className="size-full object-contain" />
+                      ) : (
+                        <Presentation className="text-muted-foreground size-6" />
+                      )}
+                      <span className="bg-background/90 absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 py-0.5 text-[10px] font-medium">
+                        <ImagePlus className="size-3" /> Yükle
+                      </span>
+                    </button>
+                    <FormControl>
+                      <Input placeholder="https://... (veya soldan yükleyin)" {...field} />
+                    </FormControl>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

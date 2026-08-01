@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.66] - 2026-08-01
+
+**Kongre/workshop görselleri ve temsilci fotoğrafları artık bilgisayardan yüklenebiliyor:** Kongre formundaki "Görsel URL" alanının yanına tıklanabilir bir önizleme eklendi — tıklayınca bilgisayardan resim seçilip yeni `profile-images` (public) Supabase Storage bucket'ına yükleniyor, kalıcı URL otomatik dolduruluyor. Aynı bucket satış temsilcisi fotoğrafları için de kullanılıyor: Temsilci Ziyaretleri sayfasındaki her temsilci kartının baş harflerinden oluşan rozetine tıklayınca (veya "Temsilci Ekle" formunda) fotoğraf yüklenip temsilcinin adının yanında gösterilebiliyor. **Not: Bu özelliğin çalışması için güncellenmiş `supabase/schema.sql`'in Supabase SQL editöründe çalıştırılması gerekiyor** (yeni `profile-images` bucket'ı ve RLS politikaları içeriyor).
+
 ## [2.12.65] - 2026-08-01
 
 **Satış/İade formunda doktor artık combobox'tan hızlıca eklenebiliyor:** Doktor Seç açılır listesinin altına "Yeni Doktor Ekle" seçeneği eklendi — mevcut Yeni Doktor formu (sadece ad soyad + telefon zorunlu, diğer alanlar opsiyonel) açılıyor, kaydedilen doktor otomatik olarak seçili hale geliyor. Bu iyileştirme CustomerCombobox bileşenine eklendiği için Satış'ın yanı sıra Tahsilat, Fatura, Numune, CRM, Prim Kuralı ve Doktor Ziyareti formlarında da aynı şekilde çalışıyor. Şema değişikliği yok.

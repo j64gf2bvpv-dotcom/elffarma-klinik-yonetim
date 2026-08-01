@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { createSalesRep, deleteSalesRep, fetchSalesReps, setSalesRepActive } from './api'
+import { createSalesRep, deleteSalesRep, fetchSalesReps, setSalesRepActive, updateSalesRep, type SalesRepUpdateInput } from './api'
 import type { SalesRep } from '@/types/database'
 
 export function useSalesReps() {
@@ -17,6 +17,21 @@ export function useCreateSalesRep() {
       toast.success('Temsilci eklendi')
     },
     onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateSalesRep() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: SalesRepUpdateInput }) => updateSalesRep(id, input),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<SalesRep[]>(['sales_reps'], (old) =>
+        old?.map((r) => (r.id === updated.id ? updated : r)),
+      )
+      queryClient.invalidateQueries({ queryKey: ['sales_reps'] })
+      toast.success('Temsilci güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
   })
 }
 

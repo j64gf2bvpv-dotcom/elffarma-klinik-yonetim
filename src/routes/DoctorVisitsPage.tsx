@@ -16,7 +16,6 @@ import {
   Phone,
   AtSign,
   User,
-  UserRound,
   Trash2,
   Wallet,
   Package,
@@ -28,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DoctorVisitDialog } from '@/features/doctorVisits/DoctorVisitDialog'
 import { useVisitsInRange } from '@/features/doctorVisits/hooks'
 import { SalesRepDialog } from '@/features/salesReps/SalesRepDialog'
@@ -44,6 +44,13 @@ function dateKey(d: Date) {
   const copy = new Date(d)
   copy.setMinutes(copy.getMinutes() - copy.getTimezoneOffset())
   return copy.toISOString().slice(0, 10)
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 interface RepPerformance {
@@ -84,9 +91,19 @@ function RepWeekSection({
     <Card>
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2 text-base">
-          <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <UserRound className="size-4" />
-          </span>
+          <SalesRepDialog
+            rep={rep}
+            trigger={
+              <button type="button" title="Fotoğrafı düzenle">
+                <Avatar className="size-8">
+                  {rep.photo_url && <AvatarImage src={rep.photo_url} alt={rep.name} />}
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {getInitials(rep.name)}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            }
+          />
           {rep.name}
         </CardTitle>
         <div className="flex items-center gap-2">
