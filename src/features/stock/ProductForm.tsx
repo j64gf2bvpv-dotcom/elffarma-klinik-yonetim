@@ -40,7 +40,7 @@ const schema = z.object({
 type FormInput = z.input<typeof schema>
 type FormOutput = z.output<typeof schema>
 
-export function ProductForm({ product }: { product?: Product }) {
+export function ProductForm({ product, trigger }: { product?: Product; trigger?: React.ReactNode }) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateProduct()
   const updateMutation = useUpdateProduct()
@@ -92,15 +92,16 @@ export function ProductForm({ product }: { product?: Product }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {product ? (
-          <Button variant="ghost" size="icon">
-            <Pencil className="size-4" />
-          </Button>
-        ) : (
-          <Button>
-            <Plus /> Yeni Ürün
-          </Button>
-        )}
+        {trigger ??
+          (product ? (
+            <Button variant="ghost" size="icon">
+              <Pencil className="size-4" />
+            </Button>
+          ) : (
+            <Button>
+              <Plus /> Yeni Ürün
+            </Button>
+          ))}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

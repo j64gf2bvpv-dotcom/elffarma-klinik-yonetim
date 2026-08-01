@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.74] - 2026-08-01
+
+**Stok'ta "Sipariş Önerileri" kaldırıldı, ürün adına tıklayınca tam düzenleme açılıyor:** Kritik stok eşiğine göre otomatik sipariş miktarı öneren kart kaldırıldı. Ürün adına tıklayınca artık sadece adet değil, ürünün TÜM bilgilerini (isim, kategori, maliyet/fiyat, kritik eşik vb.) düzenleyebileceğiniz tam form açılıyor — ProductForm artık özel bir tetikleyici (trigger) kabul ediyor. Şema değişikliği yok.
+
 ## [2.12.73] - 2026-08-01
 
 **Cari Hesap sayfasından doktor bilgileri düzenlenebiliyor:** Cari Hesap ekstre sayfasına "Bilgileri Düzenle" butonu eklendi — daha önce bu sayfa salt-okunurdu, bilgi güncellemek için Doktorlar sayfasına gitmek gerekiyordu. Şema değişikliği yok.

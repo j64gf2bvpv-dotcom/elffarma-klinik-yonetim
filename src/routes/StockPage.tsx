@@ -1,10 +1,10 @@
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Search, AlertTriangle, Trash2, CalendarClock, Wallet, TrendingUp, PackageSearch, ShoppingBasket } from 'lucide-react'
+import { Search, AlertTriangle, Trash2, CalendarClock, Wallet, TrendingUp, PackageSearch } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -30,51 +30,6 @@ function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
 }
 
-function suggestedReorderQty(product: Product): number {
-  const target = product.critical_stock_threshold * 2
-  return Math.max(target - product.current_quantity, product.critical_stock_threshold)
-}
-
-function ReorderSuggestions({ products }: { products: Product[] }) {
-  const criticalProducts = products.filter((p) => p.current_quantity <= p.critical_stock_threshold)
-  if (criticalProducts.length === 0) return null
-
-  const totalCost = criticalProducts.reduce(
-    (sum, p) => sum + suggestedReorderQty(p) * Number(p.unit_cost ?? 0),
-    0,
-  )
-
-  return (
-    <Card className="mb-6">
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <ShoppingBasket className="size-4 text-destructive" /> Sipariş Önerileri
-          <Badge variant="secondary">{criticalProducts.length}</Badge>
-        </CardTitle>
-        {totalCost > 0 && (
-          <span className="text-muted-foreground text-sm">
-            Tahmini maliyet: <span className="font-semibold text-foreground">{currency(totalCost)}</span>
-          </span>
-        )}
-      </CardHeader>
-      <CardContent className="grid gap-2">
-        {criticalProducts.map((p) => (
-          <div key={p.id} className="flex items-center justify-between rounded-lg border p-2.5 text-sm">
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{p.name}</p>
-              <p className="text-muted-foreground text-xs">
-                Mevcut: {p.current_quantity} {p.unit} · Eşik: {p.critical_stock_threshold} {p.unit}
-              </p>
-            </div>
-            <Badge variant="destructive" className="shrink-0">
-              Önerilen: {suggestedReorderQty(p)} {p.unit}
-            </Badge>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  )
-}
 
 /**
  * Stok adedine tıklayınca yerinde (inline) düzenlenebilir hale gelir. Yeni
@@ -196,11 +151,18 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     )}
                   </TableCell>
                   <TableCell className="font-medium">
-                    {product.name}
-                    {product.sku && <span className="ml-2 text-xs text-muted-foreground">{product.sku}</span>}
-                    {product.barcode && (
-                      <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>
-                    )}
+                    <ProductForm
+                      product={product}
+                      trigger={
+                        <button type="button" className="text-left hover:underline" title="Tüm bilgileri düzenle">
+                          {product.name}
+                          {product.sku && <span className="ml-2 text-xs text-muted-foreground">{product.sku}</span>}
+                          {product.barcode && (
+                            <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>
+                          )}
+                        </button>
+                      }
+                    />
                   </TableCell>
                   <TableCell className="text-muted-foreground">{product.category ?? '—'}</TableCell>
                   <TableCell>
@@ -449,8 +411,6 @@ export function StockPage() {
           </CardContent>
         </Card>
       </div>
-
-      <ReorderSuggestions products={allProducts} />
 
       <Tabs defaultValue="products">
         <TabsList className="mb-4">
