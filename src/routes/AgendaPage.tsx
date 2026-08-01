@@ -4,8 +4,9 @@ import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import trLocale from '@fullcalendar/core/locales/tr'
-import type { EventClickArg, EventContentArg, EventInput } from '@fullcalendar/core'
-import { addDays, isToday, isPast, differenceInCalendarDays } from 'date-fns'
+import type { EventClickArg, EventContentArg, EventInput, EventMountArg } from '@fullcalendar/core'
+import { addDays, format, isToday, isPast, differenceInCalendarDays } from 'date-fns'
+import { tr as trLocaleDate } from 'date-fns/locale/tr'
 import { Presentation, Wallet, BellRing } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -51,6 +52,14 @@ function isUrgent(dateStr: string): boolean {
   const date = new Date(dateStr)
   if (isPast(date) && !isToday(date)) return true
   return differenceInCalendarDays(date, new Date()) <= 3
+}
+
+function buildTooltip(event: AgendaEvent): string {
+  const meta = typeMeta[event.type]
+  const dateLabel = event.end
+    ? `${format(new Date(event.start), 'd MMMM yyyy', { locale: trLocaleDate })} – ${format(new Date(event.end), 'd MMMM yyyy', { locale: trLocaleDate })}`
+    : format(new Date(event.start), 'd MMMM yyyy', { locale: trLocaleDate })
+  return `${meta.label}: ${event.title}\n${dateLabel}`
 }
 
 export function AgendaPage() {
@@ -123,7 +132,7 @@ export function AgendaPage() {
         title: e.title,
         start: e.start,
         end: e.end,
-        extendedProps: { type: e.type, linkId: e.linkId, urgent: isUrgent(e.start) },
+        extendedProps: { type: e.type, linkId: e.linkId, urgent: isUrgent(e.start), tooltip: buildTooltip(e) },
       })),
       ...backgroundEvents,
     ],
@@ -141,6 +150,13 @@ export function AgendaPage() {
   function eventClassNames(arg: { event: { extendedProps: Record<string, unknown> } }) {
     if (arg.event.extendedProps.urgent) return ['animate-alert-glow-red']
     return []
+  }
+
+  // Fare üzerine geldiğinde (tıklamadan, sayfa değiştirmeden) etkinliğin tür/
+  // tarih açıklamasını gösteren native tarayıcı tooltip'i (title attribute).
+  function handleEventDidMount(arg: EventMountArg) {
+    const tooltip = (arg.event.extendedProps as { tooltip?: string }).tooltip
+    if (tooltip) arg.el.title = tooltip
   }
 
   function renderEventContent(arg: EventContentArg) {
@@ -194,6 +210,7 @@ export function AgendaPage() {
             eventClick={handleEventClick}
             eventContent={renderEventContent}
             eventClassNames={eventClassNames}
+            eventDidMount={handleEventDidMount}
             headerToolbar={{ left: 'prev,next today', center: 'title', right: '' }}
             dayMaxEvents={3}
             moreLinkText={(n) => `+${n} daha`}

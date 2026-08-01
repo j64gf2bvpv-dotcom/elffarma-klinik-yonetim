@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.71] - 2026-08-01
+
+**Ajanda'da etkinliklerin üzerine gelince açıklama gösteriliyor:** Hatırlatma/ödeme vadesi/kongre-workshop etkinliklerinin üzerine fare ile gelindiğinde (tıklamadan, sayfa değiştirmeden) tür, başlık ve tarih aralığını gösteren bir tooltip beliriyor. Tıklama davranışı (ilgili sayfaya gitme) aynen korunuyor. Şema değişikliği yok.
+
 ## [2.12.70] - 2026-08-01
 
 **Ajanda'da tüm önemli tarihlerin kutucukları renkleniyor:** Daha önce sadece çok günlü kongreler için yapılan takvim kutucuğu boyama, artık hatırlatma ve ödeme vadesi gibi tek günlük etkinlikler için de geçerli — her önemli tarihin kutucuğu türüne göre (kongre/ödeme/hatırlatma) renkle vurgulanıyor. Şema değişikliği yok.
