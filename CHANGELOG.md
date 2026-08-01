@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.91] - 2026-08-02
+
+**Günlük Sayım'a "Yeniden Aç" eklendi:** Kök neden bulundu — "Sistemdeki Miktar" üzerine tıklayıp stok ekleme özelliği, sayım "Tamamlandı" durumundayken (salt-okunur) çalışmıyordu, bu normal/istenen davranış ama kullanıcı bunu fark edemiyordu. Artık "Tamamlandı" rozetinin yanında bir "Yeniden Aç" butonu var — sayımı tekrar düzenlenebilir hale getirip stok ekleme/sayılan girme işlemlerine devam edilebiliyor. Şema değişikliği yok.
+
 ## [2.12.90] - 2026-08-02
 
 **Günlük Sayım'da "Sistemdeki Miktar" üzerine tıklayıp stok ekleyebilme:** Sayım tablosundaki her ürünün sistemdeki miktarına tıklayınca küçük bir giriş alanı açılıyor — girilen sayı kadar stok ekleniyor/düşülüyor (record_stock_movement RPC'siyle denetim kaydı bırakılarak), aynı zamanda o günün referans miktarı da güncellenip "Fark" hesaplaması gün sonuna kadar doğru kalıyor. Şema değişikliği yok.

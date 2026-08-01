@@ -115,3 +115,13 @@ export async function completeCount(stockCountId: string): Promise<void> {
     .eq('id', stockCountId)
   if (error) throw error
 }
+
+/** Tamamlanmış bir sayımı düzenlemeye açmak için — "Sistemdeki Miktar" üzerinden
+ * stok eklemek gibi işlemler sadece 'open' durumundaki sayımlarda çalışır. */
+export async function reopenCount(stockCountId: string): Promise<void> {
+  const { error } = await supabase
+    .from('stock_counts')
+    .update({ status: 'open', completed_at: null })
+    .eq('id', stockCountId)
+  if (error) throw error
+}

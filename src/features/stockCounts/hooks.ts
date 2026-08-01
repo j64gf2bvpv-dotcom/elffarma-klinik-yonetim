@@ -6,6 +6,7 @@ import {
   fetchCountItems,
   fetchPastCounts,
   fetchTodayCount,
+  reopenCount,
   startTodayCount,
   updateCountItem,
   type StockCountItemWithProduct,
@@ -75,5 +76,17 @@ export function useCompleteCount() {
       toast.success('Sayım tamamlandı, stok güncellendi')
     },
     onError: (error: Error) => toast.error('Tamamlanamadı', { description: error.message }),
+  })
+}
+
+export function useReopenCount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (stockCountId: string) => reopenCount(stockCountId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_counts'] })
+      toast.success('Sayım yeniden açıldı')
+    },
+    onError: (error: Error) => toast.error('Açılamadı', { description: error.message }),
   })
 }

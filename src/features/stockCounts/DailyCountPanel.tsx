@@ -13,6 +13,7 @@ import {
   FileText,
   FileType,
   Printer,
+  Plus,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -35,6 +36,7 @@ import {
   useCompleteCount,
   useCountItems,
   usePastCounts,
+  useReopenCount,
   useStartTodayCount,
   useTodayCount,
   useUpdateCountItem,
@@ -181,34 +183,52 @@ function CountItemRow({
             {item.expected_quantity} {item.products.unit}
           </span>
         ) : addingStock ? (
-          <Input
-            type="number"
-            autoFocus
-            placeholder="Eklenecek/düşülecek adet"
-            className="h-8 w-32"
-            value={addValue}
-            onChange={(e) => setAddValue(e.target.value)}
-            onFocus={(e) => e.currentTarget.select()}
-            onBlur={commitAddStock}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                commitAddStock()
-              }
-              if (e.key === 'Escape') {
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              autoFocus
+              placeholder="Eklenecek/düşülecek adet"
+              className="h-8 w-28"
+              value={addValue}
+              onChange={(e) => setAddValue(e.target.value)}
+              onFocus={(e) => e.currentTarget.select()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  commitAddStock()
+                }
+                if (e.key === 'Escape') {
+                  setAddValue('')
+                  setAddingStock(false)
+                }
+              }}
+            />
+            <Button type="button" size="sm" className="h-8" onMouseDown={(e) => e.preventDefault()} onClick={commitAddStock}>
+              Ekle
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
                 setAddValue('')
                 setAddingStock(false)
-              }
-            }}
-          />
+              }}
+            >
+              Vazgeç
+            </Button>
+          </div>
         ) : (
           <button
             type="button"
             onClick={() => setAddingStock(true)}
             title="Stok eklemek/düşmek için tıklayın"
-            className="hover:bg-accent -mx-1 rounded-md px-1 py-0.5"
+            className="hover:bg-accent -mx-1 inline-flex items-center gap-1 rounded-md px-1 py-0.5"
           >
             {item.expected_quantity} {item.products.unit}
+            <Plus className="text-muted-foreground size-3" />
           </button>
         )}
       </TableCell>
@@ -244,6 +264,7 @@ export function DailyCountPanel() {
   const { data: pastCounts = [] } = usePastCounts()
   const startMutation = useStartTodayCount()
   const completeMutation = useCompleteCount()
+  const reopenMutation = useReopenCount()
   const { data: items = [] } = useCountItems(todayCount?.id)
   const updateItemMutation = useUpdateCountItem(todayCount?.id ?? '')
   const addStockMutation = useAddStockToCountItem(todayCount?.id ?? '')
@@ -333,9 +354,20 @@ export function DailyCountPanel() {
               </DropdownMenu>
             )}
             {isCompleted ? (
-              <Badge variant="success">
-                <CheckCircle2 className="size-3" /> Tamamlandı
-              </Badge>
+              <>
+                <Badge variant="success">
+                  <CheckCircle2 className="size-3" /> Tamamlandı
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => reopenMutation.mutate(todayCount.id)}
+                  disabled={reopenMutation.isPending}
+                >
+                  {reopenMutation.isPending && <Loader2 className="animate-spin" />}
+                  Yeniden Aç
+                </Button>
+              </>
             ) : (
               <Button
                 size="sm"
