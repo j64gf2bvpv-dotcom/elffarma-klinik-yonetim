@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.58] - 2026-08-01
+
+**Yapay Zeka simgesi "AI" yazısından soyut bir sinir ağı/düğüm simgesine geçirildi:** Harf tabanlı logo yerine, birbirine ince çizgilerle bağlı bir merkez düğüm + üç uydu düğümden oluşan simetrik, gradyanlı bir motif — hiçbir gerçek marka logosunu andırmayan, orijinal bir "yapay zeka/ağ" görseli. Arka plan yine tamamen şeffaf, aynı ambient glow ve arada-bir-parlayan ışık huzmesi animasyonu korunuyor. Şema değişikliği yok.
+
 ## [2.12.57] - 2026-08-01
 
 **Yapay Zeka simgesi daha kaliteli bir görünüme kavuştu:** "AI" yazısının arkasına yumuşak, bulanık kırmızı bir ışık taşması (ambient glow) eklendi; gradyan dört durağa çıkarılıp harflere ince koyu bir kontur eklenerek daha mücevher/derinlikli bir görünüm kazandırıldı. Arka plan hâlâ tamamen şeffaf — kutu/daire yok. Mevcut ışık huzmesi animasyonu (arada bir parlama) korunuyor. Şema değişikliği yok.

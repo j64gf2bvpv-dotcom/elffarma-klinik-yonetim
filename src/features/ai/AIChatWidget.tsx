@@ -22,13 +22,21 @@ import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 
 let aiIconGradientId = 0
 
+// Merkezi bir "çekirdek" düğüm + üç uydu düğümden oluşan soyut bir sinir
+// ağı/düğüm motifi — 120° aralıklarla simetrik.
+const AI_ICON_CORE = { x: 50, y: 50, r: 15 }
+const AI_ICON_NODES = [
+  { x: 50, y: 18, r: 8 },
+  { x: 77.7, y: 66, r: 8 },
+  { x: 22.3, y: 66, r: 8 },
+]
+
 /**
- * Arka planı tamamen şeffaf, mücevher gibi derinlik hissi veren gradyanlı
- * kalın "AI" yazısı — hiçbir kutu/daire arka planı yok, sadece harflerin
- * kendisi. Harflerin arkasında yumuşak, bulanık kırmızı bir "ambient glow"
- * (ışık taşması) var; harf kenarlarında ince koyu bir kontur derinlik/
- * netlik katıyor. `animated` verilirse harflerin üzerinden parlak bir ışık
- * huzmesi arada bir (sürekli değil) geçer; verilmezse tamamen sabit durur.
+ * Arka planı tamamen şeffaf, gradyanlı, soyut bir "sinir ağı düğümü" simgesi
+ * — harf/logo değil, birbirine ince çizgilerle bağlı bir çekirdek + üç
+ * uydu düğüm. Düğümlerin arkasında yumuşak, bulanık kırmızı bir "ambient
+ * glow" var. `animated` verilirse şeklin üzerinden parlak bir ışık huzmesi
+ * arada bir (sürekli değil) geçer; verilmezse tamamen sabit durur.
  */
 export function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
@@ -46,43 +54,59 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
           <stop offset="50%" stopColor="white" stopOpacity="0.95" />
           <stop offset="100%" stopColor="white" stopOpacity="0" />
         </linearGradient>
-        <mask id={`${uid}-textmask`}>
-          <rect x="0" y="0" width="100" height="100" fill="black" />
-          <text x="50" y="65" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontWeight="800" fontSize="52" fill="white">
-            AI
-          </text>
-        </mask>
         <filter id={`${uid}-glow`} x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="3.2" />
+          <feGaussianBlur stdDeviation="4" />
         </filter>
+        <mask id={`${uid}-shapemask`}>
+          <rect x="0" y="0" width="100" height="100" fill="black" />
+          {AI_ICON_NODES.map((n, i) => (
+            <line key={i} x1={AI_ICON_CORE.x} y1={AI_ICON_CORE.y} x2={n.x} y2={n.y} stroke="white" strokeWidth="4" />
+          ))}
+          <circle cx={AI_ICON_CORE.x} cy={AI_ICON_CORE.y} r={AI_ICON_CORE.r} fill="white" />
+          {AI_ICON_NODES.map((n, i) => (
+            <circle key={i} cx={n.x} cy={n.y} r={n.r} fill="white" />
+          ))}
+        </mask>
       </defs>
-      <text
-        x="50"
-        y="65"
-        textAnchor="middle"
-        fontFamily="Inter, system-ui, sans-serif"
-        fontWeight="800"
-        fontSize="52"
-        fill="#ef4444"
-        opacity="0.5"
-        filter={`url(#${uid}-glow)`}
-      >
-        AI
-      </text>
-      <text
-        x="50"
-        y="65"
-        textAnchor="middle"
-        fontFamily="Inter, system-ui, sans-serif"
-        fontWeight="800"
-        fontSize="52"
+      <g opacity="0.5" filter={`url(#${uid}-glow)`}>
+        <circle cx={AI_ICON_CORE.x} cy={AI_ICON_CORE.y} r={AI_ICON_CORE.r} fill="#ef4444" />
+        {AI_ICON_NODES.map((n, i) => (
+          <circle key={i} cx={n.x} cy={n.y} r={n.r} fill="#ef4444" />
+        ))}
+      </g>
+      {AI_ICON_NODES.map((n, i) => (
+        <line
+          key={i}
+          x1={AI_ICON_CORE.x}
+          y1={AI_ICON_CORE.y}
+          x2={n.x}
+          y2={n.y}
+          stroke={`url(#${uid}-fill)`}
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+      ))}
+      <circle
+        cx={AI_ICON_CORE.x}
+        cy={AI_ICON_CORE.y}
+        r={AI_ICON_CORE.r}
         fill={`url(#${uid}-fill)`}
         stroke="#450a0a"
         strokeWidth="0.6"
         strokeOpacity="0.35"
-      >
-        AI
-      </text>
+      />
+      {AI_ICON_NODES.map((n, i) => (
+        <circle
+          key={i}
+          cx={n.x}
+          cy={n.y}
+          r={n.r}
+          fill={`url(#${uid}-fill)`}
+          stroke="#450a0a"
+          strokeWidth="0.6"
+          strokeOpacity="0.35"
+        />
+      ))}
       {animated && (
         <rect
           x="-30"
@@ -90,7 +114,7 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
           width="35"
           height="100"
           fill={`url(#${uid}-shine)`}
-          mask={`url(#${uid}-textmask)`}
+          mask={`url(#${uid}-shapemask)`}
           className="animate-ai-shine-sweep"
         />
       )}
