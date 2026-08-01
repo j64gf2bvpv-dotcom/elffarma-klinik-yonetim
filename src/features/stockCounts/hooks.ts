@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  addStockToCountItem,
   completeCount,
   fetchCountItems,
   fetchPastCounts,
   fetchTodayCount,
   startTodayCount,
   updateCountItem,
+  type StockCountItemWithProduct,
 } from './api'
 
 export function useTodayCount() {
@@ -46,6 +48,19 @@ export function useUpdateCountItem(stockCountId: string) {
       queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
     },
     onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
+  })
+}
+
+export function useAddStockToCountItem(stockCountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ item, diff }: { item: StockCountItemWithProduct; diff: number }) => addStockToCountItem(item, diff),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Stok güncellendi')
+    },
+    onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
   })
 }
 

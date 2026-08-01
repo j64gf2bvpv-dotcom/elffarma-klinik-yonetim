@@ -31,6 +31,7 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { useSales } from '@/features/sales/hooks'
 import { SaleForm } from '@/features/sales/SaleForm'
 import {
+  useAddStockToCountItem,
   useCompleteCount,
   useCountItems,
   usePastCounts,
@@ -147,19 +148,69 @@ function CountItemRow({
   item,
   readOnly,
   onSave,
+  onAddStock,
 }: {
-  item: { id: string; expected_quantity: number; counted_quantity: number | null; products: { name: string; unit: string } }
+  item: StockCountItemWithProduct
   readOnly: boolean
   onSave: (id: string, value: number | null) => void
+  onAddStock: (item: StockCountItemWithProduct, diff: number) => void
 }) {
   const [value, setValue] = React.useState(item.counted_quantity?.toString() ?? '')
   const diff = value === '' ? null : Number(value) - item.expected_quantity
+
+  const [addingStock, setAddingStock] = React.useState(false)
+  const [addValue, setAddValue] = React.useState('')
+
+  function commitAddStock() {
+    const parsed = Number(addValue)
+    setAddingStock(false)
+    if (!addValue || !Number.isFinite(parsed) || parsed === 0) {
+      setAddValue('')
+      return
+    }
+    onAddStock(item, parsed)
+    setAddValue('')
+  }
 
   return (
     <TableRow>
       <TableCell className="font-medium">{item.products.name}</TableCell>
       <TableCell className="text-muted-foreground">
-        {item.expected_quantity} {item.products.unit}
+        {readOnly ? (
+          <span>
+            {item.expected_quantity} {item.products.unit}
+          </span>
+        ) : addingStock ? (
+          <Input
+            type="number"
+            autoFocus
+            placeholder="Eklenecek/düşülecek adet"
+            className="h-8 w-32"
+            value={addValue}
+            onChange={(e) => setAddValue(e.target.value)}
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={commitAddStock}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                commitAddStock()
+              }
+              if (e.key === 'Escape') {
+                setAddValue('')
+                setAddingStock(false)
+              }
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAddingStock(true)}
+            title="Stok eklemek/düşmek için tıklayın"
+            className="hover:bg-accent -mx-1 rounded-md px-1 py-0.5"
+          >
+            {item.expected_quantity} {item.products.unit}
+          </button>
+        )}
       </TableCell>
       <TableCell>
         {readOnly ? (
@@ -195,6 +246,7 @@ export function DailyCountPanel() {
   const completeMutation = useCompleteCount()
   const { data: items = [] } = useCountItems(todayCount?.id)
   const updateItemMutation = useUpdateCountItem(todayCount?.id ?? '')
+  const addStockMutation = useAddStockToCountItem(todayCount?.id ?? '')
   const { data: allSales = [] } = useSales()
 
   if (loadingToday) {
@@ -313,6 +365,7 @@ export function DailyCountPanel() {
                   item={item}
                   readOnly={isCompleted}
                   onSave={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
+                  onAddStock={(countItem, diff) => addStockMutation.mutate({ item: countItem, diff })}
                 />
               ))}
             </TableBody>

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.90] - 2026-08-02
+
+**Günlük Sayım'da "Sistemdeki Miktar" üzerine tıklayıp stok ekleyebilme:** Sayım tablosundaki her ürünün sistemdeki miktarına tıklayınca küçük bir giriş alanı açılıyor — girilen sayı kadar stok ekleniyor/düşülüyor (record_stock_movement RPC'siyle denetim kaydı bırakılarak), aynı zamanda o günün referans miktarı da güncellenip "Fark" hesaplaması gün sonuna kadar doğru kalıyor. Şema değişikliği yok.
+
 ## [2.12.89] - 2026-08-02
 
 **Günlük Hareket içe aktarma, temsilci/doktor sütunu olmayan sade bir liste (sadece ÜRÜN ADI + STOKLAR) yüklendiğinde artık hata vermiyor:** Önceden dosyada hiç kişi sütunu yoksa "Doktor/temsilci sütunu bulunamadı" hatasıyla tamamen durup hiçbir şey işlemiyordu. Artık bu durumda sadece bir önceki sürümde eklenen STOKLAR eşitleme adımı çalışıyor — yani salt ürün+stok listesi de yüklenip stoklar güncellenebiliyor, kişi bazlı hareket olmadan. Şema değişikliği yok.

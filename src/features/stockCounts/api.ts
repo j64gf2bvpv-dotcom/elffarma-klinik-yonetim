@@ -73,6 +73,28 @@ export async function updateCountItem(id: string, counted_quantity: number | nul
   await offlineUpdate('stock_count_items', id, { counted_quantity }, 'Sayım kalemi güncelleme')
 }
 
+/**
+ * Günlük Sayım'da "Sistemdeki Miktar" üzerine tıklayıp doğrudan stok ekleme/
+ * düşme için — record_stock_movement RPC'siyle ürünün gerçek stoğu güncellenir
+ * (CLAUDE.md kuralı: current_quantity'ye asla doğrudan yazılmaz), ardından bu
+ * sayım kaleminin expected_quantity'si (o günkü referans miktar) aynı farkla
+ * güncellenir ki "Fark" hesaplaması gün sonuna kadar doğru kalsın.
+ */
+export async function addStockToCountItem(item: StockCountItemWithProduct, diff: number): Promise<void> {
+  await recordStockMovement({
+    product_id: item.product_id,
+    movement_type: diff > 0 ? 'in' : 'out',
+    quantity: Math.abs(diff),
+    reason: 'Günlük sayım — stok ekleme',
+  })
+  await offlineUpdate(
+    'stock_count_items',
+    item.id,
+    { expected_quantity: item.expected_quantity + diff },
+    'Sayım kalemi stok ekleme',
+  )
+}
+
 export async function completeCount(stockCountId: string): Promise<void> {
   const items = await fetchCountItems(stockCountId)
   for (const item of items) {
