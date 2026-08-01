@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.52] - 2026-08-01
+
+**"Temsilci Performansı" widget'ına avatar eklendi, tutarlar kalınlaştırıldı:** Her temsilcinin adının önünde fotoğrafı varsa fotoğrafı, yoksa isim baş harflerinden oluşan bir rozet gösteriliyor. "Satış:" ve "Tahsilat:" tutarları artık kalın (font-semibold). Şema değişikliği yok.
+
 ## [2.12.51] - 2026-08-01
 
 **Ayarlar'a 2 yeni premium menü simge seti ve serbest bir renk paneli eklendi:** Menü Simge Seti'ne "Duotone (Premium)" (yumuşak dolgu + kontur) ve "İnce Çizgi (Minimal)" seçenekleri eklendi (artık 5 set: Klasik, Modern, 3D, Duotone, İnce Çizgi). Görünüm kartına, mevcut sabit renk paleti seçeneklerinin yanına, ton (0-359°) ve yoğunluk (%10-100) kaydırıcılarıyla HERHANGİ bir rengi canlı önizleyip "Bu Rengi Uygula" ile kendi isteğiyle uygulayabildiği bir "Özel Renk Paneli" eklendi. Şema değişikliği yok.

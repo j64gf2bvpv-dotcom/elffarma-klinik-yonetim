@@ -70,6 +70,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useWeather } from '@/features/weather/hooks'
 import { CustomerForm } from '@/features/customers/CustomerForm'
 import { usePayments } from '@/features/payments/hooks'
@@ -114,6 +115,13 @@ function LiveClock() {
       {format(now, 'HH:mm:ss')}
     </span>
   )
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 function getWeatherDisplay(code: number): { Icon: React.ElementType; label: string } {
@@ -492,8 +500,8 @@ export function DashboardPage() {
   }
 
   const repPerformance = React.useMemo(() => {
-    const bySalesRep = new Map<string, { name: string; sold: number; collected: number }>()
-    for (const rep of salesReps) bySalesRep.set(rep.id, { name: rep.name, sold: 0, collected: 0 })
+    const bySalesRep = new Map<string, { name: string; photoUrl: string | null; sold: number; collected: number }>()
+    for (const rep of salesReps) bySalesRep.set(rep.id, { name: rep.name, photoUrl: rep.photo_url, sold: 0, collected: 0 })
     for (const s of sales) {
       if (!s.sales_rep_id) continue
       const entry = bySalesRep.get(s.sales_rep_id)
@@ -1317,10 +1325,18 @@ export function DashboardPage() {
             )}
             {repPerformance.map((rep) => (
               <div key={rep.name} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border p-2.5 text-sm">
-                <span className="min-w-0 truncate font-medium">{rep.name}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <Avatar className="size-7">
+                    {rep.photoUrl && <AvatarImage src={rep.photoUrl} alt={rep.name} />}
+                    <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                      {getInitials(rep.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="min-w-0 truncate font-medium">{rep.name}</span>
+                </span>
                 <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                  <span className="whitespace-nowrap">Satış: {rep.sold.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</span>
-                  <span className="whitespace-nowrap">Tahsilat: {rep.collected.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</span>
+                  <span className="whitespace-nowrap font-semibold">Satış: {rep.sold.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</span>
+                  <span className="whitespace-nowrap font-semibold">Tahsilat: {rep.collected.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</span>
                 </span>
               </div>
             ))}
