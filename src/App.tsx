@@ -14,6 +14,7 @@ import { PrimPage } from '@/routes/PrimPage'
 import { SamplesPage } from '@/routes/SamplesPage'
 import { CrmPage } from '@/routes/CrmPage'
 import { AIInsightsPage } from '@/routes/AIInsightsPage'
+import { InstagramLeadsPage } from '@/routes/InstagramLeadsPage'
 import { CariHesapPage } from '@/routes/CariHesapPage'
 import { CariHesapListPage } from '@/routes/CariHesapListPage'
 import { BudgetYearPage } from '@/routes/BudgetYearPage'
@@ -65,6 +66,7 @@ function App() {
             <Route path="numuneler" element={<SamplesPage />} />
             <Route path="crm" element={<CrmPage />} />
             <Route path="ai-analiz" element={<AIInsightsPage />} />
+            <Route path="instagram-doktor-listesi" element={<InstagramLeadsPage />} />
             <Route path="cari-hesap" element={<CariHesapListPage />} />
             <Route path="cari-hesap/:id" element={<CariHesapPage />} />
             <Route path="stok" element={<StockPage />} />

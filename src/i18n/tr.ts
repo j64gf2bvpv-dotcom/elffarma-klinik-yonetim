@@ -7,6 +7,7 @@ export const tr = {
     samples: 'Numune Takibi',
     crm: 'CRM',
     aiInsights: 'Yapay Zeka Analiz',
+    instagramLeads: 'Instagram Doktor Listesi',
     stock: 'Stok Yönetimi',
     payments: 'Tahsilatlar',
     congresses: 'Kongreler',

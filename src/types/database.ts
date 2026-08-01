@@ -470,6 +470,19 @@ export interface Reminder {
   created_at: string
 }
 
+export interface InstagramLead {
+  id: string
+  full_name: string
+  phone: string | null
+  email: string | null
+  address: string | null
+  instagram_username: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type ExpenseCategory = 'hizmet_gideri' | 'diger'
 
 export interface Expense {

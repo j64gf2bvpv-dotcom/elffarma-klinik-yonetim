@@ -70,6 +70,10 @@ import {
   BookOpen,
   Bell,
   Calendar,
+  AtSign,
+  Camera,
+  UserSearch,
+  Contact2,
 } from 'lucide-react'
 
 export type NavKey =
@@ -80,6 +84,7 @@ export type NavKey =
   | 'samples'
   | 'crm'
   | 'aiInsights'
+  | 'instagramLeads'
   | 'stock'
   | 'payments'
   | 'congresses'
@@ -116,6 +121,7 @@ export const iconSets: IconSet[] = [
       samples: FlaskConical,
       crm: Handshake,
       aiInsights: Sparkles,
+      instagramLeads: AtSign,
       stock: PackageSearch,
       payments: Banknote,
       congresses: Presentation,
@@ -142,6 +148,7 @@ export const iconSets: IconSet[] = [
       samples: TestTube,
       crm: Users2,
       aiInsights: BrainCircuit,
+      instagramLeads: Camera,
       stock: Boxes,
       payments: Wallet,
       congresses: GraduationCap,
@@ -168,6 +175,7 @@ export const iconSets: IconSet[] = [
       samples: Beaker,
       crm: UserCheck,
       aiInsights: Bot,
+      instagramLeads: UserSearch,
       stock: PackageCheck,
       payments: CircleDollarSign,
       congresses: Landmark,
@@ -194,6 +202,7 @@ export const iconSets: IconSet[] = [
       samples: Syringe,
       crm: Handshake,
       aiInsights: Sparkles,
+      instagramLeads: AtSign,
       stock: Archive,
       payments: WalletCards,
       congresses: Presentation,
@@ -220,6 +229,7 @@ export const iconSets: IconSet[] = [
       samples: TestTubes,
       crm: UsersRound,
       aiInsights: Wand2,
+      instagramLeads: Contact2,
       stock: Package,
       payments: CreditCard,
       congresses: Mic2,

@@ -1540,6 +1540,37 @@ drop policy if exists "staff_ai_keys_own_delete" on public.staff_ai_keys;
 create policy "staff_ai_keys_own_delete" on public.staff_ai_keys
   for delete using (staff_id = auth.uid());
 
+-- =========================================================
+-- 35. INSTAGRAM DOKTOR LİSTESİ (instagram_leads)
+-- =========================================================
+-- Instagram'ın resmi API'si kişilerin telefon/e-posta/adres bilgisini
+-- vermediği ve sayfa kazıma (scraping) hem platform kurallarına hem KVKK'ya
+-- aykırı olduğu için bu OTOMATİK doldurulmuyor — personel Instagram'da
+-- kendi bulduğu doktorları burada ELLE kaydediyor. Diğer tüm tablolardaki
+-- shared-trust deseniyle aynı: herhangi bir aktif personel okuyup/yazabilir.
+create table if not exists public.instagram_leads (
+  id uuid primary key default gen_random_uuid(),
+  full_name text not null,
+  phone text,
+  email text,
+  address text,
+  instagram_username text,
+  notes text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists set_updated_at on public.instagram_leads;
+create trigger set_updated_at before update on public.instagram_leads
+for each row execute function public.set_updated_at();
+
+alter table public.instagram_leads enable row level security;
+
+drop policy if exists "instagram_leads_all_staff" on public.instagram_leads;
+create policy "instagram_leads_all_staff" on public.instagram_leads for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

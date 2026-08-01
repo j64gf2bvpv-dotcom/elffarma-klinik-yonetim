@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.86] - 2026-08-02
+
+**"Instagram Doktor Listesi" eklendi (manuel giriş):** Yeni bir nav sayfası — Instagram'da bulunan doktorları isim/telefon/e-posta/adres/Instagram kullanıcı adı ile elle kaydedip Excel/Word/PDF/Yazdır ile dışa aktarabileceğiniz basit bir liste. Instagram'ın sayfasını otomatik tarayıp kişilerin iletişim bilgilerini toplama YOK — bu hem Instagram'ın kullanım şartlarına hem KVKK'ya aykırı olur, bu yüzden bilinçli olarak sadece elle giriş destekleniyor. Şema değişikliği: yeni `instagram_leads` tablosu (shared-trust RLS).
+
 ## [2.12.85] - 2026-08-02
 
 **Günlük Hareket içe aktarma, genel stokta olmayan ürün yüzünden artık veriyi atlamıyor:** Excel'deki bir ürün adı Stok listesinde henüz kayıtlı değilse, önceden o satır "ürün bulunamadı" hatasıyla atlanıyordu — artık ürün otomatik olarak (varsayılan birim/kritik eşikle) oluşturulup hareket yine de işleniyor; detaylar sonradan Stok sayfasından düzenlenebilir. Şema değişikliği yok.
