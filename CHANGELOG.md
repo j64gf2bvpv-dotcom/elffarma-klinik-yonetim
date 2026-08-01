@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.75] - 2026-08-01
+
+**Yapay zeka destekli "Akıllı İçe Aktar" eklendi (Doktorlar ve Stok):** Mevcut sıkı-şablonlu Excel içe aktarmanın yanına, serbest formatta Word/Excel/PDF/resim yükleyip yapay zekanın içeriği ayrıştırıp yapılandırılmış veriye çevirdiği yeni bir "Akıllı İçe Aktar" özelliği eklendi — kolon başlıklarının tam eşleşmesi gerekmiyor. Yapay zeka çıktısı bir önizleme tablosunda gösteriliyor, kullanıcı onaylamadan HİÇBİR kayıt oluşturulmuyor. PDF metin çıkarımı için `pdfjs-dist`, Word (.docx) için `mammoth` eklendi. Bu ilk sürüm Doktorlar ve Stok sayfalarında aktif; aynı genel amaçlı `SmartImportDialog` bileşeni diğer sayfalara da kolayca eklenebilir. Şema değişikliği yok.
+
 ## [2.12.74] - 2026-08-01
 
 **Stok'ta "Sipariş Önerileri" kaldırıldı, ürün adına tıklayınca tam düzenleme açılıyor:** Kritik stok eşiğine göre otomatik sipariş miktarı öneren kart kaldırıldı. Ürün adına tıklayınca artık sadece adet değil, ürünün TÜM bilgilerini (isim, kategori, maliyet/fiyat, kritik eşik vb.) düzenleyebileceğiniz tam form açılıyor — ProductForm artık özel bir tetikleyici (trigger) kabul ediyor. Şema değişikliği yok.

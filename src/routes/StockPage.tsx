@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
+import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import { DailyMovementImportButton } from '@/features/stock/DailyMovementImportButton'
 import { readCell, type ImportSummary } from '@/lib/importData'
 import type { BrandLine, Product } from '@/types/database'
@@ -366,6 +367,32 @@ export function StockPage() {
                   'Başlangıç Stoğu': 20,
                 },
               ]}
+            />
+            <SmartImportDialog
+              title="Ürünleri Akıllı İçe Aktar"
+              targetLabel="stok/ürün"
+              fieldHeaders={[
+                'Ürün',
+                'SKU',
+                'Kategori',
+                'Birim',
+                'Kritik Stok Eşiği',
+                'Birim Maliyet',
+                'Satış Fiyatı',
+                'Kampanya',
+                'Barkod',
+                'Ürün Hattı',
+                'Son Kullanım Tarihi',
+                'Başlangıç Stoğu',
+              ]}
+              fieldHints={{
+                Birim: 'ör. "adet", "kutu" — yoksa "adet" yaz',
+                'Kritik Stok Eşiği': 'sayı, yoksa 5 yaz',
+                'Ürün Hattı': '"Dermakor" veya "Swiss", yoksa boş',
+                'Son Kullanım Tarihi': 'YYYY-AA-GG formatında, yoksa boş',
+                'Başlangıç Stoğu': 'sayı, yoksa 0 yaz',
+              }}
+              onImport={handleImport}
             />
             <DailyMovementImportButton />
             <ProductForm />

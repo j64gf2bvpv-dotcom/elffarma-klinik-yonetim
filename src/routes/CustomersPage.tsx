@@ -22,6 +22,7 @@ import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
 import { formatTrPhoneForDisplay, normalizeTrPhone } from '@/features/whatsapp/normalizePhone'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
+import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import { readCell, type ImportSummary } from '@/lib/importData'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
 import type { Customer } from '@/types/database'
@@ -171,6 +172,31 @@ export function CustomersPage() {
                   Etiketler: 'botoks, vip',
                 },
               ]}
+            />
+            <SmartImportDialog
+              title="Doktorları Akıllı İçe Aktar"
+              targetLabel="doktor/cari kart"
+              fieldHeaders={[
+                'Ad Soyad',
+                'Telefon',
+                'Tip',
+                'İl',
+                'Hastane',
+                'Ödeme Vadesi',
+                'TC Kimlik No',
+                'Vergi Numarası',
+                'KDV Oranı',
+                'Adres',
+                'Fatura Durumu',
+                'Etiketler',
+              ]}
+              fieldHints={{
+                Tip: '"Şahıs" veya "Hastane"',
+                'Ödeme Vadesi': 'YYYY-AA-GG formatında tarih, yoksa boş',
+                'Fatura Durumu': '"Faturalı" veya "Faturasız"',
+                Etiketler: 'virgülle ayrılmış kısa etiketler, yoksa boş',
+              }}
+              onImport={handleImport}
             />
             <CustomerForm />
           </div>
