@@ -26,17 +26,14 @@ import {
   EyeOff,
   Pencil,
   Save,
-  LayoutGrid,
   X,
   Coins,
   ArrowLeftRight,
   Presentation,
   MapPin,
   ShoppingCart,
-  PackagePlus,
   CalendarPlus,
   UserPlus,
-  FileText,
   BarChart3,
   PieChart,
   Landmark,
@@ -58,6 +55,11 @@ import {
   CloudRain,
   CloudSnow,
   CloudLightning,
+  Receipt,
+  HandCoins,
+  AlarmClockPlus,
+  Calculator,
+  Boxes,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -219,7 +221,7 @@ function QuickAction({
       to={to}
       className="group flex flex-col items-center gap-2 rounded-xl border border-border/60 p-3 text-center transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/40"
     >
-      <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
+      <span className="ring-primary/10 flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_2px_6px_-2px_rgba(0,0,0,0.18)] ring-1 transition-transform duration-300 group-hover:scale-110">
         <Icon className="size-5" />
       </span>
       <span className="text-xs font-medium">{label}</span>
@@ -263,67 +265,73 @@ type WidgetId =
   | 'sample_conversion'
   | 'lot_expiry'
 
-// Widget genişliği sabit birkaç seçenekten biri (üçte bir/yarım/üçte iki/tam) —
-// sürekli piksel bazlı sürükle-boyutlandırma KASITLI OLARAK kullanılmıyor: bir
-// önceki denemede (react-grid-layout + WidthProvider) grafiklerin kendi otomatik
-// boyutlandırma mekanizmasıyla (Recharts ResponsiveContainer) çakışıp sonsuz bir
-// ölçüm döngüsüne girmiş ve uygulamayı kilitlemişti. Burada JS tarafında SÜREKLİ
-// bir ölçüm/gözlem YOK — genişlik/yükseklik tarayıcının kendi native CSS `resize`
-// mekanizmasıyla (köşeden/kenardan sürükleyerek) değiştiriliyor, biz sadece
-// kullanıcı sürüklemeyi BIRAKTIĞINDA (mouse up) son boyutu bir kerelik okuyup
-// kaydediyoruz — iki ayrı oto-boyutlandırma sisteminin birbirini beslediği o
-// çökme sınıfına kapalı.
+// Widget'lar 12 sütunlu bir CSS Grid'e yerleşiyor; her widget'ın genişliği
+// sabit birkaç sütun-genişliği (span) seçeneğinden biri (¼/⅓/½/⅔/Tam) — asla
+// serbest piksel değeri değil. Bu yüzden çerçeveler HER ZAMAN net sütunlara
+// hizalanıyor (nizami görünüm) ve yerleşim `grid-auto-flow: row dense` ile
+// TARAYICI TARAFINDAN otomatik yapılıyor (bir widget gizlenince/küçülünce
+// sonrakiler otomatik yukarı/boşluğa kayar) — hiçbir JS ölçüm/gözlem YOK. Bir
+// önceki denemede (react-grid-layout + WidthProvider) grafiklerin kendi
+// otomatik boyutlandırma mekanizmasıyla (Recharts ResponsiveContainer) çakışıp
+// sonsuz bir ölçüm döngüsüne girip uygulamayı kilitlemişti; bu tasarım o çökme
+// sınıfına tamamen kapalı.
 interface LayoutItem {
   id: WidgetId
   visible: boolean
-  /** px cinsinden — null ise DEFAULT_WIDTH_PCT'teki varsayılan yüzde genişlik kullanılır. */
-  width: number | null
-  /** px cinsinden — null ise içeriğe göre doğal (auto) yükseklik kullanılır. */
-  height: number | null
+  /** 1-12 arası grid sütun kapsamı — null ise DEFAULT_SPAN'daki varsayılan kullanılır. */
+  span: number | null
 }
 
-const DEFAULT_WIDTH_PCT: Record<WidgetId, number> = {
-  stats: 100,
-  revenue_chart: 67,
-  upcoming_reminders: 33,
-  top_products: 33,
-  upcoming_congresses: 33,
-  rep_performance: 33,
-  quick_actions: 100,
-  critical_alerts: 50,
-  sales_trend: 50,
-  stock_status: 50,
-  exchange_rates: 50,
-  region_sales: 50,
-  congress_prices: 50,
-  recent_activity: 100,
-  commission_summary: 50,
-  sample_conversion: 50,
-  lot_expiry: 50,
+const DEFAULT_SPAN: Record<WidgetId, number> = {
+  stats: 12,
+  revenue_chart: 8,
+  upcoming_reminders: 4,
+  top_products: 4,
+  upcoming_congresses: 4,
+  rep_performance: 4,
+  quick_actions: 12,
+  critical_alerts: 6,
+  sales_trend: 6,
+  stock_status: 6,
+  exchange_rates: 6,
+  region_sales: 6,
+  congress_prices: 6,
+  recent_activity: 12,
+  commission_summary: 6,
+  sample_conversion: 6,
+  lot_expiry: 6,
 }
+
+const SPAN_OPTIONS: { value: number; label: string }[] = [
+  { value: 3, label: '¼' },
+  { value: 4, label: '⅓' },
+  { value: 6, label: '½' },
+  { value: 8, label: '⅔' },
+  { value: 12, label: 'Tam' },
+]
 
 // Varsayılan görünüm sade tutuluyor (Özet + Aylık Satış + Hatırlatmalar + En Çok
 // Satan + Yaklaşan Kongreler + Temsilci Performansı + Hızlı İşlemler) — geri kalan
 // widget'lar SİLİNMEDİ, sadece varsayılan olarak gizli; "Paneli Düzenle" ile admin
 // istediği an geri açıp yerini/boyutunu değiştirebilir.
 const defaultLayout: LayoutItem[] = [
-  { id: 'stats', visible: true, width: null, height: null },
-  { id: 'revenue_chart', visible: true, width: null, height: null },
-  { id: 'upcoming_reminders', visible: true, width: null, height: null },
-  { id: 'top_products', visible: true, width: null, height: null },
-  { id: 'upcoming_congresses', visible: true, width: null, height: null },
-  { id: 'rep_performance', visible: true, width: null, height: null },
-  { id: 'quick_actions', visible: true, width: null, height: null },
-  { id: 'critical_alerts', visible: false, width: null, height: null },
-  { id: 'sales_trend', visible: false, width: null, height: null },
-  { id: 'stock_status', visible: false, width: null, height: null },
-  { id: 'exchange_rates', visible: false, width: null, height: null },
-  { id: 'region_sales', visible: false, width: null, height: null },
-  { id: 'congress_prices', visible: false, width: null, height: null },
-  { id: 'recent_activity', visible: false, width: null, height: null },
-  { id: 'commission_summary', visible: false, width: null, height: null },
-  { id: 'sample_conversion', visible: false, width: null, height: null },
-  { id: 'lot_expiry', visible: false, width: null, height: null },
+  { id: 'stats', visible: true, span: null },
+  { id: 'revenue_chart', visible: true, span: null },
+  { id: 'upcoming_reminders', visible: true, span: null },
+  { id: 'top_products', visible: true, span: null },
+  { id: 'upcoming_congresses', visible: true, span: null },
+  { id: 'rep_performance', visible: true, span: null },
+  { id: 'quick_actions', visible: true, span: null },
+  { id: 'critical_alerts', visible: false, span: null },
+  { id: 'sales_trend', visible: false, span: null },
+  { id: 'stock_status', visible: false, span: null },
+  { id: 'exchange_rates', visible: false, span: null },
+  { id: 'region_sales', visible: false, span: null },
+  { id: 'congress_prices', visible: false, span: null },
+  { id: 'recent_activity', visible: false, span: null },
+  { id: 'commission_summary', visible: false, span: null },
+  { id: 'sample_conversion', visible: false, span: null },
+  { id: 'lot_expiry', visible: false, span: null },
 ]
 
 const widgetLabels: Record<WidgetId, string> = {
@@ -537,7 +545,6 @@ export function DashboardPage() {
   const [draftLayout, setDraftLayout] = React.useState<LayoutItem[] | null>(null)
   const dragIndexRef = React.useRef<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null)
-  const gridContainerRef = React.useRef<HTMLDivElement>(null)
 
   const validWidgetIds = React.useMemo(() => new Set(defaultLayout.map((i) => i.id)), [])
 
@@ -569,13 +576,8 @@ export function DashboardPage() {
     setDraftLayout((prev) => (prev ?? layout).map((item) => (item.id === id ? { ...item, visible: !item.visible } : item)))
   }
 
-  // Kullanıcı kenardan/köşeden tutup native CSS resize ile boyutu değiştirip
-  // bıraktığında (mouseUp) çağrılır — sürükleme SIRASINDA hiçbir React state
-  // güncellenmiyor, sadece BİTİNCE son boyut bir kerelik okunup kaydediliyor.
-  function handleResizeEnd(id: WidgetId, el: HTMLDivElement) {
-    const width = Math.round(el.offsetWidth)
-    const height = Math.round(el.offsetHeight)
-    setDraftLayout((prev) => (prev ?? layout).map((item) => (item.id === id ? { ...item, width, height } : item)))
+  function setSpan(id: WidgetId, span: number) {
+    setDraftLayout((prev) => (prev ?? layout).map((item) => (item.id === id ? { ...item, span } : item)))
   }
 
   function handleDrop(targetIndex: number) {
@@ -589,45 +591,6 @@ export function DashboardPage() {
       list.splice(targetIndex, 0, moved)
       return list
     })
-  }
-
-  // "Ekrana Sığdır": mevcut satırları (DOM'daki offsetTop'a göre) bir kerelik
-  // ölçüp, her satırdaki widget'lara o satırı tam dolduracak eşit genişlik
-  // veriyor — böylece elle sürükle-boyutlandırma sonucu oluşan boşluk/taşma
-  // tek tıkla düzeltilebiliyor. Sürekli bir ölçüm/gözlem YOK, sadece tıklama
-  // anında bir kerelik okuma yapılıyor.
-  function handleFitToScreen() {
-    const container = gridContainerRef.current
-    if (!container) return
-    const containerWidth = container.clientWidth
-    const gap = 16
-
-    const itemEls = Array.from(container.children) as HTMLElement[]
-    const rows: HTMLElement[][] = []
-    for (const el of itemEls) {
-      const lastRow = rows[rows.length - 1]
-      if (lastRow && Math.abs(lastRow[0].offsetTop - el.offsetTop) < 4) {
-        lastRow.push(el)
-      } else {
-        rows.push([el])
-      }
-    }
-
-    const widthById = new Map<string, number>()
-    for (const row of rows) {
-      const count = row.length
-      const widthPerItem = Math.floor((containerWidth - gap * (count - 1)) / count)
-      for (const el of row) {
-        const id = el.dataset.widgetId
-        if (id) widthById.set(id, widthPerItem)
-      }
-    }
-
-    setDraftLayout((prev) =>
-      (prev ?? layout).map((item) =>
-        widthById.has(item.id) ? { ...item, width: widthById.get(item.id)!, height: null } : item,
-      ),
-    )
   }
 
   const monthTotal = monthPayments.reduce((sum, p) => sum + Number(p.amount), 0)
@@ -838,14 +801,14 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <QuickAction to="/satislar" icon={FileText} label="Fatura Oluştur" />
-              <QuickAction to="/tahsilatlar" icon={Wallet} label="Tahsilat Ekle" />
+              <QuickAction to="/satislar" icon={Receipt} label="Fatura Oluştur" />
+              <QuickAction to="/tahsilatlar" icon={HandCoins} label="Tahsilat Ekle" />
               <QuickAction to="/musteriler" icon={UserPlus} label="Yeni Cari" />
               <QuickAction to="/ai-analiz" icon={BarChart3} label="Raporlar" />
               <QuickAction to="/ajanda" icon={CalendarPlus} label="Ajandaya Ekle" />
-              <QuickAction to="/hatirlatmalar" icon={BellRing} label="Hatırlatma Ekle" />
-              <QuickAction to="/prim" icon={Percent} label="Prim Hesapla" />
-              <QuickAction to="/stok" icon={PackagePlus} label="Stok Durumu" />
+              <QuickAction to="/hatirlatmalar" icon={AlarmClockPlus} label="Hatırlatma Ekle" />
+              <QuickAction to="/prim" icon={Calculator} label="Prim Hesapla" />
+              <QuickAction to="/stok" icon={Boxes} label="Stok Durumu" />
             </div>
           </CardContent>
         </Card>
@@ -1547,9 +1510,6 @@ export function DashboardPage() {
             )}
             {isAdmin && editMode && (
               <>
-                <Button variant="outline" size="sm" onClick={handleFitToScreen}>
-                  <LayoutGrid className="size-3.5" /> Ekrana Sığdır
-                </Button>
                 <Button variant="outline" size="sm" onClick={cancelEditing}>
                   <X className="size-3.5" /> Vazgeç
                 </Button>
@@ -1626,60 +1586,75 @@ export function DashboardPage() {
 
       {editMode && (
         <p className="text-muted-foreground text-xs">
-          Çerçeveleri sürükleyerek yerini değiştirebilir (bırakacağınız yer vurgulanır), sağ-alt
-          köşesinden tutup kenarlarından çekerek büyütüp küçültebilir, göz ikonuyla gizleyip
-          gösterebilir, "Ekrana Sığdır" ile aynı satırdaki çerçeveleri otomatik eşit genişliğe
-          getirebilirsiniz.
+          Çerçeveleri sürükleyerek yerini değiştirebilir (bırakacağınız yer vurgulanır), boyut
+          etiketleriyle (¼/⅓/½/⅔/Tam) net sütunlara hizalı şekilde büyütüp küçültebilir, göz
+          ikonuyla gizleyip gösterebilirsiniz — yerleşim her zaman otomatik ve nizami kalır.
         </p>
       )}
 
-      <div ref={gridContainerRef} className="flex flex-wrap items-start gap-4">
-        {visibleItems.map((item, index) => (
-          <div
-            key={item.id}
-            data-widget-id={item.id}
-            draggable={editMode}
-            onDragStart={() => (dragIndexRef.current = index)}
-            onDragOver={(e) => {
-              if (!editMode) return
-              e.preventDefault()
-              if (dragOverIndex !== index) setDragOverIndex(index)
-            }}
-            onDragLeave={() => {
-              if (dragOverIndex === index) setDragOverIndex(null)
-            }}
-            onDrop={() => editMode && handleDrop(index)}
-            onMouseUp={editMode ? (e) => handleResizeEnd(item.id, e.currentTarget) : undefined}
-            style={{
-              width: item.width ? `${item.width}px` : `${DEFAULT_WIDTH_PCT[item.id]}%`,
-              height: item.height ?? undefined,
-              minWidth: 260,
-              maxWidth: '100%',
-            }}
-            className={cn(
-              editMode && 'resize overflow-auto rounded-lg border border-dashed border-border/60 p-1 transition-colors',
-              editMode && !item.visible && 'opacity-40',
-              editMode && dragOverIndex === index && 'border-primary bg-primary/5',
-            )}
-          >
-            {editMode && (
-              <div className="mb-1.5 flex cursor-grab items-center justify-between rounded-lg border bg-muted/50 px-2 py-1 text-xs active:cursor-grabbing">
-                <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
-                  <GripVertical className="size-3.5" /> {widgetLabels[item.id]}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => toggleVisible(item.id)}
-                  title={item.visible ? 'Gizle' : 'Göster'}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  {item.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-                </button>
-              </div>
-            )}
-            {renderWidget(item.id)}
-          </div>
-        ))}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-12" style={{ gridAutoFlow: 'row dense' }}>
+        {visibleItems.map((item, index) => {
+          const span = item.span ?? DEFAULT_SPAN[item.id]
+          return (
+            <div
+              key={item.id}
+              data-widget-id={item.id}
+              draggable={editMode}
+              onDragStart={() => (dragIndexRef.current = index)}
+              onDragOver={(e) => {
+                if (!editMode) return
+                e.preventDefault()
+                if (dragOverIndex !== index) setDragOverIndex(index)
+              }}
+              onDragLeave={() => {
+                if (dragOverIndex === index) setDragOverIndex(null)
+              }}
+              onDrop={() => editMode && handleDrop(index)}
+              style={{ gridColumn: `span ${span} / span ${span}` }}
+              className={cn(
+                'min-w-0',
+                editMode && 'rounded-lg border border-dashed border-border/60 p-1 transition-colors',
+                editMode && !item.visible && 'opacity-40',
+                editMode && dragOverIndex === index && 'border-primary bg-primary/5',
+              )}
+            >
+              {editMode && (
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5 rounded-lg border bg-muted/50 px-2 py-1 text-xs">
+                  <span className="flex cursor-grab items-center gap-1.5 font-medium text-muted-foreground active:cursor-grabbing">
+                    <GripVertical className="size-3.5" /> {widgetLabels[item.id]}
+                  </span>
+                  <div className="flex items-center gap-0.5">
+                    {SPAN_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setSpan(item.id, opt.value)}
+                        title={opt.label}
+                        className={cn(
+                          'rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors',
+                          span === opt.value
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-accent',
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => toggleVisible(item.id)}
+                      title={item.visible ? 'Gizle' : 'Göster'}
+                      className="text-muted-foreground hover:text-foreground ml-1"
+                    >
+                      {item.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {renderWidget(item.id)}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

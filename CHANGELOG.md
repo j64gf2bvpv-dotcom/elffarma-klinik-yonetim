@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.44] - 2026-08-01
+
+**Panel çerçeveleri artık nizami bir kutu ızgarasında, otomatik yerleşiyor:** Widget'lar serbest piksel boyutlandırma yerine 12 sütunlu bir CSS Grid'e (¼/⅓/½/⅔/Tam sütun genişliği seçenekleri) oturuyor; yerleşim `grid-auto-flow: row dense` ile tarayıcı tarafından tamamen otomatik yapılıyor — bir çerçeve gizlenince/küçülünce diğerleri otomatik boşluğa kayıyor, elle "Ekrana Sığdır" tıklamaya gerek kalmadı. Düzenleme modunda kenardan sürükleyerek boyutlandırma yerine her çerçevenin başlığında boyut etiketleri (¼/⅓/½/⅔/Tam) var; sürükleyerek yer değiştirme aynı şekilde çalışmaya devam ediyor. Sürekli JS ölçüm/ResizeObserver kullanılmıyor (bkz. önceki react-grid-layout çökmesi notu).
+
+**Panel'de "Hızlı İşlemler" simgeleri premium ikonlarla değiştirildi:** Fatura Oluştur (Receipt), Tahsilat Ekle (HandCoins), Hatırlatma Ekle (AlarmClockPlus), Prim Hesapla (Calculator), Stok Durumu (Boxes) ikonları daha isabetli/premium seçeneklerle değiştirildi; ikon rozetlerine hafif gradyan + iç/dış gölge (derinlik) eklendi. Şema değişikliği yok.
+
 ## [2.12.43] - 2026-08-01
 
 **Panel'de "Hoş geldiniz" yazısı düzenlenebilir, yanına canlı saat ve hava durumu eklendi:** Karşılama başlığının yanındaki kalem ikonuyla (sadece admin) karşılama metni ve hava durumu şehri özelleştirilebiliyor (app_settings'e kaydediliyor). Tarihin yanına her saniye güncellenen bir saat ve seçilen şehir için Open-Meteo üzerinden (API anahtarı gerekmeyen ücretsiz servis) çekilen anlık sıcaklık/hava durumu eklendi. Şema değişikliği yok.
