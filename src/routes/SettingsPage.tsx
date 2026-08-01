@@ -233,6 +233,65 @@ function CustomColorPicker() {
   )
 }
 
+// black_gold gibi özel paletler hariç, tüm ton seçenekleri — Arkaplan/Kenar
+// Çubuğu paletleri marka renginden bağımsız oldukları için özel temayı
+// (siyah/gold) barındırmıyor.
+const surfacePalette = brandThemes.filter((t) => !t.special)
+
+/**
+ * Marka renginden bağımsız, sadece ana içerik arkaplanını veya sol kenar
+ * çubuğunu hedefleyen bir renk paleti. "Varsayılan" seçilirse ayar null'a
+ * kaydedilir ve marka rengini takip etmeye geri döner (bkz.
+ * useApplyBrandTheme).
+ */
+function SurfaceColorPicker({ settingKey }: { settingKey: 'background_theme' | 'sidebar_theme' }) {
+  const { data: theme } = useAppSetting<{ hue: number; chromaScale?: number } | null>(settingKey)
+  const saveMutation = useSaveAppSetting<{ hue: number; chromaScale?: number } | null>(settingKey)
+  const activeId = theme
+    ? surfacePalette.find((t) => t.hue === theme.hue && (t.chromaScale ?? 1) === (theme.chromaScale ?? 1))?.id
+    : 'default'
+
+  return (
+    <div className="flex flex-wrap gap-3">
+      <button
+        type="button"
+        title="Varsayılan (marka rengini takip eder)"
+        disabled={saveMutation.isPending}
+        onClick={() => saveMutation.mutate(null)}
+        className={cn(
+          'bg-muted flex size-11 items-center justify-center rounded-full border border-dashed border-border ring-2 ring-offset-2 transition-transform hover:scale-110',
+          activeId === 'default' ? 'ring-foreground' : 'ring-transparent',
+        )}
+      >
+        {activeId === 'default' && <Check className="size-5 text-foreground" />}
+      </button>
+      {surfacePalette.map((themeOption) => {
+        const chromaScale = themeOption.chromaScale ?? 1
+        const isActive = activeId === themeOption.id
+        return (
+          <button
+            key={themeOption.id}
+            type="button"
+            title={themeOption.label}
+            disabled={saveMutation.isPending}
+            onClick={() => saveMutation.mutate({ hue: themeOption.hue, chromaScale })}
+            className={cn(
+              'flex size-11 items-center justify-center rounded-full ring-2 ring-offset-2 transition-transform hover:scale-110',
+              chromaScale === 0 && 'border border-border',
+              isActive ? 'ring-foreground' : 'ring-transparent',
+            )}
+            style={{ backgroundColor: `oklch(0.55 ${(0.18 * chromaScale).toFixed(4)} ${themeOption.hue})` }}
+          >
+            {isActive && (
+              <Check className={cn('size-5 drop-shadow', chromaScale === 0 ? 'text-foreground' : 'text-white')} />
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function ColorModePicker() {
   const { mode, setMode } = useColorMode()
   const options: { id: 'light' | 'dark'; label: string; icon: React.ElementType }[] = [
@@ -453,6 +512,14 @@ export function SettingsPage() {
             <div>
               <p className="mb-2 text-sm font-medium">Özel Renk Paneli</p>
               <CustomColorPicker />
+            </div>
+            <div>
+              <p className="mb-2 text-sm font-medium">Arkaplan Rengi</p>
+              <SurfaceColorPicker settingKey="background_theme" />
+            </div>
+            <div>
+              <p className="mb-2 text-sm font-medium">Kenar Çubuğu (Yan Panel) Rengi</p>
+              <SurfaceColorPicker settingKey="sidebar_theme" />
             </div>
             <div>
               <p className="mb-2 text-sm font-medium">Menü Simge Seti</p>

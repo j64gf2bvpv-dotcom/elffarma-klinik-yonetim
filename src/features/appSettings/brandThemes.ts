@@ -125,3 +125,46 @@ export function brandThemeCssVars(
     '--popover-foreground': `oklch(0.2 ${c(0.02)} ${hue})`,
   }
 }
+
+/**
+ * Marka renginden BAĞIMSIZ, sadece ana içerik arkaplanını (ve kart/popover
+ * yüzeylerini) hedefleyen renk paleti — kullanıcı "Arkaplan Rengi" panelinden
+ * özel bir ton seçtiğinde brandThemeCssVars'ın ürettiği değerlerin ÜZERİNE
+ * yazılır.
+ */
+export function backgroundCssVars(hue: number, chromaScale = 1, mode: ColorMode = 'light'): Record<string, string> {
+  const c = (base: number) => (base * chromaScale).toFixed(4)
+  if (mode === 'dark') {
+    return {
+      '--background': `oklch(0.16 ${c(0.015)} ${hue})`,
+      '--card': `oklch(0.2 ${c(0.018)} ${hue})`,
+      '--popover': `oklch(0.2 ${c(0.018)} ${hue})`,
+    }
+  }
+  return {
+    '--background': `oklch(0.99 ${c(0.006)} ${hue})`,
+    '--card': `oklch(1 0 0)`,
+    '--popover': `oklch(1 0 0)`,
+  }
+}
+
+/**
+ * Marka renginden BAĞIMSIZ, sadece sol kenar çubuğunu (yan panel) hedefleyen
+ * renk paleti — kullanıcı "Kenar Çubuğu Rengi" panelinden özel bir ton
+ * seçtiğinde brandThemeCssVars'ın ürettiği değerlerin ÜZERİNE yazılır.
+ */
+export function sidebarCssVars(hue: number, chromaScale = 1, mode: ColorMode = 'light'): Record<string, string> {
+  const c = (base: number) => (base * chromaScale).toFixed(4)
+  if (mode === 'dark') {
+    return {
+      '--sidebar': `oklch(0.2 ${c(0.04)} ${hue})`,
+      '--sidebar-border': `oklch(0.28 ${c(0.05)} ${hue})`,
+      '--sidebar-accent': `oklch(0.32 ${c(0.1)} ${hue})`,
+    }
+  }
+  return {
+    '--sidebar': `oklch(0.32 ${c(0.19)} ${hue})`,
+    '--sidebar-border': `oklch(0.4 ${c(0.19)} ${hue})`,
+    '--sidebar-accent': `oklch(0.42 ${c(0.19)} ${hue})`,
+  }
+}

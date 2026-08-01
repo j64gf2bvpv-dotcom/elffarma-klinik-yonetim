@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.61] - 2026-08-01
+
+**Ayarlar > Görünüm'e ayrı Arkaplan ve Kenar Çubuğu renk paletleri eklendi:** Marka renginden bağımsız olarak ana içerik arkaplanı ve sol kenar çubuğu artık kendi renk paletlerinden ayrı ayrı seçilebiliyor ("Varsayılan" seçeneği marka rengini takip etmeye geri döndürür). Şema değişikliği yok (app_settings'te `background_theme`/`sidebar_theme` anahtarları).
+
 ## [2.12.60] - 2026-08-01
 
 **Yapay Zeka simgesindeki uydu düğümler artık çekirdeğin etrafında dönüyor:** Üç uydu düğüm + aralarındaki bağlantı çizgileri ve yörünge halkası, saf CSS transform ile (6 saniyede bir tam tur, JS ölçüm yok) çekirdeğin etrafında yavaşça dönüyor; çekirdek sabit kalıyor. Işık huzmesi maskesi artık rotasyondan bağımsız sabit bir daire olduğu için dönerken de düzgün akıyor. Şema değişikliği yok.
