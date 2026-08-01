@@ -842,7 +842,7 @@ export function DashboardPage() {
                 >
                   <span
                     className={cn(
-                      'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                      'animate-alert-glow-red flex size-8 shrink-0 items-center justify-center rounded-lg',
                       overdue ? 'bg-destructive/15 text-destructive' : 'bg-primary/10 text-primary',
                     )}
                   >
@@ -851,7 +851,10 @@ export function DashboardPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{r.title}</p>
                   </div>
-                  <Badge variant="outline" className="shrink-0">
+                  <Badge
+                    variant="outline"
+                    className={cn('shrink-0', overdue && 'animate-alert-glow-red border-transparent bg-destructive/15 text-destructive')}
+                  >
                     {format(new Date(r.due_date), 'd MMM', { locale: trLocale })}
                   </Badge>
                 </Link>

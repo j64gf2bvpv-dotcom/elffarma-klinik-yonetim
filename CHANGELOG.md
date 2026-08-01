@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.42] - 2026-08-01
+
+**Panel'de "Yaklaşan Hatırlatmalar" widget'ı animasyonlu yanıp sönüyor:** Her hatırlatma satırındaki zil ikonu artık mevcut kırmızı parıltı animasyonuyla (uygulamanın geri kalanında gecikmiş/kritik uyarılar için zaten kullanılan aynı efekt) yanıp sönüyor; vadesi geçmiş hatırlatmaların tarih rozeti de aynı şekilde blink ediyor. Şema değişikliği yok.
+
 ## [2.12.41] - 2026-08-01
 
 **Örnek/deneme veri artık daha çok modülü kapsıyor:** Ayarlar'daki "Örnek Veri Ekle" artık doktor/ürün/tahsilat/satışın yanı sıra örnek satış temsilcisi, hatırlatma, kongre, doktor ziyareti ve gider de ekliyor — bu sayede Panel'deki "Temsilci Performansı", "Yaklaşan Hatırlatmalar", "En Çok Satan Ürünler" ve "Yaklaşan Kongreler" gibi widget'lar da örnek veriyle doluyor. Satışların en az biri bu ay içine düşecek şekilde tarihleniyor (aylık widget'lar boş görünmesin diye). Etiket/SKU'su olmayan tablolarda (temsilci/hatırlatma/kongre/ziyaret/gider) işaretleme isim/başlık alanındaki "[Örnek]" öneki ile yapılıyor; "Örnek Verileri Sil" hepsini aynı şekilde geri kaldırıyor. Şema değişikliği yok.
