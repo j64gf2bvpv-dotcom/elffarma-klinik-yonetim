@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Search, AlertTriangle, Trash2, CalendarClock, Wallet, TrendingUp, PackageSearch } from 'lucide-react'
+import { toast } from 'sonner'
+import { Search, AlertTriangle, Trash2, CalendarClock, Wallet, TrendingUp, PackageSearch, RotateCcw, Loader2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Input } from '@/components/ui/input'
@@ -251,6 +252,51 @@ export function StockPage() {
     deactivateMutation.mutate(product.id)
   }
 
+  const [resettingStock, setResettingStock] = React.useState(false)
+
+  /**
+   * Tüm ürünlerin stok miktarını 0'a çeker — doğrudan products.current_quantity
+   * güncellemesi DEĞİL, her ürün için record_stock_movement RPC'sini 'out'
+   * hareketiyle çağırıp denetim kaydına işleyerek yapılır (CLAUDE.md kuralı).
+   */
+  async function handleResetAllStock() {
+    const nonZero = allProducts.filter((p) => p.current_quantity > 0)
+    if (nonZero.length === 0) {
+      toast.info('Zaten tüm ürünlerin stoğu 0')
+      return
+    }
+    if (
+      !confirm(
+        `${nonZero.length} ürünün stoğu SIFIRLANACAK. Bu işlem her ürün için bir "çıkış" hareketi olarak kaydedilir, geri alınamaz. Emin misiniz?`,
+      )
+    ) {
+      return
+    }
+    setResettingStock(true)
+    let done = 0
+    let failed = 0
+    for (const p of nonZero) {
+      try {
+        await recordStockMovement({
+          product_id: p.id,
+          movement_type: 'out',
+          quantity: p.current_quantity,
+          reason: 'Toplu stok sıfırlama',
+        })
+        done++
+      } catch {
+        failed++
+      }
+    }
+    setResettingStock(false)
+    await queryClient.invalidateQueries({ queryKey: ['products'] })
+    if (failed === 0) {
+      toast.success(`${done} ürünün stoğu sıfırlandı`)
+    } else {
+      toast.error(`${done} ürün sıfırlandı, ${failed} ürün başarısız oldu`)
+    }
+  }
+
   /**
    * Stok kritik olduğu için içe aktarma ya HEPSİ ya HİÇBİRİ şeklinde çalışır:
    * önce tüm satırlar (isim eksikliği, sayı olmayan stok miktarı vb.) yazma
@@ -431,6 +477,16 @@ export function StockPage() {
               onImport={handleImport}
             />
             <DailyMovementImportButton />
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              onClick={handleResetAllStock}
+              disabled={resettingStock}
+              title="Tüm ürünlerin stok miktarını 0'a çeker (denetim kaydı olarak işlenir)"
+            >
+              {resettingStock ? <Loader2 className="animate-spin" /> : <RotateCcw />}
+              Tüm Ürünleri Sıfırla
+            </Button>
             <ProductForm />
           </div>
         }

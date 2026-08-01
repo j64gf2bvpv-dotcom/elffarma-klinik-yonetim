@@ -1,14 +1,32 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ClipboardCheck, CheckCircle2, Loader2, Undo2, ShoppingCart, UserRound } from 'lucide-react'
+import {
+  ClipboardCheck,
+  CheckCircle2,
+  Loader2,
+  Undo2,
+  ShoppingCart,
+  UserRound,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  FileType,
+  Printer,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { ExportMenu } from '@/components/ExportMenu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useSales } from '@/features/sales/hooks'
 import { SaleForm } from '@/features/sales/SaleForm'
 import {
@@ -19,7 +37,7 @@ import {
   useTodayCount,
   useUpdateCountItem,
 } from './hooks'
-import type { StockCountItemWithProduct } from './api'
+import { exportDailyCountToExcel, exportDailyCountToPdf, exportDailyCountToWord, printDailyCount } from './exportDailyCount'
 
 function TodaySalesActivity({ countDate }: { countDate: string }) {
   const { data: sales = [] } = useSales()
@@ -175,6 +193,7 @@ export function DailyCountPanel() {
   const completeMutation = useCompleteCount()
   const { data: items = [] } = useCountItems(todayCount?.id)
   const updateItemMutation = useUpdateCountItem(todayCount?.id ?? '')
+  const { data: allSales = [] } = useSales()
 
   if (loadingToday) {
     return (
@@ -200,6 +219,12 @@ export function DailyCountPanel() {
   }
 
   const isCompleted = todayCount.status === 'completed'
+  const previousDate =
+    pastCounts
+      .filter((c) => c.id !== todayCount.id)
+      .map((c) => c.count_date)
+      .sort((a, b) => b.localeCompare(a))[0] ?? null
+  const todayOutgoingSales = allSales.filter((s) => s.sale_date === todayCount.count_date && s.type === 'sale')
 
   return (
     <div className="grid gap-4">
@@ -210,20 +235,36 @@ export function DailyCountPanel() {
           </CardTitle>
           <div className="flex items-center gap-2">
             {items.length > 0 && (
-              <ExportMenu<StockCountItemWithProduct>
-                title={`${format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })} Sayımı`}
-                filename={`gunluk-sayim-${todayCount.count_date}`}
-                rows={items}
-                columns={[
-                  { header: 'Ürün', value: (i) => i.products.name },
-                  { header: 'Sistemdeki Miktar', value: (i) => `${i.expected_quantity} ${i.products.unit}` },
-                  { header: 'Sayılan', value: (i) => (i.counted_quantity ?? '—') as string | number },
-                  {
-                    header: 'Fark',
-                    value: (i) => (i.counted_quantity == null ? '' : i.counted_quantity - i.expected_quantity),
-                  },
-                ]}
-              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Download /> Dışa Aktar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={() => exportDailyCountToExcel(todayCount.count_date, previousDate, items, todayOutgoingSales)}
+                  >
+                    <FileSpreadsheet className="text-success" /> Excel (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => exportDailyCountToWord(todayCount.count_date, previousDate, items, todayOutgoingSales)}
+                  >
+                    <FileText className="text-primary" /> Word (.docx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => exportDailyCountToPdf(todayCount.count_date, previousDate, items, todayOutgoingSales)}
+                  >
+                    <FileType className="text-destructive" /> PDF (.pdf)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => printDailyCount(todayCount.count_date, previousDate, items, todayOutgoingSales)}
+                  >
+                    <Printer className="text-muted-foreground" /> Yazdır
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             {isCompleted ? (
               <Badge variant="success">

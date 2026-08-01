@@ -10,7 +10,7 @@ export interface ExportColumn<T> {
   value: (row: T) => string | number
 }
 
-function registerTurkishFont(doc: jsPDF) {
+export function registerTurkishFont(doc: jsPDF) {
   doc.addFileToVFS('NotoSans-Regular.ttf', NOTO_SANS_REGULAR_BASE64)
   doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal')
   doc.addFileToVFS('NotoSans-Bold.ttf', NOTO_SANS_BOLD_BASE64)
