@@ -1019,9 +1019,17 @@ export function DashboardPage() {
                   to={`/kongreler/${c.id}`}
                   className="flex items-center gap-2.5 rounded-lg border p-2 text-sm transition-colors hover:bg-accent"
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
-                    <Presentation className="size-4" />
-                  </span>
+                  {c.image_url ? (
+                    <img
+                      src={c.image_url}
+                      alt={c.name}
+                      className="size-9 shrink-0 rounded-md border object-cover"
+                    />
+                  ) : (
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
+                      <Presentation className="size-4" />
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{c.name}</p>
                     <p className="text-muted-foreground truncate text-xs">

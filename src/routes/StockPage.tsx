@@ -98,8 +98,8 @@ function QuantityCell({ product }: { product: Product }) {
       title="Adedi düzenlemek için tıklayın"
       className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent"
     >
-      {isCritical && <AlertTriangle className="size-3.5 text-destructive" />}
-      <Badge variant={isCritical ? 'destructive' : 'secondary'}>
+      {isCritical && <AlertTriangle className="size-3.5 text-destructive animate-alert-glow-red rounded-full" />}
+      <Badge variant={isCritical ? 'destructive' : 'secondary'} className={cn(isCritical && 'animate-alert-glow-red')}>
         {product.current_quantity} {product.unit}
       </Badge>
     </button>

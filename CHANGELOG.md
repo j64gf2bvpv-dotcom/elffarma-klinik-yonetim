@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.78] - 2026-08-02
+
+**Kongre görseli yükleme hatası çözüldü, kritik stok uyarıları yanıp sönüyor, Dashboard'da kongre görselleri gösteriliyor:** Kongre/temsilci fotoğrafı yüklerken alınan "new row violates row-level security policy" hatası, yükleme her zaman benzersiz bir yol kullandığı için gereksiz olan `upsert: true` bayrağının kaldırılmasıyla çözüldü (Supabase Storage'ın upsert kod yolu, bu projede fazladan bir RLS kontrolüne takılıyordu). Stok sayfasında kritik stok rozeti/ikonu artık diğer uyarılar gibi yanıp sönüyor. Dashboard'daki "Yaklaşan Kongreler" kartı artık kongrenin yüklenmiş görselini gösteriyor (yoksa eski simge placeholder'ı kalıyor). Şema değişikliği yok.
+
 ## [2.12.77] - 2026-08-01
 
 **`storage.buckets` için eksik SELECT politikası eklendi:** Bucket'lar Dashboard'un "New bucket" sihirbazı yerine doğrudan SQL ile oluşturulduğu için `storage.buckets` tablosunda RLS açık kalıp hiçbir politika eklenmemişti — bu, kongre görseli yükleme hatasının olası nedenlerinden biri olarak tespit edildi ve düzeltildi (bucket satırları hassas veri içermediği için herkese salt-okunur erişim açıldı). Görsel yükleme sorunu hâlâ araştırılıyor. Şema değişikliği: `storage.buckets` için yeni `buckets_select_all` politikası.

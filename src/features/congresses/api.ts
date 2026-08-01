@@ -46,7 +46,6 @@ export async function uploadCongressImage(file: File): Promise<string> {
   const resized = await resizeImageFile(file)
   const path = `congress/${crypto.randomUUID()}.jpg`
   const { error } = await supabase.storage.from('profile-images').upload(path, resized, {
-    upsert: true,
     contentType: 'image/jpeg',
   })
   if (error) throw error
