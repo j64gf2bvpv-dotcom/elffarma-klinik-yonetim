@@ -870,7 +870,7 @@ export function DashboardPage() {
                 to={item.to}
                 className="border-destructive/20 bg-destructive/5 flex items-center gap-3 rounded-lg border p-2.5 text-sm transition-colors hover:bg-destructive/10"
               >
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive/15 text-destructive">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive/15 text-destructive animate-alert-glow-red">
                   <item.icon className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -1011,8 +1011,8 @@ export function DashboardPage() {
               const daysLeft = start ? differenceInCalendarDays(start, today) : null
               const isOngoingToday = !!(start && end && start <= today && today <= end)
               const status: { label: string; className: string } = isOngoingToday
-                ? { label: 'Bugün', className: 'border-destructive/30 bg-destructive/10 text-destructive' }
-                : { label: 'Yaklaşıyor', className: 'border-primary/30 bg-primary/10 text-primary' }
+                ? { label: 'Bugün', className: 'border-destructive/30 bg-destructive/10 text-destructive animate-alert-glow-red' }
+                : { label: 'Yaklaşıyor', className: 'border-primary/30 bg-primary/10 text-primary animate-alert-glow-red' }
               return (
                 <Link
                   key={c.id}

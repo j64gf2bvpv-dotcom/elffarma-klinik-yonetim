@@ -251,31 +251,57 @@ export function StockPage() {
     deactivateMutation.mutate(product.id)
   }
 
+  /**
+   * Stok kritik olduğu için içe aktarma ya HEPSİ ya HİÇBİRİ şeklinde çalışır:
+   * önce tüm satırlar (isim eksikliği, sayı olmayan stok miktarı vb.) yazma
+   * yapılmadan doğrulanır; herhangi bir satırda hata varsa hiçbir ürün
+   * oluşturulmaz, tüm hatalar birden gösterilir (kısmi/karışık bir içe
+   * aktarma — bazı satırlar eklenmiş bazıları eklenmemiş — bırakılmaz).
+   * Zaten var olan ürünler (SKU/isim eşleşmesi) hata değil, atlanan kayıt
+   * sayılır.
+   */
   async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
     const existingSkus = new Set(allProducts.filter((p) => p.sku).map((p) => p.sku))
     const existingNames = new Set(allProducts.map((p) => p.name.toLocaleLowerCase('tr')))
-    const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
+    const seenSkusInBatch = new Set<string>()
+    const seenNamesInBatch = new Set<string>()
+    const errors: string[] = []
+    let skipped = 0
+
+    const planned: { input: Parameters<typeof createProduct>[0]; initialQty: number }[] = []
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]
       const rowLabel = `Satır ${i + 2}`
       const name = readCell(row, 'Ürün', 'Ürün Adı')
       if (!name) {
-        summary.errors.push(`${rowLabel}: Ürün adı eksik`)
+        errors.push(`${rowLabel}: Ürün adı eksik`)
         continue
       }
+      const nameKey = name.toLocaleLowerCase('tr')
       const sku = readCell(row, 'SKU') || null
-      if ((sku && existingSkus.has(sku)) || existingNames.has(name.toLocaleLowerCase('tr'))) {
-        summary.skipped++
+      if (
+        (sku && existingSkus.has(sku)) ||
+        existingNames.has(nameKey) ||
+        seenNamesInBatch.has(nameKey) ||
+        (sku && seenSkusInBatch.has(sku))
+      ) {
+        skipped++
+        continue
+      }
+
+      const initialQtyText = readCell(row, 'Başlangıç Stoğu', 'Stok')
+      const initialQty = initialQtyText ? Number(initialQtyText.replace(/[^\d.-]/g, '')) : 0
+      if (initialQtyText && !Number.isFinite(initialQty)) {
+        errors.push(`${rowLabel}: Başlangıç stoğu sayı değil ("${initialQtyText}")`)
         continue
       }
 
       const brandText = readCell(row, 'Ürün Hattı')
-      const initialQtyText = readCell(row, 'Başlangıç Stoğu', 'Stok')
-      const initialQty = initialQtyText ? Number(initialQtyText.replace(/[^\d.-]/g, '')) : 0
-
-      try {
-        const created = await createProduct({
+      seenNamesInBatch.add(nameKey)
+      if (sku) seenSkusInBatch.add(sku)
+      planned.push({
+        input: {
           name,
           sku,
           category: readCell(row, 'Kategori') || null,
@@ -287,20 +313,30 @@ export function StockPage() {
           expiry_date: readCell(row, 'Son Kullanım Tarihi') || null,
           barcode: readCell(row, 'Barkod') || null,
           brand_line: /dermakor/i.test(brandText) ? 'dermakor' : /swiss/i.test(brandText) ? 'swiss' : null,
-        })
-        if (initialQty > 0) {
+        },
+        initialQty,
+      })
+    }
+
+    if (errors.length > 0) {
+      return { added: 0, skipped: 0, errors }
+    }
+
+    const summary: ImportSummary = { added: 0, skipped, errors: [] }
+    for (const p of planned) {
+      try {
+        const created = await createProduct(p.input)
+        if (p.initialQty > 0) {
           await recordStockMovement({
             product_id: created.id,
             movement_type: 'in',
-            quantity: initialQty,
+            quantity: p.initialQty,
             reason: 'İçe aktarma — başlangıç stoğu',
           })
         }
-        if (sku) existingSkus.add(sku)
-        existingNames.add(name.toLocaleLowerCase('tr'))
         summary.added++
       } catch (err) {
-        summary.errors.push(`${rowLabel}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
+        summary.errors.push(`${p.input.name}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
       }
     }
 

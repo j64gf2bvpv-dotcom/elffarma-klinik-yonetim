@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.79] - 2026-08-02
+
+**Stok içe aktarma artık ya hep ya hiç, Dashboard'da "yaklaşıyor" rozetleri yanıp sönüyor:** Stok'ta (hem şablonlu hem Akıllı İçe Aktar) bir satırda hata varsa (eksik ürün adı, sayı olmayan stok miktarı vb.) artık HİÇBİR ürün eklenmiyor — önce tüm satırlar yazma yapılmadan doğrulanıyor, sadece hepsi geçerliyse kayıtlar oluşturuluyor; böylece "15 doğru 1 hata" gibi karışık/kısmi bir sonuç yerine ya tam liste eklenir ya da hiçbiri eklenmez, hatalar düzeltilip yeniden denenebilir. Dashboard'da "Yaklaşan Kongreler" kartındaki "Yaklaşıyor"/"Bugün" rozeti ve "Kritik Uyarılar" kartındaki simgeler artık diğer uyarılar gibi yanıp sönüyor. Şema değişikliği yok.
+
 ## [2.12.78] - 2026-08-02
 
 **Kongre görseli yükleme hatası çözüldü, kritik stok uyarıları yanıp sönüyor, Dashboard'da kongre görselleri gösteriliyor:** Kongre/temsilci fotoğrafı yüklerken alınan "new row violates row-level security policy" hatası, yükleme her zaman benzersiz bir yol kullandığı için gereksiz olan `upsert: true` bayrağının kaldırılmasıyla çözüldü (Supabase Storage'ın upsert kod yolu, bu projede fazladan bir RLS kontrolüne takılıyordu). Stok sayfasında kritik stok rozeti/ikonu artık diğer uyarılar gibi yanıp sönüyor. Dashboard'daki "Yaklaşan Kongreler" kartı artık kongrenin yüklenmiş görselini gösteriyor (yoksa eski simge placeholder'ı kalıyor). Şema değişikliği yok.
