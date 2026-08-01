@@ -334,7 +334,7 @@ const DEFAULT_SPAN: Record<WidgetId, number> = {
   commission_summary: 6,
   sample_conversion: 6,
   lot_expiry: 6,
-  ai_assistant: 4,
+  ai_assistant: 3,
 }
 
 const SPAN_OPTIONS: { value: number; label: string }[] = [
@@ -855,31 +855,19 @@ export function DashboardPage() {
 
     if (id === 'ai_assistant') {
       return (
-        <Card className="relative overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setAiChatOpen(true)}
+          title="Yapay Zeka Asistanını Aç"
+          className="group relative flex aspect-square w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-border/60 bg-card/90 shadow-[0_1px_0_rgba(255,255,255,0.5)_inset,0_1px_2px_rgba(0,0,0,0.04),0_20px_44px_-24px_rgba(0,0,0,0.22)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_1px_0_rgba(255,255,255,0.5)_inset,0_28px_56px_-24px_rgba(0,0,0,0.28)]"
+        >
           <div
             className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent"
             aria-hidden
           />
-          <CardContent className="relative flex flex-col items-center gap-3 py-8 text-center">
-            <AiSparkleIcon className="size-16" animated />
-            <div>
-              <p className="font-semibold">Yapay Zeka Asistanı</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Sorularınızı sorun, verilerinizle ilgili özet/analiz isteyin.
-              </p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button size="sm" onClick={() => setAiChatOpen(true)}>
-                Sohbeti Aç
-              </Button>
-              <Button size="sm" variant="outline" asChild>
-                <Link to="/ai-analiz">
-                  AI Analiz <ArrowRight className="size-3.5" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          <AiSparkleIcon className="relative size-12 transition-transform duration-300 group-hover:scale-110" animated />
+          <span className="relative text-xs font-medium text-muted-foreground">Yapay Zeka</span>
+        </button>
       )
     }
 
