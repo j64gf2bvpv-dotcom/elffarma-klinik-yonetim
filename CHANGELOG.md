@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.47] - 2026-08-01
+
+**Panel kart başlıklarındaki metin çakışması düzeltildi:** "En Çok Satan Ürünler" gibi ikon + başlık + ek etiket (ör. "Bu ay") içeren kart başlıklarında, dar çerçevelerde başlık metni kendi içinde satır kırarken yanındaki etiket yerinde kalıp üst üste biniyordu. Kart başlıkları artık bütün olarak sarıyor (flex-wrap) — sığmayan etiket, metnin ortasına çakışmak yerine temiz şekilde alt satıra düşüyor. Şema değişikliği yok.
+
 ## [2.12.46] - 2026-08-01
 
 **Panel'de aynı satırdaki çerçeveler artık aynı yükseklikte, üstten ve alttan hizalı:** Grid hücreleri artık dikeyde geriliyor (stretch) ve içindeki kart bu yüksekliği dolduruyor — daha önce farklı içerik uzunluğuna sahip çerçeveler (ör. "Yaklaşan Hatırlatmalar" ile "En Çok Satan Ürünler") aynı satırda farklı boyda görünüp orantısız duruyordu, şimdi hepsi eşit yükseklikte. Şema değişikliği yok.

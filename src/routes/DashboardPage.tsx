@@ -842,7 +842,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <AlertTriangle className="size-4 text-destructive" /> Kritik Uyarılar
               {criticalAlertItems.length > 0 && <Badge variant="secondary">{criticalAlertItems.length}</Badge>}
             </CardTitle>
@@ -880,7 +880,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <BellRing className="size-4 text-primary" /> Yaklaşan Hatırlatmalar
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
@@ -944,7 +944,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <PieChart className="size-4 text-primary" /> Stok Durumu
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
@@ -986,7 +986,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <Presentation className="size-4 text-primary" /> Yaklaşan Kongreler
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
@@ -1041,7 +1041,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <Coins className="size-4 text-primary" /> Günlük Döviz Kurları
             </CardTitle>
             {exchangeRates[0]?.date && (
@@ -1129,7 +1129,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <TrendingUp className="size-4 text-primary" /> Tahsilat Trendi
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -1152,7 +1152,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <ShoppingCart className="size-4 text-primary" /> Satış Trendi
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -1175,7 +1175,7 @@ export function DashboardPage() {
       return (
         <Card className="overflow-hidden">
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <Trophy className="size-4 text-[oklch(0.72_0.16_70)]" /> En Çok Satan Ürünler
               <span className="text-muted-foreground text-xs font-normal">Bu ay</span>
             </CardTitle>
@@ -1200,7 +1200,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <MapPin className="size-4 text-primary" /> Satış Haritası — İllere Göre (Son 6 Ay)
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
@@ -1250,7 +1250,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <Presentation className="size-4 text-primary" /> Kongre Paket Fiyatları
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
@@ -1302,7 +1302,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <Trophy className="size-4 text-primary" /> Temsilci Performansı
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
@@ -1333,7 +1333,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <Percent className="size-4 text-primary" /> Prim Özeti (Bu Ay)
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
@@ -1365,7 +1365,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <FlaskConical className="size-4 text-primary" /> Numune Dönüşüm Oranı
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
@@ -1396,7 +1396,7 @@ export function DashboardPage() {
       return (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
               <Layers className="size-4 text-destructive" /> Lot / SKT Riski
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
