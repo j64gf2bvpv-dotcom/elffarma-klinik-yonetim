@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.76] - 2026-08-01
+
+**Akıllı İçe Aktar'da Excel/CSV rakam hatası düzeltildi:** Excel/CSV yüklendiğinde artık satırlar yapay zekaya metin olarak yazdırılıp yeniden "okutulmuyor" — yapay zekadan SADECE hangi sütunun hangi hedef alana karşılık geldiğini (sütun eşlemesi) belirlemesi isteniyor, gerçek değerler koddan doğrudan orijinal Excel satırlarından alınıyor. Bu, küçük yerel modelin (qwen2.5:3b) rakamları yanlış yazma riskini ortadan kaldırıyor. PDF/Word/resim için davranış değişmedi. Şema değişikliği yok.
+
 ## [2.12.75] - 2026-08-01
 
 **Yapay zeka destekli "Akıllı İçe Aktar" eklendi (Doktorlar ve Stok):** Mevcut sıkı-şablonlu Excel içe aktarmanın yanına, serbest formatta Word/Excel/PDF/resim yükleyip yapay zekanın içeriği ayrıştırıp yapılandırılmış veriye çevirdiği yeni bir "Akıllı İçe Aktar" özelliği eklendi — kolon başlıklarının tam eşleşmesi gerekmiyor. Yapay zeka çıktısı bir önizleme tablosunda gösteriliyor, kullanıcı onaylamadan HİÇBİR kayıt oluşturulmuyor. PDF metin çıkarımı için `pdfjs-dist`, Word (.docx) için `mammoth` eklendi. Bu ilk sürüm Doktorlar ve Stok sayfalarında aktif; aynı genel amaçlı `SmartImportDialog` bileşeni diğer sayfalara da kolayca eklenebilir. Şema değişikliği yok.

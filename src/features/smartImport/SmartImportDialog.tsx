@@ -14,7 +14,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAIService } from '@/features/ai/useAIService'
 import { extractFileContent } from './extractFileContent'
-import { parseAiJsonArray } from './parseAiJsonArray'
+import { parseAiJsonArray, parseAiJsonObject } from './parseAiJsonArray'
 import type { ImportSummary } from '@/lib/importData'
 
 interface SmartImportDialogProps {
@@ -67,6 +67,34 @@ export function SmartImportDialog({ title, targetLabel, fieldHeaders, fieldHints
             .map(([k, v]) => `- "${k}": ${v}`)
             .join('\n')
         : ''
+
+      if (content.kind === 'table') {
+        if (content.rows.length === 0) {
+          toast.error('Dosyada satır bulunamadı')
+          return
+        }
+        const sourceHeaders = Object.keys(content.rows[0])
+        const mappingInstruction =
+          `Bir tablonun sütun başlıkları şunlar: ${sourceHeaders.map((h) => `"${h}"`).join(', ')}. ` +
+          `Bu sütunlardan hangisinin şu hedef alanlara karşılık geldiğini belirle: ${fieldHeaders.map((h) => `"${h}"`).join(', ')}. ` +
+          `SADECE şu formatta bir JSON objesi döndür (başka açıklama/metin ekleme): { "Hedef Alan": "Kaynak Sütun Adı", ... }. ` +
+          `Bir hedef alan için uygun bir kaynak sütun yoksa değerini boş string "" yap. Değerleri KOPYALAMA, sadece sütun adlarını eşleştir.\n${hints}`
+
+        const mappingResult = await aiService.chat([{ role: 'user', content: mappingInstruction }])
+        const mapping = parseAiJsonObject(mappingResult.content)
+
+        const mappedRows = content.rows.map((sourceRow) => {
+          const out: Record<string, unknown> = {}
+          for (const h of fieldHeaders) {
+            const sourceCol = mapping[h]
+            out[h] = typeof sourceCol === 'string' && sourceCol ? (sourceRow[sourceCol] ?? '') : ''
+          }
+          return out
+        })
+        setRows(mappedRows)
+        return
+      }
+
       const instruction =
         `Aşağıdaki belgeden/görselden ${targetLabel} kayıtlarını çıkar. ` +
         `SADECE bir JSON dizisi döndür (başka açıklama/metin ekleme). ` +

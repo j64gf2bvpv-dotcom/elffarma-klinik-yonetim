@@ -5,7 +5,10 @@ import { readExcelFile } from '@/lib/importData'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
-export type ExtractedContent = { kind: 'text'; text: string } | { kind: 'image'; dataUrl: string }
+export type ExtractedContent =
+  | { kind: 'text'; text: string }
+  | { kind: 'image'; dataUrl: string }
+  | { kind: 'table'; rows: Record<string, unknown>[] }
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -36,10 +39,14 @@ async function extractDocxText(file: File): Promise<string> {
 }
 
 /**
- * Yüklenen dosyanın türüne göre AI'a gönderilebilecek bir içerik çıkarır —
- * Excel/CSV satır satır JSON'a, PDF/Word düz metne çevrilir; resimler
- * data URL olarak (AI'a görsel parçası şeklinde) döner. Desteklenmeyen bir
- * tür gelirse hata fırlatır.
+ * Yüklenen dosyanın türüne göre içerik çıkarır. Excel/CSV özel bir "table"
+ * türü olarak döner (ham satır objeleri, xlsx kütüphanesinin ayrıştırdığı
+ * GERÇEK değerlerle) — sayıların/tarihlerin AI'a metin olarak yazdırılıp
+ * yeniden "okutulması" GEREKMİYOR, bu da küçük bir yerel modelin rakamları
+ * yanlış yazması riskini tamamen ortadan kaldırıyor (bkz. SmartImportDialog:
+ * AI'a sadece sütun eşlemesi sorulur, değerler koddan doğrudan aktarılır).
+ * PDF/Word düz metne çevrilir; resimler data URL olarak (AI'a görsel parçası
+ * şeklinde) döner. Desteklenmeyen bir tür gelirse hata fırlatır.
  */
 export async function extractFileContent(file: File): Promise<ExtractedContent> {
   const name = file.name.toLowerCase()
@@ -49,7 +56,7 @@ export async function extractFileContent(file: File): Promise<ExtractedContent> 
   }
   if (/\.(xlsx|xls|csv)$/.test(name)) {
     const rows = await readExcelFile(file)
-    return { kind: 'text', text: JSON.stringify(rows, null, 2) }
+    return { kind: 'table', rows }
   }
   if (/\.pdf$/.test(name)) {
     return { kind: 'text', text: await extractPdfText(file) }
