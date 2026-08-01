@@ -27,6 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ExportMenu } from '@/components/ExportMenu'
 import { useSales } from '@/features/sales/hooks'
 import { SaleForm } from '@/features/sales/SaleForm'
 import {
@@ -38,6 +39,7 @@ import {
   useUpdateCountItem,
 } from './hooks'
 import { exportDailyCountToExcel, exportDailyCountToPdf, exportDailyCountToWord, printDailyCount } from './exportDailyCount'
+import type { StockCountItemWithProduct } from './api'
 
 function TodaySalesActivity({ countDate }: { countDate: string }) {
   const { data: sales = [] } = useSales()
@@ -234,6 +236,18 @@ export function DailyCountPanel() {
             {format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })} Sayımı
           </CardTitle>
           <div className="flex items-center gap-2">
+            {items.length > 0 && (
+              <ExportMenu<StockCountItemWithProduct>
+                title="Başlangıç Sayım Listesi"
+                filename={`baslangic-listesi-${todayCount.count_date}`}
+                triggerLabel="Başlangıç Listesi"
+                rows={items}
+                columns={[
+                  { header: 'ÜRÜN ADI', value: (i) => i.products.name },
+                  { header: 'STOKLAR', value: (i) => i.expected_quantity },
+                ]}
+              />
+            )}
             {items.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

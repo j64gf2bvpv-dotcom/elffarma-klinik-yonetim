@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.87] - 2026-08-02
+
+**Günlük Sayım'a basit "Başlangıç Listesi" (ÜRÜN ADI / STOKLAR) dışa aktarma eklendi:** Günün başında, henüz temsilci dağıtımı girilmeden, sadece ürün adı ve mevcut stok miktarını gösteren sade bir tablo (Excel/Word/PDF/Yazdır) — tam gün sonu pivot tablosundan (temsilci sütunları + kalan stoklar) ayrı, "Başlangıç Listesi" butonuyla. ExportMenu artık birden fazla kullanıldığı sayfalarda ayırt edilebilmesi için özelleştirilebilir buton metni (triggerLabel) destekliyor. Şema değişikliği yok.
+
 ## [2.12.86] - 2026-08-02
 
 **"Instagram Doktor Listesi" eklendi (manuel giriş):** Yeni bir nav sayfası — Instagram'da bulunan doktorları isim/telefon/e-posta/adres/Instagram kullanıcı adı ile elle kaydedip Excel/Word/PDF/Yazdır ile dışa aktarabileceğiniz basit bir liste. Instagram'ın sayfasını otomatik tarayıp kişilerin iletişim bilgilerini toplama YOK — bu hem Instagram'ın kullanım şartlarına hem KVKK'ya aykırı olur, bu yüzden bilinçli olarak sadece elle giriş destekleniyor. Şema değişikliği: yeni `instagram_leads` tablosu (shared-trust RLS).

@@ -16,9 +16,11 @@ interface ExportMenuProps<T> {
   filename: string
   columns: ExportColumn<T>[]
   rows: T[]
+  /** Tetikleyici butonun metni — varsayılan "Dışa Aktar". Aynı sayfada birden fazla ExportMenu varsa ayırt etmek için kullanılır. */
+  triggerLabel?: string
 }
 
-export function ExportMenu<T>({ title, filename, columns, rows }: ExportMenuProps<T>) {
+export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = 'Dışa Aktar' }: ExportMenuProps<T>) {
   function handleExcel() {
     if (rows.length === 0) {
       toast.error('Dışa aktarılacak veri yok')
@@ -55,7 +57,7 @@ export function ExportMenu<T>({ title, filename, columns, rows }: ExportMenuProp
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline">
-          <Download /> Dışa Aktar
+          <Download /> {triggerLabel}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
