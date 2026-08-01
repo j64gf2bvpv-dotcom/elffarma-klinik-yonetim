@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.41] - 2026-08-01
+
+**Örnek/deneme veri artık daha çok modülü kapsıyor:** Ayarlar'daki "Örnek Veri Ekle" artık doktor/ürün/tahsilat/satışın yanı sıra örnek satış temsilcisi, hatırlatma, kongre, doktor ziyareti ve gider de ekliyor — bu sayede Panel'deki "Temsilci Performansı", "Yaklaşan Hatırlatmalar", "En Çok Satan Ürünler" ve "Yaklaşan Kongreler" gibi widget'lar da örnek veriyle doluyor. Satışların en az biri bu ay içine düşecek şekilde tarihleniyor (aylık widget'lar boş görünmesin diye). Etiket/SKU'su olmayan tablolarda (temsilci/hatırlatma/kongre/ziyaret/gider) işaretleme isim/başlık alanındaki "[Örnek]" öneki ile yapılıyor; "Örnek Verileri Sil" hepsini aynı şekilde geri kaldırıyor. Şema değişikliği yok.
+
 ## [2.12.40] - 2026-08-01
 
 **Logo ışıltı animasyonu kaldırıldı, yerine hafif gölge eklendi:** Bir önceki sürümde eklenen harflerin içinden geçen yıldız ışıltısı animasyonu kaldırıldı; "elfFARMA" yazısının arkasına sabit, hafif bir düşen gölge (drop-shadow) eklendi. Büyütülmüş logo boyutu korunuyor. Şema değişikliği yok.

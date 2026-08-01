@@ -4,21 +4,30 @@ import { createProduct } from '@/features/stock/api'
 import { recordStockMovement } from '@/features/stock/api'
 import { createSale } from '@/features/sales/api'
 import { createPayment } from '@/features/payments/api'
+import { createSalesRep, deleteSalesRep } from '@/features/salesReps/api'
+import { createReminder, deleteReminder } from '@/features/reminders/api'
+import { createCongress, deleteCongress } from '@/features/congresses/api'
+import { createVisit, deleteVisit } from '@/features/doctorVisits/api'
+import { createExpense, deleteExpense } from '@/features/expenses/api'
 import { offlineDelete } from '@/lib/offlineMutation'
-import type { PaymentMethod } from '@/types/database'
+import type { ExpenseCategory, PaymentMethod } from '@/types/database'
 
 /**
  * Panel/grafikleri ve diğer sayfaları gerçek görünümüyle denemek için tek
  * tıkla eklenip silinebilen örnek veri seti. Gerçek müşteri/ürün verisiyle
  * karışmasın diye her satır açıkça işaretleniyor: doktorlarda `tags` içinde
- * DEMO_TAG, ürünlerde SKU'da DEMO_SKU_PREFIX — silme işlemi SADECE bu
- * işaretli satırları bulup kaldırıyor. Doktorları silmek customers.id'ye
- * `on delete cascade` bağlı payments/sales/vb. satırları da otomatik
- * temizliyor (bkz. supabase/schema.sql); ürünler ayrıca siliniyor
- * (stock_movements/product_lots ürüne cascade bağlı).
+ * DEMO_TAG, ürünlerde SKU'da DEMO_SKU_PREFIX, tags/sku'su olmayan tablolarda
+ * (temsilci/hatırlatma/kongre/ziyaret/gider) isim/başlık/not alanında
+ * DEMO_LABEL_PREFIX — silme işlemi SADECE bu işaretli satırları bulup
+ * kaldırıyor. Doktorları silmek customers.id'ye `on delete cascade` bağlı
+ * payments/sales/vb. satırları da otomatik temizliyor (bkz.
+ * supabase/schema.sql); ürünler ayrıca siliniyor (stock_movements/
+ * product_lots ürüne cascade bağlı). doctor_visits.customer_id `on delete
+ * set null` olduğu için ziyaretler ayrıca kendi işaretiyle temizleniyor.
  */
 export const DEMO_TAG = 'örnek-veri'
 const DEMO_SKU_PREFIX = 'ORNEK-'
+const DEMO_LABEL_PREFIX = '[Örnek]'
 
 const DEMO_CUSTOMERS = [
   { full_name: 'Dr. Ayşe Yılmaz', phone: '0532 111 22 33', province: 'İstanbul', doctor_type: 'sahis' as const, total_debt: 15000 },
@@ -49,6 +58,21 @@ const DEMO_PRODUCTS = [
   { name: '[Örnek] PRP Kit', sku: `${DEMO_SKU_PREFIX}PRP`, unit_cost: 400, unit_price: 750 },
 ]
 
+const DEMO_SALES_REPS = [`${DEMO_LABEL_PREFIX} Deniz Aydın`, `${DEMO_LABEL_PREFIX} Selin Koç`, `${DEMO_LABEL_PREFIX} Barış Şahin`]
+
+const DEMO_REMINDERS = [
+  { title: `${DEMO_LABEL_PREFIX} Dr. Ayşe Yılmaz'ı ara`, note: 'Sipariş takibi için deneme hatırlatması', daysAhead: 1 },
+  { title: `${DEMO_LABEL_PREFIX} Kongre kayıt son tarihi`, note: 'Deneme hatırlatması', daysAhead: 3 },
+  { title: `${DEMO_LABEL_PREFIX} Tahsilat vadesi yaklaşıyor`, note: 'Deneme hatırlatması', daysAhead: 5 },
+]
+
+const DEMO_CONGRESS = { name: `${DEMO_LABEL_PREFIX} Estetik Tıp Kongresi`, city: 'İstanbul', daysAhead: 20, durationDays: 3 }
+
+const DEMO_EXPENSES: { category: ExpenseCategory; amount: number; description: string }[] = [
+  { category: 'hizmet_gideri', amount: 4500, description: `${DEMO_LABEL_PREFIX} Deneme kargo gideri` },
+  { category: 'diger', amount: 2200, description: `${DEMO_LABEL_PREFIX} Deneme ofis gideri` },
+]
+
 const PAYMENT_METHODS: PaymentMethod[] = ['nakit', 'kredi_karti', 'havale', 'pos']
 
 function isoDaysAgo(days: number): string {
@@ -57,9 +81,21 @@ function isoDaysAgo(days: number): string {
   return d.toISOString()
 }
 
+function isoDaysAhead(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString()
+}
+
 function dateDaysAgo(days: number): string {
   const d = new Date()
   d.setDate(d.getDate() - days)
+  return d.toISOString().slice(0, 10)
+}
+
+function dateDaysAhead(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
   return d.toISOString().slice(0, 10)
 }
 
@@ -72,6 +108,11 @@ export interface SeedResult {
   products: number
   payments: number
   sales: number
+  salesReps: number
+  reminders: number
+  congresses: number
+  visits: number
+  expenses: number
 }
 
 export async function seedDemoData(): Promise<SeedResult> {
@@ -109,10 +150,17 @@ export async function seedDemoData(): Promise<SeedResult> {
     createdProducts.push(created)
   }
 
+  const createdSalesReps = []
+  for (const name of DEMO_SALES_REPS) {
+    createdSalesReps.push(await createSalesRep(name))
+  }
+
   let paymentsCount = 0
   let salesCount = 0
 
   for (const customer of createdCustomers) {
+    const rep = createdSalesReps[randomInt(0, createdSalesReps.length - 1)]
+
     const paymentRounds = randomInt(2, 3)
     for (let i = 0; i < paymentRounds; i++) {
       await createPayment({
@@ -121,25 +169,63 @@ export async function seedDemoData(): Promise<SeedResult> {
         payment_method: PAYMENT_METHODS[randomInt(0, PAYMENT_METHODS.length - 1)],
         description: 'Örnek veri — deneme tahsilatı',
         paid_at: isoDaysAgo(randomInt(1, 150)),
+        sales_rep_id: rep.id,
       })
       paymentsCount++
     }
 
-    const saleRounds = randomInt(1, 2)
-    for (let i = 0; i < saleRounds; i++) {
+    // En az bir satış bu ay içinde olsun ki "En Çok Satan Ürünler" / "Temsilci
+    // Performansı" gibi "bu ay" bazlı panel widget'ları boş görünmesin.
+    const saleDaysAgo = [randomInt(1, 20), ...Array.from({ length: randomInt(0, 1) }, () => randomInt(21, 150))]
+    for (const daysAgo of saleDaysAgo) {
       const product = createdProducts[randomInt(0, createdProducts.length - 1)]
       await createSale({
         type: 'sale',
         customer_id: customer.id,
+        sales_rep_id: rep.id,
         product_id: product.id,
         product_name: product.name,
         quantity: randomInt(1, 5),
         unit_price: Number(product.unit_price ?? 0),
-        sale_date: dateDaysAgo(randomInt(1, 150)),
+        sale_date: dateDaysAgo(daysAgo),
         note: 'Örnek veri — deneme satışı',
       })
       salesCount++
     }
+
+    await createVisit({
+      visit_date: dateDaysAgo(randomInt(1, 60)),
+      doctor_name: customer.full_name,
+      customer_id: customer.id,
+      sales_rep_id: rep.id,
+      notes: `${DEMO_LABEL_PREFIX} Deneme ziyareti`,
+    })
+  }
+
+  let remindersCount = 0
+  for (const r of DEMO_REMINDERS) {
+    await createReminder({ title: r.title, note: r.note, due_date: isoDaysAhead(r.daysAhead) })
+    remindersCount++
+  }
+
+  await createCongress({
+    name: DEMO_CONGRESS.name,
+    city: DEMO_CONGRESS.city,
+    start_date: dateDaysAhead(DEMO_CONGRESS.daysAhead),
+    end_date: dateDaysAhead(DEMO_CONGRESS.daysAhead + DEMO_CONGRESS.durationDays),
+    will_attend: true,
+    notes: `${DEMO_LABEL_PREFIX} Deneme kongre kaydı`,
+  })
+
+  let expensesCount = 0
+  for (const e of DEMO_EXPENSES) {
+    await createExpense({
+      category: e.category,
+      amount: e.amount,
+      description: e.description,
+      expense_date: dateDaysAgo(randomInt(1, 60)),
+    })
+    expensesCount++
   }
 
   return {
@@ -147,12 +233,28 @@ export async function seedDemoData(): Promise<SeedResult> {
     products: createdProducts.length,
     payments: paymentsCount,
     sales: salesCount,
+    salesReps: createdSalesReps.length,
+    reminders: remindersCount,
+    congresses: 1,
+    visits: createdCustomers.length,
+    expenses: expensesCount,
   }
 }
 
 export interface ClearResult {
   customersDeleted: number
   productsDeleted: number
+  salesRepsDeleted: number
+  remindersDeleted: number
+  congressesDeleted: number
+  visitsDeleted: number
+  expensesDeleted: number
+}
+
+async function deleteAllByIlike(table: 'sales_reps' | 'reminders' | 'congresses' | 'doctor_visits' | 'expenses', column: string) {
+  const { data, error } = await supabase.from(table).select('id').ilike(column, `${DEMO_LABEL_PREFIX}%`)
+  if (error) throw error
+  return data ?? []
 }
 
 export async function clearDemoData(): Promise<ClearResult> {
@@ -161,6 +263,9 @@ export async function clearDemoData(): Promise<ClearResult> {
     .select('id')
     .contains('tags', [DEMO_TAG])
   if (customersError) throw customersError
+
+  const visits = await deleteAllByIlike('doctor_visits', 'notes')
+  for (const v of visits) await deleteVisit(v.id)
 
   for (const c of customers ?? []) {
     await deleteCustomer(c.id)
@@ -171,13 +276,29 @@ export async function clearDemoData(): Promise<ClearResult> {
     .select('id')
     .like('sku', `${DEMO_SKU_PREFIX}%`)
   if (productsError) throw productsError
-
   for (const p of products ?? []) {
     await offlineDelete('products', p.id, 'Örnek ürün silme')
   }
 
+  const salesReps = await deleteAllByIlike('sales_reps', 'name')
+  for (const r of salesReps) await deleteSalesRep(r.id)
+
+  const reminders = await deleteAllByIlike('reminders', 'title')
+  for (const r of reminders) await deleteReminder(r.id)
+
+  const congresses = await deleteAllByIlike('congresses', 'name')
+  for (const c of congresses) await deleteCongress(c.id)
+
+  const expenses = await deleteAllByIlike('expenses', 'description')
+  for (const e of expenses) await deleteExpense(e.id)
+
   return {
     customersDeleted: customers?.length ?? 0,
     productsDeleted: products?.length ?? 0,
+    salesRepsDeleted: salesReps.length,
+    remindersDeleted: reminders.length,
+    congressesDeleted: congresses.length,
+    visitsDeleted: visits.length,
+    expensesDeleted: expenses.length,
   }
 }
