@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.38] - 2026-08-01
+
+**Ayarlar'a örnek/deneme veri ekleme:** Panel grafiklerini ve diğer sayfaları gerçek görünümüyle denemek için admin hesaplarına "Ayarlar" sayfasında tek tıkla birkaç örnek doktor, ürün, tahsilat ve satış eklenebiliyor; adları/kodları "[Örnek]" ile işaretleniyor ve aynı yerden tek tıkla tamamen geri silinebiliyor. Silme işlemi önce doktorları kaldırıyor (bağlı tahsilat/satış vb. kayıtlar `on delete cascade` ile otomatik temizleniyor), sonra örnek ürünleri kaldırıyor — gerçek verilere dokunmuyor. Şema değişikliği yok.
+
 ## [2.12.37] - 2026-08-01
 
 **Stok sayfasında adet üzerine tıklayarak hızlı düzenleme:** Stok listesindeki her ürünün adet rozetine tıklanınca yerinde (inline) bir sayı kutusu açılıyor; yeni değer onaylanınca fark, `record_stock_movement` RPC'si üzerinden (artışta "adjustment", azalışta "out" hareket tipiyle) kaydediliyor — `products.current_quantity` hiçbir zaman doğrudan güncellenmiyor, stok hareket geçmişi bozulmuyor. Şema değişikliği yok.

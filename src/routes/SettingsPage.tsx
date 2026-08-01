@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   Plus,
@@ -21,6 +22,7 @@ import {
   Receipt,
   Sun,
   Moon,
+  FlaskConical,
 } from 'lucide-react'
 import { companyInfo } from '@/lib/companyInfo'
 
@@ -43,6 +45,7 @@ import { AIProviderSettings } from '@/features/ai/AIProviderSettings'
 import { brandThemes } from '@/features/appSettings/brandThemes'
 import { iconSets, defaultIconSetId } from '@/features/appSettings/iconSets'
 import { useColorMode } from '@/features/appSettings/useColorMode'
+import { seedDemoData, clearDemoData } from '@/features/demoData/seedDemoData'
 import { useAuth } from '@/lib/auth'
 import { tr } from '@/i18n/tr'
 import type { WhatsAppTemplate } from '@/types/database'
@@ -305,6 +308,40 @@ export function SettingsPage() {
   const { data: staffList = [] } = useStaffList()
   const { data: templates = [] } = useWhatsAppTemplates()
   const updateStaffMutation = useUpdateStaff()
+  const queryClient = useQueryClient()
+  const [seeding, setSeeding] = React.useState(false)
+  const [clearing, setClearing] = React.useState(false)
+
+  async function handleSeedDemoData() {
+    setSeeding(true)
+    try {
+      const result = await seedDemoData()
+      await queryClient.invalidateQueries()
+      toast.success('Örnek veri eklendi', {
+        description: `${result.customers} cari, ${result.products} ürün, ${result.payments} tahsilat, ${result.sales} satış`,
+      })
+    } catch (err) {
+      toast.error('Örnek veri eklenemedi', { description: err instanceof Error ? err.message : undefined })
+    } finally {
+      setSeeding(false)
+    }
+  }
+
+  async function handleClearDemoData() {
+    if (!confirm('Tüm örnek veriler (örnek cariler, ürünler ve bunlara bağlı tahsilat/satışlar) kalıcı olarak silinsin mi?')) return
+    setClearing(true)
+    try {
+      const result = await clearDemoData()
+      await queryClient.invalidateQueries()
+      toast.success('Örnek veriler silindi', {
+        description: `${result.customersDeleted} cari, ${result.productsDeleted} ürün kaldırıldı`,
+      })
+    } catch (err) {
+      toast.error('Örnek veriler silinemedi', { description: err instanceof Error ? err.message : undefined })
+    } finally {
+      setClearing(false)
+    }
+  }
 
   return (
     <div>
@@ -502,6 +539,32 @@ export function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {currentStaff?.role === 'admin' && (
+          <Card>
+            <CardHeader className="flex-row items-center gap-3">
+              <PremiumIcon icon={FlaskConical} />
+              <div>
+                <CardTitle>Örnek/Deneme Verisi</CardTitle>
+                <CardDescription>
+                  Panel grafiklerini ve diğer ekranları gerçek veriyle görmek için birkaç örnek doktor, ürün,
+                  tahsilat ve satış ekler. Adları/kodları "[Örnek]" ile işaretlenir, tek tıkla geri silinebilir —
+                  gerçek verilerinize dokunmaz.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <Button onClick={handleSeedDemoData} disabled={seeding || clearing}>
+                {seeding && <Loader2 className="animate-spin" />}
+                Örnek Veri Ekle
+              </Button>
+              <Button variant="outline" onClick={handleClearDemoData} disabled={seeding || clearing}>
+                {clearing && <Loader2 className="animate-spin" />}
+                <Trash2 className="size-4" /> Örnek Verileri Sil
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <AIProviderSettings />
       </div>
