@@ -32,6 +32,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useStaffList, useUpdateStaff } from '@/features/staff/hooks'
@@ -151,6 +152,87 @@ function ThemePicker() {
   )
 }
 
+const HUE_GRADIENT =
+  'linear-gradient(to right, oklch(0.7 0.18 0), oklch(0.7 0.18 60), oklch(0.7 0.18 120), oklch(0.7 0.18 180), oklch(0.7 0.18 240), oklch(0.7 0.18 300), oklch(0.7 0.18 360))'
+
+const RANGE_THUMB_CLASSES =
+  '[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_1px_4px_rgba(0,0,0,0.4)] [&::-webkit-slider-thumb]:ring-2 [&::-webkit-slider-thumb]:ring-foreground/20 [&::-webkit-slider-thumb]:cursor-pointer'
+
+/**
+ * Sabit preset renklerin (ThemePicker) yanında, kullanıcının HERHANGİ bir tonu
+ * seçip önizleyip kendi isteğiyle uygulayabildiği serbest renk paneli — mevcut
+ * hue-parametrik brandThemeCssVars motoru zaten 0-360 arası her tonu kabul
+ * ediyor, burada sadece slider + önizleme + "Uygula" arayüzü ekleniyor.
+ */
+function CustomColorPicker() {
+  const { data: brandTheme } = useAppSetting<{ hue: number; chromaScale?: number; special?: 'black_gold' }>(
+    'brand_theme',
+  )
+  const saveMutation = useSaveAppSetting<{ hue: number; chromaScale?: number; special?: 'black_gold' }>('brand_theme')
+  const [hue, setHue] = React.useState(brandTheme && !brandTheme.special ? brandTheme.hue : 250)
+  const [chroma, setChroma] = React.useState(
+    Math.round((brandTheme && !brandTheme.special ? (brandTheme.chromaScale ?? 1) : 1) * 100),
+  )
+
+  const previewColor = `oklch(0.55 ${(0.2 * (chroma / 100)).toFixed(4)} ${hue})`
+  const isApplied =
+    !!brandTheme && !brandTheme.special && brandTheme.hue === hue && Math.round((brandTheme.chromaScale ?? 1) * 100) === chroma
+
+  return (
+    <div className="grid gap-4 rounded-lg border p-4">
+      <div className="flex items-center gap-3">
+        <span
+          className="ring-foreground/15 size-10 shrink-0 rounded-full ring-2 ring-offset-2"
+          style={{ backgroundColor: previewColor }}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-muted-foreground text-xs font-medium">Önizleme</p>
+          <p className="text-sm font-medium tabular-nums">Ton {hue}° · Yoğunluk %{chroma}</p>
+        </div>
+        {isApplied && (
+          <span className="text-primary flex shrink-0 items-center gap-1 text-xs font-medium">
+            <Check className="size-3.5" /> Uygulandı
+          </span>
+        )}
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="custom-hue">Renk tonu</Label>
+        <input
+          id="custom-hue"
+          type="range"
+          min={0}
+          max={359}
+          value={hue}
+          onChange={(e) => setHue(Number(e.target.value))}
+          className={cn('h-2 w-full cursor-pointer appearance-none rounded-full', RANGE_THUMB_CLASSES)}
+          style={{ background: HUE_GRADIENT }}
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="custom-chroma">Yoğunluk</Label>
+        <input
+          id="custom-chroma"
+          type="range"
+          min={10}
+          max={100}
+          value={chroma}
+          onChange={(e) => setChroma(Number(e.target.value))}
+          className={cn('bg-muted h-2 w-full cursor-pointer appearance-none rounded-full', RANGE_THUMB_CLASSES)}
+        />
+      </div>
+      <Button
+        size="sm"
+        className="justify-self-start"
+        onClick={() => saveMutation.mutate({ hue, chromaScale: chroma / 100 })}
+        disabled={saveMutation.isPending || isApplied}
+      >
+        {saveMutation.isPending ? <Loader2 className="animate-spin" /> : <Check className="size-3.5" />}
+        Bu Rengi Uygula
+      </Button>
+    </div>
+  )
+}
+
 function ColorModePicker() {
   const { mode, setMode } = useColorMode()
   const options: { id: 'light' | 'dark'; label: string; icon: React.ElementType }[] = [
@@ -188,7 +270,7 @@ function IconSetPicker() {
   const activeId = iconSetId ?? defaultIconSetId
 
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {iconSets.map((set) => {
         const isActive = activeId === set.id
         const previewIcons = [set.icons.dashboard, set.icons.customers, set.icons.payments]
@@ -213,13 +295,16 @@ function IconSetPicker() {
                       'bg-gradient-to-br from-white/25 to-white/5 shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_2px_5px_-1px_rgba(0,0,0,0.5)] ring-1 ring-white/10',
                     set.variant === 'bold' && 'bg-white/15',
                     set.variant === 'outline' && 'bg-white/5',
+                    set.variant === 'duotone' &&
+                      'bg-gradient-to-br from-primary/25 to-primary/5 text-primary ring-1 ring-primary/20',
+                    set.variant === 'thin' && 'bg-transparent',
                   )}
                 >
                   <Icon
                     className="size-4"
                     strokeWidth={set.strokeWidth}
-                    fill={set.variant === 'bold' ? 'currentColor' : 'none'}
-                    fillOpacity={set.variant === 'bold' ? 0.15 : undefined}
+                    fill={set.variant === 'bold' || set.variant === 'duotone' ? 'currentColor' : 'none'}
+                    fillOpacity={set.variant === 'bold' ? 0.15 : set.variant === 'duotone' ? 0.3 : undefined}
                   />
                 </span>
               ))}
@@ -364,6 +449,10 @@ export function SettingsPage() {
             <div>
               <p className="mb-2 text-sm font-medium">Marka Rengi</p>
               <ThemePicker />
+            </div>
+            <div>
+              <p className="mb-2 text-sm font-medium">Özel Renk Paneli</p>
+              <CustomColorPicker />
             </div>
             <div>
               <p className="mb-2 text-sm font-medium">Menü Simge Seti</p>

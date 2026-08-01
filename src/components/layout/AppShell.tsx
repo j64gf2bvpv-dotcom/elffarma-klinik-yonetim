@@ -104,6 +104,20 @@ function iconBoxClasses(variant: IconVariant, isActive: boolean): string {
         : 'bg-white/8 text-sidebar-foreground/80 group-hover:bg-white/15 group-hover:text-sidebar-foreground',
     )
   }
+  if (variant === 'duotone') {
+    return cn(
+      'ring-1',
+      isActive
+        ? 'bg-gradient-to-br from-primary/35 to-primary/10 text-primary ring-primary/30'
+        : 'bg-gradient-to-br from-white/10 to-white/[0.03] text-sidebar-foreground/80 ring-white/5 group-hover:from-primary/20 group-hover:to-primary/5 group-hover:text-primary',
+    )
+  }
+  if (variant === 'thin') {
+    return cn(
+      'bg-transparent',
+      isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 group-hover:text-sidebar-foreground',
+    )
+  }
   return cn(
     isActive
       ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-[0_1px_0_rgba(255,255,255,0.3)_inset]'
@@ -156,8 +170,8 @@ function SidebarNavLink({
             <Icon
               className="size-[1.15rem]"
               strokeWidth={strokeWidth}
-              fill={variant === 'bold' ? 'currentColor' : 'none'}
-              fillOpacity={variant === 'bold' ? 0.15 : undefined}
+              fill={variant === 'bold' || variant === 'duotone' ? 'currentColor' : 'none'}
+              fillOpacity={variant === 'bold' ? 0.15 : variant === 'duotone' ? 0.3 : undefined}
             />
           </span>
           <span className="truncate">{label}</span>
