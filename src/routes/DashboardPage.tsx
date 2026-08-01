@@ -207,22 +207,45 @@ function pctDelta(current: number, previous: number): number | null {
   return ((current - previous) / previous) * 100
 }
 
+// macOS Dock/Launchpad tarzı "squircle" ikon rozetleri: canlı gradyan + üstte
+// cam parlaklığı (highlight) + yumuşak dış gölge. Her hızlı işlem kendi
+// (macOS uygulama ikonlarındaki gibi) ayırt edici rengini alıyor.
+const quickActionTone = {
+  blue: { from: 'oklch(0.72 0.14 250)', to: 'oklch(0.5 0.19 258)' },
+  green: { from: 'oklch(0.76 0.16 150)', to: 'oklch(0.54 0.15 155)' },
+  purple: { from: 'oklch(0.7 0.15 300)', to: 'oklch(0.5 0.18 300)' },
+  orange: { from: 'oklch(0.79 0.15 60)', to: 'oklch(0.62 0.18 45)' },
+  red: { from: 'oklch(0.68 0.19 25)', to: 'oklch(0.5 0.2 23)' },
+  pink: { from: 'oklch(0.72 0.17 10)', to: 'oklch(0.55 0.19 15)' },
+  gray: { from: 'oklch(0.78 0.01 250)', to: 'oklch(0.55 0.01 250)' },
+  teal: { from: 'oklch(0.76 0.12 190)', to: 'oklch(0.55 0.12 195)' },
+} as const
+
+type QuickActionTone = keyof typeof quickActionTone
+
 function QuickAction({
   to,
   icon: Icon,
   label,
+  tone,
 }: {
   to: string
   icon: React.ElementType
   label: string
+  tone: QuickActionTone
 }) {
+  const { from, to: toColor } = quickActionTone[tone]
   return (
     <Link
       to={to}
       className="group flex flex-col items-center gap-2 rounded-xl border border-border/60 p-3 text-center transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/40"
     >
-      <span className="ring-primary/10 flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_2px_6px_-2px_rgba(0,0,0,0.18)] ring-1 transition-transform duration-300 group-hover:scale-110">
-        <Icon className="size-5" />
+      <span
+        className="relative flex size-11 items-center justify-center overflow-hidden rounded-[24%] text-white shadow-[0_3px_8px_-2px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.5)] transition-transform duration-300 group-hover:scale-110"
+        style={{ background: `linear-gradient(155deg, ${from}, ${toColor})` }}
+      >
+        <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent" />
+        <Icon className="relative size-5" strokeWidth={2.25} />
       </span>
       <span className="text-xs font-medium">{label}</span>
     </Link>
@@ -801,14 +824,14 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <QuickAction to="/satislar" icon={Receipt} label="Fatura Oluştur" />
-              <QuickAction to="/tahsilatlar" icon={HandCoins} label="Tahsilat Ekle" />
-              <QuickAction to="/musteriler" icon={UserPlus} label="Yeni Cari" />
-              <QuickAction to="/ai-analiz" icon={BarChart3} label="Raporlar" />
-              <QuickAction to="/ajanda" icon={CalendarPlus} label="Ajandaya Ekle" />
-              <QuickAction to="/hatirlatmalar" icon={AlarmClockPlus} label="Hatırlatma Ekle" />
-              <QuickAction to="/prim" icon={Calculator} label="Prim Hesapla" />
-              <QuickAction to="/stok" icon={Boxes} label="Stok Durumu" />
+              <QuickAction to="/satislar" icon={Receipt} label="Fatura Oluştur" tone="blue" />
+              <QuickAction to="/tahsilatlar" icon={HandCoins} label="Tahsilat Ekle" tone="green" />
+              <QuickAction to="/musteriler" icon={UserPlus} label="Yeni Cari" tone="purple" />
+              <QuickAction to="/ai-analiz" icon={BarChart3} label="Raporlar" tone="orange" />
+              <QuickAction to="/ajanda" icon={CalendarPlus} label="Ajandaya Ekle" tone="red" />
+              <QuickAction to="/hatirlatmalar" icon={AlarmClockPlus} label="Hatırlatma Ekle" tone="pink" />
+              <QuickAction to="/prim" icon={Calculator} label="Prim Hesapla" tone="gray" />
+              <QuickAction to="/stok" icon={Boxes} label="Stok Durumu" tone="teal" />
             </div>
           </CardContent>
         </Card>
@@ -818,7 +841,7 @@ export function DashboardPage() {
     if (id === 'critical_alerts') {
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <AlertTriangle className="size-4 text-destructive" /> Kritik Uyarılar
               {criticalAlertItems.length > 0 && <Badge variant="secondary">{criticalAlertItems.length}</Badge>}
@@ -856,7 +879,7 @@ export function DashboardPage() {
     if (id === 'upcoming_reminders') {
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <BellRing className="size-4 text-primary" /> Yaklaşan Hatırlatmalar
             </CardTitle>
@@ -920,7 +943,7 @@ export function DashboardPage() {
 
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <PieChart className="size-4 text-primary" /> Stok Durumu
             </CardTitle>
@@ -962,7 +985,7 @@ export function DashboardPage() {
 
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Presentation className="size-4 text-primary" /> Yaklaşan Kongreler
             </CardTitle>
@@ -1017,7 +1040,7 @@ export function DashboardPage() {
     if (id === 'exchange_rates') {
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Coins className="size-4 text-primary" /> Günlük Döviz Kurları
             </CardTitle>
@@ -1151,7 +1174,7 @@ export function DashboardPage() {
     if (id === 'top_products') {
       return (
         <Card className="overflow-hidden">
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Trophy className="size-4 text-[oklch(0.72_0.16_70)]" /> En Çok Satan Ürünler
               <span className="text-muted-foreground text-xs font-normal">Bu ay</span>
@@ -1176,7 +1199,7 @@ export function DashboardPage() {
     if (id === 'region_sales') {
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <MapPin className="size-4 text-primary" /> Satış Haritası — İllere Göre (Son 6 Ay)
             </CardTitle>
@@ -1226,7 +1249,7 @@ export function DashboardPage() {
 
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Presentation className="size-4 text-primary" /> Kongre Paket Fiyatları
             </CardTitle>
@@ -1278,7 +1301,7 @@ export function DashboardPage() {
     if (id === 'rep_performance') {
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Trophy className="size-4 text-primary" /> Temsilci Performansı
             </CardTitle>
@@ -1293,11 +1316,11 @@ export function DashboardPage() {
               <p className="text-sm text-muted-foreground">Bu ay için temsilci bazlı satış/tahsilat verisi yok</p>
             )}
             {repPerformance.map((rep) => (
-              <div key={rep.name} className="flex items-center justify-between rounded-md border p-2.5 text-sm">
-                <span className="font-medium">{rep.name}</span>
-                <span className="flex gap-3 text-xs text-muted-foreground">
-                  <span>Satış: {rep.sold.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</span>
-                  <span>Tahsilat: {rep.collected.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</span>
+              <div key={rep.name} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border p-2.5 text-sm">
+                <span className="min-w-0 truncate font-medium">{rep.name}</span>
+                <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                  <span className="whitespace-nowrap">Satış: {rep.sold.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</span>
+                  <span className="whitespace-nowrap">Tahsilat: {rep.collected.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</span>
                 </span>
               </div>
             ))}
@@ -1309,7 +1332,7 @@ export function DashboardPage() {
     if (id === 'commission_summary') {
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Percent className="size-4 text-primary" /> Prim Özeti (Bu Ay)
             </CardTitle>
@@ -1327,9 +1350,9 @@ export function DashboardPage() {
               <p className="text-sm text-muted-foreground">Bu ay prim üreten kural/satış yok</p>
             ) : (
               commissionSummary.slice(0, 5).map((r) => (
-                <div key={r.salesRepId} className="flex items-center justify-between text-sm">
-                  <span>{r.salesRepName}</span>
-                  <span className="font-medium">{r.netTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
+                <div key={r.salesRepId} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="min-w-0 truncate">{r.salesRepName}</span>
+                  <span className="shrink-0 font-medium">{r.netTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
                 </div>
               ))
             )}
@@ -1341,7 +1364,7 @@ export function DashboardPage() {
     if (id === 'sample_conversion') {
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <FlaskConical className="size-4 text-primary" /> Numune Dönüşüm Oranı
             </CardTitle>
@@ -1372,7 +1395,7 @@ export function DashboardPage() {
     if (id === 'lot_expiry') {
       return (
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Layers className="size-4 text-destructive" /> Lot / SKT Riski
             </CardTitle>
@@ -1401,7 +1424,7 @@ export function DashboardPage() {
     return (
       <div>
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="text-base">Son İşlemler</CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/tahsilatlar">
@@ -1446,8 +1469,8 @@ export function DashboardPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={
-          <span className="flex items-center gap-2.5">
-            {`${welcomeText}${staff?.full_name ? ', ' + staff.full_name : ''}`}
+          <span className="flex min-w-0 flex-wrap items-center gap-2.5">
+            <span className="break-words">{`${welcomeText}${staff?.full_name ? ', ' + staff.full_name : ''}`}</span>
             {staff && (
               <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
                 {tr.staffRole[staff.role]}

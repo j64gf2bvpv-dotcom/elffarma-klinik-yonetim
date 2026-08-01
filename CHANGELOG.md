@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.45] - 2026-08-01
+
+**Panel'de taşan/kayan yazılar düzeltildi, kutular daha nizami:** Başlık satırı (karşılama yazısı + rozet + düzenle ikonu), kart başlıkları (ikon + "Detaya git" butonu) ve "Temsilci Performansı"/"Prim Özeti" satırları artık dar çerçevelerde de taşmıyor — uzun isimler kısaltılıyor (…), sayılar tek satırda kalıyor, gerektiğinde alt satıra sarıyor. `PageHeader` ve tüm kart başlıkları artık `flex-wrap` ile güvenli.
+
+**Hızlı İşlemler ikonları macOS uygulama simgeleri tarzına geçirildi:** Her ikon artık kendine özgü canlı bir gradyan renkte (mavi/yeşil/mor/turuncu/kırmızı/pembe/gri/turkuaz), üstte cam parlaklığı ve yumuşak gölgeyle "squircle" (yuvarlatılmış kare) bir rozet içinde — macOS Dock/Launchpad ikonlarına benzer bir görünüm. Şema değişikliği yok.
+
 ## [2.12.44] - 2026-08-01
 
 **Panel çerçeveleri artık nizami bir kutu ızgarasında, otomatik yerleşiyor:** Widget'lar serbest piksel boyutlandırma yerine 12 sütunlu bir CSS Grid'e (¼/⅓/½/⅔/Tam sütun genişliği seçenekleri) oturuyor; yerleşim `grid-auto-flow: row dense` ile tarayıcı tarafından tamamen otomatik yapılıyor — bir çerçeve gizlenince/küçülünce diğerleri otomatik boşluğa kayıyor, elle "Ekrana Sığdır" tıklamaya gerek kalmadı. Düzenleme modunda kenardan sürükleyerek boyutlandırma yerine her çerçevenin başlığında boyut etiketleri (¼/⅓/½/⅔/Tam) var; sürükleyerek yer değiştirme aynı şekilde çalışmaya devam ediyor. Sürekli JS ölçüm/ResizeObserver kullanılmıyor (bkz. önceki react-grid-layout çökmesi notu).
