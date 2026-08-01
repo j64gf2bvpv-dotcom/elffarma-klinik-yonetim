@@ -1422,38 +1422,36 @@ export function DashboardPage() {
     }
 
     return (
-      <div>
-        <Card>
-          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="text-base">Son İşlemler</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/tahsilatlar">
-                Tahsilatlara git <ArrowRight className="size-3.5" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {recentActivity.length === 0 && <p className="text-sm text-muted-foreground">Henüz işlem yok</p>}
-            {recentActivity.map((item) => (
-              <Link
-                key={item.key}
-                to={item.to}
-                className="flex items-center justify-between rounded-md border p-3 text-sm transition-colors hover:bg-accent"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{item.title}</p>
-                  <p className="text-muted-foreground">
-                    {item.subtitle} · {format(new Date(item.date), 'd MMM yyyy', { locale: trLocale })}
-                  </p>
-                </div>
-                <Badge variant="outline" className={cn('shrink-0', item.amount < 0 && 'text-destructive')}>
-                  {item.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                </Badge>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base">Son İşlemler</CardTitle>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/tahsilatlar">
+              Tahsilatlara git <ArrowRight className="size-3.5" />
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {recentActivity.length === 0 && <p className="text-sm text-muted-foreground">Henüz işlem yok</p>}
+          {recentActivity.map((item) => (
+            <Link
+              key={item.key}
+              to={item.to}
+              className="flex items-center justify-between rounded-md border p-3 text-sm transition-colors hover:bg-accent"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-medium">{item.title}</p>
+                <p className="text-muted-foreground">
+                  {item.subtitle} · {format(new Date(item.date), 'd MMM yyyy', { locale: trLocale })}
+                </p>
+              </div>
+              <Badge variant="outline" className={cn('shrink-0', item.amount < 0 && 'text-destructive')}>
+                {item.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+              </Badge>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
     )
   }
 
@@ -1635,7 +1633,7 @@ export function DashboardPage() {
               onDrop={() => editMode && handleDrop(index)}
               style={{ gridColumn: `span ${span} / span ${span}` }}
               className={cn(
-                'min-w-0',
+                'flex min-w-0 flex-col',
                 editMode && 'rounded-lg border border-dashed border-border/60 p-1 transition-colors',
                 editMode && !item.visible && 'opacity-40',
                 editMode && dragOverIndex === index && 'border-primary bg-primary/5',
@@ -1674,7 +1672,9 @@ export function DashboardPage() {
                   </div>
                 </div>
               )}
-              {renderWidget(item.id)}
+              <div className="min-h-0 flex-1 [&>[data-slot=card]]:flex [&>[data-slot=card]]:h-full [&>[data-slot=card]]:min-h-0 [&>[data-slot=card]]:flex-col">
+                {renderWidget(item.id)}
+              </div>
             </div>
           )
         })}
