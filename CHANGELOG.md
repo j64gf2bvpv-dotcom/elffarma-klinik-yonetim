@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.48] - 2026-08-01
+
+**"En Çok Satan Ürünler" artık animasyonlu bir halka (donut) grafik:** Yatay çubuk grafik yerine, ortasında bu ayın toplam cirosunu gösteren, dönerek beliren (Recharts animasyonlu) bir halka grafik ve altında ürün adı/tutarını gösteren renkli bir liste var. Şema değişikliği yok.
+
 ## [2.12.47] - 2026-08-01
 
 **Panel kart başlıklarındaki metin çakışması düzeltildi:** "En Çok Satan Ürünler" gibi ikon + başlık + ek etiket (ör. "Bu ay") içeren kart başlıklarında, dar çerçevelerde başlık metni kendi içinde satır kırarken yanındaki etiket yerinde kalıp üst üste biniyordu. Kart başlıkları artık bütün olarak sarıyor (flex-wrap) — sığmayan etiket, metnin ortasına çakışmak yerine temiz şekilde alt satıra düşüyor. Şema değişikliği yok.
