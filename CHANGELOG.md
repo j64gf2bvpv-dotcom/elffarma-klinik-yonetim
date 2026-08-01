@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.85] - 2026-08-02
+
+**Günlük Hareket içe aktarma, genel stokta olmayan ürün yüzünden artık veriyi atlamıyor:** Excel'deki bir ürün adı Stok listesinde henüz kayıtlı değilse, önceden o satır "ürün bulunamadı" hatasıyla atlanıyordu — artık ürün otomatik olarak (varsayılan birim/kritik eşikle) oluşturulup hareket yine de işleniyor; detaylar sonradan Stok sayfasından düzenlenebilir. Şema değişikliği yok.
+
 ## [2.12.84] - 2026-08-02
 
 **Günlük Hareket Excel içe aktarma, kullanıcının gerçek şablonunu artık okuyor:** "Günlük Hareket Yükle (Excel)" özelliği, "ÜRÜN ADI" ve "kalan stoklar" gibi iki satırı kapsayan (dikey birleştirilmiş) başlık hücreleri içeren gerçek şablonu tanımıyordu — başlık tespiti düzeltildi. Ayrıca bir sütun başlığındaki isim sistemde kayıtlı bir doktor/temsilci ile eşleşmezse artık hata verip o satırı atlamıyor; yine de düz bir stok hareketi olarak işleniyor (stok doğruluğu önce geliyor). Şema değişikliği yok.

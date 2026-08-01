@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { readExcelSheetAsMatrix, nearestLeftValue, parseFlexibleDate, type ImportSummary } from '@/lib/importData'
 import { useProducts } from './hooks'
 import { createSale } from '@/features/sales/api'
-import { recordStockMovement } from './api'
+import { createProduct, recordStockMovement } from './api'
+import type { Product } from '@/types/database'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 
@@ -88,15 +89,27 @@ export function DailyMovementImportButton() {
       return summary
     }
 
+    // Genel stokta henüz olmayan bir ürün adı yüzünden o satırın verisi ATLANMAZ
+    // — ürün otomatik olarak (varsayılan birim/kritik eşikle) oluşturulup hareket
+    // yine de işlenir; sonradan Stok sayfasından detayları düzenlenebilir.
+    const productsList: Product[] = [...products]
+
     for (let r = namesRowIdx + 1; r < matrix.length; r++) {
       const row = matrix[r] ?? []
       const productName = String(row[productCol] ?? '').trim()
       if (!productName) continue
 
-      const product = products.find((p) => p.name.toLocaleLowerCase('tr') === productName.toLocaleLowerCase('tr'))
+      let product = productsList.find((p) => p.name.toLocaleLowerCase('tr') === productName.toLocaleLowerCase('tr'))
       if (!product) {
-        summary.errors.push(`${productName}: Stok'ta bu isimde ürün bulunamadı`)
-        continue
+        try {
+          product = await createProduct({ name: productName, unit: 'adet', critical_stock_threshold: 5 })
+          productsList.push(product)
+        } catch (err) {
+          summary.errors.push(
+            `${productName}: ürün otomatik oluşturulamadı — ${err instanceof Error ? err.message : 'bilinmeyen hata'}`,
+          )
+          continue
+        }
       }
 
       let movedForProduct = 0
