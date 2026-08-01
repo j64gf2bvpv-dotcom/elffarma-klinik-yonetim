@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete } from '@/lib/offlineMutation'
+import { resizeImageFile } from '@/lib/resizeImage'
 import type { SalesRep } from '@/types/database'
 
 export async function fetchSalesReps(): Promise<SalesRep[]> {
@@ -25,11 +26,16 @@ export async function updateSalesRep(id: string, input: SalesRepUpdateInput): Pr
  * profile-images bucket'ı PUBLIC (bkz. congresses/api.ts uploadCongressImage
  * ile aynı bucket, farklı path prefix'i) — temsilci fotoğrafı gizli belge
  * değil, kalıcı bir public URL alınıp sales_reps.photo_url'e yazılıyor.
+ * Yüklenen fotoğraf, çözünürlüğü/boyutu ne olursa olsun önce
+ * resizeImageFile ile küçük bir JPEG'e indirgeniyor.
  */
 export async function uploadSalesRepPhoto(file: File): Promise<string> {
-  const ext = file.name.split('.').pop() ?? 'jpg'
-  const path = `sales-rep/${crypto.randomUUID()}.${ext}`
-  const { error } = await supabase.storage.from('profile-images').upload(path, file, { upsert: true })
+  const resized = await resizeImageFile(file)
+  const path = `sales-rep/${crypto.randomUUID()}.jpg`
+  const { error } = await supabase.storage.from('profile-images').upload(path, resized, {
+    upsert: true,
+    contentType: 'image/jpeg',
+  })
   if (error) throw error
   const { data } = supabase.storage.from('profile-images').getPublicUrl(path)
   return data.publicUrl

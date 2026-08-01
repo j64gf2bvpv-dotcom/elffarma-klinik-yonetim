@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
+import { resizeImageFile } from '@/lib/resizeImage'
 import type {
   AttendanceStatus,
   Congress,
@@ -37,12 +38,17 @@ export interface CongressInput {
  * profile-images bucket'ı PUBLIC (invoices/documents'ın aksine) — kongre/
  * workshop görselleri gizli belge değil, tanıtım görseli olduğu için imzalı
  * URL yerine doğrudan kalıcı bir public URL alınıp congresses.image_url'e
- * yazılıyor.
+ * yazılıyor. Yüklenen görsel, çözünürlüğü/boyutu ne olursa olsun önce
+ * resizeImageFile ile küçük bir JPEG'e indirgeniyor (büyük orijinal
+ * dosyaları olduğu gibi Storage'a atmamak için).
  */
 export async function uploadCongressImage(file: File): Promise<string> {
-  const ext = file.name.split('.').pop() ?? 'jpg'
-  const path = `congress/${crypto.randomUUID()}.${ext}`
-  const { error } = await supabase.storage.from('profile-images').upload(path, file, { upsert: true })
+  const resized = await resizeImageFile(file)
+  const path = `congress/${crypto.randomUUID()}.jpg`
+  const { error } = await supabase.storage.from('profile-images').upload(path, resized, {
+    upsert: true,
+    contentType: 'image/jpeg',
+  })
   if (error) throw error
   const { data } = supabase.storage.from('profile-images').getPublicUrl(path)
   return data.publicUrl
