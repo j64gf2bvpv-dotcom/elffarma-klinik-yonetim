@@ -1,20 +1,29 @@
 import * as React from 'react'
-import { Check, Plus, Trash2, ClipboardList } from 'lucide-react'
+import { Check, Plus, Trash2, ClipboardList, ListChecks } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { useChecklistItems, useCreateChecklistItem, useDeleteChecklistItem, useSetChecklistItemDone } from './hooks'
+import {
+  useChecklistItems,
+  useCreateChecklistItem,
+  useCreateChecklistItemsBulk,
+  useDeleteChecklistItem,
+  useSetChecklistItemDone,
+} from './hooks'
+import { DEFAULT_CONGRESS_CHECKLIST_ITEMS } from './checklistTemplate'
 
 /**
- * Kongre/workshop'a özel, tamamen serbest bir hazırlık kontrol listesi —
- * sabit bir öğe seti YOK, kullanıcı neyin gitmesi/hazırlanması gerekiyorsa
- * kendisi ekliyor. İşaretlenince yeşil tık yanıyor.
+ * Kongre/workshop'a özel hazırlık kontrol listesi. Liste boşsa "Standart
+ * Listeyi Ekle" ile genelde ihtiyaç duyulan maddeler (stand, numune, broşür,
+ * konaklama vb.) toplu eklenebilir — ayrıca her zaman serbest madde ekleme
+ * kalıyor, sabit liste zorunlu değil. İşaretlenince yeşil tık yanıyor.
  */
 export function ChecklistPanel({ congressId }: { congressId: string }) {
   const { data: items = [], isLoading } = useChecklistItems(congressId)
   const createMutation = useCreateChecklistItem(congressId)
+  const bulkCreateMutation = useCreateChecklistItemsBulk(congressId)
   const toggleMutation = useSetChecklistItemDone(congressId)
   const deleteMutation = useDeleteChecklistItem(congressId)
   const [draft, setDraft] = React.useState('')
@@ -45,9 +54,22 @@ export function ChecklistPanel({ congressId }: { congressId: string }) {
         <CardContent className="grid gap-3 p-4">
           {isLoading && <p className="text-muted-foreground text-sm">Yükleniyor...</p>}
           {!isLoading && items.length === 0 && (
-            <p className="text-muted-foreground text-sm">
-              Henüz bir madde yok — ne gitmesi/hazırlanması gerekiyorsa aşağıdan ekleyin.
-            </p>
+            <div className="grid gap-2">
+              <p className="text-muted-foreground text-sm">
+                Henüz bir madde yok — ne gitmesi/hazırlanması gerekiyorsa aşağıdan ekleyin, ya da genelde
+                ihtiyaç duyulan standart listeyi ekleyip üzerinden düzenleyin.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-fit"
+                disabled={bulkCreateMutation.isPending}
+                onClick={() => bulkCreateMutation.mutate(DEFAULT_CONGRESS_CHECKLIST_ITEMS)}
+              >
+                <ListChecks className="size-3.5" /> Standart Listeyi Ekle
+              </Button>
+            </div>
           )}
           <div className="grid gap-1.5">
             {items.map((item) => (

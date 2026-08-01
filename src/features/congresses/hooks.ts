@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   createChecklistItem,
+  createChecklistItemsBulk,
   createCongress,
   createParticipant,
   createParticipantProduct,
@@ -11,6 +12,7 @@ import {
   deleteParticipant,
   deleteParticipantProduct,
   deleteRemainingProduct,
+  fetchAllChecklistItems,
   fetchAllParticipantProductSales,
   fetchChecklistItems,
   fetchCongress,
@@ -266,8 +268,28 @@ export function useCreateChecklistItem(congressId: string) {
         old ? [...old, created] : old,
       )
       queryClient.invalidateQueries({ queryKey: ['congress_checklist_items', congressId] })
+      queryClient.invalidateQueries({ queryKey: ['congress_checklist_items_all'] })
     },
     onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
+  })
+}
+
+export function useCreateChecklistItemsBulk(congressId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (labels: string[]) => createChecklistItemsBulk(congressId, labels),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['congress_checklist_items', congressId] })
+      queryClient.invalidateQueries({ queryKey: ['congress_checklist_items_all'] })
+    },
+    onError: (error: Error) => toast.error('Standart liste eklenemedi', { description: error.message }),
+  })
+}
+
+export function useAllChecklistItems() {
+  return useQuery({
+    queryKey: ['congress_checklist_items_all'],
+    queryFn: fetchAllChecklistItems,
   })
 }
 
@@ -280,6 +302,7 @@ export function useSetChecklistItemDone(congressId: string) {
         old?.map((item) => (item.id === id ? { ...item, is_done } : item)),
       )
       queryClient.invalidateQueries({ queryKey: ['congress_checklist_items', congressId] })
+      queryClient.invalidateQueries({ queryKey: ['congress_checklist_items_all'] })
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
   })
@@ -294,6 +317,7 @@ export function useDeleteChecklistItem(congressId: string) {
         old?.filter((item) => item.id !== id),
       )
       queryClient.invalidateQueries({ queryKey: ['congress_checklist_items', congressId] })
+      queryClient.invalidateQueries({ queryKey: ['congress_checklist_items_all'] })
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
   })

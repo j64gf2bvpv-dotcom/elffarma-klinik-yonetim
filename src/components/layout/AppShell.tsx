@@ -14,6 +14,7 @@ import {
   Presentation,
   BellRing,
   ClipboardX,
+  ClipboardList,
   Wallet,
   PackageOpen,
   CloudUpload,
@@ -218,6 +219,7 @@ function TopBar() {
   const visibleDoctorsWithBalance = alerts.doctorsWithBalance.filter((d) => !dismissed.has(`balance:${d.id}`))
   const visiblePendingProducts = alerts.pendingProducts.filter((p) => !dismissed.has(`pending:${p.id}`))
   const visibleUpcomingCongresses = alerts.upcomingCongresses.filter((c) => !dismissed.has(`congress:${c.id}`))
+  const visibleIncompleteChecklists = alerts.incompleteChecklists.filter((c) => !dismissed.has(`checklist:${c.id}`))
 
   const visibleTotal =
     visibleDueReminders.length +
@@ -226,7 +228,8 @@ function TopBar() {
     visibleExpiringLots.length +
     visiblePaymentDue.length +
     visibleDoctorsWithBalance.length +
-    visiblePendingProducts.length
+    visiblePendingProducts.length +
+    visibleIncompleteChecklists.length
 
   return (
     <header className="bg-background/70 supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-20 flex h-16 shrink-0 items-center gap-4 border-b border-border/60 px-6 md:px-8">
@@ -365,6 +368,20 @@ function TopBar() {
                   <NotifIcon icon={Presentation} tone="primary" />
                   <span className="text-xs">
                     <span className="font-medium">{c.name}</span> kongresi yaklaşıyor
+                  </span>
+                </Link>
+              </DropdownMenuItem>
+            ))}
+            {visibleIncompleteChecklists.slice(0, 3).map((c) => (
+              <DropdownMenuItem key={c.id} asChild onSelect={() => dismiss(`checklist:${c.id}`)}>
+                <Link to={`/kongreler/${c.id}`} className="flex items-start gap-2">
+                  <NotifIcon icon={ClipboardList} />
+                  <span className="text-xs">
+                    <span className="font-medium">{c.name}</span> kontrol listesi eksik (
+                    {c.totalChecklistItems === 0
+                      ? 'hiç madde yok'
+                      : `${c.missingChecklistItems}/${c.totalChecklistItems} tamamlanmadı`}
+                    )
                   </span>
                 </Link>
               </DropdownMenuItem>

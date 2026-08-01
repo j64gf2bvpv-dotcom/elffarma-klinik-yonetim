@@ -39,6 +39,7 @@ import {
   Landmark,
   AlertTriangle,
   ClipboardX,
+  ClipboardList,
   CalendarClock,
   BellRing,
   Trophy,
@@ -801,8 +802,20 @@ export function DashboardPage() {
         to: `/musteriler/${d.id}`,
       })
     }
+    for (const c of alerts.incompleteChecklists.slice(0, 2)) {
+      items.push({
+        key: `checklist-${c.id}`,
+        icon: ClipboardList,
+        title: c.name,
+        subtitle:
+          c.totalChecklistItems === 0
+            ? 'Kontrol listesi hiç doldurulmamış'
+            : `Kontrol listesinde ${c.missingChecklistItems}/${c.totalChecklistItems} madde tamamlanmadı`,
+        to: `/kongreler/${c.id}`,
+      })
+    }
     return items.slice(0, 4)
-  }, [alerts.criticalStock, alerts.expiringProducts, alerts.paymentDue])
+  }, [alerts.criticalStock, alerts.expiringProducts, alerts.paymentDue, alerts.incompleteChecklists])
 
   const last6MonthsStart = React.useMemo(() => startOfMonth(subMonths(new Date(), 5)), [])
 

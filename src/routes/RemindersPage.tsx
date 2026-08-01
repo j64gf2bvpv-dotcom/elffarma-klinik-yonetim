@@ -3,7 +3,7 @@ import { format, isToday, isPast } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { BellRing, Trash2, AlertTriangle, ClipboardX, CalendarClock, Wallet, PackageOpen, Presentation } from 'lucide-react'
+import { BellRing, Trash2, AlertTriangle, ClipboardX, ClipboardList, CalendarClock, Wallet, PackageOpen, Presentation } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -103,6 +103,7 @@ export function RemindersPage() {
   const visibleDoctorsWithBalance = alerts.doctorsWithBalance.filter((d) => !dismissed.has(`balance:${d.id}`))
   const visiblePendingProducts = alerts.pendingProducts.filter((p) => !dismissed.has(`pending:${p.id}`))
   const visibleUpcomingCongresses = alerts.upcomingCongresses.filter((c) => !dismissed.has(`congress:${c.id}`))
+  const visibleIncompleteChecklists = alerts.incompleteChecklists.filter((c) => !dismissed.has(`checklist:${c.id}`))
 
   const systemAlertCount =
     visibleCriticalStock.length +
@@ -110,7 +111,8 @@ export function RemindersPage() {
     visibleExpiringLots.length +
     visiblePaymentDue.length +
     visibleDoctorsWithBalance.length +
-    visiblePendingProducts.length
+    visiblePendingProducts.length +
+    visibleIncompleteChecklists.length
 
   function handleDeleteAll() {
     const alertKeys = [
@@ -121,6 +123,7 @@ export function RemindersPage() {
       ...visibleDoctorsWithBalance.map((d) => `balance:${d.id}`),
       ...visiblePendingProducts.map((p) => `pending:${p.id}`),
       ...visibleUpcomingCongresses.map((c) => `congress:${c.id}`),
+      ...visibleIncompleteChecklists.map((c) => `checklist:${c.id}`),
     ]
     if (reminders.length === 0 && alertKeys.length === 0) return
     dismissMany(alertKeys)
@@ -227,6 +230,19 @@ export function RemindersPage() {
                   icon={PackageOpen}
                   title={p.customers?.full_name ?? 'Doktor'}
                   subtitle={`Eksik ürün: ${p.product_name} × ${p.quantity}`}
+                />
+              ))}
+              {visibleIncompleteChecklists.map((c) => (
+                <AlertRow
+                  key={`checklist-${c.id}`}
+                  to={`/kongreler/${c.id}`}
+                  icon={ClipboardList}
+                  title={c.name}
+                  subtitle={
+                    c.totalChecklistItems === 0
+                      ? 'Hazırlık kontrol listesi hiç doldurulmamış'
+                      : `Hazırlık kontrol listesinde ${c.missingChecklistItems}/${c.totalChecklistItems} madde tamamlanmadı`
+                  }
                 />
               ))}
             </CardContent>

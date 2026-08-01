@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.81] - 2026-08-02
+
+**Kongre kontrol listesine standart şablon eklendi, eksik hazırlıklar uyarı olarak gösteriliyor:** Bir kongre/workshop'un hazırlık kontrol listesi boşsa artık "Standart Listeyi Ekle" butonuyla genelde ihtiyaç duyulan maddeler (stand, numune, broşür, konaklama, ulaşım, ekipman vb.) tek seferde eklenebiliyor — serbest madde ekleme özelliği aynen duruyor. Kongre tarihi 14 gün içine girdiğinde, kontrol listesi hiç doldurulmamışsa veya tamamlanmamış maddesi varsa bu artık bildirim ziline, Hatırlatmalar sayfasına ve Dashboard'daki Kritik Uyarılar kartına otomatik uyarı olarak düşüyor. Şema değişikliği yok (mevcut congress_checklist_items tablosu kullanılıyor).
+
 ## [2.12.80] - 2026-08-02
 
 **Dashboard'a otomatik "Yapay Zeka Uyarıları" widget'ı eklendi:** Ana panele, mevcut AIService/işletme özeti altyapısını kullanan yeni bir kart eklendi — sayfa her açıldığında (15 dakikada bir tazelenerek) yapay zeka güncel veriye (kritik stok, SKT, tahsilat riski, CRM, kongreler vb.) bakıp eksik/tutarsız görünen veya önemli olan kısa uyarı/hatırlatma maddeleri çıkarıyor; manuel "Yenile" butonu ve tam analiz sayfasına (Yapay Zeka Analiz) kısayol içeriyor. Önceden bu analiz sadece o sayfada elle tetiklenebiliyordu; artık ana panelde otomatik/pasif olarak görünüyor. AI sağlayıcısına ulaşılamazsa kart bunu açıkça belirtiyor, başka bir yeri etkilemiyor. Şema değişikliği yok.

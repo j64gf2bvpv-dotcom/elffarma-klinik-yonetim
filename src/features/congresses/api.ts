@@ -234,6 +234,27 @@ export async function createChecklistItem(congressId: string, label: string): Pr
   )
 }
 
+export async function createChecklistItemsBulk(congressId: string, labels: string[]): Promise<CongressChecklistItem[]> {
+  const createdBy = await getCurrentUserId()
+  const created: CongressChecklistItem[] = []
+  for (const label of labels) {
+    created.push(
+      await offlineInsert<CongressChecklistItem>(
+        'congress_checklist_items',
+        { congress_id: congressId, label, created_by: createdBy },
+        `Kontrol listesi: ${label}`,
+      ),
+    )
+  }
+  return created
+}
+
+export async function fetchAllChecklistItems(): Promise<CongressChecklistItem[]> {
+  const { data, error } = await supabase.from('congress_checklist_items').select('*')
+  if (error) throw error
+  return data as CongressChecklistItem[]
+}
+
 export async function setChecklistItemDone(id: string, is_done: boolean): Promise<void> {
   await offlineUpdate('congress_checklist_items', id, { is_done }, 'Kontrol listesi öğesi güncelleme')
 }
