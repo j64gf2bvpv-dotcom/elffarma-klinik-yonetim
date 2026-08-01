@@ -318,7 +318,7 @@ export function SettingsPage() {
       const result = await seedDemoData()
       await queryClient.invalidateQueries()
       toast.success('Örnek veri eklendi', {
-        description: `${result.customers} cari, ${result.products} ürün, ${result.payments} tahsilat, ${result.sales} satış, ${result.salesReps} temsilci, ${result.reminders} hatırlatma, ${result.congresses} kongre, ${result.visits} ziyaret, ${result.expenses} gider, ${result.sampleRequests} numune talebi, ${result.commissionRules} prim kuralı`,
+        description: `${result.customers} cari, ${result.products} ürün, ${result.payments} tahsilat, ${result.sales} satış, ${result.salesReps} temsilci, ${result.reminders} hatırlatma, ${result.congresses} kongre, ${result.visits} ziyaret, ${result.expenses} gider, ${result.sampleRequests} numune talebi, ${result.commissionRules} prim kuralı, ${result.clinics} klinik, ${result.crmActivities} CRM aktivitesi, ${result.crmOpportunities} CRM fırsatı`,
       })
     } catch (err) {
       toast.error('Örnek veri eklenemedi', { description: err instanceof Error ? err.message : undefined })
@@ -328,13 +328,13 @@ export function SettingsPage() {
   }
 
   async function handleClearDemoData() {
-    if (!confirm('Tüm örnek veriler (örnek cariler, ürünler, temsilciler, hatırlatmalar, kongreler, ziyaretler, giderler ve bunlara bağlı tahsilat/satışlar) kalıcı olarak silinsin mi?')) return
+    if (!confirm('Tüm örnek veriler (örnek cariler, ürünler, temsilciler, hatırlatmalar, kongreler, ziyaretler, giderler, klinikler ve bunlara bağlı tahsilat/satış/numune/CRM kayıtları) kalıcı olarak silinsin mi?')) return
     setClearing(true)
     try {
       const result = await clearDemoData()
       await queryClient.invalidateQueries()
       toast.success('Örnek veriler silindi', {
-        description: `${result.customersDeleted} cari, ${result.productsDeleted} ürün, ${result.salesRepsDeleted} temsilci, ${result.remindersDeleted} hatırlatma, ${result.congressesDeleted} kongre, ${result.visitsDeleted} ziyaret, ${result.expensesDeleted} gider, ${result.commissionRulesDeleted} prim kuralı kaldırıldı`,
+        description: `${result.customersDeleted} cari, ${result.productsDeleted} ürün, ${result.salesRepsDeleted} temsilci, ${result.remindersDeleted} hatırlatma, ${result.congressesDeleted} kongre, ${result.visitsDeleted} ziyaret, ${result.expensesDeleted} gider, ${result.commissionRulesDeleted} prim kuralı, ${result.clinicsDeleted} klinik kaldırıldı`,
       })
     } catch (err) {
       toast.error('Örnek veriler silinemedi', { description: err instanceof Error ? err.message : undefined })
@@ -547,12 +547,13 @@ export function SettingsPage() {
               <div>
                 <CardTitle>Örnek/Deneme Verisi</CardTitle>
                 <CardDescription>
-                  Panel grafiklerini ve diğer ekranları gerçek veriyle görmek için birkaç örnek doktor, ürün
+                  Panel grafiklerini ve tüm ekranları gerçek veriyle görmek için birkaç örnek doktor, ürün
                   (SKT'si yaklaşan bir lot dahil), tahsilat, satış, temsilci, hatırlatma, kongre (paket
-                  fiyatlarıyla), ziyaret, gider, numune talebi ve bir prim kuralı ekler — Panel'deki hemen hemen
-                  tüm widget'lar (temsilci performansı, yaklaşan hatırlatmalar, en çok satan ürünler, SKT
-                  riski, numune dönüşümü, prim özeti vb.) bu veriyle dolar. Adları/başlıkları "[Örnek]" ile
-                  işaretlenir, tek tıkla geri silinebilir — gerçek verilerinize dokunmaz.
+                  fiyatlarıyla), ziyaret, gider, numune talebi, bir prim kuralı, klinik ve CRM aktivitesi/fırsatı
+                  (Yeni'den Kaybedildi'ye kadar tüm CRM aşamalarında) ekler — Panel'deki hemen hemen tüm
+                  widget'lar ve Klinikler/CRM/Numuneler/Prim sayfaları bu veriyle dolar. Adları/başlıkları
+                  "[Örnek]" ile işaretlenir, tek tıkla geri silinebilir — gerçek verilerinize dokunmaz. (Bütçe
+                  hedefleri, gerçek verinizi yanlışlıkla ezmemek için bilerek dahil edilmedi.)
                 </CardDescription>
               </div>
             </CardHeader>

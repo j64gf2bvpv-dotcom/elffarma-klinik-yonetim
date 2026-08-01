@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.50] - 2026-08-01
+
+**Örnek veri artık Klinikler ve CRM'i de kapsıyor:** "Örnek Veri Ekle" iki örnek klinik ve her doktor için bir CRM aktivitesi + bir CRM fırsatı ekliyor — 5 örnek doktor 5 CRM aşamasına (Yeni/Teklif/Müzakere/Kazanıldı/Kaybedildi) birebir dağıtılıyor ki CRM panosunun tüm sütunları dolu görünsün. Bütçe (Yıllık Bütçe) sayfası BİLEREK dışarıda bırakıldı: bütçe hedefleri yıl+ay üzerinden gerçek veriyle aynı hücreye yazıldığından, örnek/gerçek ayrımı yapacak bir etiket yok — otomatik eklemek gerçek bir hedefi sessizce ezme riski taşırdı. Şema değişikliği yok.
+
 ## [2.12.49] - 2026-08-01
 
 **Örnek veri artık lot/SKT, kongre paket fiyatı, numune talebi ve prim kuralı da ekliyor:** "Örnek Veri Ekle" özelliği genişletildi — ürünlerden birine SKT'si yaklaşan bir lot, demo kongreye tek/2 kişilik paket fiyatı, her doktor için satılan bir üründen numune talebi (satıştan önceki tarihle, dönüşüm olarak sayılsın diye) ve genel bir prim kuralı (%10, tüm satışlar) ekleniyor. Böylece Panel'deki "Lot / SKT Riski", "Kongre Paket Fiyatları", "Numune Dönüşüm Oranı" ve "Prim Özeti" widget'ları da artık örnek veriyle doluyor — daha önce bu dördü boş kalıyordu. Şema değişikliği yok.

@@ -12,8 +12,10 @@ import { createExpense, deleteExpense } from '@/features/expenses/api'
 import { createCommissionRule, deleteCommissionRule } from '@/features/commissions/api'
 import { createSampleRequest } from '@/features/samples/api'
 import { createProductLot } from '@/features/stock/api'
+import { createClinic, deleteClinic } from '@/features/clinics/api'
+import { createCrmActivity, createCrmOpportunity } from '@/features/crm/api'
 import { offlineDelete } from '@/lib/offlineMutation'
-import type { ExpenseCategory, PaymentMethod, Product } from '@/types/database'
+import type { CrmOpportunityStage, ExpenseCategory, PaymentMethod, Product } from '@/types/database'
 
 /**
  * Panel/grafikleri ve diğer sayfaları gerçek görünümüyle denemek için tek
@@ -27,6 +29,12 @@ import type { ExpenseCategory, PaymentMethod, Product } from '@/types/database'
  * supabase/schema.sql); ürünler ayrıca siliniyor (stock_movements/
  * product_lots ürüne cascade bağlı). doctor_visits.customer_id `on delete
  * set null` olduğu için ziyaretler ayrıca kendi işaretiyle temizleniyor.
+ * CRM aktivite/fırsatları ve numune talepleri customer_id'ye `on delete
+ * cascade` bağlı olduğu için ayrıca silinmiyor, doktor silinince otomatik
+ * temizleniyor. Bütçe hedefleri (budget_targets) BİLEREK dahil edilmedi:
+ * tablo yıl+ay üzerinden upsert ediliyor ve örnek/gerçek veriyi ayırt edecek
+ * bir etiket alanı yok — otomatik eklemek gerçek bir hedefi sessizce
+ * ezme riski taşırdı.
  */
 export const DEMO_TAG = 'örnek-veri'
 const DEMO_SKU_PREFIX = 'ORNEK-'
@@ -80,6 +88,15 @@ const DEMO_CONGRESS = {
 
 const DEMO_COMMISSION_RULE = `${DEMO_LABEL_PREFIX} Genel Satış Primi`
 
+const DEMO_CLINICS = [
+  { name: `${DEMO_LABEL_PREFIX} Nova Estetik Klinik`, address: 'İstanbul', category: 'Klinik', is_vip: true },
+  { name: `${DEMO_LABEL_PREFIX} Şehir Hastanesi Estetik Bölümü`, address: 'Ankara', category: 'Hastane', is_vip: false },
+]
+
+// 5 örnek doktor için 5 CRM aşaması bire bir eşleniyor ki Kanban panosunun
+// TÜM sütunları (Yeni/Teklif/Müzakere/Kazanıldı/Kaybedildi) dolu görünsün.
+const CRM_STAGES: CrmOpportunityStage[] = ['yeni', 'teklif', 'muzakere', 'kazanildi', 'kaybedildi']
+
 const DEMO_EXPENSES: { category: ExpenseCategory; amount: number; description: string }[] = [
   { category: 'hizmet_gideri', amount: 4500, description: `${DEMO_LABEL_PREFIX} Deneme kargo gideri` },
   { category: 'diger', amount: 2200, description: `${DEMO_LABEL_PREFIX} Deneme ofis gideri` },
@@ -127,6 +144,9 @@ export interface SeedResult {
   expenses: number
   sampleRequests: number
   commissionRules: number
+  clinics: number
+  crmActivities: number
+  crmOpportunities: number
 }
 
 export async function seedDemoData(): Promise<SeedResult> {
@@ -185,11 +205,26 @@ export async function seedDemoData(): Promise<SeedResult> {
     createdSalesReps.push(await createSalesRep(name))
   }
 
+  const createdClinics = []
+  for (const c of DEMO_CLINICS) {
+    createdClinics.push(
+      await createClinic({
+        name: c.name,
+        address: c.address,
+        category: c.category,
+        is_vip: c.is_vip,
+        working_days: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'],
+      }),
+    )
+  }
+
   let paymentsCount = 0
   let salesCount = 0
   let sampleRequestsCount = 0
+  let crmActivitiesCount = 0
+  let crmOpportunitiesCount = 0
 
-  for (const customer of createdCustomers) {
+  for (const [index, customer] of createdCustomers.entries()) {
     const rep = createdSalesReps[randomInt(0, createdSalesReps.length - 1)]
 
     const paymentRounds = randomInt(2, 3)
@@ -247,6 +282,27 @@ export async function seedDemoData(): Promise<SeedResult> {
       })
       sampleRequestsCount++
     }
+
+    await createCrmActivity({
+      customer_id: customer.id,
+      activity_type: 'toplanti',
+      subject: `${DEMO_LABEL_PREFIX} Deneme görüşme`,
+      note: 'Örnek veri — deneme CRM aktivitesi',
+      occurred_at: isoDaysAgo(randomInt(1, 30)),
+      sales_rep_id: rep.id,
+    })
+    crmActivitiesCount++
+
+    await createCrmOpportunity({
+      customer_id: customer.id,
+      title: `${DEMO_LABEL_PREFIX} ${customer.full_name} — ürün fırsatı`,
+      stage: CRM_STAGES[index % CRM_STAGES.length],
+      amount: randomInt(10, 40) * 1000,
+      expected_close_date: dateDaysAhead(randomInt(10, 60)),
+      sales_rep_id: rep.id,
+      notes: 'Örnek veri — deneme fırsat',
+    })
+    crmOpportunitiesCount++
 
     await createVisit({
       visit_date: dateDaysAgo(randomInt(1, 60)),
@@ -306,6 +362,9 @@ export async function seedDemoData(): Promise<SeedResult> {
     expenses: expensesCount,
     sampleRequests: sampleRequestsCount,
     commissionRules: 1,
+    clinics: createdClinics.length,
+    crmActivities: crmActivitiesCount,
+    crmOpportunities: crmOpportunitiesCount,
   }
 }
 
@@ -318,10 +377,11 @@ export interface ClearResult {
   visitsDeleted: number
   expensesDeleted: number
   commissionRulesDeleted: number
+  clinicsDeleted: number
 }
 
 async function deleteAllByIlike(
-  table: 'sales_reps' | 'reminders' | 'congresses' | 'doctor_visits' | 'expenses' | 'commission_rules',
+  table: 'sales_reps' | 'reminders' | 'congresses' | 'doctor_visits' | 'expenses' | 'commission_rules' | 'clinics',
   column: string,
 ) {
   const { data, error } = await supabase.from(table).select('id').ilike(column, `${DEMO_LABEL_PREFIX}%`)
@@ -367,6 +427,9 @@ export async function clearDemoData(): Promise<ClearResult> {
   const commissionRules = await deleteAllByIlike('commission_rules', 'name')
   for (const r of commissionRules) await deleteCommissionRule(r.id)
 
+  const clinics = await deleteAllByIlike('clinics', 'name')
+  for (const c of clinics) await deleteClinic(c.id)
+
   return {
     customersDeleted: customers?.length ?? 0,
     productsDeleted: products?.length ?? 0,
@@ -376,5 +439,6 @@ export async function clearDemoData(): Promise<ClearResult> {
     visitsDeleted: visits.length,
     expensesDeleted: expenses.length,
     commissionRulesDeleted: commissionRules.length,
+    clinicsDeleted: clinics.length,
   }
 }
