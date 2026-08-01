@@ -98,22 +98,23 @@ export function AgendaPage() {
     [events],
   )
 
-  // Birden fazla gün süren kongre/workshop'lar için, sadece ince bir etkinlik
-  // çubuğu değil, o günlere denk gelen takvim kutucuklarının TAMAMI renkle
-  // boyansın diye FullCalendar'ın "background" etkinlik özelliği kullanılıyor.
-  // FullCalendar'da end tarihi HARİÇ olduğu için son günün de boyanması için
-  // end tarihine 1 gün ekleniyor.
-  const backgroundEvents = React.useMemo<EventInput[]>(() => {
-    return congresses
-      .filter((c) => c.start_date && c.end_date && c.end_date !== c.start_date)
-      .map((c) => ({
-        id: `congress-bg-${c.id}`,
-        start: c.start_date!,
-        end: addDays(new Date(c.end_date!), 1).toISOString().slice(0, 10),
+  // Sadece ince bir etkinlik çubuğu değil, önemli her tarihin (hatırlatma,
+  // ödeme vadesi, kongre/workshop) denk geldiği takvim kutucuğunun TAMAMI
+  // türüne göre renkle boyansın diye FullCalendar'ın "background" etkinlik
+  // özelliği kullanılıyor. Çok günlü kongrelerde FullCalendar'da end tarihi
+  // HARİÇ olduğu için son günün de boyanması adına end tarihine 1 gün
+  // ekleniyor; tek günlük etkinliklerde sadece o günün kendisi boyanıyor.
+  const backgroundEvents = React.useMemo<EventInput[]>(
+    () =>
+      events.map((e) => ({
+        id: `${e.id}-bg`,
+        start: e.start,
+        end: e.end ? addDays(new Date(e.end), 1).toISOString().slice(0, 10) : undefined,
         display: 'background' as const,
-        backgroundColor: 'var(--color-primary)',
-      }))
-  }, [congresses])
+        backgroundColor: typeMeta[e.type].color,
+      })),
+    [events],
+  )
 
   const calendarEvents = React.useMemo<EventInput[]>(
     () => [
