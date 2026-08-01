@@ -163,6 +163,29 @@
   .animate-ai-shine-sweep {
     animation: ai-shine-sweep 3.5s ease-in-out infinite;
   }
+  @keyframes logo-shine-sweep {
+    0%,
+    40% {
+      background-position: -120% 0;
+      opacity: 0;
+    }
+    48% {
+      opacity: 1;
+    }
+    56% {
+      background-position: 60% 0;
+      opacity: 1;
+    }
+    66%,
+    100% {
+      background-position: 220% 0;
+      opacity: 0;
+    }
+  }
+  .animate-logo-shine-sweep {
+    opacity: 0;
+    animation: logo-shine-sweep 6s ease-in-out infinite;
+  }
 }
 
 /* Ajanda (FullCalendar) — uygulamanın tema değişkenleriyle premium görünüm */
