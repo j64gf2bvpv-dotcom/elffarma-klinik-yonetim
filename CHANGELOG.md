@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.60] - 2026-08-01
+
+**Yapay Zeka simgesindeki uydu düğümler artık çekirdeğin etrafında dönüyor:** Üç uydu düğüm + aralarındaki bağlantı çizgileri ve yörünge halkası, saf CSS transform ile (6 saniyede bir tam tur, JS ölçüm yok) çekirdeğin etrafında yavaşça dönüyor; çekirdek sabit kalıyor. Işık huzmesi maskesi artık rotasyondan bağımsız sabit bir daire olduğu için dönerken de düzgün akıyor. Şema değişikliği yok.
+
 ## [2.12.59] - 2026-08-01
 
 **Yapay Zeka simgesi daha premium bir görünüme kavuştu:** Düğümler artık radyal gradyanla camsı/mücevher bir küre hissi veriyor (üst-solda parlak highlight, alt-sağda koyu gölge) ve her düğümün üzerinde küçük bir parlak "glint" var; bağlantı çizgileri kırmızıdan uygulamanın marka altınına (gold) geçirildi, çekirdeğin etrafına ince kesikli bir altın "yörünge" halkası eklendi — uygulamanın Siyah/Gold premium tema diliyle uyumlu. Şema değişikliği yok.

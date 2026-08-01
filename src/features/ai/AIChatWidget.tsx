@@ -37,8 +37,9 @@ const AI_ICON_NODES = [
  * çekirdek + üç uydu düğüm. Her düğüm radyal gradyanla camsı/mücevher gibi
  * bir küre hissi verir (üst-solda parlak, alt-sağda koyu), üzerinde küçük
  * bir parlak "glint" var. Düğümlerin arkasında yumuşak, bulanık kırmızı bir
- * "ambient glow" var. `animated` verilirse şeklin üzerinden parlak bir ışık
- * huzmesi arada bir (sürekli değil) geçer; verilmezse tamamen sabit durur.
+ * "ambient glow" var. `animated` verilirse (a) uydu düğümler çekirdeğin
+ * etrafında yavaşça döner, (b) şeklin üzerinden parlak bir ışık huzmesi
+ * arada bir (sürekli değil) geçer; verilmezse tamamen sabit durur.
  */
 export function AiSparkleIcon({ className, animated = false }: { className?: string; animated?: boolean }) {
   const uid = React.useRef(`ai-orb-${aiIconGradientId++}`).current
@@ -63,46 +64,59 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
         <filter id={`${uid}-glow`} x="-60%" y="-60%" width="220%" height="220%">
           <feGaussianBlur stdDeviation="4" />
         </filter>
+        {/* Dönen uydu düğümlerin konumundan bağımsız, tüm simgeyi kaplayan
+            sabit dairesel maske — ışık huzmesi rotasyondan etkilenmeden
+            düzgün akar. */}
         <mask id={`${uid}-shapemask`}>
           <rect x="0" y="0" width="100" height="100" fill="black" />
-          {AI_ICON_NODES.map((n, i) => (
-            <line key={i} x1={AI_ICON_CORE.x} y1={AI_ICON_CORE.y} x2={n.x} y2={n.y} stroke="white" strokeWidth="4" />
-          ))}
-          <circle cx={AI_ICON_CORE.x} cy={AI_ICON_CORE.y} r={AI_ICON_CORE.r} fill="white" />
-          {AI_ICON_NODES.map((n, i) => (
-            <circle key={i} cx={n.x} cy={n.y} r={n.r} fill="white" />
-          ))}
+          <circle cx="50" cy="50" r="42" fill="white" />
         </mask>
       </defs>
-      <g opacity="0.5" filter={`url(#${uid}-glow)`}>
-        <circle cx={AI_ICON_CORE.x} cy={AI_ICON_CORE.y} r={AI_ICON_CORE.r} fill="#ef4444" />
+      <circle cx={AI_ICON_CORE.x} cy={AI_ICON_CORE.y} r={AI_ICON_CORE.r} fill="#ef4444" opacity="0.5" filter={`url(#${uid}-glow)`} />
+      <g className={animated ? 'animate-ai-orbit-spin' : undefined} style={{ transformOrigin: '50px 50px' }}>
+        <g opacity="0.5" filter={`url(#${uid}-glow)`}>
+          {AI_ICON_NODES.map((n, i) => (
+            <circle key={i} cx={n.x} cy={n.y} r={n.r} fill="#ef4444" />
+          ))}
+        </g>
+        {/* soluk "yörünge" halkası — üç uydu düğümü çevreleyen ince altın çember */}
+        <circle
+          cx={AI_ICON_CORE.x}
+          cy={AI_ICON_CORE.y}
+          r="32"
+          fill="none"
+          stroke={`url(#${uid}-wire)`}
+          strokeOpacity="0.25"
+          strokeWidth="0.75"
+          strokeDasharray="2 3"
+        />
         {AI_ICON_NODES.map((n, i) => (
-          <circle key={i} cx={n.x} cy={n.y} r={n.r} fill="#ef4444" />
+          <line
+            key={i}
+            x1={AI_ICON_CORE.x}
+            y1={AI_ICON_CORE.y}
+            x2={n.x}
+            y2={n.y}
+            stroke={`url(#${uid}-wire)`}
+            strokeWidth="2.25"
+            strokeLinecap="round"
+          />
+        ))}
+        {AI_ICON_NODES.map((n, i) => (
+          <React.Fragment key={i}>
+            <circle
+              cx={n.x}
+              cy={n.y}
+              r={n.r}
+              fill={`url(#${uid}-orb)`}
+              stroke="#450a0a"
+              strokeWidth="0.6"
+              strokeOpacity="0.35"
+            />
+            <ellipse cx={n.x - 2.6} cy={n.y - 3} rx={n.r * 0.32} ry={n.r * 0.2} fill="white" opacity="0.65" />
+          </React.Fragment>
         ))}
       </g>
-      {/* soluk "yörünge" halkası — üç uydu düğümü çevreleyen ince altın çember */}
-      <circle
-        cx={AI_ICON_CORE.x}
-        cy={AI_ICON_CORE.y}
-        r="32"
-        fill="none"
-        stroke={`url(#${uid}-wire)`}
-        strokeOpacity="0.25"
-        strokeWidth="0.75"
-        strokeDasharray="2 3"
-      />
-      {AI_ICON_NODES.map((n, i) => (
-        <line
-          key={i}
-          x1={AI_ICON_CORE.x}
-          y1={AI_ICON_CORE.y}
-          x2={n.x}
-          y2={n.y}
-          stroke={`url(#${uid}-wire)`}
-          strokeWidth="2.25"
-          strokeLinecap="round"
-        />
-      ))}
       <circle
         cx={AI_ICON_CORE.x}
         cy={AI_ICON_CORE.y}
@@ -120,20 +134,6 @@ export function AiSparkleIcon({ className, animated = false }: { className?: str
         fill="white"
         opacity="0.65"
       />
-      {AI_ICON_NODES.map((n, i) => (
-        <React.Fragment key={i}>
-          <circle
-            cx={n.x}
-            cy={n.y}
-            r={n.r}
-            fill={`url(#${uid}-orb)`}
-            stroke="#450a0a"
-            strokeWidth="0.6"
-            strokeOpacity="0.35"
-          />
-          <ellipse cx={n.x - 2.6} cy={n.y - 3} rx={n.r * 0.32} ry={n.r * 0.2} fill="white" opacity="0.65" />
-        </React.Fragment>
-      ))}
       {animated && (
         <rect
           x="-30"

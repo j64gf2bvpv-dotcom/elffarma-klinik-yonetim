@@ -175,6 +175,17 @@
   .animate-ai-button-float {
     animation: ai-button-float 3s ease-in-out infinite;
   }
+  @keyframes ai-orbit-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .animate-ai-orbit-spin {
+    animation: ai-orbit-spin 6s linear infinite;
+  }
 }
 
 /* Ajanda (FullCalendar) — uygulamanın tema değişkenleriyle premium görünüm */
