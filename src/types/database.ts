@@ -47,6 +47,7 @@ export interface Customer {
   region_id: string | null
   is_active: boolean
   photo_url: string | null
+  birth_date: string | null
   sample_monthly_quota: number | null
   sample_yearly_quota: number | null
   created_by: string | null

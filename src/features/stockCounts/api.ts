@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { offlineUpdate } from '@/lib/offlineMutation'
+import { offlineInsert, offlineUpdate, getCurrentUserId } from '@/lib/offlineMutation'
 import { recordStockMovement } from '@/features/stock/api'
 import type { Product, StockCount, StockCountItem } from '@/types/database'
 
@@ -44,19 +44,21 @@ export async function fetchCountItems(stockCountId: string): Promise<StockCountI
 }
 
 export async function startTodayCount(): Promise<StockCount> {
-  const { data: userData } = await supabase.auth.getUser()
+  const createdBy = await getCurrentUserId()
+  const count = await offlineInsert<StockCount>(
+    'stock_counts',
+    { count_date: todayDate(), created_by: createdBy },
+    'Günlük sayım başlatma',
+  )
+
+  // Sayım kalemleri, o anki ürün stoklarının canlı bir okumasına dayanıyor —
+  // bu yüzden (AI sohbeti/ayarlar gibi) bağlantı gerektiren makul bir istisna:
+  // offline'da anlamlı bir "o anki stok" listesi oluşturulamaz.
   const { data: products, error: productsError } = await supabase
     .from('products')
     .select('id, current_quantity')
     .eq('is_active', true)
   if (productsError) throw productsError
-
-  const { data: count, error: countError } = await supabase
-    .from('stock_counts')
-    .insert({ count_date: todayDate(), created_by: userData.user?.id })
-    .select()
-    .single()
-  if (countError) throw countError
 
   if (products && products.length > 0) {
     const items = products.map((p) => ({
@@ -68,7 +70,7 @@ export async function startTodayCount(): Promise<StockCount> {
     if (itemsError) throw itemsError
   }
 
-  return count as StockCount
+  return count
 }
 
 export async function updateCountItem(id: string, counted_quantity: number | null): Promise<void> {
@@ -111,19 +113,16 @@ export async function completeCount(stockCountId: string): Promise<void> {
       note: `Beklenen: ${item.expected_quantity}, Sayılan: ${item.counted_quantity}`,
     })
   }
-  const { error } = await supabase
-    .from('stock_counts')
-    .update({ status: 'completed', completed_at: new Date().toISOString() })
-    .eq('id', stockCountId)
-  if (error) throw error
+  await offlineUpdate(
+    'stock_counts',
+    stockCountId,
+    { status: 'completed', completed_at: new Date().toISOString() },
+    'Sayımı tamamlama',
+  )
 }
 
 /** Tamamlanmış bir sayımı düzenlemeye açmak için — "Sistemdeki Miktar" üzerinden
  * stok eklemek gibi işlemler sadece 'open' durumundaki sayımlarda çalışır. */
 export async function reopenCount(stockCountId: string): Promise<void> {
-  const { error } = await supabase
-    .from('stock_counts')
-    .update({ status: 'open', completed_at: null })
-    .eq('id', stockCountId)
-  if (error) throw error
+  await offlineUpdate('stock_counts', stockCountId, { status: 'open', completed_at: null }, 'Sayımı yeniden açma')
 }

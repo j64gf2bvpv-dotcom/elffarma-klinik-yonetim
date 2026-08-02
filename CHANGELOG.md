@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.95] - 2026-08-02
+
+**Denetim raporundan çıkan tutarsızlıklar düzeltildi:** Uygulama genelinde yapılan bir tutarlılık denetiminde bulunan iki gerçek eksiklik giderildi — tahsilat fatura bilgisi kaydetme ve Günlük Sayım'ı başlatma/tamamlama/yeniden açma artık diğer tüm yazma işlemleri gibi bağlantı koptuğunda kuyruğa alınıp otomatik gönderiliyor (önceden bağlantı yoksa direkt hata veriyorlardı). Ayrıca `database.ts`'e eksik olan `Customer.birth_date` alanı eklendi (veritabanında var ama uygulamanın tip tanımında yoktu). Diğer denetim bulguları (kullanılmayan eski `appointments` tablosu gibi) zararsız/kozmetik olduğu için dokunulmadı. Şema değişikliği yok.
+
 ## [2.12.94] - 2026-08-02
 
 **Günlük Özet sadeleştirildi — toplam/fark rakamları kaldırıldı, ürünler Dermakor/Swiss diye ayrıldı:** Görsel karttaki Toplam Ürün/Sistemdeki Stok/Sayılan/Fark rakamları kaldırıldı. Excel/Word/PDF/PNG çıktısı artık sadece tarih/gün başlığıyla başlayıp ürünleri "DERMAKOR" ve "SWİSS" olarak iki ayrı bölümde listeliyor (ürün hattı boş olanlar varsa ayrı bir "DİĞER" bölümünde). Şema değişikliği yok.

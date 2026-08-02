@@ -62,8 +62,7 @@ export async function saveInvoiceInfo(
   paymentId: string,
   input: Partial<{ invoice_number: string | null; invoice_file_path: string | null }>,
 ): Promise<void> {
-  const { error } = await supabase.from('payments').update(input).eq('id', paymentId)
-  if (error) throw error
+  await offlineUpdate('payments', paymentId, { ...input }, 'Fatura bilgisi güncelleme')
 }
 
 export async function getInvoiceFileUrl(path: string): Promise<string> {
