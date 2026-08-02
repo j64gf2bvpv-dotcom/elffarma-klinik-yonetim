@@ -3,7 +3,9 @@ import { offlineUpdate } from '@/lib/offlineMutation'
 import { recordStockMovement } from '@/features/stock/api'
 import type { Product, StockCount, StockCountItem } from '@/types/database'
 
-export type StockCountItemWithProduct = StockCountItem & { products: Pick<Product, 'name' | 'unit'> }
+export type StockCountItemWithProduct = StockCountItem & {
+  products: Pick<Product, 'name' | 'unit' | 'brand_line'>
+}
 
 function todayDate() {
   const d = new Date()
@@ -34,7 +36,7 @@ export async function fetchPastCounts(): Promise<StockCount[]> {
 export async function fetchCountItems(stockCountId: string): Promise<StockCountItemWithProduct[]> {
   const { data, error } = await supabase
     .from('stock_count_items')
-    .select('*, products(name, unit)')
+    .select('*, products(name, unit, brand_line)')
     .eq('stock_count_id', stockCountId)
     .order('created_at', { ascending: true })
   if (error) throw error

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.94] - 2026-08-02
+
+**Günlük Özet sadeleştirildi — toplam/fark rakamları kaldırıldı, ürünler Dermakor/Swiss diye ayrıldı:** Görsel karttaki Toplam Ürün/Sistemdeki Stok/Sayılan/Fark rakamları kaldırıldı. Excel/Word/PDF/PNG çıktısı artık sadece tarih/gün başlığıyla başlayıp ürünleri "DERMAKOR" ve "SWİSS" olarak iki ayrı bölümde listeliyor (ürün hattı boş olanlar varsa ayrı bir "DİĞER" bölümünde). Şema değişikliği yok.
+
 ## [2.12.93] - 2026-08-02
 
 **Günlük Özet çıktılarına (Excel/Word/PDF/PNG) kalem kalem ürün listesi eklendi:** Önceden sadece 4 toplam rakamı içeren Günlük Özet dışa aktarma artık toplamların altında her ürünün adını ve o günkü son (sistemdeki) adedini de listeliyor — Excel/Word/PDF'te "— ÜRÜN BAZINDA —" ayracıyla, PNG görselinde ayrı bir tablo bölümü olarak. Şema değişikliği yok.
