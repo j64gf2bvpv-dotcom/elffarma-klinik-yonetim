@@ -14,6 +14,7 @@ import {
   FileType,
   Printer,
   Plus,
+  ImageDown,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ExportMenu } from '@/components/ExportMenu'
+import { cn } from '@/lib/utils'
 import { useSales } from '@/features/sales/hooks'
 import { SaleForm } from '@/features/sales/SaleForm'
 import {
@@ -42,6 +44,7 @@ import {
   useUpdateCountItem,
 } from './hooks'
 import { exportDailyCountToExcel, exportDailyCountToPdf, exportDailyCountToWord, printDailyCount } from './exportDailyCount'
+import { exportDailySummaryImage } from './exportSummaryImage'
 import type { StockCountItemWithProduct } from './api'
 
 function TodaySalesActivity({ countDate }: { countDate: string }) {
@@ -301,6 +304,21 @@ export function DailyCountPanel() {
       .sort((a, b) => b.localeCompare(a))[0] ?? null
   const todayOutgoingSales = allSales.filter((s) => s.sale_date === todayCount.count_date && s.type === 'sale')
 
+  const countedItems = items.filter((i) => i.counted_quantity != null)
+  const summaryStats = {
+    totalProducts: items.length,
+    totalSystemStock: items.reduce((sum, i) => sum + i.expected_quantity, 0),
+    totalCounted: countedItems.reduce((sum, i) => sum + (i.counted_quantity ?? 0), 0),
+    totalDiff: countedItems.reduce((sum, i) => sum + ((i.counted_quantity ?? 0) - i.expected_quantity), 0),
+  }
+  const countDateLabel = format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })
+  const summaryRows: { metrik: string; deger: string | number }[] = [
+    { metrik: 'Toplam ürün', deger: summaryStats.totalProducts },
+    { metrik: 'Toplam sistemdeki stok', deger: summaryStats.totalSystemStock },
+    { metrik: 'Toplam sayılan', deger: summaryStats.totalCounted },
+    { metrik: 'Toplam fark', deger: summaryStats.totalDiff },
+  ]
+
   return (
     <div className="grid gap-4">
       <Card>
@@ -402,6 +420,62 @@ export function DailyCountPanel() {
               ))}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base">Günlük Özet</CardTitle>
+          <div className="flex items-center gap-2">
+            <ExportMenu<{ metrik: string; deger: string | number }>
+              title={`${countDateLabel} — Günlük Özet`}
+              filename={`gunluk-ozet-${todayCount.count_date}`}
+              triggerLabel="Özeti Dışa Aktar"
+              rows={summaryRows}
+              columns={[
+                { header: 'Metrik', value: (r) => r.metrik },
+                { header: 'Değer', value: (r) => r.deger },
+              ]}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                exportDailySummaryImage(
+                  countDateLabel,
+                  summaryRows.map((r) => ({ label: r.metrik, value: String(r.deger) })),
+                )
+              }
+            >
+              <ImageDown /> Görsel (PNG)
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div>
+            <p className="text-muted-foreground text-xs">Toplam Ürün</p>
+            <p className="text-xl font-semibold">{summaryStats.totalProducts}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs">Toplam Sistemdeki Stok</p>
+            <p className="text-xl font-semibold">{summaryStats.totalSystemStock}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs">Toplam Sayılan</p>
+            <p className="text-xl font-semibold">{summaryStats.totalCounted}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs">Toplam Fark</p>
+            <p
+              className={cn(
+                'text-xl font-semibold',
+                summaryStats.totalDiff > 0 && 'text-success',
+                summaryStats.totalDiff < 0 && 'text-destructive',
+              )}
+            >
+              {summaryStats.totalDiff > 0 ? `+${summaryStats.totalDiff}` : summaryStats.totalDiff}
+            </p>
+          </div>
         </CardContent>
       </Card>
 

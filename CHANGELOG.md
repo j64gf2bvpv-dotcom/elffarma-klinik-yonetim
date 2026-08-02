@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.92] - 2026-08-02
+
+**Günlük Sayım'a "Günlük Özet" kartı eklendi (Excel/Word/PDF/Yazdır/PNG):** Sayım tablosunun hemen altına, gün içindeki eklemeler/düşümlerden sonraki son durumu özetleyen bir kart eklendi (toplam ürün, toplam sistemdeki stok, toplam sayılan, toplam fark) — "Sistemdeki Miktar" üzerinden stok eklendikçe canlı güncelleniyor. Mevcut Excel/Word/PDF/Yazdır menüsüne ek olarak, kullanıcının istediği "resim" formatı için yeni bir PNG dışa aktarma eklendi (Canvas ile çizilip indiriliyor, ek kütüphane gerekmedi). Şema değişikliği yok.
+
 ## [2.12.91] - 2026-08-02
 
 **Günlük Sayım'a "Yeniden Aç" eklendi:** Kök neden bulundu — "Sistemdeki Miktar" üzerine tıklayıp stok ekleme özelliği, sayım "Tamamlandı" durumundayken (salt-okunur) çalışmıyordu, bu normal/istenen davranış ama kullanıcı bunu fark edemiyordu. Artık "Tamamlandı" rozetinin yanında bir "Yeniden Aç" butonu var — sayımı tekrar düzenlenebilir hale getirip stok ekleme/sayılan girme işlemlerine devam edilebiliyor. Şema değişikliği yok.
