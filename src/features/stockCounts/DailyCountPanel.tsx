@@ -312,11 +312,22 @@ export function DailyCountPanel() {
     totalDiff: countedItems.reduce((sum, i) => sum + ((i.counted_quantity ?? 0) - i.expected_quantity), 0),
   }
   const countDateLabel = format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })
-  const summaryRows: { metrik: string; deger: string | number }[] = [
+  const summaryTotalsRows: { metrik: string; deger: string | number }[] = [
     { metrik: 'Toplam ürün', deger: summaryStats.totalProducts },
     { metrik: 'Toplam sistemdeki stok', deger: summaryStats.totalSystemStock },
     { metrik: 'Toplam sayılan', deger: summaryStats.totalCounted },
     { metrik: 'Toplam fark', deger: summaryStats.totalDiff },
+  ]
+  // Excel/Word/PDF/resim çıktısında sadece toplamlar değil, kalem kalem her
+  // ürünün adı ve o günkü son (sistemdeki) adedi de listelensin diye.
+  const summaryProductRows: { metrik: string; deger: string | number }[] = items.map((i) => ({
+    metrik: i.products.name,
+    deger: `${i.expected_quantity} ${i.products.unit}`,
+  }))
+  const summaryRows: { metrik: string; deger: string | number }[] = [
+    ...summaryTotalsRows,
+    { metrik: '— ÜRÜN BAZINDA —', deger: '' },
+    ...summaryProductRows,
   ]
 
   return (
@@ -443,7 +454,8 @@ export function DailyCountPanel() {
               onClick={() =>
                 exportDailySummaryImage(
                   countDateLabel,
-                  summaryRows.map((r) => ({ label: r.metrik, value: String(r.deger) })),
+                  summaryTotalsRows.map((r) => ({ label: r.metrik, value: String(r.deger) })),
+                  summaryProductRows.map((r) => ({ label: r.metrik, value: String(r.deger) })),
                 )
               }
             >

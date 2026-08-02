@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.93] - 2026-08-02
+
+**Günlük Özet çıktılarına (Excel/Word/PDF/PNG) kalem kalem ürün listesi eklendi:** Önceden sadece 4 toplam rakamı içeren Günlük Özet dışa aktarma artık toplamların altında her ürünün adını ve o günkü son (sistemdeki) adedini de listeliyor — Excel/Word/PDF'te "— ÜRÜN BAZINDA —" ayracıyla, PNG görselinde ayrı bir tablo bölümü olarak. Şema değişikliği yok.
+
 ## [2.12.92] - 2026-08-02
 
 **Günlük Sayım'a "Günlük Özet" kartı eklendi (Excel/Word/PDF/Yazdır/PNG):** Sayım tablosunun hemen altına, gün içindeki eklemeler/düşümlerden sonraki son durumu özetleyen bir kart eklendi (toplam ürün, toplam sistemdeki stok, toplam sayılan, toplam fark) — "Sistemdeki Miktar" üzerinden stok eklendikçe canlı güncelleniyor. Mevcut Excel/Word/PDF/Yazdır menüsüne ek olarak, kullanıcının istediği "resim" formatı için yeni bir PNG dışa aktarma eklendi (Canvas ile çizilip indiriliyor, ek kütüphane gerekmedi). Şema değişikliği yok.
