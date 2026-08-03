@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.99] - 2026-08-04
+
+**Sidebar logosunun altındaki "Medikal Estetik" yazısı kaldırıldı:** Logo başlığında artık sadece `ElffarmaLogo`'nun kendi taglinesi ("Estetik Sanatı") görünüyor. Şema değişikliği yok.
+
 ## [2.12.98] - 2026-08-04
 
 **Sidebar logosunun arkasındaki beyaz kutu kaldırıldı:** `AppShell` sol menü başlığındaki logo alanı, temadan bağımsız sabit bir açık renk (`oklch(0.98 0.006 75)`) arka plana sahipti — bu yüzden hangi marka rengi/koyu-açık mod seçilirse seçilsin logonun arkası hep beyazımsı görünüyordu. Sabit arka plan kaldırıldı, logo artık sidebar'ın kendi arka planı üzerinde `ElffarmaLogo`'nun `premium` varyantıyla (`text-sidebar-foreground` tabanlı, zaten koyu/renkli zeminler için tasarlanmıştı) render ediliyor — böylece seçili marka temasının rengini alıyor. Şema değişikliği yok.

@@ -530,7 +530,6 @@ export function AppShell() {
         />
         <div className="relative z-10 flex flex-col items-center gap-0.5 border-b border-sidebar-border/60 px-5 py-5">
           <ElffarmaLogo variant="premium" size="sm" />
-          <p className="text-sidebar-foreground/60 text-xs font-medium tracking-wide">Medikal Estetik</p>
         </div>
 
         {isAdmin && (
