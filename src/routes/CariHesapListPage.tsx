@@ -13,6 +13,7 @@ import { useCustomers } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useSales } from '@/features/sales/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
+import { computeCariLedger } from '@/features/customers/cariLedger'
 import { getAgingBucket, agingBucketLabels, type AgingBucket } from '@/lib/paymentDue'
 import { cn } from '@/lib/utils'
 
@@ -29,22 +30,10 @@ export function CariHesapListPage() {
   const { data: allSales = [] } = useSales()
   const { data: allInvoices = [] } = useInvoices()
 
-  const ledgerByCustomer = React.useMemo(() => {
-    const map = new Map<string, { debit: number; credit: number }>()
-    function ensure(id: string) {
-      if (!map.has(id)) map.set(id, { debit: 0, credit: 0 })
-      return map.get(id)!
-    }
-    for (const p of allPayments) ensure(p.customer_id).credit += Number(p.amount)
-    for (const s of allSales) {
-      const entry = ensure(s.customer_id)
-      const amount = s.quantity * Number(s.unit_price)
-      if (s.type === 'sale') entry.debit += amount
-      else entry.credit += amount
-    }
-    for (const inv of allInvoices) ensure(inv.customer_id).debit += Number(inv.amount)
-    return map
-  }, [allPayments, allSales, allInvoices])
+  const ledgerByCustomer = React.useMemo(
+    () => computeCariLedger(allPayments, allSales, allInvoices),
+    [allPayments, allSales, allInvoices],
+  )
 
   const rows = React.useMemo(
     () =>

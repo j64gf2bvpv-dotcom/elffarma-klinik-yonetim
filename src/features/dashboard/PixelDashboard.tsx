@@ -1,0 +1,93 @@
+import { ShoppingCart, Wallet, Landmark, Users, Boxes } from 'lucide-react'
+
+import { StatCardSparkline } from './StatCardSparkline'
+import { SalesPerformanceCard } from './SalesPerformanceCard'
+import { CollectionTargetGauge } from './CollectionTargetGauge'
+import { UpcomingCongressesCard } from './UpcomingCongressesCard'
+import { TopProductsListCard } from './TopProductsListCard'
+import { DoctorPerformanceCard } from './DoctorPerformanceCard'
+import { NotificationsCard } from './NotificationsCard'
+import { QuickActionsRow } from './QuickActionsRow'
+import { useDashboardData } from './useDashboardData'
+
+function currency(n: number) {
+  return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
+}
+
+export function PixelDashboard() {
+  const data = useDashboardData()
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCardSparkline
+          icon={ShoppingCart}
+          tone="blue"
+          label="Toplam Satış"
+          value={currency(data.salesStat.current)}
+          sublabel="Bu ay"
+          deltaPct={data.salesStat.deltaPct}
+          sparkline={data.salesStat.sparkline}
+          to="/satislar"
+        />
+        <StatCardSparkline
+          icon={Wallet}
+          tone="green"
+          label="Tahsilatlar"
+          value={currency(data.collectionsStat.current)}
+          sublabel="Bu ay"
+          deltaPct={data.collectionsStat.deltaPct}
+          sparkline={data.collectionsStat.sparkline}
+          to="/tahsilatlar"
+        />
+        <StatCardSparkline
+          icon={Landmark}
+          tone="gold"
+          label="Toplam Cari"
+          value={currency(data.cariTotals.totalBalance)}
+          sublabel="Açık bakiye"
+          deltaPct={null}
+          sparkline={data.cariSparkline}
+          to="/cari-hesap"
+        />
+        <StatCardSparkline
+          icon={Users}
+          tone="purple"
+          label="Aktif Temsilci"
+          value={data.activeSalesRepCount.toLocaleString('tr-TR')}
+          sublabel="Toplam"
+          deltaPct={null}
+          to="/doktor-ziyaretleri"
+        />
+        <StatCardSparkline
+          icon={Boxes}
+          tone="orange"
+          label="Stokta Ürün"
+          value={data.productCount.toLocaleString('tr-TR')}
+          sublabel="Ürün çeşidi"
+          deltaPct={null}
+          to="/stok"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+        <SalesPerformanceCard timeline={data.salesTimeline} />
+        <CollectionTargetGauge
+          targetRevenue={data.collectionTarget.targetRevenue}
+          collected={data.collectionTarget.collected}
+          percent={data.collectionTarget.percent}
+          remaining={data.collectionTarget.remaining}
+        />
+        <UpcomingCongressesCard congresses={data.congresses} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <TopProductsListCard items={data.topProducts} />
+        <DoctorPerformanceCard items={data.doctorPerformance} />
+        <NotificationsCard items={data.notifications} />
+      </div>
+
+      <QuickActionsRow />
+    </div>
+  )
+}

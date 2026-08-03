@@ -22,6 +22,8 @@ import {
   Save,
   X,
   GripVertical,
+  MessageSquare,
+  ChevronDown,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -31,6 +33,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useApplyBrandTheme } from '@/features/appSettings/useApplyBrandTheme'
 import { useAIStartupCheck } from '@/features/ai/useAIStartupCheck'
 import { AIChatWidget } from '@/features/ai/AIChatWidget'
+import { useAIChatOpen } from '@/features/ai/useAIChatOpen'
 import { useColorMode } from '@/features/appSettings/useColorMode'
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
 import { getIconSet, type IconVariant, type NavKey } from '@/features/appSettings/iconSets'
@@ -204,13 +207,14 @@ function NotifIcon({ icon: Icon, tone = 'destructive' }: { icon: React.ElementTy
   )
 }
 
-function TopBar() {
+function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColorMode: () => void }) {
   const { staff, signOut } = useAuth()
   const isOnline = useOnlineStatus()
   const alerts = useAlertsSummary()
   const { dismissed, dismiss } = useDismissedAlerts()
   const deleteReminderMutation = useDeleteReminder()
   const { pendingCount, syncing, flush } = useOfflineSync()
+  const [aiChatOpen, setAiChatOpen] = useAIChatOpen()
 
   const visibleDueReminders = alerts.dueReminders.filter((r) => !dismissed.has(`reminder:${r.id}`))
   const visibleCriticalStock = alerts.criticalStock.filter((p) => !dismissed.has(`criticalStock:${p.id}`))
@@ -261,6 +265,18 @@ function TopBar() {
           className="flex size-9 items-center justify-center rounded-lg text-muted-foreground"
         >
           {isOnline ? <Wifi className="size-4 text-success" /> : <WifiOff className="size-4 text-destructive" />}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAiChatOpen((v) => !v)}
+          title={aiChatOpen ? 'Yapay zeka sohbetini kapat' : 'Yapay zeka sohbetini aç'}
+          className={cn(
+            'flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-accent hover:text-accent-foreground',
+            aiChatOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground',
+          )}
+        >
+          <MessageSquare className="size-[1.1rem]" />
         </button>
 
         <DropdownMenu>
@@ -390,6 +406,15 @@ function TopBar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <button
+          type="button"
+          onClick={toggleColorMode}
+          title={mode === 'dark' ? 'Açık temaya geç' : 'Koyu temaya geç'}
+          className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          {mode === 'dark' ? <Sun className="size-[1.1rem]" /> : <Moon className="size-[1.1rem]" />}
+        </button>
+
         {staff?.role === 'admin' && (
           <Link
             to="/ayarlar"
@@ -398,6 +423,20 @@ function TopBar() {
           >
             <SettingsIcon className="size-[1.1rem]" />
           </Link>
+        )}
+
+        {staff?.role === 'admin' ? (
+          <Link
+            to="/ayarlar"
+            className="ml-1 hidden items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent sm:flex"
+          >
+            {CLINIC_NAME}
+            <ChevronDown className="size-3.5 text-muted-foreground" />
+          </Link>
+        ) : (
+          <span className="ml-1 hidden items-center gap-1 px-2.5 py-1.5 text-sm font-medium text-foreground sm:flex">
+            {CLINIC_NAME}
+          </span>
         )}
 
         <DropdownMenu>
@@ -489,8 +528,9 @@ export function AppShell() {
           className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.06] via-transparent to-black/10"
           aria-hidden
         />
-        <div className="relative z-10 border-b border-sidebar-border/60 px-5 py-5">
-          <ElffarmaLogo variant="premium" />
+        <div className="relative z-10 flex flex-col gap-0.5 border-b border-sidebar-border/60 bg-[oklch(0.98_0.006_75)] px-5 py-5">
+          <ElffarmaLogo variant="mono" size="sm" />
+          <p className="text-xs font-medium tracking-wide text-neutral-500">Medikal Estetik</p>
         </div>
 
         {isAdmin && (
@@ -571,30 +611,30 @@ export function AppShell() {
           )}
         </nav>
 
-        <div className="relative z-10 mx-3 mb-3 flex items-center justify-end px-2 py-1">
-          <button
-            type="button"
-            onClick={toggleColorMode}
-            title={mode === 'dark' ? 'Açık temaya geç' : 'Koyu temaya geç'}
-            className="flex size-6 items-center justify-center rounded-md text-sidebar-foreground/50 transition-colors hover:bg-white/10 hover:text-sidebar-foreground"
-          >
-            {mode === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
-          </button>
+        <div className="relative z-10 mx-3 mb-2 flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5">
+          <Avatar className="size-10 shrink-0">
+            <AvatarFallback className="bg-white/15 text-sidebar-foreground text-xs font-semibold">
+              {initials(staff?.full_name || '?')}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-sidebar-foreground">{staff?.full_name}</p>
+            <p className="truncate text-xs text-sidebar-foreground/55">{staff ? tr.staffRole[staff.role] : ''}</p>
+            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-[oklch(0.72_0.16_150)]">
+              <span className="size-1.5 shrink-0 rounded-full bg-[oklch(0.72_0.16_150)]" /> Çevrimiçi
+            </p>
+          </div>
         </div>
 
-        <div className="relative z-10 mx-3 mb-3 rounded-lg bg-white/5 px-3 py-2.5 text-center">
-          <p className="text-xs font-medium text-sidebar-foreground/80">{CLINIC_NAME}</p>
-          <p className="text-[11px] text-sidebar-foreground/50">Sürüm {__APP_VERSION__}</p>
-          <p className="mt-1.5 text-[10px] text-sidebar-foreground/40">
-            © {new Date().getFullYear()} Elffarma Medikal Estetik
-            <br />
-            Tüm hakları saklıdır.
-          </p>
-        </div>
+        <p className="relative z-10 mx-3 mb-3 text-center text-[10px] text-sidebar-foreground/40">
+          © {new Date().getFullYear()} {CLINIC_NAME}
+          <br />
+          Tüm hakları saklıdır.
+        </p>
       </aside>
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <TopBar />
+        <TopBar mode={mode} toggleColorMode={toggleColorMode} />
         <main className="relative flex-1 overflow-y-auto bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--accent),transparent)]">
           <div className="mx-auto max-w-7xl p-6 md:p-8">
             <Outlet />

@@ -64,6 +64,10 @@ import {
   Sparkles,
   RefreshCw,
   Loader2,
+  LayoutGrid,
+  LayoutDashboard,
+  Zap,
+  Plus,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 
@@ -76,6 +80,12 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useWeather } from '@/features/weather/hooks'
 import { CustomerForm } from '@/features/customers/CustomerForm'
 import { usePayments } from '@/features/payments/hooks'
@@ -106,7 +116,9 @@ import { useAllProductLots } from '@/features/stock/hooks'
 import { useSampleRequests } from '@/features/samples/hooks'
 import { calculateSampleConversion } from '@/features/samples/calculateSampleConversion'
 import { getExpiryStatus } from '@/lib/expiry'
+import { pctDelta } from '@/lib/pctDelta'
 import { tr } from '@/i18n/tr'
+import { PixelDashboard } from '@/features/dashboard/PixelDashboard'
 
 // Ayrı bir yaprak bileşen: saat her saniye kendi içinde güncelleniyor, bu
 // yüzden sadece bu küçük bileşen yeniden render oluyor — tüm Dashboard'ı
@@ -216,11 +228,6 @@ function StatCardV2({
       </Card>
     </Link>
   )
-}
-
-function pctDelta(current: number, previous: number): number | null {
-  if (!previous) return null
-  return ((current - previous) / previous) * 100
 }
 
 // macOS Dock/Launchpad tarzı "squircle" ikon rozetleri: canlı gradyan + üstte
@@ -599,6 +606,10 @@ export function DashboardPage() {
   }
 
   const layout = sanitizeLayout(draftLayout ?? savedLayout ?? defaultLayout)
+
+  const { data: dashboardView } = useAppSetting<'classic' | 'widgets'>('dashboard_view')
+  const saveDashboardViewMutation = useSaveAppSetting<'classic' | 'widgets'>('dashboard_view')
+  const view = dashboardView ?? 'classic'
 
   const aiService = useAIService()
   const businessSnapshot = useBusinessSnapshot()
@@ -1640,13 +1651,23 @@ export function DashboardPage() {
           </span>
         }
         actions={
-          <div className="flex gap-2">
-            {isAdmin && !editMode && (
-              <Button variant="outline" size="sm" onClick={startEditing}>
-                <Pencil className="size-3.5" /> Paneli Düzenle
+          <div className="flex flex-wrap gap-2">
+            {isAdmin && view === 'classic' && (
+              <Button variant="outline" size="sm" onClick={() => saveDashboardViewMutation.mutate('widgets')}>
+                <LayoutGrid className="size-3.5" /> Özelleştirilebilir Görünüm
               </Button>
             )}
-            {isAdmin && editMode && (
+            {isAdmin && view === 'widgets' && !editMode && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => saveDashboardViewMutation.mutate('classic')}>
+                  <LayoutDashboard className="size-3.5" /> Sabit Görünüm
+                </Button>
+                <Button variant="outline" size="sm" onClick={startEditing}>
+                  <Pencil className="size-3.5" /> Paneli Düzenle
+                </Button>
+              </>
+            )}
+            {isAdmin && view === 'widgets' && editMode && (
               <>
                 <Button variant="outline" size="sm" onClick={cancelEditing}>
                   <X className="size-3.5" /> Vazgeç
@@ -1656,11 +1677,52 @@ export function DashboardPage() {
                 </Button>
               </>
             )}
-            <CustomerForm />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Zap className="size-3.5" /> Hızlı İşlem
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/satislar">
+                    <ShoppingCart className="size-3.5" /> Yeni Satış
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/tahsilatlar">
+                    <HandCoins className="size-3.5" /> Tahsilat Ekle
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/stok">
+                    <Boxes className="size-3.5" /> Stok Durumu
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/giderler">
+                    <Receipt className="size-3.5" /> Gider Ekle
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/ajanda">
+                    <CalendarPlus className="size-3.5" /> Ajandaya Ekle
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <CustomerForm
+              trigger={
+                <Button size="sm">
+                  <Plus className="size-3.5" /> Yeni Kayıt
+                </Button>
+              }
+            />
           </div>
         }
       />
 
+      {view === 'widgets' && (
       <div className="flex flex-wrap items-center gap-2.5 rounded-full border bg-muted/30 px-4 py-2 text-sm">
         <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
           <Coins className="size-4 text-primary" /> Döviz:
@@ -1721,8 +1783,11 @@ export function DashboardPage() {
           = {convertedAmount.toLocaleString('tr-TR', { style: 'currency', currency: toCurrency })}
         </span>
       </div>
+      )}
 
-      {editMode && (
+      {view === 'classic' && <PixelDashboard />}
+
+      {view === 'widgets' && editMode && (
         <p className="text-muted-foreground text-xs">
           Çerçeveleri sürükleyerek yerini değiştirebilir (bırakacağınız yer vurgulanır), boyut
           etiketleriyle (¼/⅓/½/⅔/Tam) net sütunlara hizalı şekilde büyütüp küçültebilir, göz
@@ -1730,6 +1795,7 @@ export function DashboardPage() {
         </p>
       )}
 
+      {view === 'widgets' && (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-12" style={{ gridAutoFlow: 'row dense' }}>
         {visibleItems.map((item, index) => {
           const span = item.span ?? DEFAULT_SPAN[item.id]
@@ -1796,6 +1862,7 @@ export function DashboardPage() {
           )
         })}
       </div>
+      )}
     </div>
   )
 }

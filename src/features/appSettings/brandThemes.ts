@@ -9,15 +9,17 @@ export interface BrandTheme {
 
 export const blackGoldTheme: BrandTheme = {
   id: 'black_gold',
-  label: 'Siyah / Gold (Premium — Varsayılan)',
+  label: 'Siyah / Gold (Premium)',
   hue: 85,
   chromaScale: 1,
   special: 'black_gold',
 }
 
+export const defaultBrandTheme: BrandTheme = { id: 'red', label: 'Kırmızı (Varsayılan)', hue: 23 }
+
 export const brandThemes: BrandTheme[] = [
+  defaultBrandTheme,
   blackGoldTheme,
-  { id: 'red', label: 'Kırmızı', hue: 23 },
   { id: 'blue', label: 'Mavi', hue: 250 },
   { id: 'sky', label: 'Gök Mavisi', hue: 230 },
   { id: 'teal', label: 'Turkuaz', hue: 195 },
