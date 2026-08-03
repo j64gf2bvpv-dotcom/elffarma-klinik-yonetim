@@ -43,20 +43,20 @@ export function StatCardSparkline({
 }) {
   return (
     <Link to={to} className="block">
-      <Card className="transition-all hover:-translate-y-0.5 hover:shadow-md">
+      <Card className="overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md">
         <CardContent className="flex items-center gap-3 pt-6">
           <span className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl', statTone[tone])}>
             <Icon className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
+            <p className="truncate text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
+            <p className="mt-1 truncate text-xl font-semibold tabular-nums">{value}</p>
             <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="truncate">{sublabel}</span>
+              <span className="min-w-0 flex-1 truncate">{sublabel}</span>
               {deltaPct != null && (
                 <span
                   className={cn(
-                    'flex items-center gap-0.5 font-medium',
+                    'flex shrink-0 items-center gap-0.5 font-medium',
                     deltaPct >= 0 ? 'text-success' : 'text-destructive',
                   )}
                 >

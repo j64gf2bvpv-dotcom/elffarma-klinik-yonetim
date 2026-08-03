@@ -28,7 +28,7 @@ function ChartTooltip({ active, payload }: ChartTooltipProps) {
 export function SalesPerformanceChart({ data, height = 240 }: { data: SalesPerformancePoint[]; height?: number }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+      <AreaChart data={data} margin={{ top: 20, right: 8, left: 4, bottom: 0 }}>
         <defs>
           <linearGradient id="sales-performance-fill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.28} />
@@ -46,6 +46,7 @@ export function SalesPerformanceChart({ data, height = 240 }: { data: SalesPerfo
           tickLine={false}
           axisLine={false}
           width={56}
+          domain={[0, (dataMax: number) => Math.ceil((dataMax * 1.25) / 10000) * 10000 || 10000]}
           tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
           tickFormatter={(value: number) => (value >= 1000 ? `${Math.round(value / 1000)}K` : String(value))}
         />

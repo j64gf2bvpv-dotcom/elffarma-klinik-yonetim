@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.100] - 2026-08-04
+
+**Sabit Görünüm'de üst istatistik kartlarındaki taşma/kayma düzeltildi:** İstatistik kartlarındaki mini grafikler (`Sparkline`) `ResizeObserver` tabanlı `ResponsiveContainer` yerine sabit piksel boyut kullanacak şekilde değiştirildi — bazı durumlarda mini grafiğin kutunun dışına taşmasına neden olan ölçüm belirsizliği ortadan kalktı. Kart değeri/etiketi artık taşarsa 2 satıra kayıp kartı uzatmak yerine tek satırda kısaltılıyor (`truncate`), kartların kendisi `overflow-hidden` aldı. Satış Performansı grafiğinde Y eksenine üst boşluk eklendi, tepe noktası artık eksen etiketlerine değmiyor. Şema değişikliği yok.
+
 ## [2.12.99] - 2026-08-04
 
 **Sidebar logosunun altındaki "Medikal Estetik" yazısı kaldırıldı:** Logo başlığında artık sadece `ElffarmaLogo`'nun kendi taglinesi ("Estetik Sanatı") görünüyor. Şema değişikliği yok.
