@@ -44,7 +44,7 @@ export function StatCardSparkline({
   return (
     <Link to={to} className="block">
       <Card className="overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md">
-        <CardContent className="flex items-center gap-3 pt-6">
+        <CardContent className="flex min-w-0 items-center gap-3 pt-6">
           <span className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl', statTone[tone])}>
             <Icon className="size-5" />
           </span>
