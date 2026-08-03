@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.102] - 2026-08-04
+
+**Ana Panel'deki taşma/kayma sorununun asıl kök nedeni bulundu ve düzeltildi:** `AppShell`'de TopBar+sayfa içeriğini saran flex sütununda (`flex flex-1 flex-col`) `min-w-0` eksikti — flexbox'ın "içerik kadar küçülmeme" varsayılanı yüzünden, içerideki herhangi bir kart/tablo küçülmeyi reddettiğinde bu genişlik yukarı taşıyıp tüm içerik alanını pencereden geniş yapabiliyor, dıştaki `overflow-hidden` bunu sessizce kırpınca ekranda başka bir sütunun ince bir dilimi gibi görünen kaymalar oluşuyordu. Artık bu sütun ve `<main>` `min-w-0` + `overflow-x-hidden` alıyor, dolayısıyla iç bileşenlerden biri hâlâ dar kalırsa bile taşma pencere dışına/komşu alana sızmıyor. Ayrıca Sabit Görünüm'deki 3 kart satırı artık pencere genişliğine göre değil (sidebar payını hesaba katmayan Tailwind `sm/lg/xl` viewport breakpoint'leri yanlış tetikleniyordu), CSS **container query**'lerle (`@container`, `@[420px]:` vb.) gerçek içerik alanı genişliğine göre sütun sayısını belirliyor. Şema değişikliği yok.
+
 ## [2.12.101] - 2026-08-04
 
 **Sabit Görünüm istatistik kartları, pencere tam ekran değilken de taşmasın diye sağlamlaştırıldı:** Önceki düzeltme kartların taşmasını tam ekran genişlikte çözmüştü ama 5 sütunun aniden devreye girdiği ~1024px genişlik civarında (pencere küçültülünce) kartlar hâlâ sıkışıp taşabiliyordu — kök neden, mini grafiğe (`Sparkline`) verilen sabit 72px'in `shrink-0` ile büzülmeye kapatılması ve kart içindeki flex satırının kendi `min-w-0` almamasıydı (flexbox'ın "içerik kadar küçülmeme" varsayılanı yüzünden satır, kartın gerçek genişliğinden daha fazla yer istiyordu). Şimdi satır `min-w-0` alıyor, mini grafik gerekirse büzülüp kırpılıyor (taşmıyor), ve üst istatistik satırı 2 sütundan 5 sütuna tek sıçrama yerine `lg` (1024px) ara adımda 3 sütun üzerinden geçiyor. Şema değişikliği yok.

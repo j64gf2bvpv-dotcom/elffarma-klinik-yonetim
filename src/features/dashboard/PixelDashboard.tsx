@@ -18,8 +18,8 @@ export function PixelDashboard() {
   const data = useDashboardData()
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="@container flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-4 @[420px]:grid-cols-2 @[720px]:grid-cols-3 @[1000px]:grid-cols-5">
         <StatCardSparkline
           icon={ShoppingCart}
           tone="blue"
@@ -70,7 +70,7 @@ export function PixelDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+      <div className="grid grid-cols-1 gap-4 @[900px]:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
         <SalesPerformanceCard timeline={data.salesTimeline} />
         <CollectionTargetGauge
           targetRevenue={data.collectionTarget.targetRevenue}
@@ -81,7 +81,7 @@ export function PixelDashboard() {
         <UpcomingCongressesCard congresses={data.congresses} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 @[700px]:grid-cols-3">
         <TopProductsListCard items={data.topProducts} />
         <DoctorPerformanceCard items={data.doctorPerformance} />
         <NotificationsCard items={data.notifications} />

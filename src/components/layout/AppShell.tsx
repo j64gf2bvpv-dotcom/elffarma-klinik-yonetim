@@ -632,10 +632,10 @@ export function AppShell() {
         </p>
       </aside>
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopBar mode={mode} toggleColorMode={toggleColorMode} />
-        <main className="relative flex-1 overflow-y-auto bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--accent),transparent)]">
-          <div className="mx-auto max-w-7xl p-6 md:p-8">
+        <main className="relative min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--accent),transparent)]">
+          <div className="mx-auto min-w-0 max-w-7xl p-6 md:p-8">
             <Outlet />
           </div>
         </main>
