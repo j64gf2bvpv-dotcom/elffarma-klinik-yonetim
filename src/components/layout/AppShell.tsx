@@ -528,9 +528,9 @@ export function AppShell() {
           className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.06] via-transparent to-black/10"
           aria-hidden
         />
-        <div className="relative z-10 flex flex-col gap-0.5 border-b border-sidebar-border/60 bg-[oklch(0.98_0.006_75)] px-5 py-5">
-          <ElffarmaLogo variant="mono" size="sm" />
-          <p className="text-xs font-medium tracking-wide text-neutral-500">Medikal Estetik</p>
+        <div className="relative z-10 flex flex-col items-center gap-0.5 border-b border-sidebar-border/60 px-5 py-5">
+          <ElffarmaLogo variant="premium" size="sm" />
+          <p className="text-sidebar-foreground/60 text-xs font-medium tracking-wide">Medikal Estetik</p>
         </div>
 
         {isAdmin && (
