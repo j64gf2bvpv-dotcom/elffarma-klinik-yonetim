@@ -31,7 +31,25 @@
       "Bash(sysctl -n hw.memsize)",
       "Bash(awk '{print $1/1024/1024/1024 \" GB RAM\"}')",
       "Bash(sysctl -n machdep.cpu.brand_string)",
-      "Bash(grep -n \"const anchorStyle\\\\|const { hidden, setHidden }\\\\|handlePointerUp\" src/features/ai/AIChatWidget.tsx)"
+      "Bash(grep -n \"const anchorStyle\\\\|const { hidden, setHidden }\\\\|handlePointerUp\" src/features/ai/AIChatWidget.tsx)",
+      "Bash(grep -n \"^export function DashboardPage\\\\|return \\(\\\\s*$\\\\|<div className=\\\\\"flex h-full\\\\|h-full\\\\|flex-col\" src/routes/DashboardPage.tsx)",
+      "Bash(osascript -e 'tell application \"System Events\" to tell process \"Electron\" to get {position, size} of window 1')",
+      "Bash(grep -n \"^  Layers,$\" src/routes/DashboardPage.tsx)",
+      "Bash(grep -n \"^  Save,$\" src/routes/DashboardPage.tsx)",
+      "Bash(grep -n \"^      {!editMode\\\\|^      \\)}$\\\\|^    </div>$\\\\|^  \\)$\\\\|^}$\" src/routes/DashboardPage.tsx)",
+      "Bash(git checkout *)",
+      "Bash(mkdir -p ~/.claude/skills)",
+      "Bash(cp -R ~/Downloads/ui-ux-pro-max-skill-main/.claude/skills/* ~/.claude/skills/)",
+      "Bash(pkill -f \"Electron.app/Contents/MacOS/Electron \\\\.\")",
+      "Bash(nohup npm run dev)",
+      "Bash(disown)",
+      "Bash(pkill -f \"Electron.app/Contents/MacOS/Electron \\\\.\" 2>/dev/null; pkill -f \"node_modules/.bin/vite\" 2>/dev/null; sleep 2 *)",
+      "Bash(grep -rn \"Link to={\\\\`\" src)",
+      "Bash(grep -rn \"navigate\\(\\\\`\" src)",
+      "Bash(awk 'NR==836,NR==1730' src/routes/DashboardPage.tsx)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp"
     ]
   }
 }

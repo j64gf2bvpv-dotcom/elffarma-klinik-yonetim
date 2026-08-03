@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.97] - 2026-08-04
+
+**Günlük Hareket içe aktarmaya geçici hata ayıklama logları eklendi:** İçe aktarma akışının hangi adımda beklenmedik davranış gösterdiğini teşhis edebilmek için matris/başlık/satır/özet aşamalarına konsola (`console.error`) debug çıktısı eklendi. Kullanıcıya görünen davranışta değişiklik yok. Şema değişikliği yok.
+
 ## [2.12.96] - 2026-08-03
 
 **Dashboard + sol menü/üst bar, referans ekran görüntüsüne göre pixel-perfect yeniden tasarlandı:** Ana Panel'e, mevcut sürükle-bırak widget sistemi korunarak (Ayarlar'dan "Özelleştirilebilir Görünüm" ile hâlâ erişilebilir) YENİ bir sabit "Sabit Görünüm" eklendi ve varsayılan yapıldı: sparkline'lı 5 özet kart (Toplam Satış/Tahsilatlar/Toplam Cari/Aktif Temsilci/Stokta Ürün), tooltip'li Satış Performansı çizgi grafiği, Bütçe Yılı hedefleriyle beslenen dairesel "Tahsilat Hedefi" göstergesi, Yaklaşan Kongreler/En Çok Satan Ürünler/Doktor Bazlı Satış Performansı/Bildirimler kartları ve düz ikon+etiket "Hızlı İşlemler" satırı — tümü gerçek verilerle (uydurma sayı yok). Sol menü ve üst bar da görsele göre yeniden düzenlendi: sidebar'a beyaz logo başlığı ve kullanıcı profil kartı (avatar/ad/rol/çevrimiçi) eklendi; üst bara yapay zeka sohbetini açan sohbet ikonu (daha önce yarım bırakılmış `useAIChatOpen` altyapısı tamamlandı), koyu/açık tema butonu (sidebar'dan taşındı) ve klinik adı eklendi. Varsayılan marka teması Siyah/Gold'dan Kırmızı'ya çevrildi (Siyah/Gold dahil diğer 9 tema hâlâ Ayarlar'dan seçilebilir). Cari Hesap toplam bakiye hesabı ile Dashboard'daki "Toplam Cari" kartı artık aynı paylaşılan `cariLedger` mantığını kullanıyor (önceden Dashboard basitleştirilmiş/hatalı bir rakam gösteriyordu). Şema değişikliği yok.
