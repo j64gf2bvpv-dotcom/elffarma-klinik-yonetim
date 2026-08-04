@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.4] - 2026-08-04
+
+**Kök neden düzeltmesi — geniş tablolar (Cari Kart dahil) artık taşmıyor:** `Card` bileşeni `flex flex-col` olduğu için, içindeki `CardContent` (ve dolayısıyla çok sütunlu bir tablo) `min-w-0` olmadan kendi içeriğinin doğal genişliğinden küçülmeyi reddedip kartın kendisini (ve sayfayı) sağa doğru taşırıyordu — Cari Kart tablosundaki sağdaki "Cari Hesap" sütunu bu yüzden ekran kenarından taşıp görünmez oluyordu. `Card` ve `CardContent`'e `min-w-0` eklendi — bu paylaşılan bileşen olduğu için tüm uygulamadaki benzer geniş tablo/kart kullanımlarını (sadece Cari Kart değil) aynı anda düzeltiyor; tablo artık kendi içinde yatay kaydırılabiliyor, taşmıyor. Şema değişikliği yok.
+
 ## [2.14.3] - 2026-08-04
 
 **"Kongreye Götürülen Ürün" iki bağlı alt panele ayrıldı:** Üstte "Kongreye Götürülen Ürün" (götürülüp bekleyen/geri dönen), altında ayrı bir panel olarak **"Kongrede Kullanılan Ürün"** — ikisi de gerçek stokla bağlantılı: her ikisine eklenen ürün stoktan düşüyor. Götürülen listesindeki bir ürün "Kullanıldı İşaretle" ile alt panele taşınabiliyor (ek stok hareketi gerekmez, zaten dışarıda), ya da "Kullanılan Ürün Ekle" ile doğrudan alt panele eklenebiliyor (bu durumda stoktan yeni düşülür). "Geri Döndü" işaretlenen ürün stoğa iade ediliyor. Şema değişikliği yok.
