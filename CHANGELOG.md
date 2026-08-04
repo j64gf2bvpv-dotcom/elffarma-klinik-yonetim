@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.13.2] - 2026-08-04
+
+**Ana Panel'deki Satış Temsilcisi Raporu artık gerçek temsilci fotoğrafını gösteriyor:** Temsilciye "Temsilciyi Düzenle"den fotoğraf yüklenmişse, Ana Panel'deki kart da (Satış Temsilcisi Raporu sayfasıyla aynı şekilde) o fotoğrafı gösteriyor; yoksa isme göre renkli baş harf rozeti kalıyor. Şema değişikliği yok.
+
 ## [2.13.1] - 2026-08-04
 
 **Araçlar > Son Yakıt Kayıtları tablosuna Plaka ve Temsilci sütunları eklendi:** Yakıt kaydı eklenirken sadece tarih (gün/ay/yıl, elle değiştirilebilir) ve tutar giriliyor — o araca atanmış plaka ve satış temsilcisi adı artık ayrıca elle girilmeden, araç kaydından otomatik çekilip tabloda gösteriliyor. Tarih gösterimi tam ay adıyla (ör. "4 Ağustos 2026") yapılıyor. Şema değişikliği yok.

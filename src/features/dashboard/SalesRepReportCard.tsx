@@ -3,7 +3,7 @@ import { ArrowRight, ArrowUpRight, ArrowDownRight, UserRound } from 'lucide-reac
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { placeholderColor } from '@/lib/placeholderColor'
 
@@ -21,7 +21,7 @@ function getInitials(name: string): string {
 export function SalesRepReportCard({
   items,
 }: {
-  items: { id: string; name: string; revenue: number; deltaPct: number | null }[]
+  items: { id: string; name: string; revenue: number; deltaPct: number | null; photoUrl?: string | null }[]
 }) {
   return (
     <Card>
@@ -48,6 +48,7 @@ export function SalesRepReportCard({
               {i + 1}
             </span>
             <Avatar className="size-9 shrink-0">
+              {item.photoUrl && <AvatarImage src={item.photoUrl} alt={item.name} />}
               <AvatarFallback
                 className="text-xs font-semibold text-white"
                 style={{ backgroundColor: placeholderColor(item.name) }}

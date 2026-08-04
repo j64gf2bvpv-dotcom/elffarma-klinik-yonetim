@@ -37,6 +37,7 @@ export interface RankedItem {
   name: string
   revenue: number
   deltaPct: number | null
+  photoUrl?: string | null
 }
 
 export interface NotificationItem {
@@ -225,6 +226,7 @@ export function useDashboardData() {
         name: rep.name,
         revenue: current.get(rep.id) ?? 0,
         deltaPct: pctDelta(current.get(rep.id) ?? 0, previous.get(rep.id) ?? 0),
+        photoUrl: rep.photo_url,
       }))
       .sort((a, b) => b.revenue - a.revenue)
   }, [salesReps, paymentsThisMonth, paymentsPrevMonth])
