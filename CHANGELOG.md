@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.3] - 2026-08-04
+
+**Varsayılan yapay zeka sağlayıcısı Google Gemini'ye (Pro) çevrildi:** Daha önce ilk kurulumda (`app_settings`'te hiç kayıt yokken) varsayılan Ollama + qwen2.5:3b idi — artık varsayılan Google Gemini (`gemini-pro-latest`, hız odaklı `flash` yerine en yetenekli katman). `.env`'de `VITE_GEMINI_API_KEY` zaten tanımlı olduğu için ek bir kurulum gerekmiyor. **Önemli:** Ayarlar > Yapay Zekâ'da daha önce açıkça bir sağlayıcı kaydedilmişse (`app_settings.ai_settings` doluysa) bu değişiklik onu EZMEZ — sadece o ekrandan elle Gemini seçilip kaydedilirse etkili olur; kayıt hiç yapılmamışsa yeni varsayılan hemen devreye girer. Şema değişikliği yok.
+
 ## [2.15.2] - 2026-08-04
 
 **Akıllı İçe Aktar (AI) taranmış/görsel PDF'leri de okuyabiliyor, Tahsilatlar'a da eklendi:** Kök neden — PDF'in metin katmanı boşsa (yani belge taranmış bir görüntüyse) önceden hiçbir şey çıkarılamıyordu. Artık metin katmanı neredeyse boşsa (taranmış belge belirtisi) otomatik olarak sayfalar görsele çevrilip yapay zekaya vision yoluyla okutuluyor (en fazla 3 sayfa). AI'a giden talimat da güçlendirildi: belgedeki HER kaydı atlamadan çıkarması, farklı yazılmış tarih/tutar gibi değerleri hedef formata normalize etmesi isteniyor. "Akıllı İçe Aktar" butonu daha önce sadece Stok ve Cari Kart'ta vardı — artık Tahsilatlar sayfasına da eklendi (aynı Doktor/Tutar/Tarih/Yöntem/Temsilci/Açıklama şablonuyla). Excel/CSV, Word (.docx) ve düz resim desteği zaten mevcuttu, değişmedi. Şema değişikliği yok.

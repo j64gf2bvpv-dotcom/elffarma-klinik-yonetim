@@ -4,11 +4,11 @@ import { OPENAI_DEFAULT_BASE_URL, OPENAI_DEFAULT_MODEL } from './providers/OpenA
 import { GEMINI_DEFAULT_BASE_URL, GEMINI_DEFAULT_MODEL } from './providers/GeminiProvider'
 import { CLAUDE_DEFAULT_BASE_URL, CLAUDE_DEFAULT_MODEL } from './providers/ClaudeProvider'
 
-/** app_settings'te henüz bir kayıt yokken (ilk kurulum) kullanılacak varsayılan — talep gereği Ollama + Qwen. */
+/** app_settings'te henüz bir kayıt yokken (ilk kurulum) kullanılacak varsayılan — talep gereği Google Gemini (Pro). */
 export const defaultAISettings: AISettings = {
-  provider: 'ollama',
-  baseUrl: (import.meta.env.VITE_OLLAMA_BASE_URL as string | undefined) || OLLAMA_DEFAULT_BASE_URL,
-  model: (import.meta.env.VITE_OLLAMA_MODEL as string | undefined) || OLLAMA_DEFAULT_MODEL,
+  provider: 'gemini',
+  baseUrl: GEMINI_DEFAULT_BASE_URL,
+  model: GEMINI_DEFAULT_MODEL,
 }
 
 export const providerDefaults: Record<AIProviderId, { baseUrl: string; model: string }> = {
