@@ -71,7 +71,7 @@ export function StatCardSparkline({
             </div>
           </div>
           {sparkline && sparkline.length > 1 && (
-            <div className="hidden shrink-0 @[210px]:block">
+            <div className="hidden shrink-0 @[350px]:block">
               <Sparkline data={sparkline} color={sparkColor[tone]} width={72} height={32} />
             </div>
           )}

@@ -19,7 +19,7 @@ export function PixelDashboard() {
 
   return (
     <div className="@container flex flex-col gap-4">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
         <StatCardSparkline
           icon={ShoppingCart}
           tone="blue"

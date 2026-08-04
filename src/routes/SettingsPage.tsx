@@ -462,7 +462,7 @@ export function SettingsPage() {
       const result = await seedDemoData()
       await queryClient.invalidateQueries()
       toast.success('Örnek veri eklendi', {
-        description: `${result.customers} cari, ${result.products} ürün, ${result.payments} tahsilat, ${result.sales} satış, ${result.salesReps} temsilci, ${result.reminders} hatırlatma, ${result.congresses} kongre, ${result.visits} ziyaret, ${result.expenses} gider, ${result.sampleRequests} numune talebi, ${result.commissionRules} prim kuralı, ${result.clinics} klinik, ${result.crmActivities} CRM aktivitesi, ${result.crmOpportunities} CRM fırsatı`,
+        description: `${result.customers} cari, ${result.products} ürün, ${result.payments} tahsilat, ${result.sales} satış, ${result.salesReps} temsilci, ${result.reminders} hatırlatma, ${result.congresses} kongre, ${result.visits} ziyaret, ${result.expenses} gider, ${result.sampleRequests} numune talebi, ${result.commissionRules} prim kuralı, ${result.clinics} klinik, ${result.crmActivities} CRM aktivitesi, ${result.crmOpportunities} CRM fırsatı, ${result.vehicles} araç, ${result.fuelLogs} yakıt kaydı, ${result.instagramLeads} Instagram doktoru`,
       })
     } catch (err) {
       toast.error('Örnek veri eklenemedi', { description: err instanceof Error ? err.message : undefined })
@@ -472,13 +472,13 @@ export function SettingsPage() {
   }
 
   async function handleClearDemoData() {
-    if (!confirm('Tüm örnek veriler (örnek cariler, ürünler, temsilciler, hatırlatmalar, kongreler, ziyaretler, giderler, klinikler ve bunlara bağlı tahsilat/satış/numune/CRM kayıtları) kalıcı olarak silinsin mi?')) return
+    if (!confirm('Tüm örnek veriler (örnek cariler, ürünler, temsilciler, hatırlatmalar, kongreler, ziyaretler, giderler, klinikler, araçlar, Instagram doktorları ve bunlara bağlı tahsilat/satış/numune/CRM/yakıt kayıtları) kalıcı olarak silinsin mi?')) return
     setClearing(true)
     try {
       const result = await clearDemoData()
       await queryClient.invalidateQueries()
       toast.success('Örnek veriler silindi', {
-        description: `${result.customersDeleted} cari, ${result.productsDeleted} ürün, ${result.salesRepsDeleted} temsilci, ${result.remindersDeleted} hatırlatma, ${result.congressesDeleted} kongre, ${result.visitsDeleted} ziyaret, ${result.expensesDeleted} gider, ${result.commissionRulesDeleted} prim kuralı, ${result.clinicsDeleted} klinik kaldırıldı`,
+        description: `${result.customersDeleted} cari, ${result.productsDeleted} ürün, ${result.salesRepsDeleted} temsilci, ${result.remindersDeleted} hatırlatma, ${result.congressesDeleted} kongre, ${result.visitsDeleted} ziyaret, ${result.expensesDeleted} gider, ${result.commissionRulesDeleted} prim kuralı, ${result.clinicsDeleted} klinik, ${result.vehiclesDeleted} araç, ${result.instagramLeadsDeleted} Instagram doktoru kaldırıldı`,
       })
     } catch (err) {
       toast.error('Örnek veriler silinemedi', { description: err instanceof Error ? err.message : undefined })

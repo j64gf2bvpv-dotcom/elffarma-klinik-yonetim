@@ -4,7 +4,7 @@ import { createProduct } from '@/features/stock/api'
 import { recordStockMovement } from '@/features/stock/api'
 import { createSale } from '@/features/sales/api'
 import { createPayment } from '@/features/payments/api'
-import { createSalesRep, deleteSalesRep } from '@/features/salesReps/api'
+import { createSalesRep, updateSalesRep, deleteSalesRep } from '@/features/salesReps/api'
 import { createReminder, deleteReminder } from '@/features/reminders/api'
 import { createCongress, deleteCongress } from '@/features/congresses/api'
 import { createVisit, deleteVisit } from '@/features/doctorVisits/api'
@@ -14,7 +14,10 @@ import { createSampleRequest } from '@/features/samples/api'
 import { createProductLot } from '@/features/stock/api'
 import { createClinic, deleteClinic } from '@/features/clinics/api'
 import { createCrmActivity, createCrmOpportunity } from '@/features/crm/api'
+import { createVehicle, createVehicleFuelLog, deleteVehicle } from '@/features/vehicles/api'
+import { createInstagramLead, deleteInstagramLead } from '@/features/instagramLeads/api'
 import { offlineDelete } from '@/lib/offlineMutation'
+import { emojiImageDataUri } from '@/lib/emojiImage'
 import type { CrmOpportunityStage, ExpenseCategory, PaymentMethod, Product } from '@/types/database'
 
 /**
@@ -22,8 +25,8 @@ import type { CrmOpportunityStage, ExpenseCategory, PaymentMethod, Product } fro
  * tıkla eklenip silinebilen örnek veri seti. Gerçek müşteri/ürün verisiyle
  * karışmasın diye her satır açıkça işaretleniyor: doktorlarda `tags` içinde
  * DEMO_TAG, ürünlerde SKU'da DEMO_SKU_PREFIX, tags/sku'su olmayan tablolarda
- * (temsilci/hatırlatma/kongre/ziyaret/gider) isim/başlık/not alanında
- * DEMO_LABEL_PREFIX — silme işlemi SADECE bu işaretli satırları bulup
+ * (temsilci/hatırlatma/kongre/ziyaret/gider/araç/Instagram doktoru) isim/
+ * başlık/not alanında DEMO_LABEL_PREFIX — silme işlemi SADECE bu işaretli satırları bulup
  * kaldırıyor. Doktorları silmek customers.id'ye `on delete cascade` bağlı
  * payments/sales/vb. satırları da otomatik temizliyor (bkz.
  * supabase/schema.sql); ürünler ayrıca siliniyor (stock_movements/
@@ -63,13 +66,32 @@ const DEMO_CUSTOMERS = [
 ]
 
 const DEMO_PRODUCTS = [
-  { name: '[Örnek] Botoks 100u', sku: `${DEMO_SKU_PREFIX}BTX100`, unit_cost: 800, unit_price: 1200 },
-  { name: '[Örnek] Dolgu Hyaluronik 1ml', sku: `${DEMO_SKU_PREFIX}DLG1`, unit_cost: 500, unit_price: 900 },
-  { name: '[Örnek] Mezoterapi Seti', sku: `${DEMO_SKU_PREFIX}MEZO`, unit_cost: 350, unit_price: 600 },
-  { name: '[Örnek] PRP Kit', sku: `${DEMO_SKU_PREFIX}PRP`, unit_cost: 400, unit_price: 750 },
+  { name: '[Örnek] Botoks 100u', sku: `${DEMO_SKU_PREFIX}BTX100`, unit_cost: 800, unit_price: 1200, emoji: '💉', color: '#2563eb' },
+  { name: '[Örnek] Dolgu Hyaluronik 1ml', sku: `${DEMO_SKU_PREFIX}DLG1`, unit_cost: 500, unit_price: 900, emoji: '💧', color: '#0891b2' },
+  { name: '[Örnek] Mezoterapi Seti', sku: `${DEMO_SKU_PREFIX}MEZO`, unit_cost: 350, unit_price: 600, emoji: '🧴', color: '#16a34a' },
+  { name: '[Örnek] PRP Kit', sku: `${DEMO_SKU_PREFIX}PRP`, unit_cost: 400, unit_price: 750, emoji: '🩸', color: '#dc2626' },
 ]
 
-const DEMO_SALES_REPS = [`${DEMO_LABEL_PREFIX} Deniz Aydın`, `${DEMO_LABEL_PREFIX} Selin Koç`, `${DEMO_LABEL_PREFIX} Barış Şahin`]
+const DEMO_SALES_REPS = [
+  { name: `${DEMO_LABEL_PREFIX} Deniz Aydın`, emoji: '👨‍💼', color: '#2563eb' },
+  { name: `${DEMO_LABEL_PREFIX} Selin Koç`, emoji: '👩‍💼', color: '#db2777' },
+  { name: `${DEMO_LABEL_PREFIX} Barış Şahin`, emoji: '🧑‍💼', color: '#7c3aed' },
+]
+
+const DEMO_INSTAGRAM_LEADS = [
+  { full_name: `${DEMO_LABEL_PREFIX} Dr. Elif Yıldız`, instagram_username: '@dr.elifyildiz', phone: '0537 666 77 88' },
+  { full_name: `${DEMO_LABEL_PREFIX} Dr. Kaan Öz`, instagram_username: '@drkaanoz.estetik', phone: '0538 777 88 99' },
+]
+
+const DEMO_VEHICLE = {
+  brand_model: `${DEMO_LABEL_PREFIX} Renault Clio`,
+  year: 2023,
+  plate_number: '34 ÖRN 01',
+  registration_info: 'Örnek veri — ruhsat no DEMO-001',
+  vendor_company: 'Örnek Filo Kiralama A.Ş.',
+  monthly_rental_price: 18500,
+  has_utts: true,
+}
 
 const DEMO_REMINDERS = [
   { title: `${DEMO_LABEL_PREFIX} Dr. Ayşe Yılmaz'ı ara`, note: 'Sipariş takibi için deneme hatırlatması', daysAhead: 1 },
@@ -84,6 +106,7 @@ const DEMO_CONGRESS = {
   durationDays: 3,
   single_person_price: 8500,
   two_person_price: 15000,
+  image_url: emojiImageDataUri('🎤', '#7c3aed'),
 }
 
 const DEMO_COMMISSION_RULE = `${DEMO_LABEL_PREFIX} Genel Satış Primi`
@@ -147,6 +170,9 @@ export interface SeedResult {
   clinics: number
   crmActivities: number
   crmOpportunities: number
+  vehicles: number
+  fuelLogs: number
+  instagramLeads: number
 }
 
 export async function seedDemoData(): Promise<SeedResult> {
@@ -174,6 +200,7 @@ export async function seedDemoData(): Promise<SeedResult> {
       critical_stock_threshold: 5,
       unit_cost: p.unit_cost,
       unit_price: p.unit_price,
+      image_url: emojiImageDataUri(p.emoji, p.color),
     })
     await recordStockMovement({
       product_id: created.id,
@@ -201,8 +228,10 @@ export async function seedDemoData(): Promise<SeedResult> {
   }
 
   const createdSalesReps = []
-  for (const name of DEMO_SALES_REPS) {
-    createdSalesReps.push(await createSalesRep(name))
+  for (const rep of DEMO_SALES_REPS) {
+    const created = await createSalesRep(rep.name)
+    const withPhoto = await updateSalesRep(created.id, { photo_url: emojiImageDataUri(rep.emoji, rep.color) })
+    createdSalesReps.push(withPhoto)
   }
 
   const createdClinics = []
@@ -328,6 +357,7 @@ export async function seedDemoData(): Promise<SeedResult> {
     notes: `${DEMO_LABEL_PREFIX} Deneme kongre kaydı`,
     single_person_price: DEMO_CONGRESS.single_person_price,
     two_person_price: DEMO_CONGRESS.two_person_price,
+    image_url: DEMO_CONGRESS.image_url,
   })
 
   await createCommissionRule({
@@ -350,6 +380,36 @@ export async function seedDemoData(): Promise<SeedResult> {
     expensesCount++
   }
 
+  const createdVehicle = await createVehicle({
+    brand_model: DEMO_VEHICLE.brand_model,
+    year: DEMO_VEHICLE.year,
+    plate_number: DEMO_VEHICLE.plate_number,
+    registration_info: DEMO_VEHICLE.registration_info,
+    vendor_company: DEMO_VEHICLE.vendor_company,
+    sales_rep_id: createdSalesReps[0]?.id ?? null,
+    monthly_rental_price: DEMO_VEHICLE.monthly_rental_price,
+    maintenance_date: dateDaysAhead(randomInt(15, 45)),
+    has_utts: DEMO_VEHICLE.has_utts,
+    notes: `${DEMO_LABEL_PREFIX} Deneme araç kaydı`,
+  })
+  await createVehicleFuelLog({
+    vehicle_id: createdVehicle.id,
+    fill_date: dateDaysAgo(randomInt(1, 10)),
+    amount: randomInt(800, 2000),
+    note: `${DEMO_LABEL_PREFIX} Deneme yakıt kaydı`,
+  })
+
+  let instagramLeadsCount = 0
+  for (const lead of DEMO_INSTAGRAM_LEADS) {
+    await createInstagramLead({
+      full_name: lead.full_name,
+      instagram_username: lead.instagram_username,
+      phone: lead.phone,
+      notes: `${DEMO_LABEL_PREFIX} Deneme Instagram doktor kaydı`,
+    })
+    instagramLeadsCount++
+  }
+
   return {
     customers: createdCustomers.length,
     products: createdProducts.length,
@@ -365,6 +425,9 @@ export async function seedDemoData(): Promise<SeedResult> {
     clinics: createdClinics.length,
     crmActivities: crmActivitiesCount,
     crmOpportunities: crmOpportunitiesCount,
+    vehicles: 1,
+    fuelLogs: 1,
+    instagramLeads: instagramLeadsCount,
   }
 }
 
@@ -378,10 +441,21 @@ export interface ClearResult {
   expensesDeleted: number
   commissionRulesDeleted: number
   clinicsDeleted: number
+  vehiclesDeleted: number
+  instagramLeadsDeleted: number
 }
 
 async function deleteAllByIlike(
-  table: 'sales_reps' | 'reminders' | 'congresses' | 'doctor_visits' | 'expenses' | 'commission_rules' | 'clinics',
+  table:
+    | 'sales_reps'
+    | 'reminders'
+    | 'congresses'
+    | 'doctor_visits'
+    | 'expenses'
+    | 'commission_rules'
+    | 'clinics'
+    | 'vehicles'
+    | 'instagram_leads',
   column: string,
 ) {
   const { data, error } = await supabase.from(table).select('id').ilike(column, `${DEMO_LABEL_PREFIX}%`)
@@ -430,6 +504,14 @@ export async function clearDemoData(): Promise<ClearResult> {
   const clinics = await deleteAllByIlike('clinics', 'name')
   for (const c of clinics) await deleteClinic(c.id)
 
+  // vehicle_fuel_logs, vehicles.id'ye `on delete cascade` bağlı (bkz.
+  // supabase/schema.sql) — aracı silmek yeterli, yakıt kayıtları otomatik gider.
+  const vehicles = await deleteAllByIlike('vehicles', 'notes')
+  for (const v of vehicles) await deleteVehicle(v.id)
+
+  const instagramLeads = await deleteAllByIlike('instagram_leads', 'notes')
+  for (const l of instagramLeads) await deleteInstagramLead(l.id)
+
   return {
     customersDeleted: customers?.length ?? 0,
     productsDeleted: products?.length ?? 0,
@@ -440,5 +522,7 @@ export async function clearDemoData(): Promise<ClearResult> {
     expensesDeleted: expenses.length,
     commissionRulesDeleted: commissionRules.length,
     clinicsDeleted: clinics.length,
+    vehiclesDeleted: vehicles.length,
+    instagramLeadsDeleted: instagramLeads.length,
   }
 }

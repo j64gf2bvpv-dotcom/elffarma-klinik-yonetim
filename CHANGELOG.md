@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.13.4] - 2026-08-04
+
+**Özet kartlardaki metin ezilmesi bu kez gerçek piksel hesabıyla düzeltildi:** Önceki eşik (210px) sparkline'ın tam açıldığı noktada metne sadece ~22px bırakıyordu — kart genişliği eşiği ile sparkline+ikon+boşluk toplamı çakışıyordu. Izgara tabanı 200px'ten 260px'e, sparkline gösterme eşiği 210px'ten 350px'e çıkarıldı (her ikisi de gerçek piksel hesabıyla: ikon 44 + boşluk 12 + kart iç boşluğu 48 + okunabilir metin için en az 120-150px).
+
+**Örnek Veri Ekle artık her modülü kapsıyor, küçük görseller de ekliyor:** Ayarlar > Örnek Veri Ekle'ye eksik olan Araçlar (1 araç + 1 yakıt kaydı) ve Instagram Doktor Listesi (2 kayıt) eklendi — artık panelde boş/eksik görünen bölüm kalmıyor. Ayrıca örnek satış temsilcilerine emoji tabanlı (👨‍💼👩‍💼🧑‍💼) renkli "fotoğraf", örnek ürünlere ürünle ilgili emoji (💉💧🧴🩸) ve örnek kongreye 🎤 görseli otomatik atanıyor — hepsi ağ isteği gerektirmeyen yerel SVG data-URI, gerçek fotoğraf yerine geçmiyor, sadece panel boş kutucuklarla dolu görünmesin diye. Örnek Verileri Sil bu yeni kayıtları da temizliyor. Şema değişikliği yok.
+
 ## [2.13.2] - 2026-08-04
 
 **Ana Panel'deki Satış Temsilcisi Raporu artık gerçek temsilci fotoğrafını gösteriyor:** Temsilciye "Temsilciyi Düzenle"den fotoğraf yüklenmişse, Ana Panel'deki kart da (Satış Temsilcisi Raporu sayfasıyla aynı şekilde) o fotoğrafı gösteriyor; yoksa isme göre renkli baş harf rozeti kalıyor. Şema değişikliği yok.
