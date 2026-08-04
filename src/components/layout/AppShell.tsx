@@ -24,6 +24,7 @@ import {
   X,
   GripVertical,
   MessageSquare,
+  MessageCircle,
   ChevronDown,
   Calculator as CalculatorIcon,
   Mail,
@@ -334,6 +335,16 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
             <Calculator />
           </PopoverContent>
         </Popover>
+
+        <a
+          href="https://web.whatsapp.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="WhatsApp Web'i aç"
+          className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <MessageCircle className="size-[1.1rem]" />
+        </a>
 
         <a
           href="https://webmail.elffarma.com/"

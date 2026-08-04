@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.9] - 2026-08-04
+
+**Üst bara WhatsApp Web kısayolu eklendi:** Hesap makinesinin yanına, WhatsApp Web'i (`web.whatsapp.com`) sistem tarayıcısında açan bir buton geldi — mail kısayoluyla aynı desende. Şema değişikliği yok.
+
 ## [2.15.8] - 2026-08-04
 
 **Varsayılan Gemini modeli Pro'dan Flash'a düşürüldü — "istek limiti aşıldı" hatasının kök nedeni:** Panel'deki "Yapay Zeka Uyarıları" widget'ı her panel açılışında otomatik olarak AI'a istek atıyor (`ai-dashboard-insights` sorgusu, 15 dk önbellekli). Gemini Pro'nun ücretsiz/varsayılan kotası bu sık otomatik çağrı deseni için çok düşük kalıp kısa sürede "istek limiti aşıldı" hatasına yol açtı. Flash aynı sağlayıcıda (Google Gemini) çok daha yüksek istek limitine sahip ve otomatik arka plan çağrıları için pratikte çok daha uygun — kalite olarak Ollama'nın yerel modelinden hâlâ üstün. Belirli bir iş için (ör. Akıllı İçe Aktar) yine de Ayarlar > Yapay Zekâ'dan Pro seçilebilir. Şema değişikliği yok.
