@@ -40,9 +40,9 @@ export function CollectionTargetGauge({
             <RadialGauge percent={percent ?? 0}>
               <span className="text-2xl font-semibold tabular-nums">%{Math.round(percent ?? 0)}</span>
             </RadialGauge>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-muted-foreground">Aylık Tahsilat Hedefi</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums">
+              <p className="mt-1 text-lg font-semibold tabular-nums break-words">
                 {currency(collected)} <span className="text-muted-foreground font-normal">/ {currency(targetRevenue)}</span>
               </p>
               <p className="mt-1 text-xs text-muted-foreground">Kalan: {currency(remaining ?? 0)}</p>

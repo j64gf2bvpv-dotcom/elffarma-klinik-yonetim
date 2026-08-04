@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.103] - 2026-08-04
+
+**Sabit Görünüm liste kartlarındaki (En Çok Satan Ürünler, Doktor Bazlı Satış Performansı, Bildirimler, Yaklaşan Kongreler, Tahsilat Hedefi) kalan taşma noktaları giderildi:** Bir önceki düzeltme sayfa/sütun düzeyindeki taşmayı çözmüştü ama bu kartların kendi satır bileşenlerinde (`flex items-center ...`) `min-w-0` eksikti — flex satırı, CardContent'in grid'inde bir hücre olarak kendi içeriğinin doğal genişliğinden küçülmeyi reddedip dar pencerede kartın kendi kenarlarından taşabiliyordu. Her liste kartındaki satır ve CardContent grid'ine `min-w-0` eklendi, Tahsilat Hedefi'ndeki tutar metnine `break-words` eklendi. Şema değişikliği yok.
+
 ## [2.12.102] - 2026-08-04
 
 **Ana Panel'deki taşma/kayma sorununun asıl kök nedeni bulundu ve düzeltildi:** `AppShell`'de TopBar+sayfa içeriğini saran flex sütununda (`flex flex-1 flex-col`) `min-w-0` eksikti — flexbox'ın "içerik kadar küçülmeme" varsayılanı yüzünden, içerideki herhangi bir kart/tablo küçülmeyi reddettiğinde bu genişlik yukarı taşıyıp tüm içerik alanını pencereden geniş yapabiliyor, dıştaki `overflow-hidden` bunu sessizce kırpınca ekranda başka bir sütunun ince bir dilimi gibi görünen kaymalar oluşuyordu. Artık bu sütun ve `<main>` `min-w-0` + `overflow-x-hidden` alıyor, dolayısıyla iç bileşenlerden biri hâlâ dar kalırsa bile taşma pencere dışına/komşu alana sızmıyor. Ayrıca Sabit Görünüm'deki 3 kart satırı artık pencere genişliğine göre değil (sidebar payını hesaba katmayan Tailwind `sm/lg/xl` viewport breakpoint'leri yanlış tetikleniyordu), CSS **container query**'lerle (`@container`, `@[420px]:` vb.) gerçek içerik alanı genişliğine göre sütun sayısını belirliyor. Şema değişikliği yok.

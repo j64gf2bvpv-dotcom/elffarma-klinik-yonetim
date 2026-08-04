@@ -21,13 +21,13 @@ export function NotificationsCard({ items }: { items: NotificationItem[] }) {
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="grid gap-2">
+      <CardContent className="grid min-w-0 gap-2">
         {items.length === 0 && <p className="text-sm text-muted-foreground">Yeni bildirim yok</p>}
         {items.map((item) => (
           <Link
             key={item.key}
             to={item.to}
-            className="flex items-start gap-3 rounded-lg px-1 py-1.5 text-sm transition-colors hover:bg-accent"
+            className="flex min-w-0 items-start gap-3 rounded-lg px-1 py-1.5 text-sm transition-colors hover:bg-accent"
           >
             <span
               className={cn(

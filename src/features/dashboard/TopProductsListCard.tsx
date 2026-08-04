@@ -26,10 +26,10 @@ export function TopProductsListCard({
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="grid gap-1">
+      <CardContent className="grid min-w-0 gap-1">
         {items.length === 0 && <p className="text-sm text-muted-foreground">Bu ay henüz ürün satışı yok</p>}
         {items.map((item, i) => (
-          <div key={item.id} className="flex items-center gap-3 rounded-lg px-1 py-2 text-sm">
+          <div key={item.id} className="flex min-w-0 items-center gap-3 rounded-lg px-1 py-2 text-sm">
             <span className="flex size-5 shrink-0 items-center justify-center text-xs font-semibold text-muted-foreground">
               {i + 1}
             </span>

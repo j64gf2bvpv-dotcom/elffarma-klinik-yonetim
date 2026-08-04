@@ -34,13 +34,13 @@ export function DoctorPerformanceCard({
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="grid gap-1">
+      <CardContent className="grid min-w-0 gap-1">
         {items.length === 0 && <p className="text-sm text-muted-foreground">Bu ay için doktor bazlı satış verisi yok</p>}
         {items.map((item, i) => (
           <Link
             key={item.id}
             to={`/musteriler/${item.id}`}
-            className="flex items-center gap-3 rounded-lg px-1 py-2 text-sm transition-colors hover:bg-accent"
+            className="flex min-w-0 items-center gap-3 rounded-lg px-1 py-2 text-sm transition-colors hover:bg-accent"
           >
             <span className="flex size-5 shrink-0 items-center justify-center text-xs font-semibold text-muted-foreground">
               {i + 1}

@@ -31,7 +31,7 @@ export function UpcomingCongressesCard({ congresses }: { congresses: Congress[] 
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="grid gap-2">
+      <CardContent className="grid min-w-0 gap-2">
         {upcoming.length === 0 && <p className="text-sm text-muted-foreground">Yaklaşan kongre yok</p>}
         {upcoming.map((c) => {
           const start = c.start_date ? new Date(c.start_date) : null
@@ -40,7 +40,7 @@ export function UpcomingCongressesCard({ congresses }: { congresses: Congress[] 
             <Link
               key={c.id}
               to={`/kongreler/${c.id}`}
-              className="flex items-center gap-3 rounded-lg p-1.5 text-sm transition-colors hover:bg-accent"
+              className="flex min-w-0 items-center gap-3 rounded-lg p-1.5 text-sm transition-colors hover:bg-accent"
             >
               {c.image_url ? (
                 <img src={c.image_url} alt={c.name} className="size-12 shrink-0 rounded-lg border object-cover" />
