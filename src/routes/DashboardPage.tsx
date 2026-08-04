@@ -115,6 +115,7 @@ import { useAllProductLots } from '@/features/stock/hooks'
 import { getExpiryStatus } from '@/lib/expiry'
 import { pctDelta } from '@/lib/pctDelta'
 import { tr } from '@/i18n/tr'
+import { useCountUp } from '@/hooks/useCountUp'
 import { PixelDashboard } from '@/features/dashboard/PixelDashboard'
 
 // Ayrı bir yaprak bileşen: saat her saniye kendi içinde güncelleniyor, bu
@@ -270,23 +271,6 @@ function QuickAction({
       <span className="text-xs font-medium">{label}</span>
     </Link>
   )
-}
-
-function useCountUp(value: number, duration = 700) {
-  const [display, setDisplay] = React.useState(0)
-  React.useEffect(() => {
-    let raf: number
-    const start = performance.now()
-    function tick(now: number) {
-      const progress = Math.min((now - start) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setDisplay(value * eased)
-      if (progress < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [value, duration])
-  return display
 }
 
 type WidgetId =

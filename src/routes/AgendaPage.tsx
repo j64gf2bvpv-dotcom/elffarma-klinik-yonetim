@@ -6,12 +6,13 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import trLocale from '@fullcalendar/core/locales/tr'
 import type { EventClickArg, EventContentArg, EventInput, EventMountArg } from '@fullcalendar/core'
-import { addDays } from 'date-fns'
-import { BellRing, ListFilter } from 'lucide-react'
+import { addDays, isToday, isSameMonth } from 'date-fns'
+import { BellRing, ListFilter, CalendarCheck2, CalendarClock, AlertCircle } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { useCountUp } from '@/hooks/useCountUp'
 import { MiniCalendar } from '@/components/calendar/MiniCalendar'
 import {
   agendaTypeMeta,
@@ -32,6 +33,24 @@ export function AgendaPage() {
   const [visibleTypes, setVisibleTypes] = React.useState<Set<AgendaEventType>>(
     () => new Set(Object.keys(agendaTypeMeta) as AgendaEventType[]),
   )
+
+  const now = React.useMemo(() => new Date(), [])
+  const monthCount = React.useMemo(
+    () => allEvents.filter((e) => isSameMonth(new Date(e.start), now)).length,
+    [allEvents, now],
+  )
+  const todayCount = React.useMemo(
+    () =>
+      allEvents.filter((e) => {
+        const start = new Date(e.start)
+        const end = e.end ? new Date(e.end) : start
+        return start <= now && now <= end ? true : isToday(start)
+      }).length,
+    [allEvents, now],
+  )
+  const monthCountAnimated = useCountUp(monthCount)
+  const todayCountAnimated = useCountUp(todayCount)
+  const overdueCountAnimated = useCountUp(overdueReminders.length)
 
   function toggleType(type: AgendaEventType) {
     setVisibleTypes((prev) => {
@@ -134,13 +153,42 @@ export function AgendaPage() {
     goToDate(new Date())
   }
 
+  const stats = [
+    { label: 'Bu Ay', value: monthCountAnimated, icon: CalendarClock, tone: 'var(--color-primary)' },
+    { label: 'Bugün', value: todayCountAnimated, icon: CalendarCheck2, tone: 'var(--color-success)' },
+    { label: 'Gecikmiş', value: overdueCountAnimated, icon: AlertCircle, tone: 'var(--color-destructive)' },
+  ]
+
   return (
     <div>
       <PageHeader title="Ajanda" description="Kongreler, ödeme vadeleri ve hatırlatmaların takvim görünümü" />
 
+      <div className="mb-4 grid grid-cols-3 gap-3 sm:max-w-lg">
+        {stats.map((s, i) => (
+          <Card
+            key={s.label}
+            className="animate-agenda-rise overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <CardContent className="flex items-center gap-2.5 px-3 py-3">
+              <span
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg"
+                style={{ backgroundColor: `color-mix(in oklab, ${s.tone} 15%, transparent)`, color: s.tone }}
+              >
+                <s.icon className="size-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-lg leading-none font-semibold tabular-nums">{Math.round(s.value)}</p>
+                <p className="text-muted-foreground truncate text-[11px] font-medium tracking-wide uppercase">{s.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       <div className="flex flex-col gap-4 lg:flex-row">
         <aside className="flex shrink-0 flex-col gap-4 lg:w-64">
-          <Card>
+          <Card className="animate-agenda-rise" style={{ animationDelay: '120ms' }}>
             <CardContent className="pt-6">
               <MiniCalendar
                 month={miniMonth}
@@ -152,7 +200,7 @@ export function AgendaPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="animate-agenda-rise" style={{ animationDelay: '180ms' }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <ListFilter className="size-4 text-primary" /> Takvimler
@@ -170,7 +218,7 @@ export function AgendaPage() {
                       type="button"
                       onClick={() => toggleType(key)}
                       className={cn(
-                        'flex items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-accent',
+                        'flex items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm transition-all duration-150 hover:translate-x-0.5 hover:bg-accent',
                         !active && 'opacity-50',
                       )}
                     >
@@ -201,7 +249,7 @@ export function AgendaPage() {
           </Card>
         </aside>
 
-        <Card className="min-w-0 flex-1">
+        <Card className="animate-agenda-rise min-w-0 flex-1" style={{ animationDelay: '100ms' }}>
           <CardContent className="pt-6">
             <FullCalendar
               ref={calendarRef}

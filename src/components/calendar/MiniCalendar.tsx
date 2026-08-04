@@ -55,7 +55,7 @@ export function MiniCalendar({
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-y-1.5 text-center">
+      <div key={month.toISOString()} className="animate-agenda-rise grid grid-cols-7 gap-y-1.5 text-center">
         {WEEKDAY_LETTERS.map((w) => (
           <span key={w} className="pb-1 text-[10px] font-semibold tracking-wide text-muted-foreground">
             {w}
@@ -73,11 +73,11 @@ export function MiniCalendar({
               type="button"
               onClick={() => onSelectDate(day)}
               className={cn(
-                'mx-auto flex size-9 flex-col items-center justify-center gap-0.5 rounded-full text-[13px] transition-colors',
+                'mx-auto flex size-9 flex-col items-center justify-center gap-0.5 rounded-full text-[13px] transition-all duration-200 active:scale-90',
                 !inMonth && 'text-muted-foreground/35',
-                inMonth && !today && !isSelected && 'text-foreground hover:bg-accent',
+                inMonth && !today && !isSelected && 'text-foreground hover:scale-105 hover:bg-accent',
                 today && !isSelected && 'bg-destructive font-semibold text-white',
-                isSelected && 'bg-primary font-semibold text-primary-foreground',
+                isSelected && 'scale-110 bg-primary font-semibold text-primary-foreground shadow-md',
               )}
             >
               <span>{format(day, 'd')}</span>

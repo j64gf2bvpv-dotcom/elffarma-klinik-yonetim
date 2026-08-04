@@ -186,6 +186,37 @@
   .animate-ai-orbit-spin {
     animation: ai-orbit-spin 6s linear infinite;
   }
+  @keyframes agenda-rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-agenda-rise {
+    animation: agenda-rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes agenda-today-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-destructive) 45%, transparent);
+    }
+    50% {
+      box-shadow: 0 0 0 5px color-mix(in oklab, var(--color-destructive) 0%, transparent);
+    }
+  }
+  .animate-agenda-today-pulse {
+    animation: agenda-today-pulse 2.2s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-agenda-rise,
+    .animate-agenda-today-pulse {
+      animation: none;
+    }
+  }
 }
 
 /* Ajanda (FullCalendar) — uygulamanın tema değişkenleriyle premium görünüm */
@@ -265,6 +296,7 @@
   background: var(--color-destructive);
   color: #fff;
   font-weight: 700;
+  animation: agenda-today-pulse 2.2s ease-in-out infinite;
 }
 .fc .fc-timegrid-col.fc-day-today .fc-col-header-cell-cushion,
 .fc .fc-day-today .fc-col-header-cell-cushion {
@@ -273,12 +305,23 @@
 }
 /* Etkinlik kutucukları artık türe göre soluk zemin + sol renk şeridi alıyor
    (bkz. AgendaPage handleEventDidMount) — burada sadece nötr şekil/geçiş var. */
+@keyframes agenda-event-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 .fc-event {
   border-radius: 5px !important;
   padding: 2px 6px !important;
   font-size: 0.72rem !important;
   font-weight: 500;
   box-shadow: none !important;
+  animation: agenda-event-in 0.25s ease both;
   transition:
     transform 0.15s ease,
     filter 0.15s ease;
@@ -305,5 +348,11 @@
 .fc-theme-standard td,
 .fc-theme-standard th {
   border-color: var(--color-border);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fc-event,
+  .fc .fc-day-today .fc-daygrid-day-number {
+    animation: none !important;
+  }
 }
 
