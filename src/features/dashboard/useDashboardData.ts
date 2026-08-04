@@ -19,7 +19,6 @@ import { useInvoices } from '@/features/invoices/hooks'
 import { useProducts } from '@/features/stock/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { useCongresses } from '@/features/congresses/hooks'
-import { useBudgetTargets } from '@/features/budget/hooks'
 import { useVehicles, useAllVehicleFuelLogs } from '@/features/vehicles/hooks'
 import { useAlertsSummary } from '@/features/alerts/useAlertsSummary'
 import { netAmount } from '@/features/sales/netAmount'
@@ -78,15 +77,12 @@ export function useDashboardData() {
   const { data: congresses = [] } = useCongresses()
   const { data: vehicles = [] } = useVehicles()
   const { data: fuelLogs = [] } = useAllVehicleFuelLogs()
-  const currentYear = new Date().getFullYear()
-  const { data: budgetTargets = [] } = useBudgetTargets(currentYear)
   const alerts = useAlertsSummary()
 
   const isLoading = salesLoading || participantSalesLoading || paymentsLoading || customersLoading
 
   const monthStart = React.useMemo(() => startOfMonth(new Date()), [])
   const prevMonthStart = React.useMemo(() => startOfMonth(subMonths(new Date(), 1)), [])
-  const currentMonth = monthStart.getMonth() + 1
 
   // En Çok Satan Ürünler / Doktor Bazlı Satış Performansı için "bu ay" yerine
   // kayan 90 günlük pencere kullanılıyor — sadece takvim ayının başından
@@ -251,30 +247,6 @@ export function useDashboardData() {
       .sort((a, b) => b.revenue - a.revenue)
   }, [salesReps, paymentsThisMonth, paymentsPrevMonth])
 
-  const collectionTarget = React.useMemo(() => {
-    const exactTarget = budgetTargets.find((t) => t.month === currentMonth)
-    // Bu ay için hedef girilmemişse panel boş görünmesin diye, o yıl içinde
-    // girilmiş EN YAKIN gerçek hedef gösteriliyor (uydurma rakam değil) —
-    // hangi aya ait olduğu net şekilde etiketleniyor.
-    const fallbackTarget =
-      !exactTarget && budgetTargets.length > 0
-        ? [...budgetTargets].sort((a, b) => Math.abs(a.month - currentMonth) - Math.abs(b.month - currentMonth))[0]
-        : null
-    const target = exactTarget ?? fallbackTarget
-    const targetRevenue = target ? Number(target.target_revenue) : null
-    const collected = collectionsStat.current
-    const percent = targetRevenue ? Math.min(100, (collected / targetRevenue) * 100) : null
-    const remaining = targetRevenue != null ? Math.max(0, targetRevenue - collected) : null
-    return {
-      targetRevenue,
-      collected,
-      percent,
-      remaining,
-      targetMonth: target?.month ?? null,
-      isFallbackMonth: !exactTarget && !!fallbackTarget,
-    }
-  }, [budgetTargets, currentMonth, collectionsStat])
-
   const notifications = React.useMemo<NotificationItem[]>(() => {
     const items: NotificationItem[] = []
     for (const d of alerts.doctorsWithBalance.slice(0, 3)) {
@@ -392,7 +364,6 @@ export function useDashboardData() {
     productCount,
     topProducts,
     repMonthlyReport,
-    collectionTarget,
     notifications,
     salesTimeline,
     congresses,

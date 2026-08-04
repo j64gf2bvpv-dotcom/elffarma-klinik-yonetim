@@ -2,7 +2,7 @@ import { ShoppingCart, Car, Landmark, Users, Boxes } from 'lucide-react'
 
 import { StatCardSparkline } from './StatCardSparkline'
 import { SalesPerformanceCard } from './SalesPerformanceCard'
-import { CollectionTargetGauge } from './CollectionTargetGauge'
+import { AgendaMiniCard } from './AgendaMiniCard'
 import { UpcomingCongressesCard } from './UpcomingCongressesCard'
 import { TopProductsListCard } from './TopProductsListCard'
 import { SalesRepReportCard } from './SalesRepReportCard'
@@ -72,14 +72,7 @@ export function PixelDashboard() {
 
       <div className="grid grid-cols-1 gap-4 @[900px]:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
         <SalesPerformanceCard timeline={data.salesTimeline} />
-        <CollectionTargetGauge
-          targetRevenue={data.collectionTarget.targetRevenue}
-          collected={data.collectionTarget.collected}
-          percent={data.collectionTarget.percent}
-          remaining={data.collectionTarget.remaining}
-          targetMonth={data.collectionTarget.targetMonth}
-          isFallbackMonth={data.collectionTarget.isFallbackMonth}
-        />
+        <AgendaMiniCard />
         <UpcomingCongressesCard congresses={data.congresses} />
       </div>
 

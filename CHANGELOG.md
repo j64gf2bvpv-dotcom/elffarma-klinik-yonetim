@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.6] - 2026-08-04
+
+**Ana Panel'de Tahsilat Hedefi kartı yerine Ajanda mini takvimi:** Orta sıradaki "Tahsilat Hedefi" göstergesi kaldırıldı, yerine o ayın etkinlik noktalarını gösteren ve "Tümünü gör" ile Ajanda'ya götüren yeni bir mini takvim kartı (`AgendaMiniCard`) eklendi. Ajanda'nın mini takvim ve etkinlik-birleştirme mantığı (`MiniCalendar`, `useAgendaEvents`) hem Ajanda sayfasında hem bu yeni kartta ortak kullanılan paylaşılan bileşenlere taşındı — kod tekrarı yok. Artık hiçbir yerde kullanılmayan `CollectionTargetGauge`/`RadialGauge` bileşenleri ve `useDashboardData`'daki ilgili hedef hesaplama mantığı kaldırıldı. Şema değişikliği yok.
+
 ## [2.14.5] - 2026-08-04
 
 **Ajanda, macOS Takvim'e benzer bir arayüze yükseltildi:** Sayfaya sol tarafta gün noktalarıyla (o gün etkinlik varsa renkli nokta gösteren) gezinilebilir bir mini ay takvimi ve tıklanınca ana takvimi o türün etkinliklerini gizleyip gösteren renkli "Takvimler" listesi (Kongre/Ödeme Vadesi/Hatırlatma, her birinin yanında sayısı) eklendi. Ana takvime Hafta ve Gün görünümleri (önceden yalnızca Ay vardı, `@fullcalendar/timegrid` zaten kurulu ama kullanılmıyordu) ve bunlar arasında macOS'un segmented control'üne benzer bir görünüm anahtarı eklendi. Bugünün tarihi artık kırmızı daire içinde vurgulanıyor (mini takvimde ve ay görünümünde). Mevcut tıklama/tooltip/renk-kodlama davranışı ve veri kaynağı (kongreler, ödeme vadeleri, hatırlatmalar) değişmedi. Şema değişikliği yok.
