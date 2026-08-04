@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.1] - 2026-08-04
+
+**Örnek veri doktorlara fotoğraf ve VIP durumu ekliyor, doktor fotoğrafı artık arayüzde görünüyor:** `Customer.photo_url` alanı şemada vardı ama hiçbir sayfada gösterilmiyordu — Cari Kart başlığına ve Cari Kart listesindeki satırlara küçük bir avatar (fotoğraf yoksa baş harfler) eklendi. Örnek veri artık her doktora ürün/temsilci/kongrede olduğu gibi bir avatar görseli ve VIP/Normal durumu atıyor. Şema değişikliği yok.
+
 ## [2.15.0] - 2026-08-04
 
 **Klinikler paneli kaldırıldı, doktor VIP/Normal durumu doğrudan Cari Kart'ta işaretlenebiliyor:** Sol menüdeki "Klinikler" sayfası (liste + detay) kaldırıldı. `customers` tablosuna yeni bir `is_vip` alanı eklendi ve doktor formuna "VIP doktor" onay kutusu geldi — Cari Kart başlığında ve doktor listesinde artık VIP doktorlar rozet/yıldızla ayırt ediliyor. Klinik alt yapısı (klinik seçimi, prim kurallarındaki "klinik bazlı" kapsam) bilerek korundu — hiçbir prim hesabı bozulmadı; doktor formundaki "Klinik" alanına artık satır içinden "+ Yeni Klinik Ekle" ile de klinik oluşturulabiliyor (önceden bu sadece ayrı Klinikler sayfasından yapılabiliyordu, sayfa kalkınca bu yol tek girişti). **Şema değişti** — `supabase/schema.sql`'i Supabase SQL editöründe tekrar çalıştırmanız gerekiyor (`customers.is_vip` sütunu eklendi, idempotent).

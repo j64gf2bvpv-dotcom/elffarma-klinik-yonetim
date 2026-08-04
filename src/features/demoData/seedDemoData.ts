@@ -49,7 +49,7 @@ const DEMO_SKU_PREFIX = 'ORNEK-'
 const DEMO_LABEL_PREFIX = '[Örnek]'
 
 const DEMO_CUSTOMERS = [
-  { full_name: 'Dr. Ayşe Yılmaz', phone: '0532 111 22 33', province: 'İstanbul', doctor_type: 'sahis' as const, total_debt: 15000 },
+  { full_name: 'Dr. Ayşe Yılmaz', phone: '0532 111 22 33', province: 'İstanbul', doctor_type: 'sahis' as const, total_debt: 15000, is_vip: true, tone: iconTones.pink },
   {
     full_name: 'Dr. Mehmet Demir',
     phone: '0533 222 33 44',
@@ -57,9 +57,11 @@ const DEMO_CUSTOMERS = [
     doctor_type: 'hastane' as const,
     hospital_name: 'Ankara Şehir Hastanesi',
     total_debt: 8000,
+    is_vip: false,
+    tone: iconTones.blue,
   },
-  { full_name: 'Dr. Elif Kaya', phone: '0534 333 44 55', province: 'İzmir', doctor_type: 'sahis' as const, total_debt: 0 },
-  { full_name: 'Dr. Can Öztürk', phone: '0535 444 55 66', province: 'Bursa', doctor_type: 'sahis' as const, total_debt: 0 },
+  { full_name: 'Dr. Elif Kaya', phone: '0534 333 44 55', province: 'İzmir', doctor_type: 'sahis' as const, total_debt: 0, is_vip: false, tone: iconTones.green },
+  { full_name: 'Dr. Can Öztürk', phone: '0535 444 55 66', province: 'Bursa', doctor_type: 'sahis' as const, total_debt: 0, is_vip: false, tone: iconTones.orange },
   {
     full_name: 'Dr. Zeynep Arslan',
     phone: '0536 555 66 77',
@@ -67,6 +69,8 @@ const DEMO_CUSTOMERS = [
     doctor_type: 'hastane' as const,
     hospital_name: 'Antalya Eğitim Hastanesi',
     total_debt: 22000,
+    is_vip: true,
+    tone: iconTones.purple,
   },
 ]
 
@@ -192,6 +196,8 @@ export async function seedDemoData(): Promise<SeedResult> {
       province: c.province,
       hospital_name: 'hospital_name' in c ? c.hospital_name : null,
       total_debt: c.total_debt || null,
+      is_vip: c.is_vip,
+      photo_url: iconImageDataUri(icons.user, c.tone),
     })
     createdCustomers.push(created)
   }

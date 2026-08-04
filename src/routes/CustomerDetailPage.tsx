@@ -30,6 +30,7 @@ import { getPaymentDueStatus } from '@/lib/paymentDue'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -66,6 +67,13 @@ import { tr } from '@/i18n/tr'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 export function CustomerDetailPage() {
@@ -152,7 +160,15 @@ export function CustomerDetailPage() {
       </Button>
 
       <PageHeader
-        title={customer.full_name}
+        title={
+          <span className="flex items-center gap-2.5">
+            <Avatar className="size-8">
+              {customer.photo_url && <AvatarImage src={customer.photo_url} alt={customer.full_name} />}
+              <AvatarFallback className="bg-primary/10 text-primary">{getInitials(customer.full_name)}</AvatarFallback>
+            </Avatar>
+            {customer.full_name}
+          </span>
+        }
         actions={
           <div className="flex gap-2">
             <WhatsAppSendDialog customerName={customer.full_name} customerPhone={customer.phone} />

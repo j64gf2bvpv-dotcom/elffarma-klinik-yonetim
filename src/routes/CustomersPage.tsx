@@ -8,6 +8,7 @@ import { getPaymentDueStatus } from '@/lib/paymentDue'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Input } from '@/components/ui/input'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -29,6 +30,13 @@ import type { Customer } from '@/types/database'
 
 const ALL_PROVINCES = '__all__'
 const ALL_TAGS = '__all_tags__'
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
 export function CustomersPage() {
   const [search, setSearch] = React.useState('')
@@ -284,7 +292,13 @@ export function CustomersPage() {
               {customers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">
-                    <Link to={`/musteriler/${customer.id}`} className="inline-flex items-center gap-1.5 hover:underline">
+                    <Link to={`/musteriler/${customer.id}`} className="inline-flex items-center gap-2 hover:underline">
+                      <Avatar className="size-6">
+                        {customer.photo_url && <AvatarImage src={customer.photo_url} alt={customer.full_name} />}
+                        <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
+                          {getInitials(customer.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
                       {customer.is_vip && <Star className="size-3.5 shrink-0 fill-warning text-warning" />}
                       {customer.full_name}
                     </Link>
