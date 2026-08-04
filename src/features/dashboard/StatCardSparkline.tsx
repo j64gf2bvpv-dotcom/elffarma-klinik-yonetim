@@ -43,14 +43,18 @@ export function StatCardSparkline({
 }) {
   return (
     <Link to={to} className="block">
-      <Card className="overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md">
+      <Card className="@container overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md">
         <CardContent className="flex min-w-0 items-center gap-3 pt-6">
           <span className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl', statTone[tone])}>
             <Icon className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
-            <p className="mt-1 truncate text-xl font-semibold tabular-nums">{value}</p>
+            <p className="truncate text-[11px] font-semibold tracking-wide text-muted-foreground uppercase" title={label}>
+              {label}
+            </p>
+            <p className="mt-1 truncate text-xl font-semibold tabular-nums" title={value}>
+              {value}
+            </p>
             <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className="min-w-0 flex-1 truncate">{sublabel}</span>
               {deltaPct != null && (
@@ -67,7 +71,9 @@ export function StatCardSparkline({
             </div>
           </div>
           {sparkline && sparkline.length > 1 && (
-            <Sparkline data={sparkline} color={sparkColor[tone]} width={72} height={32} />
+            <div className="hidden shrink-0 @[210px]:block">
+              <Sparkline data={sparkline} color={sparkColor[tone]} width={72} height={32} />
+            </div>
           )}
         </CardContent>
       </Card>

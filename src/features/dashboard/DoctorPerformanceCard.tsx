@@ -25,8 +25,9 @@ export function DoctorPerformanceCard({
   return (
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
           <Stethoscope className="size-4 text-primary" /> Doktor Bazlı Satış Performansı
+          <span className="text-muted-foreground text-xs font-normal">Son 90 gün</span>
         </CardTitle>
         <Button variant="ghost" size="sm" asChild>
           <Link to="/musteriler">

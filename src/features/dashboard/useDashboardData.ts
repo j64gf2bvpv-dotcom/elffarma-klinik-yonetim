@@ -9,7 +9,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
-import { startOfMonth, startOfWeek, subMonths, subWeeks } from 'date-fns'
+import { startOfDay, startOfMonth, startOfWeek, subDays, subMonths, subWeeks } from 'date-fns'
 
 import { usePayments } from '@/features/payments/hooks'
 import { useSales } from '@/features/sales/hooks'
@@ -83,6 +83,13 @@ export function useDashboardData() {
   const prevMonthStart = React.useMemo(() => startOfMonth(subMonths(new Date(), 1)), [])
   const currentMonth = monthStart.getMonth() + 1
 
+  // En Çok Satan Ürünler / Doktor Bazlı Satış Performansı için "bu ay" yerine
+  // kayan 90 günlük pencere kullanılıyor — sadece takvim ayının başından
+  // itibaren satış yoksa liste boş görünmesin diye, gerçek son 90 günlük
+  // veriye bakıyor (uydurma veri değil, sadece daha geniş bir gerçek pencere).
+  const rankingWindowStart = React.useMemo(() => startOfDay(subDays(new Date(), 90)), [])
+  const rankingWindowPrevStart = React.useMemo(() => startOfDay(subDays(new Date(), 180)), [])
+
   const salesThisMonth = React.useMemo(() => sales.filter((s) => new Date(s.sale_date) >= monthStart), [sales, monthStart])
   const salesPrevMonth = React.useMemo(
     () => sales.filter((s) => new Date(s.sale_date) >= prevMonthStart && new Date(s.sale_date) < monthStart),
@@ -95,6 +102,26 @@ export function useDashboardData() {
   const congressSalesPrevMonth = React.useMemo(
     () => participantSales.filter((s) => new Date(s.created_at) >= prevMonthStart && new Date(s.created_at) < monthStart),
     [participantSales, prevMonthStart, monthStart],
+  )
+
+  const salesInRankingWindow = React.useMemo(
+    () => sales.filter((s) => new Date(s.sale_date) >= rankingWindowStart),
+    [sales, rankingWindowStart],
+  )
+  const salesInPrevRankingWindow = React.useMemo(
+    () => sales.filter((s) => new Date(s.sale_date) >= rankingWindowPrevStart && new Date(s.sale_date) < rankingWindowStart),
+    [sales, rankingWindowPrevStart, rankingWindowStart],
+  )
+  const congressSalesInRankingWindow = React.useMemo(
+    () => participantSales.filter((s) => new Date(s.created_at) >= rankingWindowStart),
+    [participantSales, rankingWindowStart],
+  )
+  const congressSalesInPrevRankingWindow = React.useMemo(
+    () =>
+      participantSales.filter(
+        (s) => new Date(s.created_at) >= rankingWindowPrevStart && new Date(s.created_at) < rankingWindowStart,
+      ),
+    [participantSales, rankingWindowPrevStart, rankingWindowStart],
   )
 
   const paymentsThisMonth = React.useMemo(
@@ -159,8 +186,8 @@ export function useDashboardData() {
       }
       return byProduct
     }
-    const current = group(salesThisMonth, congressSalesThisMonth)
-    const previous = group(salesPrevMonth, congressSalesPrevMonth)
+    const current = group(salesInRankingWindow, congressSalesInRankingWindow)
+    const previous = group(salesInPrevRankingWindow, congressSalesInPrevRankingWindow)
     return Array.from(current.entries())
       .map(([name, v]) => ({
         id: name,
@@ -172,7 +199,7 @@ export function useDashboardData() {
       .filter((p) => p.qty > 0)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
-  }, [salesThisMonth, salesPrevMonth, congressSalesThisMonth, congressSalesPrevMonth])
+  }, [salesInRankingWindow, salesInPrevRankingWindow, congressSalesInRankingWindow, congressSalesInPrevRankingWindow])
 
   const doctorPerformance = React.useMemo<RankedItem[]>(() => {
     function group(items: typeof salesThisMonth) {
@@ -180,8 +207,8 @@ export function useDashboardData() {
       for (const s of items) byDoctor.set(s.customer_id, (byDoctor.get(s.customer_id) ?? 0) + netAmount(s))
       return byDoctor
     }
-    const current = group(salesThisMonth)
-    const previous = group(salesPrevMonth)
+    const current = group(salesInRankingWindow)
+    const previous = group(salesInPrevRankingWindow)
     const customerById = new Map(customers.map((c) => [c.id, c.full_name]))
     return Array.from(current.entries())
       .map(([customerId, revenue]) => ({
@@ -193,15 +220,30 @@ export function useDashboardData() {
       .filter((d) => d.revenue !== 0)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
-  }, [salesThisMonth, salesPrevMonth, customers])
+  }, [salesInRankingWindow, salesInPrevRankingWindow, customers])
 
   const collectionTarget = React.useMemo(() => {
-    const target = budgetTargets.find((t) => t.month === currentMonth)
+    const exactTarget = budgetTargets.find((t) => t.month === currentMonth)
+    // Bu ay için hedef girilmemişse panel boş görünmesin diye, o yıl içinde
+    // girilmiş EN YAKIN gerçek hedef gösteriliyor (uydurma rakam değil) —
+    // hangi aya ait olduğu net şekilde etiketleniyor.
+    const fallbackTarget =
+      !exactTarget && budgetTargets.length > 0
+        ? [...budgetTargets].sort((a, b) => Math.abs(a.month - currentMonth) - Math.abs(b.month - currentMonth))[0]
+        : null
+    const target = exactTarget ?? fallbackTarget
     const targetRevenue = target ? Number(target.target_revenue) : null
     const collected = collectionsStat.current
     const percent = targetRevenue ? Math.min(100, (collected / targetRevenue) * 100) : null
     const remaining = targetRevenue != null ? Math.max(0, targetRevenue - collected) : null
-    return { targetRevenue, collected, percent, remaining }
+    return {
+      targetRevenue,
+      collected,
+      percent,
+      remaining,
+      targetMonth: target?.month ?? null,
+      isFallbackMonth: !exactTarget && !!fallbackTarget,
+    }
   }, [budgetTargets, currentMonth, collectionsStat])
 
   const notifications = React.useMemo<NotificationItem[]>(() => {

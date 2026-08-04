@@ -8,16 +8,25 @@ function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
 }
 
+const monthNames = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+]
+
 export function CollectionTargetGauge({
   targetRevenue,
   collected,
   percent,
   remaining,
+  targetMonth,
+  isFallbackMonth,
 }: {
   targetRevenue: number | null
   collected: number
   percent: number | null
   remaining: number | null
+  targetMonth?: number | null
+  isFallbackMonth?: boolean
 }) {
   return (
     <Card>
@@ -41,7 +50,11 @@ export function CollectionTargetGauge({
               <span className="text-2xl font-semibold tabular-nums">%{Math.round(percent ?? 0)}</span>
             </RadialGauge>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-muted-foreground">Aylık Tahsilat Hedefi</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                {isFallbackMonth && targetMonth
+                  ? `${monthNames[targetMonth - 1]} Ayı Hedefi (bu ay girilmedi)`
+                  : 'Aylık Tahsilat Hedefi'}
+              </p>
               <p className="mt-1 text-lg font-semibold tabular-nums break-words">
                 {currency(collected)} <span className="text-muted-foreground font-normal">/ {currency(targetRevenue)}</span>
               </p>

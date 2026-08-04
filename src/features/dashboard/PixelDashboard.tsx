@@ -77,6 +77,8 @@ export function PixelDashboard() {
           collected={data.collectionTarget.collected}
           percent={data.collectionTarget.percent}
           remaining={data.collectionTarget.remaining}
+          targetMonth={data.collectionTarget.targetMonth}
+          isFallbackMonth={data.collectionTarget.isFallbackMonth}
         />
         <UpcomingCongressesCard congresses={data.congresses} />
       </div>

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.12.104] - 2026-08-04
+
+**Ana Panel özet kartlarındaki metin ezilme hatası düzeltildi + veri az olduğunda kartlar boş görünmesin diye gerçek veri penceresi genişletildi:** Toplam Satış/Tahsilatlar/Toplam Cari kartlarında sabit genişlikli sparkline grafiği, dar kartlarda etiket/tutar metniyle aynı alanı paylaşınca metni tek karaktere kadar sıkıştırıyordu ("T", "1" gibi anlaşılmaz kısaltmalar). Artık her kart kendi container query'siyle dar olduğunda sparkline'ı gizleyip alanı tamamen metne bırakıyor; etiket/tutar üstüne gelince tam metni gösteren `title` eklendi. Ayrıca "En Çok Satan Ürünler" ve "Doktor Bazlı Satış Performansı" artık sadece içinde bulunulan takvim ayı yerine son 90 günlük gerçek satış verisine bakıyor (başlıkta "Son 90 gün" etiketiyle belirtiliyor) — bu ay için henüz az veri girilmişse liste boş görünmesin diye. "Tahsilat Hedefi" de bu ay için hedef girilmemişse, o yıl içinde girilmiş en yakın gerçek hedefi "(bu ay girilmedi)" etiketiyle gösteriyor; hiçbiri yoksa yine uydurma rakam göstermeden Bütçe Yılı'na yönlendiriyor. Şema değişikliği yok.
+
 ## [2.12.103] - 2026-08-04
 
 **Sabit Görünüm liste kartlarındaki (En Çok Satan Ürünler, Doktor Bazlı Satış Performansı, Bildirimler, Yaklaşan Kongreler, Tahsilat Hedefi) kalan taşma noktaları giderildi:** Bir önceki düzeltme sayfa/sütun düzeyindeki taşmayı çözmüştü ama bu kartların kendi satır bileşenlerinde (`flex items-center ...`) `min-w-0` eksikti — flex satırı, CardContent'in grid'inde bir hücre olarak kendi içeriğinin doğal genişliğinden küçülmeyi reddedip dar pencerede kartın kendi kenarlarından taşabiliyordu. Her liste kartındaki satır ve CardContent grid'ine `min-w-0` eklendi, Tahsilat Hedefi'ndeki tutar metnine `break-words` eklendi. Şema değişikliği yok.

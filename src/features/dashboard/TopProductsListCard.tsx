@@ -17,8 +17,9 @@ export function TopProductsListCard({
   return (
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
           <Trophy className="size-4 text-[oklch(0.72_0.16_70)]" /> En Çok Satan Ürünler
+          <span className="text-muted-foreground text-xs font-normal">Son 90 gün</span>
         </CardTitle>
         <Button variant="ghost" size="sm" asChild>
           <Link to="/satislar">
