@@ -55,9 +55,9 @@ export function MiniCalendar({
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-y-1 text-center">
+      <div className="grid grid-cols-7 gap-y-1.5 text-center">
         {WEEKDAY_LETTERS.map((w) => (
-          <span key={w} className="text-[10px] font-semibold tracking-wide text-muted-foreground">
+          <span key={w} className="pb-1 text-[10px] font-semibold tracking-wide text-muted-foreground">
             {w}
           </span>
         ))}
@@ -73,25 +73,25 @@ export function MiniCalendar({
               type="button"
               onClick={() => onSelectDate(day)}
               className={cn(
-                'mx-auto flex size-7 flex-col items-center justify-center gap-0.5 rounded-full text-xs transition-colors',
-                !inMonth && 'text-muted-foreground/40',
+                'mx-auto flex size-9 flex-col items-center justify-center gap-0.5 rounded-full text-[13px] transition-colors',
+                !inMonth && 'text-muted-foreground/35',
                 inMonth && !today && !isSelected && 'text-foreground hover:bg-accent',
                 today && !isSelected && 'bg-destructive font-semibold text-white',
                 isSelected && 'bg-primary font-semibold text-primary-foreground',
               )}
             >
               <span>{format(day, 'd')}</span>
-              {dots && dots.length > 0 && (
-                <span className="flex gap-0.5">
-                  {dots.slice(0, 3).map((color, i) => (
+              <span className="flex h-1 gap-0.5">
+                {dots &&
+                  dots.length > 0 &&
+                  dots.slice(0, 3).map((color, i) => (
                     <span
                       key={i}
                       className="size-1 rounded-full"
                       style={{ backgroundColor: isSelected || today ? 'currentColor' : color }}
                     />
                   ))}
-                </span>
-              )}
+              </span>
             </button>
           )
         })}

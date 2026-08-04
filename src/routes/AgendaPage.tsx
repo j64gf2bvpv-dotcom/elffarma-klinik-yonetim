@@ -7,10 +7,10 @@ import interactionPlugin from '@fullcalendar/interaction'
 import trLocale from '@fullcalendar/core/locales/tr'
 import type { EventClickArg, EventContentArg, EventInput, EventMountArg } from '@fullcalendar/core'
 import { addDays } from 'date-fns'
-import { BellRing } from 'lucide-react'
+import { BellRing, ListFilter } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { MiniCalendar } from '@/components/calendar/MiniCalendar'
 import {
@@ -96,9 +96,19 @@ export function AgendaPage() {
 
   // Fare üzerine geldiğinde (tıklamadan, sayfa değiştirmeden) etkinliğin tür/
   // tarih açıklamasını gösteren native tarayıcı tooltip'i (title attribute).
+  // Aynı zamanda etkinlik kutucuğunun rengini de burada elle veriyoruz —
+  // FullCalendar'ın varsayılan mavi arka planı (--fc-event-bg-color) hiç
+  // ezilmediği için önceden tüm etkinlikler türden bağımsız aynı mavi kutuda
+  // görünüyordu; artık her tür kendi rengiyle soluk bir zemin + sol şerit alıyor.
   function handleEventDidMount(arg: EventMountArg) {
-    const tooltip = (arg.event.extendedProps as { tooltip?: string }).tooltip
+    const { type, tooltip } = arg.event.extendedProps as { type?: AgendaEventType; tooltip?: string }
     if (tooltip) arg.el.title = tooltip
+    if (type) {
+      const color = agendaTypeMeta[type].color
+      arg.el.style.backgroundColor = `color-mix(in oklab, ${color} 15%, transparent)`
+      arg.el.style.borderLeft = `2.5px solid ${color}`
+      arg.el.style.color = 'var(--color-foreground)'
+    }
   }
 
   function renderEventContent(arg: EventContentArg) {
@@ -107,13 +117,8 @@ export function AgendaPage() {
     const meta = agendaTypeMeta[type]
     const Icon = meta.icon
     return (
-      <span className="flex items-center gap-1 truncate rounded px-0.5 py-px">
-        <span
-          className="flex size-3.5 shrink-0 items-center justify-center rounded-full"
-          style={{ backgroundColor: meta.color }}
-        >
-          <Icon className="size-2 text-white" strokeWidth={2.5} />
-        </span>
+      <span className="flex items-center gap-1 truncate px-0.5 py-px">
+        <Icon className="size-2.5 shrink-0" style={{ color: meta.color }} strokeWidth={2.5} />
         <span className="truncate text-[11px] font-medium">{arg.event.title}</span>
       </span>
     )
@@ -136,7 +141,7 @@ export function AgendaPage() {
       <div className="flex flex-col gap-4 lg:flex-row">
         <aside className="flex shrink-0 flex-col gap-4 lg:w-64">
           <Card>
-            <CardContent className="pt-5">
+            <CardContent className="pt-6">
               <MiniCalendar
                 month={miniMonth}
                 onMonthChange={setMiniMonth}
@@ -148,36 +153,46 @@ export function AgendaPage() {
           </Card>
 
           <Card>
-            <CardContent className="flex flex-col gap-1 pt-5">
-              <p className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Takvimler</p>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ListFilter className="size-4 text-primary" /> Takvimler
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-1">
               {(Object.entries(agendaTypeMeta) as [AgendaEventType, (typeof agendaTypeMeta)[AgendaEventType]][]).map(
                 ([key, meta]) => {
                   const active = visibleTypes.has(key)
                   const count = allEvents.filter((e) => e.type === key).length
+                  const Icon = meta.icon
                   return (
                     <button
                       key={key}
                       type="button"
                       onClick={() => toggleType(key)}
-                      className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-left text-sm transition-colors hover:bg-accent"
+                      className={cn(
+                        'flex items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-accent',
+                        !active && 'opacity-50',
+                      )}
                     >
                       <span
-                        className="flex size-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
-                        style={{
-                          borderColor: meta.color,
-                          backgroundColor: active ? meta.color : 'transparent',
-                        }}
-                      />
-                      <span className={cn('flex-1 truncate', !active && 'text-muted-foreground line-through')}>
-                        {meta.label}
+                        className="flex size-7 shrink-0 items-center justify-center rounded-lg"
+                        style={{ backgroundColor: `color-mix(in oklab, ${meta.color} 16%, transparent)`, color: meta.color }}
+                      >
+                        <Icon className="size-3.5" />
                       </span>
-                      <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+                      <span className="flex-1 truncate font-medium">{meta.label}</span>
+                      <span
+                        className="rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums"
+                        style={{ backgroundColor: `color-mix(in oklab, ${meta.color} 14%, transparent)`, color: meta.color }}
+                      >
+                        {count}
+                      </span>
                     </button>
                   )
                 },
               )}
               {overdueReminders.length > 0 && (
-                <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-destructive/10 px-1.5 py-1.5 text-xs font-medium text-destructive">
+                <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-destructive/10 px-2 py-2 text-xs font-medium text-destructive">
                   <BellRing className="size-3.5 shrink-0" />
                   {overdueReminders.length} gecikmiş hatırlatma
                 </p>

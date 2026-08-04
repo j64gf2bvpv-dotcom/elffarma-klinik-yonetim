@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.7] - 2026-08-04
+
+**Ajanda görselleri belirginleştirildi:** Kök neden bulundu — FullCalendar'ın varsayılan mavi etkinlik zemini (`--fc-event-bg-color`) hiç ezilmemişti, bu yüzden Kongre/Ödeme Vadesi/Hatırlatma etkinlikleri türden bağımsız hep aynı mavi kutuda görünüyordu; artık her etkinlik kendi rengiyle soluk bir zemin + sol renk şeridi alıyor. "Takvimler" filtre listesi diğer panel kartlarıyla tutarlı bir ikonlu başlığa ve renkli ikon rozeti + sayı rozetine kavuştu. Mini takvimdeki gün butonları büyütüldü (28px→36px) ve nokta olmayan günlerde de aynı yükseklikte kalacak şekilde hizalandı. Takvim günü kutucuklarına üzerine gelince hafif vurgu ve daha ferah bir minimum yükseklik eklendi. Şema değişikliği yok.
+
 ## [2.14.6] - 2026-08-04
 
 **Ana Panel'de Tahsilat Hedefi kartı yerine Ajanda mini takvimi:** Orta sıradaki "Tahsilat Hedefi" göstergesi kaldırıldı, yerine o ayın etkinlik noktalarını gösteren ve "Tümünü gör" ile Ajanda'ya götüren yeni bir mini takvim kartı (`AgendaMiniCard`) eklendi. Ajanda'nın mini takvim ve etkinlik-birleştirme mantığı (`MiniCalendar`, `useAgendaEvents`) hem Ajanda sayfasında hem bu yeni kartta ortak kullanılan paylaşılan bileşenlere taşındı — kod tekrarı yok. Artık hiçbir yerde kullanılmayan `CollectionTargetGauge`/`RadialGauge` bileşenleri ve `useDashboardData`'daki ilgili hedef hesaplama mantığı kaldırıldı. Şema değişikliği yok.
