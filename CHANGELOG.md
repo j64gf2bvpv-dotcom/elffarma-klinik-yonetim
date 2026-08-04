@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.13.6] - 2026-08-04
+
+**Örnek veri görselleri artık gerçek Lucide çizgisel ikonlar (emoji değil):** Renkli/karakter-fontuna bağlı emoji glifleri yerine, uygulamanın kendi ikon setinden alınmış çizgisel (stroke, dolgu yok) SVG path'leri aynı gradyan+cam parlaklığı zemininde render ediliyor — temsilciler `UserRound`, ürünler ilgili ikon (Syringe/Droplet/FlaskConical/TestTube), kongre `Presentation`. Artık işletim sistemine göre değişmiyor, tamamen "çizgisel/kurumsal" duruyor.
+
+**Ana Panel özet kartlarında Tahsilatlar yerine Araçlar:** İlk sıradaki 5 kart artık Toplam Satış / **Araçlar** (araç sayısı + aylık kiralama + bu ayki yakıt gideri toplamı, gerçek yakıt kayıtlarından sparkline) / Toplam Cari / Aktif Temsilci / Stokta Ürün. Tahsilat verisi panelden tamamen kalkmadı — "Tahsilat Hedefi" göstergesi hâlâ orta sırada duruyor. Şema değişikliği yok.
+
 ## [2.13.5] - 2026-08-04
 
 **Örnek veri emoji görselleri daha kurumsal görünecek şekilde yenilendi:** Düz tek renkli daire yerine, Ana Panel'deki Hızlı İşlemler ikonlarıyla aynı "premium" tasarım dili kullanılıyor artık — diyagonal gradyan zemin, üstte ince cam parlaklığı, squircle köşe ve hafif kenarlık. Renk paleti de marka renkleriyle (oklch) tutarlı hale getirildi. **Not:** Daha önce "Örnek Veri Ekle" ile oluşturulmuş kayıtlar eski düz renkli görseli korur — yeni stili görmek için Ayarlar'dan önce "Örnek Verileri Sil", sonra tekrar "Örnek Veri Ekle" yapmanız gerekir. Şema değişikliği yok.

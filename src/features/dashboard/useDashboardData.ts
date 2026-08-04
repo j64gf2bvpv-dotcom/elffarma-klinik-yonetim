@@ -20,6 +20,7 @@ import { useProducts } from '@/features/stock/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { useCongresses } from '@/features/congresses/hooks'
 import { useBudgetTargets } from '@/features/budget/hooks'
+import { useVehicles, useAllVehicleFuelLogs } from '@/features/vehicles/hooks'
 import { useAlertsSummary } from '@/features/alerts/useAlertsSummary'
 import { netAmount } from '@/features/sales/netAmount'
 import { computeCariLedger, computeCariTotals } from '@/features/customers/cariLedger'
@@ -75,6 +76,8 @@ export function useDashboardData() {
   const { data: products = [] } = useProducts('')
   const { data: salesReps = [] } = useSalesReps()
   const { data: congresses = [] } = useCongresses()
+  const { data: vehicles = [] } = useVehicles()
+  const { data: fuelLogs = [] } = useAllVehicleFuelLogs()
   const currentYear = new Date().getFullYear()
   const { data: budgetTargets = [] } = useBudgetTargets(currentYear)
   const alerts = useAlertsSummary()
@@ -155,6 +158,23 @@ export function useDashboardData() {
     const items = allPayments.map((p) => ({ date: new Date(p.paid_at), amount: Number(p.amount) }))
     return { current, previous, deltaPct: pctDelta(current, previous), sparkline: weeklyBuckets(items, 8) }
   }, [paymentsThisMonth, paymentsPrevMonth, allPayments])
+
+  // Araç gideri: sabit aylık kiralama toplamı + bu ayki yakıt harcamaları.
+  // Sparkline gerçek tarihli yakıt kayıtlarından geliyor (kiralama sabit
+  // olduğu için trend taşımıyor).
+  const vehicleStat: StatTrend = React.useMemo(() => {
+    const monthlyRentalTotal = vehicles.reduce((sum, v) => sum + Number(v.monthly_rental_price ?? 0), 0)
+    const fuelThisMonth = fuelLogs
+      .filter((f) => new Date(f.fill_date) >= monthStart)
+      .reduce((sum, f) => sum + Number(f.amount), 0)
+    const fuelPrevMonth = fuelLogs
+      .filter((f) => new Date(f.fill_date) >= prevMonthStart && new Date(f.fill_date) < monthStart)
+      .reduce((sum, f) => sum + Number(f.amount), 0)
+    const current = monthlyRentalTotal + fuelThisMonth
+    const previous = monthlyRentalTotal + fuelPrevMonth
+    const items = fuelLogs.map((f) => ({ date: new Date(f.fill_date), amount: Number(f.amount) }))
+    return { current, previous, deltaPct: pctDelta(current, previous), sparkline: weeklyBuckets(items, 8) }
+  }, [vehicles, fuelLogs, monthStart, prevMonthStart])
 
   const cariLedger = React.useMemo(() => computeCariLedger(allPayments, sales, invoices), [allPayments, sales, invoices])
   const cariTotals = React.useMemo(() => computeCariTotals(customers, cariLedger), [customers, cariLedger])
@@ -353,6 +373,8 @@ export function useDashboardData() {
     isLoading,
     salesStat,
     collectionsStat,
+    vehicleStat,
+    vehicleCount: vehicles.length,
     cariTotals,
     cariSparkline,
     activeSalesRepCount,

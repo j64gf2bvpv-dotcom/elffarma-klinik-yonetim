@@ -17,7 +17,7 @@ import { createCrmActivity, createCrmOpportunity } from '@/features/crm/api'
 import { createVehicle, createVehicleFuelLog, deleteVehicle } from '@/features/vehicles/api'
 import { createInstagramLead, deleteInstagramLead } from '@/features/instagramLeads/api'
 import { offlineDelete } from '@/lib/offlineMutation'
-import { emojiImageDataUri, emojiTones } from '@/lib/emojiImage'
+import { iconImageDataUri, iconTones, icons } from '@/lib/iconImage'
 import type { CrmOpportunityStage, ExpenseCategory, PaymentMethod, Product } from '@/types/database'
 
 /**
@@ -66,16 +66,16 @@ const DEMO_CUSTOMERS = [
 ]
 
 const DEMO_PRODUCTS = [
-  { name: '[Örnek] Botoks 100u', sku: `${DEMO_SKU_PREFIX}BTX100`, unit_cost: 800, unit_price: 1200, emoji: '💉', tone: emojiTones.blue },
-  { name: '[Örnek] Dolgu Hyaluronik 1ml', sku: `${DEMO_SKU_PREFIX}DLG1`, unit_cost: 500, unit_price: 900, emoji: '💧', tone: emojiTones.teal },
-  { name: '[Örnek] Mezoterapi Seti', sku: `${DEMO_SKU_PREFIX}MEZO`, unit_cost: 350, unit_price: 600, emoji: '🧴', tone: emojiTones.green },
-  { name: '[Örnek] PRP Kit', sku: `${DEMO_SKU_PREFIX}PRP`, unit_cost: 400, unit_price: 750, emoji: '🩸', tone: emojiTones.red },
+  { name: '[Örnek] Botoks 100u', sku: `${DEMO_SKU_PREFIX}BTX100`, unit_cost: 800, unit_price: 1200, icon: icons.syringe, tone: iconTones.blue },
+  { name: '[Örnek] Dolgu Hyaluronik 1ml', sku: `${DEMO_SKU_PREFIX}DLG1`, unit_cost: 500, unit_price: 900, icon: icons.droplet, tone: iconTones.teal },
+  { name: '[Örnek] Mezoterapi Seti', sku: `${DEMO_SKU_PREFIX}MEZO`, unit_cost: 350, unit_price: 600, icon: icons.flaskConical, tone: iconTones.green },
+  { name: '[Örnek] PRP Kit', sku: `${DEMO_SKU_PREFIX}PRP`, unit_cost: 400, unit_price: 750, icon: icons.testTube, tone: iconTones.red },
 ]
 
 const DEMO_SALES_REPS = [
-  { name: `${DEMO_LABEL_PREFIX} Deniz Aydın`, emoji: '👨‍💼', tone: emojiTones.blue },
-  { name: `${DEMO_LABEL_PREFIX} Selin Koç`, emoji: '👩‍💼', tone: emojiTones.pink },
-  { name: `${DEMO_LABEL_PREFIX} Barış Şahin`, emoji: '🧑‍💼', tone: emojiTones.purple },
+  { name: `${DEMO_LABEL_PREFIX} Deniz Aydın`, tone: iconTones.blue },
+  { name: `${DEMO_LABEL_PREFIX} Selin Koç`, tone: iconTones.pink },
+  { name: `${DEMO_LABEL_PREFIX} Barış Şahin`, tone: iconTones.purple },
 ]
 
 const DEMO_INSTAGRAM_LEADS = [
@@ -106,7 +106,7 @@ const DEMO_CONGRESS = {
   durationDays: 3,
   single_person_price: 8500,
   two_person_price: 15000,
-  image_url: emojiImageDataUri('🎤', emojiTones.purple),
+  image_url: iconImageDataUri(icons.presentation, iconTones.purple),
 }
 
 const DEMO_COMMISSION_RULE = `${DEMO_LABEL_PREFIX} Genel Satış Primi`
@@ -200,7 +200,7 @@ export async function seedDemoData(): Promise<SeedResult> {
       critical_stock_threshold: 5,
       unit_cost: p.unit_cost,
       unit_price: p.unit_price,
-      image_url: emojiImageDataUri(p.emoji, p.tone),
+      image_url: iconImageDataUri(p.icon, p.tone),
     })
     await recordStockMovement({
       product_id: created.id,
@@ -230,7 +230,7 @@ export async function seedDemoData(): Promise<SeedResult> {
   const createdSalesReps = []
   for (const rep of DEMO_SALES_REPS) {
     const created = await createSalesRep(rep.name)
-    const withPhoto = await updateSalesRep(created.id, { photo_url: emojiImageDataUri(rep.emoji, rep.tone) })
+    const withPhoto = await updateSalesRep(created.id, { photo_url: iconImageDataUri(icons.user, rep.tone) })
     createdSalesReps.push(withPhoto)
   }
 

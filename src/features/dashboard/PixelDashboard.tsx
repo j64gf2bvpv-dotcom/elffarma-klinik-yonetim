@@ -1,4 +1,4 @@
-import { ShoppingCart, Wallet, Landmark, Users, Boxes } from 'lucide-react'
+import { ShoppingCart, Car, Landmark, Users, Boxes } from 'lucide-react'
 
 import { StatCardSparkline } from './StatCardSparkline'
 import { SalesPerformanceCard } from './SalesPerformanceCard'
@@ -31,14 +31,14 @@ export function PixelDashboard() {
           to="/satislar"
         />
         <StatCardSparkline
-          icon={Wallet}
+          icon={Car}
           tone="green"
-          label="Tahsilatlar"
-          value={currency(data.collectionsStat.current)}
-          sublabel="Bu ay"
-          deltaPct={data.collectionsStat.deltaPct}
-          sparkline={data.collectionsStat.sparkline}
-          to="/tahsilatlar"
+          label="Araçlar"
+          value={currency(data.vehicleStat.current)}
+          sublabel={`${data.vehicleCount} araç · aylık gider`}
+          deltaPct={data.vehicleStat.deltaPct}
+          sparkline={data.vehicleStat.sparkline}
+          to="/araclar"
         />
         <StatCardSparkline
           icon={Landmark}
