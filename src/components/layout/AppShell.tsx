@@ -40,6 +40,7 @@ import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
 import { getIconSet, type IconVariant, type NavKey } from '@/features/appSettings/iconSets'
 import { useAlertsSummary } from '@/features/alerts/useAlertsSummary'
 import { useDismissedAlerts } from '@/features/alerts/useDismissedAlerts'
+import { useSnoozedAlerts } from '@/features/alerts/useSnoozedAlerts'
 import { useDeleteReminder } from '@/features/reminders/hooks'
 import { useOfflineSync } from '@/features/offline/useOfflineSync'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
@@ -212,21 +213,42 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
   const isOnline = useOnlineStatus()
   const alerts = useAlertsSummary()
   const { dismissed, dismiss } = useDismissedAlerts()
+  const { isSnoozed, snoozeMany } = useSnoozedAlerts()
   const deleteReminderMutation = useDeleteReminder()
   const { pendingCount, syncing, flush } = useOfflineSync()
   const [aiChatOpen, setAiChatOpen] = useAIChatOpen()
+  const [bellOpen, setBellOpen] = React.useState(false)
+  const bellSnoozeTimer = React.useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  const visibleDueReminders = alerts.dueReminders.filter((r) => !dismissed.has(`reminder:${r.id}`))
-  const visibleCriticalStock = alerts.criticalStock.filter((p) => !dismissed.has(`criticalStock:${p.id}`))
-  const visibleExpiringProducts = alerts.expiringProducts.filter((p) => !dismissed.has(`expiring:${p.id}`))
-  const visibleExpiringLots = alerts.expiringLots.filter((l) => !dismissed.has(`expiringLot:${l.id}`))
-  const visiblePaymentDue = alerts.paymentDue.filter((d) => !dismissed.has(`paymentDue:${d.id}`))
-  const visibleDoctorsWithBalance = alerts.doctorsWithBalance.filter((d) => !dismissed.has(`balance:${d.id}`))
-  const visiblePendingProducts = alerts.pendingProducts.filter((p) => !dismissed.has(`pending:${p.id}`))
-  const visibleUpcomingCongresses = alerts.upcomingCongresses.filter((c) => !dismissed.has(`congress:${c.id}`))
-  const visibleIncompleteChecklists = alerts.incompleteChecklists.filter((c) => !dismissed.has(`checklist:${c.id}`))
+  const visibleDueReminders = alerts.dueReminders.filter(
+    (r) => !dismissed.has(`reminder:${r.id}`) && !isSnoozed(`reminder:${r.id}`),
+  )
+  const visibleCriticalStock = alerts.criticalStock.filter(
+    (p) => !dismissed.has(`criticalStock:${p.id}`) && !isSnoozed(`criticalStock:${p.id}`),
+  )
+  const visibleExpiringProducts = alerts.expiringProducts.filter(
+    (p) => !dismissed.has(`expiring:${p.id}`) && !isSnoozed(`expiring:${p.id}`),
+  )
+  const visibleExpiringLots = alerts.expiringLots.filter(
+    (l) => !dismissed.has(`expiringLot:${l.id}`) && !isSnoozed(`expiringLot:${l.id}`),
+  )
+  const visiblePaymentDue = alerts.paymentDue.filter(
+    (d) => !dismissed.has(`paymentDue:${d.id}`) && !isSnoozed(`paymentDue:${d.id}`),
+  )
+  const visibleDoctorsWithBalance = alerts.doctorsWithBalance.filter(
+    (d) => !dismissed.has(`balance:${d.id}`) && !isSnoozed(`balance:${d.id}`),
+  )
+  const visiblePendingProducts = alerts.pendingProducts.filter(
+    (p) => !dismissed.has(`pending:${p.id}`) && !isSnoozed(`pending:${p.id}`),
+  )
+  const visibleUpcomingCongresses = alerts.upcomingCongresses.filter(
+    (c) => !dismissed.has(`congress:${c.id}`) && !isSnoozed(`congress:${c.id}`),
+  )
+  const visibleIncompleteChecklists = alerts.incompleteChecklists.filter(
+    (c) => !dismissed.has(`checklist:${c.id}`) && !isSnoozed(`checklist:${c.id}`),
+  )
   const visibleCongressStockShortfall = alerts.congressStockShortfall.filter(
-    (c) => !dismissed.has(`shortfall:${c.id}`),
+    (c) => !dismissed.has(`shortfall:${c.id}`) && !isSnoozed(`shortfall:${c.id}`),
   )
 
   const visibleTotal =
@@ -239,6 +261,31 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
     visiblePendingProducts.length +
     visibleIncompleteChecklists.length +
     visibleCongressStockShortfall.length
+
+  // Bildirim zili açık tutulursa (görülmüş sayılır) birkaç saniye sonra o an
+  // görünen bildirimler geçici olarak zilden kaldırılır — kalıcı silme değil,
+  // sorun (ör. hâlâ düşük stok) devam ediyorsa bir süre sonra zil yeniden dolar
+  // (bkz. useSnoozedAlerts). Zil erken kapatılırsa zamanlayıcı iptal edilir.
+  function handleBellOpenChange(open: boolean) {
+    setBellOpen(open)
+    clearTimeout(bellSnoozeTimer.current)
+    if (!open) return
+    bellSnoozeTimer.current = setTimeout(() => {
+      snoozeMany([
+        ...visibleDueReminders.map((r) => `reminder:${r.id}`),
+        ...visibleCriticalStock.map((p) => `criticalStock:${p.id}`),
+        ...visibleExpiringProducts.map((p) => `expiring:${p.id}`),
+        ...visibleExpiringLots.map((l) => `expiringLot:${l.id}`),
+        ...visiblePaymentDue.map((d) => `paymentDue:${d.id}`),
+        ...visibleDoctorsWithBalance.map((d) => `balance:${d.id}`),
+        ...visiblePendingProducts.map((p) => `pending:${p.id}`),
+        ...visibleIncompleteChecklists.map((c) => `checklist:${c.id}`),
+        ...visibleCongressStockShortfall.map((c) => `shortfall:${c.id}`),
+      ])
+    }, 6000)
+  }
+
+  React.useEffect(() => () => clearTimeout(bellSnoozeTimer.current), [])
 
   return (
     <header className="bg-background/70 supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-20 flex h-16 shrink-0 items-center gap-4 border-b border-border/60 px-6 md:px-8">
@@ -283,7 +330,7 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
           <MessageSquare className="size-[1.1rem]" />
         </button>
 
-        <DropdownMenu>
+        <DropdownMenu open={bellOpen} onOpenChange={handleBellOpenChange}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.5] - 2026-08-04
+
+**Bildirim zili açık tutulunca birkaç saniye sonra o anki bildirimler geçici olarak temizleniyor:** Zile tıklayıp açık bıraktığınızda (görülmüş sayılır) 6 saniye sonra o an listedeki tüm bildirimler zilden kalkıyor ve rozet sayısı sıfırlanıyor — ama bu KALICI bir silme değil: sadece 5 dakikalık bir "ertelemedir" (`useSnoozedAlerts`, bellekte tutulur, sayfa yenilenince de sıfırlanır). Sorun (ör. hâlâ düşük stok, hâlâ ödenmemiş vade) devam ediyorsa aynı kayıt 5 dakika sonra zile yeniden düşer — hiçbir uyarı sonsuza kadar kaybolmaz. Tek tek bildirime tıklayarak kalıcı kapatma (mevcut davranış) değişmedi. Şema değişikliği yok.
+
 ## [2.15.4] - 2026-08-04
 
 **Örnek veri ekle/sil, göreceli yeni tablolardan biri eksikse artık yanlış "başarısız" hatası vermiyor:** Kök neden — Araçlar, Instagram Doktor Listesi ve Kongre Ürün/Sarf Malzeme Takibi şemaya sonradan eklenen tablolar; bu tablolardan biri henüz Supabase'e uygulanmamışsa (bkz. "Şema değişti" notları) o adımda fırlatılan hata, o ana kadar başarıyla eklenmiş/silinmiş TÜM diğer kayıtları da (doktor, ürün, satış, tahsilat, kongre, CRM vb.) "eklenemedi"/"silinemedi" gibi göstermesine yol açıyordu — oysa onlar gerçekten eklenmiş/silinmişti. Bu üç bölüm artık kendi try/catch'lerinde; biri şema eksikliğinden başarısız olursa sadece konsola uyarı düşer, geri kalan işlem ve doğru "eklendi/silindi" bildirimi etkilenmez. **Kalıcı çözüm için** `supabase/schema.sql`'i Supabase SQL editöründe güncel haliyle tekrar çalıştırman gerekiyor. Şema değişikliği yok (bu commit'te).
