@@ -46,6 +46,7 @@ export interface Customer {
   sales_rep_id: string | null
   region_id: string | null
   is_active: boolean
+  is_vip: boolean
   photo_url: string | null
   birth_date: string | null
   sample_monthly_quota: number | null

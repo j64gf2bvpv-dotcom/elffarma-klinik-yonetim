@@ -8,8 +8,6 @@ import { ResetPasswordPage } from '@/routes/ResetPasswordPage'
 import { DashboardPage } from '@/routes/DashboardPage'
 import { CustomersPage } from '@/routes/CustomersPage'
 import { CustomerDetailPage } from '@/routes/CustomerDetailPage'
-import { ClinicsPage } from '@/routes/ClinicsPage'
-import { ClinicDetailPage } from '@/routes/ClinicDetailPage'
 import { PrimPage } from '@/routes/PrimPage'
 import { CrmPage } from '@/routes/CrmPage'
 import { AIInsightsPage } from '@/routes/AIInsightsPage'
@@ -60,8 +58,6 @@ function App() {
             <Route index element={<DashboardPage />} />
             <Route path="musteriler" element={<CustomersPage />} />
             <Route path="musteriler/:id" element={<CustomerDetailPage />} />
-            <Route path="klinikler" element={<ClinicsPage />} />
-            <Route path="klinikler/:id" element={<ClinicDetailPage />} />
             <Route path="prim" element={<PrimPage />} />
             <Route path="crm" element={<CrmPage />} />
             <Route path="ai-analiz" element={<AIInsightsPage />} />

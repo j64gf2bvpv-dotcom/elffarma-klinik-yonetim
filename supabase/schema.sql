@@ -1680,6 +1680,11 @@ drop policy if exists "congress_consumables_all_staff" on public.congress_consum
 create policy "congress_consumables_all_staff" on public.congress_consumables for all
   using (public.is_active_staff()) with check (public.is_active_staff());
 
+-- customers: doktorun kendisi VIP mi normal mi (Klinikler paneli kaldırılıp
+-- yerine cari kartta doğrudan doktor üzerinde işaretlenen basit bir alan
+-- olsun diye eklendi — clinics.is_vip'ten (kliniğin kendisi VIP mi) ayrı).
+alter table public.customers add column if not exists is_vip boolean not null default false;
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

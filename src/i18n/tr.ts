@@ -2,7 +2,6 @@ export const tr = {
   nav: {
     dashboard: 'Ana Panel',
     customers: 'Cari Kart',
-    clinics: 'Klinikler',
     commissions: 'Prim Hesaplama',
     crm: 'CRM',
     aiInsights: 'Yapay Zeka Analiz',

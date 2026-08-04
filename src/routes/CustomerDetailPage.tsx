@@ -24,6 +24,7 @@ import {
   MessageCircle,
   Users,
   Plus,
+  Star,
 } from 'lucide-react'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 
@@ -186,6 +187,11 @@ export function CustomerDetailPage() {
       </Dialog>
 
       <div className="mb-6 flex flex-wrap gap-1.5">
+        {customer.is_vip && (
+          <Badge variant="warning">
+            <Star className="size-3" /> VIP
+          </Badge>
+        )}
         {customer.doctor_code && <Badge variant="outline">{customer.doctor_code}</Badge>}
         <Badge variant={customer.is_active ? 'secondary' : 'destructive'}>
           {customer.is_active ? 'Aktif' : 'Pasif'}

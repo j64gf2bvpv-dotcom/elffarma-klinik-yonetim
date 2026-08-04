@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.0] - 2026-08-04
+
+**Klinikler paneli kaldırıldı, doktor VIP/Normal durumu doğrudan Cari Kart'ta işaretlenebiliyor:** Sol menüdeki "Klinikler" sayfası (liste + detay) kaldırıldı. `customers` tablosuna yeni bir `is_vip` alanı eklendi ve doktor formuna "VIP doktor" onay kutusu geldi — Cari Kart başlığında ve doktor listesinde artık VIP doktorlar rozet/yıldızla ayırt ediliyor. Klinik alt yapısı (klinik seçimi, prim kurallarındaki "klinik bazlı" kapsam) bilerek korundu — hiçbir prim hesabı bozulmadı; doktor formundaki "Klinik" alanına artık satır içinden "+ Yeni Klinik Ekle" ile de klinik oluşturulabiliyor (önceden bu sadece ayrı Klinikler sayfasından yapılabiliyordu, sayfa kalkınca bu yol tek girişti). **Şema değişti** — `supabase/schema.sql`'i Supabase SQL editöründe tekrar çalıştırmanız gerekiyor (`customers.is_vip` sütunu eklendi, idempotent).
+
 ## [2.14.12] - 2026-08-04
 
 **Ajanda'da düz tek renk rozetler yerine hafif hareketli gradyan, yazılar daha belirgin:** İstatistik kartları ve "Takvimler" satırlarındaki ikon rozetleri artık %15 opaklıklı düz renk yerine kendi renginin açık→koyu diyagonal gradyanını (beyaz ikon üstünde, daha yüksek kontrast) alıyor ve gradyan yavaşça kayarak "canlı" duruyor. İstatistik sayıları büyütüldü (2xl, bold), takvim türü etiketleri ve sayı rozetleri daha kalın. Takvimdeki gün başlıkları/gün numaraları ve etkinlik başlıkları da daha koyu/kalın — artık soluk gri değil, tam kontrastlı. Şema değişikliği yok.

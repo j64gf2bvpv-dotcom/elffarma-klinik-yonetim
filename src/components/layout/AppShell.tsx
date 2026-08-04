@@ -69,7 +69,6 @@ const navItems: { to: string; label: string; key: NavKey; end?: boolean }[] = [
   { to: '/doktor-ziyaretleri', label: tr.nav.doctorVisits, key: 'doctorVisits' },
   { to: '/hatirlatmalar', label: tr.nav.reminders, key: 'reminders' },
   { to: '/ajanda', label: tr.nav.agenda, key: 'agenda' },
-  { to: '/klinikler', label: tr.nav.clinics, key: 'clinics' },
   { to: '/prim', label: tr.nav.commissions, key: 'commissions' },
   { to: '/crm', label: tr.nav.crm, key: 'crm' },
   { to: '/ai-analiz', label: tr.nav.aiInsights, key: 'aiInsights' },

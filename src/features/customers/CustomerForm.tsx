@@ -81,6 +81,7 @@ const schema = z.object({
   sales_rep_id: z.string().optional(),
   region_id: z.string().nullable().optional(),
   is_active: z.boolean(),
+  is_vip: z.boolean(),
   products: z.array(
     z.object({
       product_id: z.string().min(1, 'Ürün seçin'),
@@ -133,6 +134,7 @@ function defaultValues(customer: Customer | undefined): FormInput {
     sales_rep_id: customer?.sales_rep_id ?? NO_SALES_REP,
     region_id: customer?.region_id ?? null,
     is_active: customer?.is_active ?? true,
+    is_vip: customer?.is_vip ?? false,
     products: [],
   }
 }
@@ -199,6 +201,7 @@ export function CustomerForm({ customer, trigger, onCreated }: CustomerFormProps
       sales_rep_id: values.sales_rep_id && values.sales_rep_id !== NO_SALES_REP ? values.sales_rep_id : null,
       region_id: values.region_id ?? null,
       is_active: values.is_active,
+      is_vip: values.is_vip,
     }
     if (customer) {
       await updateMutation.mutateAsync({ id: customer.id, input })
@@ -532,6 +535,19 @@ export function CustomerForm({ customer, trigger, onCreated }: CustomerFormProps
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="is_vip"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center gap-2">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(v === true)} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">VIP doktor</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="is_active"

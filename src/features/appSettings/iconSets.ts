@@ -33,9 +33,6 @@ import {
   ReceiptText,
   CreditCard,
   Coins,
-  Building2,
-  Building,
-  Hospital,
   Percent,
   BadgePercent,
   Award,
@@ -75,7 +72,6 @@ import {
 export type NavKey =
   | 'dashboard'
   | 'customers'
-  | 'clinics'
   | 'commissions'
   | 'crm'
   | 'aiInsights'
@@ -112,7 +108,6 @@ export const iconSets: IconSet[] = [
     icons: {
       dashboard: Gauge,
       customers: UserRound,
-      clinics: Building2,
       commissions: Percent,
       crm: Handshake,
       aiInsights: Sparkles,
@@ -139,7 +134,6 @@ export const iconSets: IconSet[] = [
     icons: {
       dashboard: LayoutDashboard,
       customers: Users,
-      clinics: Building,
       commissions: BadgePercent,
       crm: Users2,
       aiInsights: BrainCircuit,
@@ -166,7 +160,6 @@ export const iconSets: IconSet[] = [
     icons: {
       dashboard: PieChart,
       customers: CircleUserRound,
-      clinics: Hospital,
       commissions: Award,
       crm: UserCheck,
       aiInsights: Bot,
@@ -193,7 +186,6 @@ export const iconSets: IconSet[] = [
     icons: {
       dashboard: LayoutPanelLeft,
       customers: Contact,
-      clinics: Building2,
       commissions: Gem,
       crm: Handshake,
       aiInsights: Sparkles,
@@ -220,7 +212,6 @@ export const iconSets: IconSet[] = [
     icons: {
       dashboard: LayoutDashboard,
       customers: User,
-      clinics: Hospital,
       commissions: Percent,
       crm: UsersRound,
       aiInsights: Wand2,

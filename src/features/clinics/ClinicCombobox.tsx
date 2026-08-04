@@ -1,11 +1,12 @@
 import * as React from 'react'
-import { Check, ChevronsUpDown, Building2 } from 'lucide-react'
+import { Check, ChevronsUpDown, Building2, Plus } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { useClinics } from './hooks'
+import { ClinicForm } from './ClinicForm'
 
 interface ClinicComboboxProps {
   value: string | null | undefined
@@ -67,6 +68,22 @@ export function ClinicCombobox({ value, onChange, placeholder }: ClinicComboboxP
               ))}
             </CommandGroup>
           </CommandList>
+          <div className="border-t p-1">
+            <ClinicForm
+              trigger={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary w-full justify-start gap-2"
+                  onClick={() => setOpen(false)}
+                >
+                  <Plus className="size-4" /> Yeni Klinik Ekle
+                </Button>
+              }
+              onCreated={(created) => onChange(created.id)}
+            />
+          </div>
         </Command>
       </PopoverContent>
     </Popover>

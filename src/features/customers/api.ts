@@ -34,6 +34,7 @@ export interface CustomerInput {
   sales_rep_id?: string | null
   region_id?: string | null
   is_active?: boolean
+  is_vip?: boolean
   photo_url?: string | null
   sample_monthly_quota?: number | null
   sample_yearly_quota?: number | null

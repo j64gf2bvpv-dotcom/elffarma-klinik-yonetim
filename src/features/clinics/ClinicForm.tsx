@@ -54,9 +54,10 @@ type FormValues = z.output<typeof schema>
 interface ClinicFormProps {
   clinic?: Clinic
   trigger?: React.ReactNode
+  onCreated?: (clinic: Clinic) => void
 }
 
-export function ClinicForm({ clinic, trigger }: ClinicFormProps) {
+export function ClinicForm({ clinic, trigger, onCreated }: ClinicFormProps) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateClinic()
   const updateMutation = useUpdateClinic()
@@ -123,7 +124,8 @@ export function ClinicForm({ clinic, trigger }: ClinicFormProps) {
     if (clinic) {
       await updateMutation.mutateAsync({ id: clinic.id, input })
     } else {
-      await createMutation.mutateAsync(input)
+      const created = await createMutation.mutateAsync(input)
+      onCreated?.(created)
     }
     setOpen(false)
   }

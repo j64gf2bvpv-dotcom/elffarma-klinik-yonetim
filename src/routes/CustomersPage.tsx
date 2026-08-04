@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Search, Phone, Tag, ReceiptText, MapPin, Building2, User, CalendarClock, FileSpreadsheet, Trash2, Loader2 } from 'lucide-react'
+import { Search, Phone, Tag, ReceiptText, MapPin, Building2, User, CalendarClock, FileSpreadsheet, Trash2, Loader2, Star } from 'lucide-react'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -284,7 +284,8 @@ export function CustomersPage() {
               {customers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">
-                    <Link to={`/musteriler/${customer.id}`} className="hover:underline">
+                    <Link to={`/musteriler/${customer.id}`} className="inline-flex items-center gap-1.5 hover:underline">
+                      {customer.is_vip && <Star className="size-3.5 shrink-0 fill-warning text-warning" />}
                       {customer.full_name}
                     </Link>
                   </TableCell>
