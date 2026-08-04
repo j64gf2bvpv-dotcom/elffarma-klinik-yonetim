@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.12] - 2026-08-04
+
+**Ajanda'da düz tek renk rozetler yerine hafif hareketli gradyan, yazılar daha belirgin:** İstatistik kartları ve "Takvimler" satırlarındaki ikon rozetleri artık %15 opaklıklı düz renk yerine kendi renginin açık→koyu diyagonal gradyanını (beyaz ikon üstünde, daha yüksek kontrast) alıyor ve gradyan yavaşça kayarak "canlı" duruyor. İstatistik sayıları büyütüldü (2xl, bold), takvim türü etiketleri ve sayı rozetleri daha kalın. Takvimdeki gün başlıkları/gün numaraları ve etkinlik başlıkları da daha koyu/kalın — artık soluk gri değil, tam kontrastlı. Şema değişikliği yok.
+
 ## [2.14.11] - 2026-08-04
 
 **Ajanda'ya profesyonel bir hareket/animasyon katmanı ve yeni bir özet şeridi eklendi:** Sayfanın üstüne "Bu Ay / Bugün / Gecikmiş" etkinlik sayılarını sayarak gösteren (count-up animasyonlu) 3 küçük istatistik kartı eklendi. Sayfa açıldığında mini takvim, Takvimler filtre kartı, istatistik kartları ve ana takvim art arda (staggered) yumuşak bir şekilde yükselerek beliriyor. Mini takvimde seçili/bugün günü artık hafif büyüyerek (scale) öne çıkıyor, ay değiştirildiğinde tüm gün ızgarası yeniden belirme animasyonuyla geçiş yapıyor, bugünün tarihi nazikçe nabız gibi atıyor. Takvim etkinlik kutucukları artık listeye eklenirken kayarak beliriyor. Tüm animasyonlar `prefers-reduced-motion` tercihine saygılı. Şema değişikliği yok. (`useCountUp` hook'u Ana Panel'in eski widget'lı görünümüyle paylaşılan ortak bir dosyaya taşındı.)

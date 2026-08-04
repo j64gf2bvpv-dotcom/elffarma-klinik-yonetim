@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import { useCountUp } from '@/hooks/useCountUp'
 import { MiniCalendar } from '@/components/calendar/MiniCalendar'
 import {
+  agendaGradient,
   agendaTypeMeta,
   buildAgendaDotsByDay,
   buildAgendaTooltip,
@@ -137,8 +138,8 @@ export function AgendaPage() {
     const Icon = meta.icon
     return (
       <span className="flex items-center gap-1 truncate px-0.5 py-px">
-        <Icon className="size-2.5 shrink-0" style={{ color: meta.color }} strokeWidth={2.5} />
-        <span className="truncate text-[11px] font-medium">{arg.event.title}</span>
+        <Icon className="size-2.5 shrink-0" style={{ color: meta.color }} strokeWidth={2.75} />
+        <span className="truncate text-[11.5px] font-semibold">{arg.event.title}</span>
       </span>
     )
   }
@@ -172,14 +173,14 @@ export function AgendaPage() {
           >
             <CardContent className="flex items-center gap-2.5 px-3 py-3">
               <span
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg"
-                style={{ backgroundColor: `color-mix(in oklab, ${s.tone} 15%, transparent)`, color: s.tone }}
+                className="animate-agenda-gradient flex size-9 shrink-0 items-center justify-center rounded-lg text-white shadow-sm"
+                style={{ background: agendaGradient(s.tone) }}
               >
-                <s.icon className="size-4" />
+                <s.icon className="size-4" strokeWidth={2.25} />
               </span>
               <div className="min-w-0">
-                <p className="text-lg leading-none font-semibold tabular-nums">{Math.round(s.value)}</p>
-                <p className="text-muted-foreground truncate text-[11px] font-medium tracking-wide uppercase">{s.label}</p>
+                <p className="text-2xl leading-none font-bold tabular-nums">{Math.round(s.value)}</p>
+                <p className="text-foreground/60 truncate text-[11px] font-semibold tracking-wide uppercase">{s.label}</p>
               </div>
             </CardContent>
           </Card>
@@ -223,15 +224,18 @@ export function AgendaPage() {
                       )}
                     >
                       <span
-                        className="flex size-7 shrink-0 items-center justify-center rounded-lg"
-                        style={{ backgroundColor: `color-mix(in oklab, ${meta.color} 16%, transparent)`, color: meta.color }}
+                        className={cn(
+                          'flex size-8 shrink-0 items-center justify-center rounded-lg text-white shadow-sm',
+                          active && 'animate-agenda-gradient',
+                        )}
+                        style={{ background: agendaGradient(meta.color) }}
                       >
-                        <Icon className="size-3.5" />
+                        <Icon className="size-4" strokeWidth={2.25} />
                       </span>
-                      <span className="flex-1 truncate font-medium">{meta.label}</span>
+                      <span className="flex-1 truncate font-semibold">{meta.label}</span>
                       <span
-                        className="rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums"
-                        style={{ backgroundColor: `color-mix(in oklab, ${meta.color} 14%, transparent)`, color: meta.color }}
+                        className="rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums text-white"
+                        style={{ background: agendaGradient(meta.color) }}
                       >
                         {count}
                       </span>

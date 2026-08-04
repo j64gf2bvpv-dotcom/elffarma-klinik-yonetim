@@ -24,6 +24,12 @@ export const agendaTypeMeta: Record<AgendaEventType, { icon: LucideIcon; label: 
   reminder: { icon: BellRing, label: 'Hatırlatma', color: 'var(--color-destructive)' },
 }
 
+/** Düz tek renk yerine, ikon rozeti/nokta gibi vurgu öğelerinde kullanılan
+ * diyagonal açık→koyu gradyan — her tür kendi rengiyle ama "canlı" görünsün diye. */
+export function agendaGradient(color: string): string {
+  return `linear-gradient(135deg, color-mix(in oklab, ${color} 82%, white) 0%, color-mix(in oklab, ${color} 78%, black) 100%)`
+}
+
 export function isAgendaEventUrgent(dateStr: string): boolean {
   const date = new Date(dateStr)
   if (isPast(date) && !isToday(date)) return true
