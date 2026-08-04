@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.3] - 2026-08-04
+
+**"Kongreye Götürülen Ürün" iki bağlı alt panele ayrıldı:** Üstte "Kongreye Götürülen Ürün" (götürülüp bekleyen/geri dönen), altında ayrı bir panel olarak **"Kongrede Kullanılan Ürün"** — ikisi de gerçek stokla bağlantılı: her ikisine eklenen ürün stoktan düşüyor. Götürülen listesindeki bir ürün "Kullanıldı İşaretle" ile alt panele taşınabiliyor (ek stok hareketi gerekmez, zaten dışarıda), ya da "Kullanılan Ürün Ekle" ile doğrudan alt panele eklenebiliyor (bu durumda stoktan yeni düşülür). "Geri Döndü" işaretlenen ürün stoğa iade ediliyor. Şema değişikliği yok.
+
 ## [2.14.2] - 2026-08-04
 
 **"Kalan / Kullanılmayan Ürünler" bölümü kaldırıldı, "Kongreye Götürülen Ürün" onun yerini aldı:** Eski bölüm artık gereksizdi çünkü yeni ürün takibi paneli (Götürüldü/Kullanıldı/Geri Döndü) aynı işi zaten daha iyi yapıyordu — panel "Kongreye Götürülen Ürün" olarak yeniden adlandırıldı, başlığında artık kaç üründe kaç adet kullanıldığı da (yeşil rozet) ayrıca gösteriliyor. Kullanılmayan `RemainingProductDialog` bileşeni ve ilgili hook'lar temizlendi — kod tekrarı kalmadı. Eski verinin durduğu tablo (`congress_remaining_products`) veritabanında dokunulmadan duruyor, hiçbir kayıt silinmedi. Şema değişikliği yok.
