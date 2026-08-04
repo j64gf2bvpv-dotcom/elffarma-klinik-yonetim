@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.14] - 2026-08-04
+
+**"Yapay Zeka Uyarıları" paneli varsayılan olarak kapatıldı — Gemini kotasını gereksiz tüketiyordu:** Özelleştirilebilir Görünüm'deki bu widget her panel açılışında otomatik olarak AI'a istek atıyordu, bu da sohbet için ayrılan ücretsiz kotayı sessizce tüketip "istek limiti aşıldı" hatalarına yol açıyordu. Artık diğer opsiyonel widget'lar gibi varsayılan olarak gizli — isteyen "Paneli Düzenle"den elle açabilir. Daha önce özel bir panel düzeni kaydetmiş kullanıcılarda bu widget'ı hâlâ görünür bıraktıysa, "Paneli Düzenle"den elle kapatılması gerekir. Şema değişikliği yok.
+
 ## [2.15.13] - 2026-08-04
 
 **Claude sağlayıcısı çalışmıyordu — eksik zorunlu HTTP başlığı bulundu ve düzeltildi:** Anthropic'in Messages API'si, backend proxy olmadan doğrudan tarayıcıdan/Electron renderer'dan (bu uygulamanın yaptığı gibi) yapılan istekleri `anthropic-dangerous-direct-browser-access: true` başlığı olmadan CORS seviyesinde reddediyor — `ClaudeProvider.ts` bu başlığı hiç göndermiyordu, bu da kullanıcıya anlamsız/genel bir "bağlanılamadı" ağ hatası olarak yansıyordu (geçerli bir API anahtarı girilmiş olsa bile). Şema değişikliği yok.

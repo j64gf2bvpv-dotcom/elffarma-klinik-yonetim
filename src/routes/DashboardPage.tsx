@@ -342,7 +342,7 @@ const SPAN_OPTIONS: { value: number; label: string }[] = [
 // widget'lar SİLİNMEDİ, sadece varsayılan olarak gizli; "Paneli Düzenle" ile admin
 // istediği an geri açıp yerini/boyutunu değiştirebilir.
 const defaultLayout: LayoutItem[] = [
-  { id: 'ai_insights', visible: true, span: null },
+  { id: 'ai_insights', visible: false, span: null },
   { id: 'stats', visible: true, span: null },
   { id: 'revenue_chart', visible: true, span: null },
   { id: 'upcoming_reminders', visible: true, span: null },
