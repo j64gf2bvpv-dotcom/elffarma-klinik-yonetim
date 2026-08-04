@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.12] - 2026-08-04
+
+**AI Asistan sohbetine artık PDF ve Word (.docx) eklenebiliyor, taranmış PDF'leri de görsel olarak okuyor:** Önceden sadece resim ve Excel/CSV/txt kabul ediyordu. Artık Akıllı İçe Aktar'daki aynı çıkarma mantığını (`extractFileContent`) kullanıyor — PDF'in metin katmanı varsa metni okuyor, taranmış/görsel bir PDF ise sayfaları otomatik olarak görsele çevirip vision yoluyla inceliyor; Word belgesi düz metne çevriliyor. Resim (PNG/JPG) desteği zaten vardı, değişmedi. Şema değişikliği yok.
+
 ## [2.15.11] - 2026-08-04
 
 **Üst bardaki bütün ikon-only butonlara aynı hover isim etiketi eklendi:** Bağlantı durumu, Yapay Zeka Sohbeti, Bildirim Zili, Koyu/Açık Tema ve Ayarlar butonları da artık hesap makinesi/WhatsApp/mail ile aynı belirgin, anında beliren etikete sahip. Şema değişikliği yok.

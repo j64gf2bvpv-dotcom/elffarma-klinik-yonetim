@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { readExcelFile } from '@/lib/importData'
+import { extractFileContent } from '@/features/smartImport/extractFileContent'
 import { useAIService } from './useAIService'
 import { useAIChatOpen } from './useAIChatOpen'
 import { useBusinessSnapshot } from './useBusinessSnapshot'
@@ -206,22 +206,22 @@ interface PendingAttachment {
 
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error ?? new Error('Dosya okunamadı'))
-    reader.readAsDataURL(file)
-  })
-}
-
-async function documentToText(file: File): Promise<string> {
-  if (/\.txt$/i.test(file.name)) {
-    return `Dosya: ${file.name}\n\n${await file.text()}`
+/**
+ * Bir eki (resim/PDF/Word/Excel/CSV/txt) AI'a gönderilecek biçime çevirir —
+ * Akıllı İçe Aktar'daki aynı `extractFileContent` mantığı kullanılıyor, bu
+ * yüzden taranmış (görsel) PDF'ler de otomatik olarak vision yoluyla okunuyor.
+ */
+async function attachmentToParts(file: File): Promise<{ text?: string; imageUrls: string[] }> {
+  const content = await extractFileContent(file)
+  if (content.kind === 'image') return { imageUrls: content.dataUrls }
+  if (content.kind === 'table') {
+    const preview = content.rows.slice(0, 50)
+    return {
+      text: `Dosya: ${file.name}\nToplam satır: ${content.rows.length}\n\nÖrnek veri (JSON):\n${JSON.stringify(preview, null, 2)}`,
+      imageUrls: [],
+    }
   }
-  const rows = await readExcelFile(file)
-  const preview = rows.slice(0, 50)
-  return `Dosya: ${file.name}\nToplam satır: ${rows.length}\n\nÖrnek veri (JSON):\n${JSON.stringify(preview, null, 2)}`
+  return { text: `Dosya: ${file.name}\n\n${content.text}`, imageUrls: [] }
 }
 
 /**
@@ -429,10 +429,10 @@ export function AIChatWidget() {
       }
       if (file.type.startsWith('image/')) {
         next.push({ file, kind: 'image' })
-      } else if (/\.(xlsx|xls|csv|txt)$/i.test(file.name)) {
+      } else if (/\.(xlsx|xls|csv|txt|pdf|docx)$/i.test(file.name)) {
         next.push({ file, kind: 'document' })
       } else {
-        toast.error(`${file.name}: desteklenmeyen dosya türü — sadece resim ve Excel/CSV/txt eklenebilir`)
+        toast.error(`${file.name}: desteklenmeyen dosya türü — resim, PDF, Word (.docx) veya Excel/CSV/txt eklenebilir`)
       }
     }
     setAttachments((prev) => [...prev, ...next])
@@ -484,22 +484,16 @@ export function AIChatWidget() {
       const imageParts: AIContentPart[] = []
       const fileNotes: string[] = []
       for (const att of currentAttachments) {
-        if (att.kind === 'document') {
-          try {
-            documentTexts.push(await documentToText(att.file))
-            fileNotes.push(`${att.file.name} (belge)`)
-          } catch {
-            toast.error(`${att.file.name} okunamadı`)
-          }
-        } else {
-          try {
-            const dataUrl = await fileToDataUrl(att.file)
-            imageParts.push({ type: 'image_url', image_url: { url: dataUrl } })
-            fileNotes.push(`${att.file.name} (resim)`)
+        try {
+          const { text, imageUrls } = await attachmentToParts(att.file)
+          if (text) documentTexts.push(text)
+          if (imageUrls.length > 0) {
+            for (const url of imageUrls) imageParts.push({ type: 'image_url', image_url: { url } })
             hadImages = true
-          } catch {
-            toast.error(`${att.file.name} okunamadı`)
           }
+          fileNotes.push(`${att.file.name} (${imageUrls.length > 0 ? 'görsel' : 'belge'})`)
+        } catch {
+          toast.error(`${att.file.name} okunamadı`)
         }
       }
 
@@ -688,7 +682,7 @@ export function AIChatWidget() {
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*,.xlsx,.xls,.csv,.txt"
+              accept="image/*,.xlsx,.xls,.csv,.txt,.pdf,.docx"
               className="hidden"
               onChange={handleFilesSelected}
             />
