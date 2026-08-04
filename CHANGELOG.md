@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.9] - 2026-08-04
+
+**Cari Kart'tan aylık/yıllık numune kotası kaldırıldı:** Doktor formundaki "Aylık Numune Kotası" ve "Yıllık Numune Kotası" alanları ve numune eklerken tetiklenen "kota aşılıyor" uyarısı kaldırıldı — artık sadece bir önceki sürümde eklenen basit "verildi" işaret kutusu var, kota takibi yok. Şema değişikliği yok (ilgili sütunlar veritabanında duruyor, kullanılmıyor).
+
 ## [2.14.8] - 2026-08-04
 
 **Numune Takibi ayrı bir modül olmaktan çıkarıldı, Cari Kart'ta basit bir işaretleme haline geldi:** Sol menüdeki "Numune Takibi" sayfası ve onay/kargo/teslim iş akışı (durum dropdown'ı, kargo takip no, teslim alan alanları, ayrı istatistik kartları) kaldırıldı. Doktorun Cari Kart sayfasındaki "Numuneler" sekmesi artık her numune kaydını ürün/adet/tarih özetiyle ve tek bir "verildi" işaret kutusuyla gösteriyor — kutuyu işaretlemek durumu doğrudan günceller, ayrı bir sayfaya gitmeye gerek yok. Numune ekleme formu (ürün/lot/SKT/adet, aylık kota uyarısı) ve stok hareketi entegrasyonu aynen korundu, sadece görüntüleme/yönetim tarafı sadeleşti. Eski özelleştirilebilir Panel'deki kullanılmayan "Numune Dönüşüm Oranı" widget'ı da kaldırıldı. Şema değişikliği yok (veritabanı tabloları ve geçmiş veriler korunuyor).

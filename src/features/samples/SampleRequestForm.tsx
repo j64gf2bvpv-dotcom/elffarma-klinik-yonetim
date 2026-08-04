@@ -3,7 +3,6 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Loader2, Trash2, Package } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -22,8 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useSalesReps } from '@/features/salesReps/hooks'
-import { useCustomer } from '@/features/customers/hooks'
-import { useCreateSampleRequest, useSampleRequests } from './hooks'
+import { useCreateSampleRequest } from './hooks'
 import type { Product } from '@/types/database'
 
 const NO_SALES_REP = '__none__'
@@ -90,9 +88,6 @@ export function SampleRequestForm({ defaultCustomerId, trigger }: SampleRequestF
   }, [open, defaultCustomerId])
 
   const itemFields = useFieldArray({ control: form.control, name: 'items' })
-  const customerId = form.watch('customer_id')
-  const { data: customer } = useCustomer(customerId || undefined)
-  const { data: existingForCustomer = [] } = useSampleRequests({ customerId: customerId || undefined })
 
   function handleSelectProduct(index: number, product: Product) {
     form.setValue(`items.${index}.product_id`, product.id, { shouldValidate: true })
@@ -100,20 +95,6 @@ export function SampleRequestForm({ defaultCustomerId, trigger }: SampleRequestF
   }
 
   async function onSubmit(values: FormValues) {
-    if (customer?.sample_monthly_quota != null) {
-      const monthStart = values.request_date.slice(0, 7)
-      const usedThisMonth = existingForCustomer
-        .filter((r) => r.request_date.startsWith(monthStart))
-        .flatMap((r) => r.sample_items)
-        .reduce((sum, i) => sum + i.quantity, 0)
-      const newTotal = values.items.reduce((sum, i) => sum + i.quantity, 0)
-      if (usedThisMonth + newTotal > customer.sample_monthly_quota) {
-        toast.warning('Aylık numune kotası aşılıyor', {
-          description: `Bu ay kullanılan: ${usedThisMonth}, kota: ${customer.sample_monthly_quota}`,
-        })
-      }
-    }
-
     await createMutation.mutateAsync({
       customer_id: values.customer_id,
       sales_rep_id: values.sales_rep_id && values.sales_rep_id !== NO_SALES_REP ? values.sales_rep_id : null,
