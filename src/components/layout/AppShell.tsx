@@ -330,13 +330,11 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
             {pendingCount} bekleyen kayıt
           </button>
         )}
-        <button
-          type="button"
-          title={isOnline ? 'Bağlantı var' : 'Bağlantı yok — kayıtlar yerelde bekletiliyor'}
-          className="flex size-9 items-center justify-center rounded-lg text-muted-foreground"
-        >
-          {isOnline ? <Wifi className="size-4 text-success" /> : <WifiOff className="size-4 text-destructive" />}
-        </button>
+        <TopBarIconTooltip label={isOnline ? 'Bağlantı var' : 'Bağlantı yok — kayıtlar yerelde bekletiliyor'}>
+          <button type="button" className="flex size-9 items-center justify-center rounded-lg text-muted-foreground">
+            {isOnline ? <Wifi className="size-4 text-success" /> : <WifiOff className="size-4 text-destructive" />}
+          </button>
+        </TopBarIconTooltip>
 
         <TopBarIconTooltip label="Hesap makinesi">
           <Popover>
@@ -376,32 +374,34 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
           </a>
         </TopBarIconTooltip>
 
-        <button
-          type="button"
-          onClick={() => setAiChatOpen((v) => !v)}
-          title={aiChatOpen ? 'Yapay zeka sohbetini kapat' : 'Yapay zeka sohbetini aç'}
-          className={cn(
-            'flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-accent hover:text-accent-foreground',
-            aiChatOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground',
-          )}
-        >
-          <MessageSquare className="size-[1.1rem]" />
-        </button>
+        <TopBarIconTooltip label={aiChatOpen ? 'Yapay zeka sohbetini kapat' : 'Yapay zeka sohbetini aç'}>
+          <button
+            type="button"
+            onClick={() => setAiChatOpen((v) => !v)}
+            className={cn(
+              'flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-accent hover:text-accent-foreground',
+              aiChatOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground',
+            )}
+          >
+            <MessageSquare className="size-[1.1rem]" />
+          </button>
+        </TopBarIconTooltip>
 
-        <DropdownMenu open={bellOpen} onOpenChange={handleBellOpenChange}>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              <Bell className="size-[1.1rem]" />
-              {visibleTotal > 0 && (
-                <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground animate-alert-glow-red">
-                  {visibleTotal > 9 ? '9+' : visibleTotal}
-                </span>
-              )}
-            </button>
-          </DropdownMenuTrigger>
+        <TopBarIconTooltip label="Bildirimler">
+          <DropdownMenu open={bellOpen} onOpenChange={handleBellOpenChange}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <Bell className="size-[1.1rem]" />
+                {visibleTotal > 0 && (
+                  <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground animate-alert-glow-red">
+                    {visibleTotal > 9 ? '9+' : visibleTotal}
+                  </span>
+                )}
+              </button>
+            </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
             <DropdownMenuLabel className="flex items-center justify-between">
               Bildirimler
@@ -524,25 +524,28 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </TopBarIconTooltip>
 
-        <button
-          type="button"
-          onClick={toggleColorMode}
-          title={mode === 'dark' ? 'Açık temaya geç' : 'Koyu temaya geç'}
-          className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          {mode === 'dark' ? <Sun className="size-[1.1rem]" /> : <Moon className="size-[1.1rem]" />}
-        </button>
-
-        {staff?.role === 'admin' && (
-          <Link
-            to="/ayarlar"
-            title="Ayarlar"
+        <TopBarIconTooltip label={mode === 'dark' ? 'Açık temaya geç' : 'Koyu temaya geç'}>
+          <button
+            type="button"
+            onClick={toggleColorMode}
             className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            <SettingsIcon className="size-[1.1rem]" />
-          </Link>
+            {mode === 'dark' ? <Sun className="size-[1.1rem]" /> : <Moon className="size-[1.1rem]" />}
+          </button>
+        </TopBarIconTooltip>
+
+        {staff?.role === 'admin' && (
+          <TopBarIconTooltip label="Ayarlar">
+            <Link
+              to="/ayarlar"
+              className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <SettingsIcon className="size-[1.1rem]" />
+            </Link>
+          </TopBarIconTooltip>
         )}
 
         {staff?.role === 'admin' ? (

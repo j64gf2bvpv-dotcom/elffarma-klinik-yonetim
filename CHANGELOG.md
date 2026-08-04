@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.11] - 2026-08-04
+
+**Üst bardaki bütün ikon-only butonlara aynı hover isim etiketi eklendi:** Bağlantı durumu, Yapay Zeka Sohbeti, Bildirim Zili, Koyu/Açık Tema ve Ayarlar butonları da artık hesap makinesi/WhatsApp/mail ile aynı belirgin, anında beliren etikete sahip. Şema değişikliği yok.
+
 ## [2.15.10] - 2026-08-04
 
 **Üst bardaki hesap makinesi/WhatsApp/mail ikonlarına belirgin hover etiketi eklendi:** Tarayıcının gecikmeli/soluk varsayılan `title` tooltipi yerine, üzerine gelince anında beliren, uygulamanın kendi diliyle (koyu zemin, yumuşak geçiş) küçük bir isim etiketi eklendi. Şema değişikliği yok.
