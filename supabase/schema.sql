@@ -1571,6 +1571,53 @@ drop policy if exists "instagram_leads_all_staff" on public.instagram_leads;
 create policy "instagram_leads_all_staff" on public.instagram_leads for all
   using (public.is_active_staff()) with check (public.is_active_staff());
 
+-- =========================================================
+-- 36. ARAÇLAR (satış temsilcilerine tahsis edilen şirket araçları + günlük yakıt)
+-- =========================================================
+create table if not exists public.vehicles (
+  id uuid primary key default gen_random_uuid(),
+  brand_model text not null,
+  year integer,
+  plate_number text,
+  registration_info text,
+  vendor_company text,
+  sales_rep_id uuid references public.sales_reps (id) on delete set null,
+  monthly_rental_price numeric(10, 2),
+  maintenance_date date,
+  has_utts boolean not null default false,
+  notes text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists set_updated_at on public.vehicles;
+create trigger set_updated_at before update on public.vehicles
+for each row execute function public.set_updated_at();
+
+alter table public.vehicles enable row level security;
+
+drop policy if exists "vehicles_all_staff" on public.vehicles;
+create policy "vehicles_all_staff" on public.vehicles for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+-- Günlük eklenebilen benzin/yakıt yükleme kayıtları (bir araca birden çok kayıt)
+create table if not exists public.vehicle_fuel_logs (
+  id uuid primary key default gen_random_uuid(),
+  vehicle_id uuid not null references public.vehicles (id) on delete cascade,
+  fill_date date not null default current_date,
+  amount numeric(10, 2) not null,
+  note text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now()
+);
+
+alter table public.vehicle_fuel_logs enable row level security;
+
+drop policy if exists "vehicle_fuel_logs_all_staff" on public.vehicle_fuel_logs;
+create policy "vehicle_fuel_logs_all_staff" on public.vehicle_fuel_logs for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

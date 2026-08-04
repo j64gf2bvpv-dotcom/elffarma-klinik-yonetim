@@ -547,3 +547,30 @@ export interface StaffAIKeys {
   anthropic_api_key: string | null
   updated_at: string
 }
+
+export interface Vehicle {
+  id: string
+  brand_model: string
+  year: number | null
+  plate_number: string | null
+  registration_info: string | null
+  vendor_company: string | null
+  sales_rep_id: string | null
+  monthly_rental_price: number | null
+  maintenance_date: string | null
+  has_utts: boolean
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface VehicleFuelLog {
+  id: string
+  vehicle_id: string
+  fill_date: string
+  amount: number
+  note: string | null
+  created_by: string | null
+  created_at: string
+}

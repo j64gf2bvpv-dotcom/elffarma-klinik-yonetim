@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.13.0] - 2026-08-04
+
+**Yeni modül: Araçlar (şirket araç/kiralama/yakıt takibi):** Sol menüye "Araçlar" eklendi. Her araç için: model/yıl, plaka, ruhsat bilgileri, hangi firmadan alındığı, kullanan satış temsilcisi, aylık kiralama fiyatı, bakım tarihi ve UTTS var/yok (onay kutusu) kaydediliyor. Ayrıca her araca günlük olarak eklenebilen bir yakıt yükleme kaydı (tarih + tutar + not) var; sayfanın altında son yakıt kayıtları ayrı bir tabloda listeleniyor. Excel/Word/PDF dışa aktarma diğer sayfalarla aynı mekanizmayı kullanıyor. Yeni `vehicles` ve `vehicle_fuel_logs` tabloları eklendi (shared-trust RLS, diğer tablolarla aynı desen) — **bu modülün çalışması için güncellenmiş `supabase/schema.sql`'in Supabase SQL editöründe çalıştırılması gerekiyor.**
+
 ## [2.12.106] - 2026-08-04
 
 **"Doktor Bazlı Satış Performansı" yerine "Satış Temsilcisi Raporu" kartı:** Ana Panel'deki liste, doktor bazında değil temsilci bazında bu ayki ciroyu gösteriyor artık — "Satış Temsilcisi Raporu" (/doktor-ziyaretleri) sayfasındaki "Bu Ay Ciro" ile AYNI tanımı kullanıyor (temsilciye bağlı tahsilatlar, bu ay), böylece iki yerde farklı rakam görünmüyor. Sadece cirosu olan değil, TÜM aktif temsilciler listeleniyor (cirosu olmayan 0 ₺ ile) — liste boş görünmesin diye ama uydurma rakam yok. Kullanılmayan `DoctorPerformanceCard` bileşeni kaldırıldı. Şema değişikliği yok.

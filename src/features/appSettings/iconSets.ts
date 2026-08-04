@@ -74,6 +74,7 @@ import {
   Camera,
   UserSearch,
   Contact2,
+  Car,
 } from 'lucide-react'
 
 export type NavKey =
@@ -95,6 +96,7 @@ export type NavKey =
   | 'budget'
   | 'reminders'
   | 'agenda'
+  | 'vehicles'
   | 'settings'
 
 export type IconVariant = 'outline' | 'bold' | '3d' | 'duotone' | 'thin'
@@ -132,6 +134,7 @@ export const iconSets: IconSet[] = [
       budget: Target,
       reminders: BellRing,
       agenda: CalendarDays,
+      vehicles: Car,
       settings: SlidersHorizontal,
     },
   },
@@ -159,6 +162,7 @@ export const iconSets: IconSet[] = [
       budget: TrendingUp,
       reminders: BellRing,
       agenda: CalendarDays,
+      vehicles: Car,
       settings: Settings2,
     },
   },
@@ -186,6 +190,7 @@ export const iconSets: IconSet[] = [
       budget: PiggyBank,
       reminders: BellRing,
       agenda: CalendarDays,
+      vehicles: Car,
       settings: Settings,
     },
   },
@@ -213,6 +218,7 @@ export const iconSets: IconSet[] = [
       budget: LineChart,
       reminders: AlarmClock,
       agenda: CalendarDays,
+      vehicles: Car,
       settings: Cog,
     },
   },
@@ -240,6 +246,7 @@ export const iconSets: IconSet[] = [
       budget: Target,
       reminders: Bell,
       agenda: Calendar,
+      vehicles: Car,
       settings: Settings,
     },
   },

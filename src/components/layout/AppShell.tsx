@@ -74,6 +74,7 @@ const navItems: { to: string; label: string; key: NavKey; end?: boolean }[] = [
   { to: '/crm', label: tr.nav.crm, key: 'crm' },
   { to: '/ai-analiz', label: tr.nav.aiInsights, key: 'aiInsights' },
   { to: '/instagram-doktor-listesi', label: tr.nav.instagramLeads, key: 'instagramLeads' },
+  { to: '/araclar', label: tr.nav.vehicles, key: 'vehicles' },
 ]
 
 const navItemsByKey = new Map(navItems.map((item) => [item.key, item]))

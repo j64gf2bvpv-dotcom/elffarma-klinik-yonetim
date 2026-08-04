@@ -27,6 +27,7 @@ import { DoctorVisitsPage } from '@/routes/DoctorVisitsPage'
 import { SalesPage } from '@/routes/SalesPage'
 import { RemindersPage } from '@/routes/RemindersPage'
 import { AgendaPage } from '@/routes/AgendaPage'
+import { VehiclesPage } from '@/routes/VehiclesPage'
 import { SettingsPage } from '@/routes/SettingsPage'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -79,6 +80,7 @@ function App() {
             <Route path="satislar" element={<SalesPage />} />
             <Route path="hatirlatmalar" element={<RemindersPage />} />
             <Route path="ajanda" element={<AgendaPage />} />
+            <Route path="araclar" element={<VehiclesPage />} />
             <Route element={<AdminRoute />}>
               <Route path="ayarlar" element={<SettingsPage />} />
             </Route>

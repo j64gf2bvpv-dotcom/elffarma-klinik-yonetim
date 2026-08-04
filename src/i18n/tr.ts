@@ -18,6 +18,7 @@ export const tr = {
     budget: 'Bütçe Yılı',
     reminders: 'Hatırlatmalar',
     agenda: 'Ajanda',
+    vehicles: 'Araçlar',
     settings: 'Ayarlar',
   },
   movementType: {
