@@ -266,27 +266,25 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
     visibleIncompleteChecklists.length +
     visibleCongressStockShortfall.length
 
-  // Bildirim zili açık tutulursa (görülmüş sayılır) birkaç saniye sonra o an
-  // görünen bildirimler geçici olarak zilden kaldırılır — kalıcı silme değil,
-  // sorun (ör. hâlâ düşük stok) devam ediyorsa bir süre sonra zil yeniden dolar
-  // (bkz. useSnoozedAlerts). Zil erken kapatılırsa zamanlayıcı iptal edilir.
+  // Bildirim ziline tıklanıp açılan liste okunduktan sonra KAPATILINCA (zile
+  // tekrar tıklayınca veya dışarı tıklayınca) o an görünen bildirimler geçici
+  // olarak zilden kaldırılır — kalıcı silme değil, sorun (ör. hâlâ düşük stok)
+  // devam ediyorsa bir süre sonra zil yeniden dolar (bkz. useSnoozedAlerts).
+  // Açıkken bir süre beklemeyi gerektirmiyor: kapatma anı = "gördüm" anıdır.
   function handleBellOpenChange(open: boolean) {
     setBellOpen(open)
-    clearTimeout(bellSnoozeTimer.current)
-    if (!open) return
-    bellSnoozeTimer.current = setTimeout(() => {
-      snoozeMany([
-        ...visibleDueReminders.map((r) => `reminder:${r.id}`),
-        ...visibleCriticalStock.map((p) => `criticalStock:${p.id}`),
-        ...visibleExpiringProducts.map((p) => `expiring:${p.id}`),
-        ...visibleExpiringLots.map((l) => `expiringLot:${l.id}`),
-        ...visiblePaymentDue.map((d) => `paymentDue:${d.id}`),
-        ...visibleDoctorsWithBalance.map((d) => `balance:${d.id}`),
-        ...visiblePendingProducts.map((p) => `pending:${p.id}`),
-        ...visibleIncompleteChecklists.map((c) => `checklist:${c.id}`),
-        ...visibleCongressStockShortfall.map((c) => `shortfall:${c.id}`),
-      ])
-    }, 6000)
+    if (open) return
+    snoozeMany([
+      ...visibleDueReminders.map((r) => `reminder:${r.id}`),
+      ...visibleCriticalStock.map((p) => `criticalStock:${p.id}`),
+      ...visibleExpiringProducts.map((p) => `expiring:${p.id}`),
+      ...visibleExpiringLots.map((l) => `expiringLot:${l.id}`),
+      ...visiblePaymentDue.map((d) => `paymentDue:${d.id}`),
+      ...visibleDoctorsWithBalance.map((d) => `balance:${d.id}`),
+      ...visiblePendingProducts.map((p) => `pending:${p.id}`),
+      ...visibleIncompleteChecklists.map((c) => `checklist:${c.id}`),
+      ...visibleCongressStockShortfall.map((c) => `shortfall:${c.id}`),
+    ])
   }
 
   React.useEffect(() => () => clearTimeout(bellSnoozeTimer.current), [])

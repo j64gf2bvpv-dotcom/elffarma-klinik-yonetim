@@ -187,7 +187,7 @@ export interface SeedResult {
 export async function seedDemoData(): Promise<SeedResult> {
   const createdCustomers = []
   for (const c of DEMO_CUSTOMERS) {
-    const created = await createCustomer({
+    const baseInput = {
       full_name: c.full_name,
       phone: c.phone,
       tags: [DEMO_TAG],
@@ -196,9 +196,20 @@ export async function seedDemoData(): Promise<SeedResult> {
       province: c.province,
       hospital_name: 'hospital_name' in c ? c.hospital_name : null,
       total_debt: c.total_debt || null,
-      is_vip: c.is_vip,
-      photo_url: iconImageDataUri(icons.user, c.tone),
-    })
+    }
+    // is_vip, customers tablosuna görece yeni eklenen bir sütun (bkz.
+    // supabase/schema.sql) — şema henüz güncellenmemişse bu alanla INSERT
+    // tamamen başarısız olup TÜM örnek veri eklemeyi (sonraki tüm adımları)
+    // daha ilk doktorda durdurabiliyordu. Önce tam haliyle deneniyor, sadece
+    // bu yüzden başarısız olursa is_vip'siz tekrar deneniyor — böylece şema
+    // güncel değilse bile geri kalan örnek veri yine de eklenebiliyor.
+    let created
+    try {
+      created = await createCustomer({ ...baseInput, is_vip: c.is_vip, photo_url: iconImageDataUri(icons.user, c.tone) })
+    } catch (err) {
+      console.warn('Örnek veri: doktor is_vip/photo_url ile eklenemedi, alanlar olmadan tekrar deneniyor (şema güncel olmayabilir)', err)
+      created = await createCustomer(baseInput)
+    }
     createdCustomers.push(created)
   }
 

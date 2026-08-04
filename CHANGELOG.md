@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.7] - 2026-08-04
+
+**Örnek veri ekleme, ilk doktorda tamamen duran gerçek kök nedeni bulundu ve düzeltildi:** Bir önceki sürümde (v2.15.0) doktor kaydına eklenen `is_vip` alanı, `customers` tablosuna daha önce eklenmişti ama `schema.sql` henüz Supabase'de tekrar çalıştırılmadıysa sütun gerçekte yok — bu durumda `is_vip` içeren HER doktor ekleme isteği reddediliyor, ve örnek veri döngüsü daha İLK doktorda durup hiçbir şey eklemeden hata veriyordu (bir önceki düzeltme sadece SONdaki Araçlar/Instagram bölümlerini korumuştu, bu daha baştaki asıl tıkanıklığı kapsamıyordu). Artık doktor `is_vip`/fotoğrafla eklenmeyi önce dener, o özel istek başarısız olursa bu alanlar olmadan otomatik tekrar dener — şema güncel olmasa bile örnek verinin geri kalanı eklenmeye devam ediyor. Bildirim zilindeki "geçici temizleme" de sadeleştirildi: artık 6 saniye beklemek yerine, zili kapattığınız an (okuduktan sonra) o anki bildirimler 5 dakikalığına ertelenir.
+
+**Önemli — bu sadece örnek veriyi düzeltir, kökü değil:** Aynı `is_vip` eksikliği, GERÇEK bir doktoru Cari Kart'tan eklerken/düzenlerken de VIP alanını kaydedemez hale getirebilir (o form için böyle bir otomatik "alan olmadan tekrar dene" mekanizması bilerek eklenmedi — gerçek veri için sessizce alan atlamak yerine, kalıcı çözüm olan şema güncellemesini yapman gerekiyor). **Lütfen en kısa sürede Supabase SQL Editor'den güncel `supabase/schema.sql`'i tekrar çalıştır** — bu hem Instagram Doktor Listesi'ni hem örnek veriyi hem de doktor VIP alanının gerçek kayıtlarda düzgün kaydedilmesini kalıcı olarak çözer.
+
 ## [2.15.6] - 2026-08-04
 
 **Üst bara hesap makinesi ve webmail kısayolu eklendi:** Bildirim zili/AI sohbet ikonlarının yanına iki yeni buton geldi — dört işlem yapan bir hesap makinesi (popover içinde, sayfa değiştirmeden açılıp kapanıyor) ve Elffarma'nın webmailini (`webmail.elffarma.com`) sistem tarayıcısında açan bir mail butonu. Şema değişikliği yok.
