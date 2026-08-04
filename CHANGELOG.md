@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.10] - 2026-08-04
+
+**Kongreler listesinde görselsiz kongreler artık tek düze gri değil, doktor/ürün kartlarındaki gibi isme göre renkli:** `Kongreler` sayfasındaki kart görünümünde, görseli yüklenmemiş her kongre aynı düz gri kutuda aynı ikonu gösteriyordu; artık Ana Panel'deki "Yaklaşan Kongreler" kartıyla aynı mantıkla (`placeholderColor`) kongre adına göre sabit ama kongreden kongreye değişen bir renk alıyor — liste artık tek renkli görünmüyor. Şema değişikliği yok.
+
 ## [2.14.9] - 2026-08-04
 
 **Cari Kart'tan aylık/yıllık numune kotası kaldırıldı:** Doktor formundaki "Aylık Numune Kotası" ve "Yıllık Numune Kotası" alanları ve numune eklerken tetiklenen "kota aşılıyor" uyarısı kaldırıldı — artık sadece bir önceki sürümde eklenen basit "verildi" işaret kutusu var, kota takibi yok. Şema değişikliği yok (ilgili sütunlar veritabanında duruyor, kullanılmıyor).

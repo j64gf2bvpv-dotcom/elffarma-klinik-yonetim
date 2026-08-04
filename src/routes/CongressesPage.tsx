@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CongressForm } from '@/features/congresses/CongressForm'
 import { useCongresses } from '@/features/congresses/hooks'
+import { placeholderColor } from '@/lib/placeholderColor'
 import type { Congress } from '@/types/database'
 
 export function CongressesPage() {
@@ -57,7 +58,10 @@ export function CongressesPage() {
                       <img src={congress.image_url} alt={congress.name} className="size-full object-contain" />
                     </span>
                   ) : (
-                    <span className="flex size-16 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
+                    <span
+                      className="flex size-16 shrink-0 items-center justify-center rounded-lg border text-white"
+                      style={{ backgroundColor: placeholderColor(congress.name) }}
+                    >
                       <Presentation className="size-6" />
                     </span>
                   )}
