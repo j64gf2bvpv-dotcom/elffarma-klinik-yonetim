@@ -5,7 +5,7 @@ import { SalesPerformanceCard } from './SalesPerformanceCard'
 import { CollectionTargetGauge } from './CollectionTargetGauge'
 import { UpcomingCongressesCard } from './UpcomingCongressesCard'
 import { TopProductsListCard } from './TopProductsListCard'
-import { DoctorPerformanceCard } from './DoctorPerformanceCard'
+import { SalesRepReportCard } from './SalesRepReportCard'
 import { NotificationsCard } from './NotificationsCard'
 import { QuickActionsRow } from './QuickActionsRow'
 import { useDashboardData } from './useDashboardData'
@@ -19,7 +19,7 @@ export function PixelDashboard() {
 
   return (
     <div className="@container flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 @[420px]:grid-cols-2 @[720px]:grid-cols-3 @[1000px]:grid-cols-5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
         <StatCardSparkline
           icon={ShoppingCart}
           tone="blue"
@@ -85,7 +85,7 @@ export function PixelDashboard() {
 
       <div className="grid grid-cols-1 gap-4 @[700px]:grid-cols-3">
         <TopProductsListCard items={data.topProducts} />
-        <DoctorPerformanceCard items={data.doctorPerformance} />
+        <SalesRepReportCard items={data.repMonthlyReport} />
         <NotificationsCard items={data.notifications} />
       </div>
 

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, ArrowUpRight, ArrowDownRight, Stethoscope } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, ArrowDownRight, UserRound } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
+import { placeholderColor } from '@/lib/placeholderColor'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
@@ -17,7 +18,7 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-export function DoctorPerformanceCard({
+export function SalesRepReportCard({
   items,
 }: {
   items: { id: string; name: string; revenue: number; deltaPct: number | null }[]
@@ -26,28 +27,33 @@ export function DoctorPerformanceCard({
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
-          <Stethoscope className="size-4 text-primary" /> Doktor Bazlı Satış Performansı
-          <span className="text-muted-foreground text-xs font-normal">Son 90 gün</span>
+          <UserRound className="size-4 text-primary" /> Satış Temsilcisi Raporu
+          <span className="text-muted-foreground text-xs font-normal">Bu ay ciro</span>
         </CardTitle>
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/musteriler">
+          <Link to="/doktor-ziyaretleri">
             Tümünü gör <ArrowRight className="size-3.5" />
           </Link>
         </Button>
       </CardHeader>
       <CardContent className="grid min-w-0 gap-1">
-        {items.length === 0 && <p className="text-sm text-muted-foreground">Bu ay için doktor bazlı satış verisi yok</p>}
+        {items.length === 0 && <p className="text-sm text-muted-foreground">Aktif satış temsilcisi yok</p>}
         {items.map((item, i) => (
           <Link
             key={item.id}
-            to={`/musteriler/${item.id}`}
+            to="/doktor-ziyaretleri"
             className="flex min-w-0 items-center gap-3 rounded-lg px-1 py-2 text-sm transition-colors hover:bg-accent"
           >
             <span className="flex size-5 shrink-0 items-center justify-center text-xs font-semibold text-muted-foreground">
               {i + 1}
             </span>
             <Avatar className="size-9 shrink-0">
-              <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(item.name)}</AvatarFallback>
+              <AvatarFallback
+                className="text-xs font-semibold text-white"
+                style={{ backgroundColor: placeholderColor(item.name) }}
+              >
+                {getInitials(item.name)}
+              </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{item.name}</p>

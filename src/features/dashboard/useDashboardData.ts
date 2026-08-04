@@ -47,6 +47,7 @@ export interface NotificationItem {
   subtitle: string
   to: string
   createdAt: string | null
+  imageUrl?: string | null
 }
 
 /** Bir haftalık kovalara toplanmış {tarih, tutar} listesi — sparkline'lar için. */
@@ -188,6 +189,7 @@ export function useDashboardData() {
     }
     const current = group(salesInRankingWindow, congressSalesInRankingWindow)
     const previous = group(salesInPrevRankingWindow, congressSalesInPrevRankingWindow)
+    const productByName = new Map(products.map((p) => [p.name, p]))
     return Array.from(current.entries())
       .map(([name, v]) => ({
         id: name,
@@ -195,32 +197,37 @@ export function useDashboardData() {
         qty: v.qty,
         revenue: v.revenue,
         deltaPct: pctDelta(v.revenue, previous.get(name)?.revenue ?? 0),
+        imageUrl: productByName.get(name)?.image_url ?? null,
       }))
       .filter((p) => p.qty > 0)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
-  }, [salesInRankingWindow, salesInPrevRankingWindow, congressSalesInRankingWindow, congressSalesInPrevRankingWindow])
+  }, [salesInRankingWindow, salesInPrevRankingWindow, congressSalesInRankingWindow, congressSalesInPrevRankingWindow, products])
 
-  const doctorPerformance = React.useMemo<RankedItem[]>(() => {
-    function group(items: typeof salesThisMonth) {
-      const byDoctor = new Map<string, number>()
-      for (const s of items) byDoctor.set(s.customer_id, (byDoctor.get(s.customer_id) ?? 0) + netAmount(s))
-      return byDoctor
+  // "Satış Temsilcisi Raporu" (/doktor-ziyaretleri) sayfasındaki "Bu Ay Ciro"
+  // ile AYNI tanım kullanılıyor: temsilciye bağlı TAHSİLATLAR (satış değil),
+  // bu ay içinde toplanmış — iki yerde farklı rakam görünmesin diye.
+  const repMonthlyReport = React.useMemo<RankedItem[]>(() => {
+    function group(payments: typeof paymentsThisMonth) {
+      const byRep = new Map<string, number>()
+      for (const p of payments) {
+        if (!p.sales_rep_id) continue
+        byRep.set(p.sales_rep_id, (byRep.get(p.sales_rep_id) ?? 0) + Number(p.amount))
+      }
+      return byRep
     }
-    const current = group(salesInRankingWindow)
-    const previous = group(salesInPrevRankingWindow)
-    const customerById = new Map(customers.map((c) => [c.id, c.full_name]))
-    return Array.from(current.entries())
-      .map(([customerId, revenue]) => ({
-        id: customerId,
-        name: customerById.get(customerId) ?? 'Bilinmeyen',
-        revenue,
-        deltaPct: pctDelta(revenue, previous.get(customerId) ?? 0),
+    const current = group(paymentsThisMonth)
+    const previous = group(paymentsPrevMonth)
+    return salesReps
+      .filter((r) => r.is_active)
+      .map((rep) => ({
+        id: rep.id,
+        name: rep.name,
+        revenue: current.get(rep.id) ?? 0,
+        deltaPct: pctDelta(current.get(rep.id) ?? 0, previous.get(rep.id) ?? 0),
       }))
-      .filter((d) => d.revenue !== 0)
       .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5)
-  }, [salesInRankingWindow, salesInPrevRankingWindow, customers])
+  }, [salesReps, paymentsThisMonth, paymentsPrevMonth])
 
   const collectionTarget = React.useMemo(() => {
     const exactTarget = budgetTargets.find((t) => t.month === currentMonth)
@@ -268,6 +275,7 @@ export function useDashboardData() {
         subtitle: `Mevcut stok: ${p.current_quantity} ${p.unit}`,
         to: '/stok',
         createdAt: p.created_at,
+        imageUrl: p.image_url,
       })
     }
     for (const p of alerts.expiringProducts.slice(0, 2)) {
@@ -279,6 +287,7 @@ export function useDashboardData() {
         subtitle: 'Stok listesinden kontrol edin',
         to: '/stok',
         createdAt: p.created_at,
+        imageUrl: p.image_url,
       })
     }
     for (const c of alerts.upcomingCongresses.slice(0, 2)) {
@@ -290,6 +299,7 @@ export function useDashboardData() {
         subtitle: c.start_date ? `Başlangıç: ${c.start_date}` : 'Tarih belirtilmedi',
         to: `/kongreler/${c.id}`,
         createdAt: c.created_at,
+        imageUrl: c.image_url,
       })
     }
     for (const c of alerts.incompleteChecklists.slice(0, 2)) {
@@ -301,6 +311,7 @@ export function useDashboardData() {
         subtitle: 'Kongre kontrol listesini tamamlayın',
         to: `/kongreler/${c.id}`,
         createdAt: c.created_at,
+        imageUrl: c.image_url,
       })
     }
     for (const r of alerts.dueReminders.slice(0, 3)) {
@@ -345,7 +356,7 @@ export function useDashboardData() {
     activeSalesRepCount,
     productCount,
     topProducts,
-    doctorPerformance,
+    repMonthlyReport,
     collectionTarget,
     notifications,
     salesTimeline,

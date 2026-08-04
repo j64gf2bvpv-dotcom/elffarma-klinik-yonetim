@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useCreateSalesRep, useUpdateSalesRep } from './hooks'
 import { uploadSalesRepPhoto } from './api'
+import { placeholderColor } from '@/lib/placeholderColor'
 import type { SalesRep } from '@/types/database'
 
 function getInitials(name: string): string {
@@ -104,7 +105,10 @@ export function SalesRepDialog({ rep, trigger }: { rep?: SalesRep; trigger?: Rea
             >
               <Avatar className="size-20">
                 {photoUrl && <AvatarImage src={photoUrl} alt={name || 'Temsilci'} />}
-                <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                <AvatarFallback
+                  className="text-lg text-white"
+                  style={name ? { backgroundColor: placeholderColor(name) } : undefined}
+                >
                   {name ? getInitials(name) : <UserRound className="size-8" />}
                 </AvatarFallback>
               </Avatar>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { placeholderColor } from '@/lib/placeholderColor'
 import type { Congress } from '@/types/database'
 
 export function UpcomingCongressesCard({ congresses }: { congresses: Congress[] }) {
@@ -45,7 +46,10 @@ export function UpcomingCongressesCard({ congresses }: { congresses: Congress[] 
               {c.image_url ? (
                 <img src={c.image_url} alt={c.name} className="size-12 shrink-0 rounded-lg border object-cover" />
               ) : (
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
+                <span
+                  className="flex size-12 shrink-0 items-center justify-center rounded-lg border text-white"
+                  style={{ backgroundColor: placeholderColor(c.name) }}
+                >
                   <Presentation className="size-5" />
                 </span>
               )}
