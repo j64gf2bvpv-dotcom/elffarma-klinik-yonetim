@@ -65,12 +65,9 @@ export function DailyMovementImportButton() {
     const matrix = await readExcelSheetAsMatrix(file)
     const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
 
-    console.error('[debug daily-movement] raw matrix', JSON.stringify(matrix.slice(0, 5)))
-
     const headerInfo = findHeaderRows(matrix)
     if (!headerInfo) {
       summary.errors.push('"KALAN STOKLAR" başlıklı bir sütun bulunamadı — dosya beklenen formatta değil')
-      console.error('[debug daily-movement] headerInfo NOT FOUND')
       return summary
     }
     const { labelsRow, namesRowIdx, namesRow } = headerInfo
@@ -89,18 +86,6 @@ export function DailyMovementImportButton() {
     const personCols = namesRow
       .map((h, idx) => ({ name: h, idx }))
       .filter(({ name, idx }) => name && idx !== productCol && idx !== kalanCol && idx !== stoklarCol)
-
-    console.error('[debug daily-movement] header', {
-      namesRowIdx,
-      labelsRow,
-      namesRow,
-      productCol,
-      kalanCol,
-      stoklarCol,
-      personCols,
-      totalDataRows: matrix.length - namesRowIdx - 1,
-      productsLoaded: products.length,
-    })
 
     // Genel stokta henüz olmayan bir ürün adı yüzünden o satırın verisi ATLANMAZ
     // — ürün otomatik olarak (varsayılan birim/kritik eşikle) oluşturulup hareket
@@ -211,8 +196,6 @@ export function DailyMovementImportButton() {
         }
       }
 
-      console.error('[debug daily-movement] row', { r, productName, currentQuantity: product.current_quantity, movedForProduct })
-
       if (kalanCol !== -1 && movedForProduct !== 0) {
         const kalanValue = Number(row[kalanCol])
         const expected = product.current_quantity - movedForProduct
@@ -223,8 +206,6 @@ export function DailyMovementImportButton() {
         }
       }
     }
-
-    console.error('[debug daily-movement] final summary', summary)
 
     if (summary.added > 0) {
       await queryClient.invalidateQueries({ queryKey: ['products'] })

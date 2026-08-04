@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.15] - 2026-08-04
+
+**Uçtan uca denetim: Günlük Hareket içe aktarmadaki unutulmuş debug logları temizlendi:** Çok önceki bir oturumdan kalan `console.error('[debug daily-movement] ...')` satırları (5 adet) kaldırıldı — işlevsellik değişmedi, sadece geliştirme sırasında bırakılan gürültü temizlendi. Bu, program genelinde yapılan bir sağlık taramasının parçası (bkz. sohbetteki detaylı rapor): tüm menü/rota eşleşmeleri, tüm tablo/sütun/RPC referansları, TypeScript derlemesi, lint ve üretim derlemesi (`npm run build`) doğrulandı — başka bir kod hatası bulunmadı. Şema değişikliği yok.
+
 ## [2.15.14] - 2026-08-04
 
 **"Yapay Zeka Uyarıları" paneli varsayılan olarak kapatıldı — Gemini kotasını gereksiz tüketiyordu:** Özelleştirilebilir Görünüm'deki bu widget her panel açılışında otomatik olarak AI'a istek atıyordu, bu da sohbet için ayrılan ücretsiz kotayı sessizce tüketip "istek limiti aşıldı" hatalarına yol açıyordu. Artık diğer opsiyonel widget'lar gibi varsayılan olarak gizli — isteyen "Paneli Düzenle"den elle açabilir. Daha önce özel bir panel düzeni kaydetmiş kullanıcılarda bu widget'ı hâlâ görünür bıraktıysa, "Paneli Düzenle"den elle kapatılması gerekir. Şema değişikliği yok.
