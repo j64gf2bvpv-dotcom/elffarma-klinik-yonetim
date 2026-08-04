@@ -249,12 +249,19 @@ export function CongressStockItemsPanel({
 
   const pendingQty = items.filter((i) => i.status === 'goturuldu').reduce((sum, i) => sum + i.quantity, 0)
   const pendingProductCount = new Set(items.filter((i) => i.status === 'goturuldu').map((i) => i.product_name)).size
+  const usedQty = items.filter((i) => i.status === 'kullanildi').reduce((sum, i) => sum + i.quantity, 0)
+  const usedProductCount = new Set(items.filter((i) => i.status === 'kullanildi').map((i) => i.product_name)).size
 
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-          <Boxes className="size-4 text-primary" /> Ürün Takibi (Stoktan)
+          <Boxes className="size-4 text-primary" /> Kongreye Götürülen Ürün
+          {usedQty > 0 && (
+            <Badge variant="outline" className="border-success/30 bg-success/10 text-success">
+              {usedProductCount} üründe {usedQty} adet kullanıldı
+            </Badge>
+          )}
           {pendingQty > 0 && (
             <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning-foreground">
               {pendingProductCount} üründe {pendingQty} adet bekliyor
@@ -264,8 +271,8 @@ export function CongressStockItemsPanel({
         <div className="flex items-center gap-2">
           {items.length > 0 && (
             <ExportMenu<CongressStockItem>
-              title="Ürün Takibi"
-              filename="kongre-urun-takibi"
+              title="Kongreye Götürülen Ürün"
+              filename="kongreye-goturulen-urun"
               rows={items}
               columns={[
                 { header: 'Ürün', value: (i) => i.product_name },

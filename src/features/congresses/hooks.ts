@@ -9,14 +9,12 @@ import {
   createConsumablesBulk,
   createParticipant,
   createParticipantProduct,
-  createRemainingProduct,
   deleteChecklistItem,
   deleteCongress,
   deleteCongressStockItem,
   deleteConsumable,
   deleteParticipant,
   deleteParticipantProduct,
-  deleteRemainingProduct,
   fetchAllChecklistItems,
   fetchAllCongressStockItems,
   fetchAllParticipantProductSales,
@@ -27,7 +25,6 @@ import {
   fetchConsumables,
   fetchParticipants,
   fetchParticipationsByDoctorName,
-  fetchRemainingProducts,
   setChecklistItemDone,
   setConsumableUsed,
   updateCongress,
@@ -40,13 +37,11 @@ import {
   type ParticipantInput,
   type ParticipantProductInput,
   type ParticipantWithProducts,
-  type RemainingProductInput,
 } from './api'
 import type {
   Congress,
   CongressChecklistItem,
   CongressConsumable,
-  CongressRemainingProduct,
   CongressStockItem,
   CongressStockItemStatus,
 } from '@/types/database'
@@ -226,46 +221,6 @@ export function useDeleteParticipantProduct() {
       )
       queryClient.invalidateQueries({ queryKey: ['congress_participants', variables.congressId] })
       toast.success('Ürün silindi')
-    },
-    onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
-  })
-}
-
-export function useRemainingProducts(congressId: string | undefined) {
-  return useQuery({
-    queryKey: ['congress_remaining_products', congressId],
-    queryFn: () => fetchRemainingProducts(congressId as string),
-    enabled: !!congressId,
-  })
-}
-
-export function useCreateRemainingProduct() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: RemainingProductInput) => createRemainingProduct(input),
-    onSuccess: (created, variables) => {
-      queryClient.setQueryData<CongressRemainingProduct[]>(
-        ['congress_remaining_products', variables.congress_id],
-        (old) => (old ? [...old, created] : old),
-      )
-      queryClient.invalidateQueries({ queryKey: ['congress_remaining_products', variables.congress_id] })
-      toast.success('Kalan ürün eklendi')
-    },
-    onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
-  })
-}
-
-export function useDeleteRemainingProduct() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id }: { id: string; congressId: string }) => deleteRemainingProduct(id),
-    onSuccess: (_data, variables) => {
-      queryClient.setQueryData<CongressRemainingProduct[]>(
-        ['congress_remaining_products', variables.congressId],
-        (old) => old?.filter((p) => p.id !== variables.id),
-      )
-      queryClient.invalidateQueries({ queryKey: ['congress_remaining_products', variables.congressId] })
-      toast.success('Kalan ürün silindi')
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
   })

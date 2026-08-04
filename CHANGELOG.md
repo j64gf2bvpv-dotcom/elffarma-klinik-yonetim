@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.2] - 2026-08-04
+
+**"Kalan / Kullanılmayan Ürünler" bölümü kaldırıldı, "Kongreye Götürülen Ürün" onun yerini aldı:** Eski bölüm artık gereksizdi çünkü yeni ürün takibi paneli (Götürüldü/Kullanıldı/Geri Döndü) aynı işi zaten daha iyi yapıyordu — panel "Kongreye Götürülen Ürün" olarak yeniden adlandırıldı, başlığında artık kaç üründe kaç adet kullanıldığı da (yeşil rozet) ayrıca gösteriliyor. Kullanılmayan `RemainingProductDialog` bileşeni ve ilgili hook'lar temizlendi — kod tekrarı kalmadı. Eski verinin durduğu tablo (`congress_remaining_products`) veritabanında dokunulmadan duruyor, hiçbir kayıt silinmedi. Şema değişikliği yok.
+
 ## [2.14.1] - 2026-08-04
 
 **Ürün ve Sarf Malzeme takibi iki ayrı bölüme ayrıldı:** "Ürün Takibi (Stoktan)" artık sadece gerçek stok ürünlerini kapsıyor (Götürüldü/Kullanıldı-Satıldı/Geri Döndü). Yeni **"Sarf Malzeme"** bölümü ayrı — stokla bağlantısız, serbest metinle tek tek eklenen (eldiven, gazlı bez, iğne, kanül vb.) malzemeler, her biri adet + kullanıldı işaretiyle takip ediliyor. "Standart Listeyi Ekle" ile hazır 20 maddelik cerrahi/estetik sarf malzeme paketi tek tıkla eklenip adetler sonradan düzenlenebiliyor. Yeni `congress_consumables` tablosu eklendi — **bu bölümün çalışması için güncellenmiş `supabase/schema.sql`'in Supabase SQL editöründe çalıştırılması gerekiyor.**
