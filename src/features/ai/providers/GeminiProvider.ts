@@ -6,7 +6,7 @@ export const GEMINI_DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.co
 // hesaplar için kullanımdan kaldırıyor — sabit bir sürüm yerine Google'ın her zaman
 // güncel önerilen flash modeline işaret eden "latest" takma adı kullanılıyor, böylece
 // bir sonraki kullanımdan kaldırmada bu varsayılan tekrar kırılmaz.
-export const GEMINI_DEFAULT_MODEL = 'gemini-pro-latest'
+export const GEMINI_DEFAULT_MODEL = 'gemini-flash-latest'
 
 /** Google'ın OpenAI-uyumlu katmanını kullanır — Gemini'ye özgü SDK'ya gerek yok. */
 export class GeminiProvider implements AIProvider {

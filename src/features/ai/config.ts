@@ -4,7 +4,14 @@ import { OPENAI_DEFAULT_BASE_URL, OPENAI_DEFAULT_MODEL } from './providers/OpenA
 import { GEMINI_DEFAULT_BASE_URL, GEMINI_DEFAULT_MODEL } from './providers/GeminiProvider'
 import { CLAUDE_DEFAULT_BASE_URL, CLAUDE_DEFAULT_MODEL } from './providers/ClaudeProvider'
 
-/** app_settings'te henüz bir kayıt yokken (ilk kurulum) kullanılacak varsayılan — talep gereği Google Gemini (Pro). */
+/**
+ * app_settings'te henüz bir kayıt yokken (ilk kurulum) kullanılacak varsayılan
+ * — talep gereği Google Gemini. Pro değil Flash: Panel'deki "Yapay Zeka
+ * Uyarıları" widget'ı her panel açılışında otomatik olarak AI'a istek atıyor
+ * (bkz. DashboardPage.tsx `ai-dashboard-insights` sorgusu) — Pro'nun ücretsiz
+ * kotası bu sık otomatik çağrı deseni için çok düşük kalıp "istek limiti
+ * aşıldı" hatasına yol açtı; Flash aynı sağlayıcıda çok daha yüksek limitli.
+ */
 export const defaultAISettings: AISettings = {
   provider: 'gemini',
   baseUrl: GEMINI_DEFAULT_BASE_URL,
