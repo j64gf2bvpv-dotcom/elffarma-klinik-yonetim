@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.6] - 2026-08-04
+
+**Üst bara hesap makinesi ve webmail kısayolu eklendi:** Bildirim zili/AI sohbet ikonlarının yanına iki yeni buton geldi — dört işlem yapan bir hesap makinesi (popover içinde, sayfa değiştirmeden açılıp kapanıyor) ve Elffarma'nın webmailini (`webmail.elffarma.com`) sistem tarayıcısında açan bir mail butonu. Şema değişikliği yok.
+
 ## [2.15.5] - 2026-08-04
 
 **Bildirim zili açık tutulunca birkaç saniye sonra o anki bildirimler geçici olarak temizleniyor:** Zile tıklayıp açık bıraktığınızda (görülmüş sayılır) 6 saniye sonra o an listedeki tüm bildirimler zilden kalkıyor ve rozet sayısı sıfırlanıyor — ama bu KALICI bir silme değil: sadece 5 dakikalık bir "ertelemedir" (`useSnoozedAlerts`, bellekte tutulur, sayfa yenilenince de sıfırlanır). Sorun (ör. hâlâ düşük stok, hâlâ ödenmemiş vade) devam ediyorsa aynı kayıt 5 dakika sonra zile yeniden düşer — hiçbir uyarı sonsuza kadar kaybolmaz. Tek tek bildirime tıklayarak kalıcı kapatma (mevcut davranış) değişmedi. Şema değişikliği yok.

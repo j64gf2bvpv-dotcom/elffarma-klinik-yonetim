@@ -25,6 +25,8 @@ import {
   GripVertical,
   MessageSquare,
   ChevronDown,
+  Calculator as CalculatorIcon,
+  Mail,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -48,6 +50,8 @@ import { tr } from '@/i18n/tr'
 import { ElffarmaLogo } from '@/components/brand/ElffarmaLogo'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calculator } from '@/components/Calculator'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -317,6 +321,31 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
         >
           {isOnline ? <Wifi className="size-4 text-success" /> : <WifiOff className="size-4 text-destructive" />}
         </button>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              title="Hesap makinesi"
+              className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <CalculatorIcon className="size-[1.1rem]" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-auto p-3">
+            <Calculator />
+          </PopoverContent>
+        </Popover>
+
+        <a
+          href="https://webmail.elffarma.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Elffarma Webmail'i aç"
+          className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <Mail className="size-[1.1rem]" />
+        </a>
 
         <button
           type="button"
