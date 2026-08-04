@@ -151,6 +151,8 @@ export function VehiclesPage() {
               <TableRow>
                 <TableHead>Tarih</TableHead>
                 <TableHead>Araç</TableHead>
+                <TableHead>Plaka</TableHead>
+                <TableHead>Temsilci</TableHead>
                 <TableHead>Tutar</TableHead>
                 <TableHead>Not</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
@@ -159,24 +161,31 @@ export function VehiclesPage() {
             <TableBody>
               {recentFuelLogs.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
                     Henüz yakıt kaydı yok
                   </TableCell>
                 </TableRow>
               )}
-              {recentFuelLogs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell>{format(new Date(log.fill_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
-                  <TableCell>{vehicleById.get(log.vehicle_id)?.brand_model ?? '—'}</TableCell>
-                  <TableCell>{currency(log.amount)}</TableCell>
-                  <TableCell className="text-muted-foreground">{log.note ?? '—'}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" title="Sil" onClick={() => handleDeleteFuelLog(log.id)}>
-                      <Trash2 className="size-3.5 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {recentFuelLogs.map((log) => {
+                const vehicle = vehicleById.get(log.vehicle_id)
+                return (
+                  <TableRow key={log.id}>
+                    <TableCell>
+                      {format(new Date(log.fill_date + 'T00:00:00'), 'd MMMM yyyy', { locale: trLocale })}
+                    </TableCell>
+                    <TableCell>{vehicle?.brand_model ?? '—'}</TableCell>
+                    <TableCell>{vehicle?.plate_number ?? '—'}</TableCell>
+                    <TableCell>{vehicle?.sales_reps?.name ?? '—'}</TableCell>
+                    <TableCell>{currency(log.amount)}</TableCell>
+                    <TableCell className="text-muted-foreground">{log.note ?? '—'}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" title="Sil" onClick={() => handleDeleteFuelLog(log.id)}>
+                        <Trash2 className="size-3.5 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>

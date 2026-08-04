@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.13.1] - 2026-08-04
+
+**Araçlar > Son Yakıt Kayıtları tablosuna Plaka ve Temsilci sütunları eklendi:** Yakıt kaydı eklenirken sadece tarih (gün/ay/yıl, elle değiştirilebilir) ve tutar giriliyor — o araca atanmış plaka ve satış temsilcisi adı artık ayrıca elle girilmeden, araç kaydından otomatik çekilip tabloda gösteriliyor. Tarih gösterimi tam ay adıyla (ör. "4 Ağustos 2026") yapılıyor. Şema değişikliği yok.
+
 ## [2.13.0] - 2026-08-04
 
 **Yeni modül: Araçlar (şirket araç/kiralama/yakıt takibi):** Sol menüye "Araçlar" eklendi. Her araç için: model/yıl, plaka, ruhsat bilgileri, hangi firmadan alındığı, kullanan satış temsilcisi, aylık kiralama fiyatı, bakım tarihi ve UTTS var/yok (onay kutusu) kaydediliyor. Ayrıca her araca günlük olarak eklenebilen bir yakıt yükleme kaydı (tarih + tutar + not) var; sayfanın altında son yakıt kayıtları ayrı bir tabloda listeleniyor. Excel/Word/PDF dışa aktarma diğer sayfalarla aynı mekanizmayı kullanıyor. Yeni `vehicles` ve `vehicle_fuel_logs` tabloları eklendi (shared-trust RLS, diğer tablolarla aynı desen) — **bu modülün çalışması için güncellenmiş `supabase/schema.sql`'in Supabase SQL editöründe çalıştırılması gerekiyor.**
