@@ -218,6 +218,28 @@
   box-shadow: none !important;
   padding: 0.35rem 0.85rem;
 }
+/* Görünüm anahtarı (Ay/Hafta/Gün) macOS'un segmented control'üne benzer tek
+   bir "track" içinde gösterilsin diye; today/prev/next grubu bundan etkilenmesin
+   diye sadece view-switcher grubunu barındıran son button-group hedefleniyor. */
+.fc .fc-toolbar-chunk:last-child .fc-button-group {
+  gap: 2px;
+  padding: 3px;
+  background: var(--color-muted);
+  border-radius: var(--radius-lg);
+}
+.fc .fc-toolbar-chunk:last-child .fc-button-group .fc-button {
+  background: transparent !important;
+  color: var(--color-muted-foreground) !important;
+  padding: 0.3rem 0.7rem;
+}
+.fc .fc-toolbar-chunk:last-child .fc-button-group .fc-button:hover {
+  color: var(--color-foreground) !important;
+}
+.fc .fc-toolbar-chunk:last-child .fc-button-group .fc-button.fc-button-active {
+  background: var(--color-card) !important;
+  color: var(--color-foreground) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+}
 .fc .fc-col-header-cell-cushion {
   padding: 10px 4px;
   font-size: 0.7rem;
@@ -232,8 +254,22 @@
   color: var(--color-foreground);
 }
 .fc .fc-day-today .fc-daygrid-day-number {
+  margin: 2px 4px 0 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 999px;
+  background: var(--color-destructive);
+  color: #fff;
   font-weight: 700;
-  color: var(--color-primary);
+}
+.fc .fc-timegrid-col.fc-day-today .fc-col-header-cell-cushion,
+.fc .fc-day-today .fc-col-header-cell-cushion {
+  color: var(--color-destructive);
+  font-weight: 700;
 }
 .fc-event {
   border-radius: 6px !important;

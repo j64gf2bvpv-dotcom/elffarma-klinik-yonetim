@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.5] - 2026-08-04
+
+**Ajanda, macOS Takvim'e benzer bir arayüze yükseltildi:** Sayfaya sol tarafta gün noktalarıyla (o gün etkinlik varsa renkli nokta gösteren) gezinilebilir bir mini ay takvimi ve tıklanınca ana takvimi o türün etkinliklerini gizleyip gösteren renkli "Takvimler" listesi (Kongre/Ödeme Vadesi/Hatırlatma, her birinin yanında sayısı) eklendi. Ana takvime Hafta ve Gün görünümleri (önceden yalnızca Ay vardı, `@fullcalendar/timegrid` zaten kurulu ama kullanılmıyordu) ve bunlar arasında macOS'un segmented control'üne benzer bir görünüm anahtarı eklendi. Bugünün tarihi artık kırmızı daire içinde vurgulanıyor (mini takvimde ve ay görünümünde). Mevcut tıklama/tooltip/renk-kodlama davranışı ve veri kaynağı (kongreler, ödeme vadeleri, hatırlatmalar) değişmedi. Şema değişikliği yok.
+
 ## [2.14.4] - 2026-08-04
 
 **Kök neden düzeltmesi — geniş tablolar (Cari Kart dahil) artık taşmıyor:** `Card` bileşeni `flex flex-col` olduğu için, içindeki `CardContent` (ve dolayısıyla çok sütunlu bir tablo) `min-w-0` olmadan kendi içeriğinin doğal genişliğinden küçülmeyi reddedip kartın kendisini (ve sayfayı) sağa doğru taşırıyordu — Cari Kart tablosundaki sağdaki "Cari Hesap" sütunu bu yüzden ekran kenarından taşıp görünmez oluyordu. `Card` ve `CardContent`'e `min-w-0` eklendi — bu paylaşılan bileşen olduğu için tüm uygulamadaki benzer geniş tablo/kart kullanımlarını (sadece Cari Kart değil) aynı anda düzeltiyor; tablo artık kendi içinde yatay kaydırılabiliyor, taşmıyor. Şema değişikliği yok.
