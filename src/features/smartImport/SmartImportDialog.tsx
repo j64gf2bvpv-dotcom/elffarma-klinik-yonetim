@@ -96,10 +96,13 @@ export function SmartImportDialog({ title, targetLabel, fieldHeaders, fieldHints
       }
 
       const instruction =
-        `Aşağıdaki belgeden/görselden ${targetLabel} kayıtlarını çıkar. ` +
-        `SADECE bir JSON dizisi döndür (başka açıklama/metin ekleme). ` +
+        `Aşağıdaki belgeden/görselden ${targetLabel} kayıtlarını EKSİKSİZ çıkar — belgede görünen HER kaydı ` +
+        `atlamadan listeye ekle, sadece ilk birkaçını değil. Dikkatlice oku: el yazısı, tablo, liste veya serbest ` +
+        `metin formatında olabilir; birimi/biçimi farklı yazılmış değerleri (ör. tarih, telefon, tutar) hedef alanın ` +
+        `beklediği formata normalize et. SADECE bir JSON dizisi döndür (başka açıklama/metin ekleme). ` +
         `Her eleman şu alanlara sahip bir obje olsun: ${fieldHeaders.map((h) => `"${h}"`).join(', ')}. ` +
-        `Bir alan belgede yoksa boş string "" kullan.\n${hints}`
+        `Bir alan belgede gerçekten yoksa boş string "" kullan — ama önce belgede o bilginin başka bir ` +
+        `adla/yerde geçip geçmediğini kontrol et.\n${hints}`
 
       const result = await aiService.chat([
         {
@@ -108,7 +111,7 @@ export function SmartImportDialog({ title, targetLabel, fieldHeaders, fieldHints
             content.kind === 'image'
               ? [
                   { type: 'text', text: instruction },
-                  { type: 'image_url', image_url: { url: content.dataUrl } },
+                  ...content.dataUrls.map((url) => ({ type: 'image_url' as const, image_url: { url } })),
                 ]
               : `${instruction}\n\nBelge içeriği:\n${content.text}`,
         },

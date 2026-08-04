@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.2] - 2026-08-04
+
+**Akıllı İçe Aktar (AI) taranmış/görsel PDF'leri de okuyabiliyor, Tahsilatlar'a da eklendi:** Kök neden — PDF'in metin katmanı boşsa (yani belge taranmış bir görüntüyse) önceden hiçbir şey çıkarılamıyordu. Artık metin katmanı neredeyse boşsa (taranmış belge belirtisi) otomatik olarak sayfalar görsele çevrilip yapay zekaya vision yoluyla okutuluyor (en fazla 3 sayfa). AI'a giden talimat da güçlendirildi: belgedeki HER kaydı atlamadan çıkarması, farklı yazılmış tarih/tutar gibi değerleri hedef formata normalize etmesi isteniyor. "Akıllı İçe Aktar" butonu daha önce sadece Stok ve Cari Kart'ta vardı — artık Tahsilatlar sayfasına da eklendi (aynı Doktor/Tutar/Tarih/Yöntem/Temsilci/Açıklama şablonuyla). Excel/CSV, Word (.docx) ve düz resim desteği zaten mevcuttu, değişmedi. Şema değişikliği yok.
+
 ## [2.15.1] - 2026-08-04
 
 **Örnek veri doktorlara fotoğraf ve VIP durumu ekliyor, doktor fotoğrafı artık arayüzde görünüyor:** `Customer.photo_url` alanı şemada vardı ama hiçbir sayfada gösterilmiyordu — Cari Kart başlığına ve Cari Kart listesindeki satırlara küçük bir avatar (fotoğraf yoksa baş harfler) eklendi. Örnek veri artık her doktora ürün/temsilci/kongrede olduğu gibi bir avatar görseli ve VIP/Normal durumu atıyor. Şema değişikliği yok.

@@ -29,6 +29,7 @@ import { useSalesReps } from '@/features/salesReps/hooks'
 import { tr } from '@/i18n/tr'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
+import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import { readCell, parseFlexibleDate, type ImportSummary } from '@/lib/importData'
 import type { PaymentMethod } from '@/types/database'
 
@@ -194,6 +195,20 @@ export function PaymentsPage() {
                   Açıklama: '',
                 },
               ]}
+            />
+            <SmartImportDialog
+              title="Tahsilatları Akıllı İçe Aktar"
+              targetLabel="tahsilat/ödeme"
+              fieldHeaders={['Doktor', 'Tutar', 'Tarih', 'Yöntem', 'Satış Temsilcisi', 'Açıklama']}
+              fieldHints={{
+                Doktor: 'sistemde kayıtlı doktorun tam adı',
+                Tutar: 'sayı, para birimi/nokta olmadan',
+                Tarih: 'GG.AA.YYYY veya YYYY-AA-GG formatında',
+                Yöntem: '"Nakit", "Kredi Kartı", "Havale/EFT" veya "POS", yoksa "Nakit" yaz',
+                'Satış Temsilcisi': 'yoksa boş bırak',
+                Açıklama: 'yoksa boş bırak',
+              }}
+              onImport={handleImport}
             />
             <InstallmentPlanForm />
             <PaymentForm />
