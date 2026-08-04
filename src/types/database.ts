@@ -424,6 +424,17 @@ export interface CongressStockItem {
   updated_at: string
 }
 
+export interface CongressConsumable {
+  id: string
+  congress_id: string
+  name: string
+  quantity: number
+  is_used: boolean
+  note: string | null
+  created_by: string | null
+  created_at: string
+}
+
 export interface CongressChecklistItem {
   id: string
   congress_id: string

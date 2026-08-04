@@ -29,6 +29,7 @@ import { RemainingProductDialog } from '@/features/congresses/RemainingProductDi
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { ChecklistPanel } from '@/features/congresses/ChecklistPanel'
 import { CongressStockItemsPanel } from '@/features/congresses/CongressStockItemsPanel'
+import { ConsumablesPanel } from '@/features/congresses/ConsumablesPanel'
 import {
   useCongress,
   useDeleteCongress,
@@ -511,6 +512,10 @@ export function CongressDetailPage() {
 
       <div className="mb-6">
         <CongressStockItemsPanel congressId={congress.id} congressName={congress.name} />
+      </div>
+
+      <div className="mb-6">
+        <ConsumablesPanel congressId={congress.id} />
       </div>
 
       <ChecklistPanel congressId={congress.id} />

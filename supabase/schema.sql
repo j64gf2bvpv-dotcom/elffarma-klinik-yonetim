@@ -1654,6 +1654,32 @@ drop policy if exists "congress_stock_items_all_staff" on public.congress_stock_
 create policy "congress_stock_items_all_staff" on public.congress_stock_items for all
   using (public.is_active_staff()) with check (public.is_active_staff());
 
+-- =========================================================
+-- 38. KONGRE/WORKSHOP SARF MALZEME (congress_consumables) — stok dışı, serbest metinle manuel eklenen tüketim malzemesi listesi
+-- =========================================================
+-- congress_stock_items'tan (stoktaki gerçek ürünler) BİLEREK ayrı: eldiven,
+-- gazlı bez, iğne, kanül gibi tek kullanımlık sarf malzemeleri genelde ana
+-- ürün stoğunda (products) takip edilmiyor — bu yüzden product_id yok,
+-- serbest isim + adet + kullanıldı işareti yeterli (congress_checklist_items
+-- ile aynı basit desen, sadece adet alanı eklendi).
+create table if not exists public.congress_consumables (
+  id uuid primary key default gen_random_uuid(),
+  congress_id uuid not null references public.congresses (id) on delete cascade,
+  name text not null,
+  quantity integer not null default 1,
+  is_used boolean not null default false,
+  note text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now()
+);
+create index if not exists congress_consumables_congress_idx on public.congress_consumables (congress_id);
+
+alter table public.congress_consumables enable row level security;
+
+drop policy if exists "congress_consumables_all_staff" on public.congress_consumables;
+create policy "congress_consumables_all_staff" on public.congress_consumables for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

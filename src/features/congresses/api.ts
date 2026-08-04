@@ -5,6 +5,7 @@ import type {
   AttendanceStatus,
   Congress,
   CongressChecklistItem,
+  CongressConsumable,
   CongressParticipant,
   CongressParticipantProduct,
   CongressRemainingProduct,
@@ -314,5 +315,64 @@ export async function updateCongressStockItemStatus(
 
 export async function deleteCongressStockItem(id: string): Promise<void> {
   return offlineDelete('congress_stock_items', id, 'Kongre/workshop ürün silme')
+}
+
+export async function fetchConsumables(congressId: string): Promise<CongressConsumable[]> {
+  const { data, error } = await supabase
+    .from('congress_consumables')
+    .select('*')
+    .eq('congress_id', congressId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data as CongressConsumable[]
+}
+
+export interface ConsumableInput {
+  congress_id: string
+  name: string
+  quantity: number
+  note?: string | null
+}
+
+export async function createConsumable(input: ConsumableInput): Promise<CongressConsumable> {
+  const createdBy = await getCurrentUserId()
+  return offlineInsert<CongressConsumable>(
+    'congress_consumables',
+    { ...input, created_by: createdBy },
+    `Sarf malzeme: ${input.name}`,
+  )
+}
+
+export async function createConsumablesBulk(
+  congressId: string,
+  items: { name: string; quantity: number }[],
+): Promise<CongressConsumable[]> {
+  const createdBy = await getCurrentUserId()
+  const created: CongressConsumable[] = []
+  for (const item of items) {
+    created.push(
+      await offlineInsert<CongressConsumable>(
+        'congress_consumables',
+        { congress_id: congressId, name: item.name, quantity: item.quantity, created_by: createdBy },
+        `Sarf malzeme: ${item.name}`,
+      ),
+    )
+  }
+  return created
+}
+
+export async function setConsumableUsed(id: string, is_used: boolean): Promise<void> {
+  await offlineUpdate('congress_consumables', id, { is_used }, 'Sarf malzeme durumu güncelleme')
+}
+
+export async function updateConsumable(
+  id: string,
+  input: { name: string; quantity: number },
+): Promise<CongressConsumable> {
+  return offlineUpdate<CongressConsumable>('congress_consumables', id, { ...input }, 'Sarf malzeme güncelleme')
+}
+
+export async function deleteConsumable(id: string): Promise<void> {
+  return offlineDelete('congress_consumables', id, 'Sarf malzeme silme')
 }
 

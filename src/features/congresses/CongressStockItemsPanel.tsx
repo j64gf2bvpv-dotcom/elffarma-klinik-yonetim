@@ -31,12 +31,17 @@ import {
   useUpdateCongressStockItemStatus,
 } from './hooks'
 
+// Not: 'sarf_edildi' durumu artık ayrı "Sarf Malzeme" bölümüne taşındı —
+// buradaki seçilebilir listede bilerek yok, ama eski kayıtlar için etiket/
+// renk hâlâ tanımlı (Record<CongressStockItemStatus,...> tip güvenliği için).
 const statusLabels: Record<CongressStockItemStatus, string> = {
   goturuldu: 'Götürüldü (Bekliyor)',
   kullanildi: 'Kullanıldı / Satıldı',
   sarf_edildi: 'Sarf Edildi',
   geri_dondu: 'Geri Döndü',
 }
+
+const selectableStatuses: CongressStockItemStatus[] = ['goturuldu', 'kullanildi', 'geri_dondu']
 
 const statusTone: Record<CongressStockItemStatus, string> = {
   goturuldu: 'border-warning/30 bg-warning/10 text-warning-foreground',
@@ -96,7 +101,7 @@ function AddStockItemDialog({ congressId, congressName }: { congressId: string; 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <Plus className="size-3.5" /> Ürün / Sarf Malzeme Ekle
+          <Plus className="size-3.5" /> Ürün Ekle
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -249,7 +254,7 @@ export function CongressStockItemsPanel({
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-          <Boxes className="size-4 text-primary" /> Ürün ve Sarf Malzeme Takibi
+          <Boxes className="size-4 text-primary" /> Ürün Takibi (Stoktan)
           {pendingQty > 0 && (
             <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning-foreground">
               {pendingProductCount} üründe {pendingQty} adet bekliyor
@@ -259,7 +264,7 @@ export function CongressStockItemsPanel({
         <div className="flex items-center gap-2">
           {items.length > 0 && (
             <ExportMenu<CongressStockItem>
-              title="Ürün ve Sarf Malzeme Takibi"
+              title="Ürün Takibi"
               filename="kongre-urun-takibi"
               rows={items}
               columns={[
@@ -278,7 +283,7 @@ export function CongressStockItemsPanel({
           {isLoading && <p className="text-muted-foreground text-sm">Yükleniyor...</p>}
           {!isLoading && items.length === 0 && (
             <p className="text-muted-foreground text-sm">
-              Henüz kongreye/workshopa götürülen ürün/sarf malzeme kaydı yok.
+              Henüz kongreye/workshopa götürülen stoktan ürün kaydı yok.
             </p>
           )}
           {items.map((item) => (
@@ -306,7 +311,7 @@ export function CongressStockItemsPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(statusLabels) as CongressStockItemStatus[]).map((s) => (
+                  {selectableStatuses.map((s) => (
                     <SelectItem key={s} value={s}>
                       {statusLabels[s]}
                     </SelectItem>

@@ -5,12 +5,15 @@ import {
   createChecklistItemsBulk,
   createCongress,
   createCongressStockItem,
+  createConsumable,
+  createConsumablesBulk,
   createParticipant,
   createParticipantProduct,
   createRemainingProduct,
   deleteChecklistItem,
   deleteCongress,
   deleteCongressStockItem,
+  deleteConsumable,
   deleteParticipant,
   deleteParticipantProduct,
   deleteRemainingProduct,
@@ -21,15 +24,19 @@ import {
   fetchCongress,
   fetchCongresses,
   fetchCongressStockItems,
+  fetchConsumables,
   fetchParticipants,
   fetchParticipationsByDoctorName,
   fetchRemainingProducts,
   setChecklistItemDone,
+  setConsumableUsed,
   updateCongress,
   updateCongressStockItemStatus,
+  updateConsumable,
   updateParticipant,
   type CongressInput,
   type CongressStockItemInput,
+  type ConsumableInput,
   type ParticipantInput,
   type ParticipantProductInput,
   type ParticipantWithProducts,
@@ -38,6 +45,7 @@ import {
 import type {
   Congress,
   CongressChecklistItem,
+  CongressConsumable,
   CongressRemainingProduct,
   CongressStockItem,
   CongressStockItemStatus,
@@ -391,6 +399,83 @@ export function useDeleteCongressStockItem() {
       queryClient.invalidateQueries({ queryKey: ['congress_stock_items', variables.congressId] })
       queryClient.invalidateQueries({ queryKey: ['congress_stock_items', 'all'] })
       toast.success('Ürün silindi')
+    },
+    onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
+  })
+}
+
+export function useConsumables(congressId: string | undefined) {
+  return useQuery({
+    queryKey: ['congress_consumables', congressId],
+    queryFn: () => fetchConsumables(congressId as string),
+    enabled: !!congressId,
+  })
+}
+
+export function useCreateConsumable(congressId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: Omit<ConsumableInput, 'congress_id'>) => createConsumable({ ...input, congress_id: congressId }),
+    onSuccess: (created) => {
+      queryClient.setQueryData<CongressConsumable[]>(['congress_consumables', congressId], (old) =>
+        old ? [...old, created] : old,
+      )
+      queryClient.invalidateQueries({ queryKey: ['congress_consumables', congressId] })
+    },
+    onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
+  })
+}
+
+export function useCreateConsumablesBulk(congressId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (items: { name: string; quantity: number }[]) => createConsumablesBulk(congressId, items),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['congress_consumables', congressId] })
+      toast.success('Standart liste eklendi')
+    },
+    onError: (error: Error) => toast.error('Standart liste eklenemedi', { description: error.message }),
+  })
+}
+
+export function useSetConsumableUsed(congressId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, is_used }: { id: string; is_used: boolean }) => setConsumableUsed(id, is_used),
+    onSuccess: (_data, { id, is_used }) => {
+      queryClient.setQueryData<CongressConsumable[]>(['congress_consumables', congressId], (old) =>
+        old?.map((item) => (item.id === id ? { ...item, is_used } : item)),
+      )
+      queryClient.invalidateQueries({ queryKey: ['congress_consumables', congressId] })
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateConsumable(congressId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: { name: string; quantity: number } }) =>
+      updateConsumable(id, input),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<CongressConsumable[]>(['congress_consumables', congressId], (old) =>
+        old?.map((item) => (item.id === updated.id ? updated : item)),
+      )
+      queryClient.invalidateQueries({ queryKey: ['congress_consumables', congressId] })
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useDeleteConsumable(congressId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteConsumable(id),
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData<CongressConsumable[]>(['congress_consumables', congressId], (old) =>
+        old?.filter((item) => item.id !== id),
+      )
+      queryClient.invalidateQueries({ queryKey: ['congress_consumables', congressId] })
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
   })
