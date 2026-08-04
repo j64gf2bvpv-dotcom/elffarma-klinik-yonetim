@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.13.5] - 2026-08-04
+
+**Örnek veri emoji görselleri daha kurumsal görünecek şekilde yenilendi:** Düz tek renkli daire yerine, Ana Panel'deki Hızlı İşlemler ikonlarıyla aynı "premium" tasarım dili kullanılıyor artık — diyagonal gradyan zemin, üstte ince cam parlaklığı, squircle köşe ve hafif kenarlık. Renk paleti de marka renkleriyle (oklch) tutarlı hale getirildi. **Not:** Daha önce "Örnek Veri Ekle" ile oluşturulmuş kayıtlar eski düz renkli görseli korur — yeni stili görmek için Ayarlar'dan önce "Örnek Verileri Sil", sonra tekrar "Örnek Veri Ekle" yapmanız gerekir. Şema değişikliği yok.
+
 ## [2.13.4] - 2026-08-04
 
 **Özet kartlardaki metin ezilmesi bu kez gerçek piksel hesabıyla düzeltildi:** Önceki eşik (210px) sparkline'ın tam açıldığı noktada metne sadece ~22px bırakıyordu — kart genişliği eşiği ile sparkline+ikon+boşluk toplamı çakışıyordu. Izgara tabanı 200px'ten 260px'e, sparkline gösterme eşiği 210px'ten 350px'e çıkarıldı (her ikisi de gerçek piksel hesabıyla: ikon 44 + boşluk 12 + kart iç boşluğu 48 + okunabilir metin için en az 120-150px).
