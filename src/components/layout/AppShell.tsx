@@ -213,6 +213,23 @@ function NotifIcon({ icon: Icon, tone = 'destructive' }: { icon: React.ElementTy
   )
 }
 
+/** Üst bardaki ikon-only butonların üzerine gelince adını gösteren küçük etiket
+ * — tarayıcının varsayılan `title` tooltipi yerine, uygulamanın kendi diliyle
+ * (koyu zemin, yumuşak geçiş) anında ve belirgin görünsün diye. */
+function TopBarIconTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="group relative flex">
+      {children}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 scale-95 rounded-md bg-foreground px-2 py-1 text-xs font-medium whitespace-nowrap text-background opacity-0 shadow-md transition-all duration-150 group-hover:scale-100 group-hover:opacity-100"
+      >
+        {label}
+      </span>
+    </div>
+  )
+}
+
 function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColorMode: () => void }) {
   const { staff, signOut } = useAuth()
   const isOnline = useOnlineStatus()
@@ -321,40 +338,43 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
           {isOnline ? <Wifi className="size-4 text-success" /> : <WifiOff className="size-4 text-destructive" />}
         </button>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              title="Hesap makinesi"
-              className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              <CalculatorIcon className="size-[1.1rem]" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-auto p-3">
-            <Calculator />
-          </PopoverContent>
-        </Popover>
+        <TopBarIconTooltip label="Hesap makinesi">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <CalculatorIcon className="size-[1.1rem]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-3">
+              <Calculator />
+            </PopoverContent>
+          </Popover>
+        </TopBarIconTooltip>
 
-        <a
-          href="https://web.whatsapp.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="WhatsApp Web'i aç"
-          className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          <MessageCircle className="size-[1.1rem]" />
-        </a>
+        <TopBarIconTooltip label="WhatsApp Web'i aç">
+          <a
+            href="https://web.whatsapp.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <MessageCircle className="size-[1.1rem]" />
+          </a>
+        </TopBarIconTooltip>
 
-        <a
-          href="https://webmail.elffarma.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Elffarma Webmail'i aç"
-          className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          <Mail className="size-[1.1rem]" />
-        </a>
+        <TopBarIconTooltip label="Elffarma Webmail'i aç">
+          <a
+            href="https://webmail.elffarma.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <Mail className="size-[1.1rem]" />
+          </a>
+        </TopBarIconTooltip>
 
         <button
           type="button"

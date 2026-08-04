@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.15.10] - 2026-08-04
+
+**Üst bardaki hesap makinesi/WhatsApp/mail ikonlarına belirgin hover etiketi eklendi:** Tarayıcının gecikmeli/soluk varsayılan `title` tooltipi yerine, üzerine gelince anında beliren, uygulamanın kendi diliyle (koyu zemin, yumuşak geçiş) küçük bir isim etiketi eklendi. Şema değişikliği yok.
+
 ## [2.15.9] - 2026-08-04
 
 **Üst bara WhatsApp Web kısayolu eklendi:** Hesap makinesinin yanına, WhatsApp Web'i (`web.whatsapp.com`) sistem tarayıcısında açan bir buton geldi — mail kısayoluyla aynı desende. Şema değişikliği yok.
