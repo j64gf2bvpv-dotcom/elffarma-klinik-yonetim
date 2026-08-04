@@ -36,6 +36,11 @@ export class ClaudeProvider implements AIProvider {
       'Content-Type': 'application/json',
       'x-api-key': this.apiKey ?? '',
       'anthropic-version': ANTHROPIC_VERSION,
+      // Anthropic, backend proxy'siz doğrudan tarayıcı/renderer'dan (bu
+      // uygulamanın yaptığı gibi) yapılan istekleri bu başlık olmadan CORS
+      // seviyesinde reddediyor — eksikliği, kullanıcıya anlamsız/genel bir
+      // "bağlanılamadı" ağ hatası olarak yansıyordu.
+      'anthropic-dangerous-direct-browser-access': 'true',
     }
   }
 
