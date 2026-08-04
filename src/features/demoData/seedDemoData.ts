@@ -372,41 +372,47 @@ export async function seedDemoData(): Promise<SeedResult> {
   })
 
   // Ürün ve Sarf Malzeme Takibi için örnek: bir ürün "sarf edildi" olarak
-  // işaretlenmiş, bir ürün hâlâ "götürüldü (bekliyor)" durumunda.
-  if (createdProducts[0]) {
-    const stockItem = await createCongressStockItem({
-      congress_id: createdCongress.id,
-      product_id: createdProducts[0].id,
-      product_name: createdProducts[0].name,
-      quantity: 5,
-      unit_price: createdProducts[0].unit_price,
-      note: `${DEMO_LABEL_PREFIX} sarf malzeme`,
-    })
-    await recordStockMovement({
-      product_id: createdProducts[0].id,
-      movement_type: 'out',
-      quantity: 5,
-      reason: 'Kongre/Workshop için götürüldü',
-      note: DEMO_CONGRESS.name,
-    })
-    await updateCongressStockItemStatus(stockItem.id, 'sarf_edildi')
-  }
-  if (createdProducts[1]) {
-    await createCongressStockItem({
-      congress_id: createdCongress.id,
-      product_id: createdProducts[1].id,
-      product_name: createdProducts[1].name,
-      quantity: 3,
-      unit_price: createdProducts[1].unit_price,
-      note: `${DEMO_LABEL_PREFIX} stand vitrini`,
-    })
-    await recordStockMovement({
-      product_id: createdProducts[1].id,
-      movement_type: 'out',
-      quantity: 3,
-      reason: 'Kongre/Workshop için götürüldü',
-      note: DEMO_CONGRESS.name,
-    })
+  // işaretlenmiş, bir ürün hâlâ "götürüldü (bekliyor)" durumunda. congress_stock_items
+  // de görece yeni bir tablo — şema güncel değilse burası ayrı bir try/catch'te
+  // (bkz. yukarıdaki araç/Instagram bloğundaki aynı gerekçe).
+  try {
+    if (createdProducts[0]) {
+      const stockItem = await createCongressStockItem({
+        congress_id: createdCongress.id,
+        product_id: createdProducts[0].id,
+        product_name: createdProducts[0].name,
+        quantity: 5,
+        unit_price: createdProducts[0].unit_price,
+        note: `${DEMO_LABEL_PREFIX} sarf malzeme`,
+      })
+      await recordStockMovement({
+        product_id: createdProducts[0].id,
+        movement_type: 'out',
+        quantity: 5,
+        reason: 'Kongre/Workshop için götürüldü',
+        note: DEMO_CONGRESS.name,
+      })
+      await updateCongressStockItemStatus(stockItem.id, 'sarf_edildi')
+    }
+    if (createdProducts[1]) {
+      await createCongressStockItem({
+        congress_id: createdCongress.id,
+        product_id: createdProducts[1].id,
+        product_name: createdProducts[1].name,
+        quantity: 3,
+        unit_price: createdProducts[1].unit_price,
+        note: `${DEMO_LABEL_PREFIX} stand vitrini`,
+      })
+      await recordStockMovement({
+        product_id: createdProducts[1].id,
+        movement_type: 'out',
+        quantity: 3,
+        reason: 'Kongre/Workshop için götürüldü',
+        note: DEMO_CONGRESS.name,
+      })
+    }
+  } catch (err) {
+    console.warn('Örnek veri: kongre ürün/sarf malzeme kaydı eklenemedi (şema güncel olmayabilir)', err)
   }
 
   await createCommissionRule({
@@ -429,34 +435,53 @@ export async function seedDemoData(): Promise<SeedResult> {
     expensesCount++
   }
 
-  const createdVehicle = await createVehicle({
-    brand_model: DEMO_VEHICLE.brand_model,
-    year: DEMO_VEHICLE.year,
-    plate_number: DEMO_VEHICLE.plate_number,
-    registration_info: DEMO_VEHICLE.registration_info,
-    vendor_company: DEMO_VEHICLE.vendor_company,
-    sales_rep_id: createdSalesReps[0]?.id ?? null,
-    monthly_rental_price: DEMO_VEHICLE.monthly_rental_price,
-    maintenance_date: dateDaysAhead(randomInt(15, 45)),
-    has_utts: DEMO_VEHICLE.has_utts,
-    notes: `${DEMO_LABEL_PREFIX} Deneme araç kaydı`,
-  })
-  await createVehicleFuelLog({
-    vehicle_id: createdVehicle.id,
-    fill_date: dateDaysAgo(randomInt(1, 10)),
-    amount: randomInt(800, 2000),
-    note: `${DEMO_LABEL_PREFIX} Deneme yakıt kaydı`,
-  })
+  // Araçlar ve Instagram Doktor Listesi görece yeni tablolar (bkz.
+  // supabase/schema.sql) — bir kurulumda henüz şema güncellenmemişse bu
+  // bölümler tek başına başarısız olabilir. Buraya kadar oluşturulan TÜM
+  // diğer örnek veri (doktor/ürün/satış/tahsilat/kongre/CRM/vb.) kalıcı
+  // olarak eklenmiş durumda — o başarıyı "eklenemedi" gibi yanlış bir
+  // hataya boğmamak için bu iki bölüm ayrı try/catch'e alındı; başarısız
+  // olurlarsa sadece konsola uyarı düşer, sonuçta 0 olarak görünürler.
+  let vehiclesCount = 0
+  let fuelLogsCount = 0
+  try {
+    const createdVehicle = await createVehicle({
+      brand_model: DEMO_VEHICLE.brand_model,
+      year: DEMO_VEHICLE.year,
+      plate_number: DEMO_VEHICLE.plate_number,
+      registration_info: DEMO_VEHICLE.registration_info,
+      vendor_company: DEMO_VEHICLE.vendor_company,
+      sales_rep_id: createdSalesReps[0]?.id ?? null,
+      monthly_rental_price: DEMO_VEHICLE.monthly_rental_price,
+      maintenance_date: dateDaysAhead(randomInt(15, 45)),
+      has_utts: DEMO_VEHICLE.has_utts,
+      notes: `${DEMO_LABEL_PREFIX} Deneme araç kaydı`,
+    })
+    vehiclesCount = 1
+    await createVehicleFuelLog({
+      vehicle_id: createdVehicle.id,
+      fill_date: dateDaysAgo(randomInt(1, 10)),
+      amount: randomInt(800, 2000),
+      note: `${DEMO_LABEL_PREFIX} Deneme yakıt kaydı`,
+    })
+    fuelLogsCount = 1
+  } catch (err) {
+    console.warn('Örnek veri: araç/yakıt kaydı eklenemedi (şema güncel olmayabilir)', err)
+  }
 
   let instagramLeadsCount = 0
-  for (const lead of DEMO_INSTAGRAM_LEADS) {
-    await createInstagramLead({
-      full_name: lead.full_name,
-      instagram_username: lead.instagram_username,
-      phone: lead.phone,
-      notes: `${DEMO_LABEL_PREFIX} Deneme Instagram doktor kaydı`,
-    })
-    instagramLeadsCount++
+  try {
+    for (const lead of DEMO_INSTAGRAM_LEADS) {
+      await createInstagramLead({
+        full_name: lead.full_name,
+        instagram_username: lead.instagram_username,
+        phone: lead.phone,
+        notes: `${DEMO_LABEL_PREFIX} Deneme Instagram doktor kaydı`,
+      })
+      instagramLeadsCount++
+    }
+  } catch (err) {
+    console.warn('Örnek veri: Instagram doktoru eklenemedi (şema güncel olmayabilir)', err)
   }
 
   return {
@@ -474,8 +499,8 @@ export async function seedDemoData(): Promise<SeedResult> {
     clinics: createdClinics.length,
     crmActivities: crmActivitiesCount,
     crmOpportunities: crmOpportunitiesCount,
-    vehicles: 1,
-    fuelLogs: 1,
+    vehicles: vehiclesCount,
+    fuelLogs: fuelLogsCount,
     instagramLeads: instagramLeadsCount,
   }
 }
@@ -555,11 +580,25 @@ export async function clearDemoData(): Promise<ClearResult> {
 
   // vehicle_fuel_logs, vehicles.id'ye `on delete cascade` bağlı (bkz.
   // supabase/schema.sql) — aracı silmek yeterli, yakıt kayıtları otomatik gider.
-  const vehicles = await deleteAllByIlike('vehicles', 'notes')
-  for (const v of vehicles) await deleteVehicle(v.id)
+  // Araçlar ve Instagram Doktor Listesi görece yeni tablolar — şema güncel
+  // değilse (bkz. seedDemoData'daki aynı gerekçe) burada da ayrı try/catch'te,
+  // aksi halde buraya kadar başarıyla silinmiş her şey "silinemedi" hatasına
+  // boğulurdu.
+  let vehicles: { id: string }[] = []
+  try {
+    vehicles = await deleteAllByIlike('vehicles', 'notes')
+    for (const v of vehicles) await deleteVehicle(v.id)
+  } catch (err) {
+    console.warn('Örnek veri silme: araç kaydı silinemedi (şema güncel olmayabilir)', err)
+  }
 
-  const instagramLeads = await deleteAllByIlike('instagram_leads', 'notes')
-  for (const l of instagramLeads) await deleteInstagramLead(l.id)
+  let instagramLeads: { id: string }[] = []
+  try {
+    instagramLeads = await deleteAllByIlike('instagram_leads', 'notes')
+    for (const l of instagramLeads) await deleteInstagramLead(l.id)
+  } catch (err) {
+    console.warn('Örnek veri silme: Instagram doktoru silinemedi (şema güncel olmayabilir)', err)
+  }
 
   return {
     customersDeleted: customers?.length ?? 0,
