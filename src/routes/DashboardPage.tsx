@@ -44,7 +44,6 @@ import {
   BellRing,
   Trophy,
   Percent,
-  FlaskConical,
   Layers,
   Users,
   Clock,
@@ -113,8 +112,6 @@ import { useCommissionRules } from '@/features/commissions/hooks'
 import { calculateCommissions } from '@/features/commissions/calculateCommissions'
 import { useCustomers } from '@/features/customers/hooks'
 import { useAllProductLots } from '@/features/stock/hooks'
-import { useSampleRequests } from '@/features/samples/hooks'
-import { calculateSampleConversion } from '@/features/samples/calculateSampleConversion'
 import { getExpiryStatus } from '@/lib/expiry'
 import { pctDelta } from '@/lib/pctDelta'
 import { tr } from '@/i18n/tr'
@@ -308,7 +305,6 @@ type WidgetId =
   | 'recent_activity'
   | 'rep_performance'
   | 'commission_summary'
-  | 'sample_conversion'
   | 'lot_expiry'
   | 'ai_insights'
 
@@ -345,7 +341,6 @@ const DEFAULT_SPAN: Record<WidgetId, number> = {
   congress_prices: 6,
   recent_activity: 12,
   commission_summary: 6,
-  sample_conversion: 6,
   lot_expiry: 6,
   ai_insights: 6,
 }
@@ -379,7 +374,6 @@ const defaultLayout: LayoutItem[] = [
   { id: 'congress_prices', visible: false, span: null },
   { id: 'recent_activity', visible: false, span: null },
   { id: 'commission_summary', visible: false, span: null },
-  { id: 'sample_conversion', visible: false, span: null },
   { id: 'lot_expiry', visible: false, span: null },
 ]
 
@@ -399,7 +393,6 @@ const widgetLabels: Record<WidgetId, string> = {
   recent_activity: 'Son İşlemler',
   rep_performance: 'Temsilci Performansı',
   commission_summary: 'Prim Özeti (Bu Ay)',
-  sample_conversion: 'Numune Dönüşüm Oranı',
   lot_expiry: 'Lot / SKT Riski',
   ai_insights: 'Yapay Zeka Uyarıları',
 }
@@ -497,7 +490,6 @@ export function DashboardPage() {
   const { data: commissionRules = [] } = useCommissionRules()
   const { data: doctors = [] } = useCustomers('')
   const { data: productLots = [] } = useAllProductLots()
-  const { data: sampleRequests = [] } = useSampleRequests()
 
   const { data: welcomeSetting } = useAppSetting<{ text?: string; city?: string }>('dashboard_welcome')
   const saveWelcomeMutation = useSaveAppSetting<{ text?: string; city?: string }>('dashboard_welcome')
@@ -544,11 +536,6 @@ export function DashboardPage() {
     [commissionRules, sales, monthPayments, products, doctors, salesReps],
   )
   const totalCommissionThisMonth = commissionSummary.reduce((sum, r) => sum + r.netTotal, 0)
-
-  const sampleConversion = React.useMemo(
-    () => calculateSampleConversion(sampleRequests, sales),
-    [sampleRequests, sales],
-  )
 
   const expiringLotsCount = React.useMemo(
     () => productLots.filter((lot) => lot.quantity > 0 && getExpiryStatus(lot.expiry_date, 90) !== 'ok' && getExpiryStatus(lot.expiry_date, 90) !== null).length,
@@ -1484,37 +1471,6 @@ export function DashboardPage() {
                 </div>
               ))
             )}
-          </CardContent>
-        </Card>
-      )
-    }
-
-    if (id === 'sample_conversion') {
-      return (
-        <Card>
-          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
-              <FlaskConical className="size-4 text-primary" /> Numune Dönüşüm Oranı
-            </CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/numuneler">
-                Numunelere git <ArrowRight className="size-3.5" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="text-2xl font-semibold">{sampleConversion.totalItems}</p>
-              <p className="text-muted-foreground text-xs">Toplam Numune</p>
-            </div>
-            <div>
-              <p className="text-2xl font-semibold text-success">{sampleConversion.convertedItems}</p>
-              <p className="text-muted-foreground text-xs">Satışa Döndü</p>
-            </div>
-            <div>
-              <p className="text-2xl font-semibold">%{sampleConversion.percent.toFixed(1)}</p>
-              <p className="text-muted-foreground text-xs">Dönüşüm Oranı</p>
-            </div>
           </CardContent>
         </Card>
       )

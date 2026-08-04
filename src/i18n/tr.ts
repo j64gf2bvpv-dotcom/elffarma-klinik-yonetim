@@ -4,7 +4,6 @@ export const tr = {
     customers: 'Cari Kart',
     clinics: 'Klinikler',
     commissions: 'Prim Hesaplama',
-    samples: 'Numune Takibi',
     crm: 'CRM',
     aiInsights: 'Yapay Zeka Analiz',
     instagramLeads: 'Instagram Doktor Listesi',

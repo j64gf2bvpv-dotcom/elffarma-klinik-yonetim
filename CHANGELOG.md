@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.8] - 2026-08-04
+
+**Numune Takibi ayrı bir modül olmaktan çıkarıldı, Cari Kart'ta basit bir işaretleme haline geldi:** Sol menüdeki "Numune Takibi" sayfası ve onay/kargo/teslim iş akışı (durum dropdown'ı, kargo takip no, teslim alan alanları, ayrı istatistik kartları) kaldırıldı. Doktorun Cari Kart sayfasındaki "Numuneler" sekmesi artık her numune kaydını ürün/adet/tarih özetiyle ve tek bir "verildi" işaret kutusuyla gösteriyor — kutuyu işaretlemek durumu doğrudan günceller, ayrı bir sayfaya gitmeye gerek yok. Numune ekleme formu (ürün/lot/SKT/adet, aylık kota uyarısı) ve stok hareketi entegrasyonu aynen korundu, sadece görüntüleme/yönetim tarafı sadeleşti. Eski özelleştirilebilir Panel'deki kullanılmayan "Numune Dönüşüm Oranı" widget'ı da kaldırıldı. Şema değişikliği yok (veritabanı tabloları ve geçmiş veriler korunuyor).
+
 ## [2.14.7] - 2026-08-04
 
 **Ajanda görselleri belirginleştirildi:** Kök neden bulundu — FullCalendar'ın varsayılan mavi etkinlik zemini (`--fc-event-bg-color`) hiç ezilmemişti, bu yüzden Kongre/Ödeme Vadesi/Hatırlatma etkinlikleri türden bağımsız hep aynı mavi kutuda görünüyordu; artık her etkinlik kendi rengiyle soluk bir zemin + sol renk şeridi alıyor. "Takvimler" filtre listesi diğer panel kartlarıyla tutarlı bir ikonlu başlığa ve renkli ikon rozeti + sayı rozetine kavuştu. Mini takvimdeki gün butonları büyütüldü (28px→36px) ve nokta olmayan günlerde de aynı yükseklikte kalacak şekilde hizalandı. Takvim günü kutucuklarına üzerine gelince hafif vurgu ve daha ferah bir minimum yükseklik eklendi. Şema değişikliği yok.

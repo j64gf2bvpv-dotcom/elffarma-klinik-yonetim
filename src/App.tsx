@@ -11,7 +11,6 @@ import { CustomerDetailPage } from '@/routes/CustomerDetailPage'
 import { ClinicsPage } from '@/routes/ClinicsPage'
 import { ClinicDetailPage } from '@/routes/ClinicDetailPage'
 import { PrimPage } from '@/routes/PrimPage'
-import { SamplesPage } from '@/routes/SamplesPage'
 import { CrmPage } from '@/routes/CrmPage'
 import { AIInsightsPage } from '@/routes/AIInsightsPage'
 import { InstagramLeadsPage } from '@/routes/InstagramLeadsPage'
@@ -64,7 +63,6 @@ function App() {
             <Route path="klinikler" element={<ClinicsPage />} />
             <Route path="klinikler/:id" element={<ClinicDetailPage />} />
             <Route path="prim" element={<PrimPage />} />
-            <Route path="numuneler" element={<SamplesPage />} />
             <Route path="crm" element={<CrmPage />} />
             <Route path="ai-analiz" element={<AIInsightsPage />} />
             <Route path="instagram-doktor-listesi" element={<InstagramLeadsPage />} />

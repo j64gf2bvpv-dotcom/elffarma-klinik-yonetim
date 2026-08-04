@@ -71,7 +71,6 @@ const navItems: { to: string; label: string; key: NavKey; end?: boolean }[] = [
   { to: '/ajanda', label: tr.nav.agenda, key: 'agenda' },
   { to: '/klinikler', label: tr.nav.clinics, key: 'clinics' },
   { to: '/prim', label: tr.nav.commissions, key: 'commissions' },
-  { to: '/numuneler', label: tr.nav.samples, key: 'samples' },
   { to: '/crm', label: tr.nav.crm, key: 'crm' },
   { to: '/ai-analiz', label: tr.nav.aiInsights, key: 'aiInsights' },
   { to: '/instagram-doktor-listesi', label: tr.nav.instagramLeads, key: 'instagramLeads' },

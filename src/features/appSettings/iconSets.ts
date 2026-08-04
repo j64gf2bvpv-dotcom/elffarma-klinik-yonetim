@@ -39,9 +39,6 @@ import {
   Percent,
   BadgePercent,
   Award,
-  FlaskConical,
-  TestTube,
-  Beaker,
   Handshake,
   Users2,
   UserCheck,
@@ -51,7 +48,6 @@ import {
   LayoutPanelLeft,
   Contact,
   Gem,
-  Syringe,
   Archive,
   WalletCards,
   ShoppingBag,
@@ -60,7 +56,6 @@ import {
   AlarmClock,
   Cog,
   User,
-  TestTubes,
   UsersRound,
   Wand2,
   Package,
@@ -82,7 +77,6 @@ export type NavKey =
   | 'customers'
   | 'clinics'
   | 'commissions'
-  | 'samples'
   | 'crm'
   | 'aiInsights'
   | 'instagramLeads'
@@ -120,7 +114,6 @@ export const iconSets: IconSet[] = [
       customers: UserRound,
       clinics: Building2,
       commissions: Percent,
-      samples: FlaskConical,
       crm: Handshake,
       aiInsights: Sparkles,
       instagramLeads: AtSign,
@@ -148,7 +141,6 @@ export const iconSets: IconSet[] = [
       customers: Users,
       clinics: Building,
       commissions: BadgePercent,
-      samples: TestTube,
       crm: Users2,
       aiInsights: BrainCircuit,
       instagramLeads: Camera,
@@ -176,7 +168,6 @@ export const iconSets: IconSet[] = [
       customers: CircleUserRound,
       clinics: Hospital,
       commissions: Award,
-      samples: Beaker,
       crm: UserCheck,
       aiInsights: Bot,
       instagramLeads: UserSearch,
@@ -204,7 +195,6 @@ export const iconSets: IconSet[] = [
       customers: Contact,
       clinics: Building2,
       commissions: Gem,
-      samples: Syringe,
       crm: Handshake,
       aiInsights: Sparkles,
       instagramLeads: AtSign,
@@ -232,7 +222,6 @@ export const iconSets: IconSet[] = [
       customers: User,
       clinics: Hospital,
       commissions: Percent,
-      samples: TestTubes,
       crm: UsersRound,
       aiInsights: Wand2,
       instagramLeads: Contact2,
