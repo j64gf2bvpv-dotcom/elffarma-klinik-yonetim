@@ -1618,6 +1618,42 @@ drop policy if exists "vehicle_fuel_logs_all_staff" on public.vehicle_fuel_logs;
 create policy "vehicle_fuel_logs_all_staff" on public.vehicle_fuel_logs for all
   using (public.is_active_staff()) with check (public.is_active_staff());
 
+-- =========================================================
+-- 37. KONGRE/WORKSHOP ÜRÜN VE SARF MALZEME TAKİBİ (congress_stock_items)
+-- =========================================================
+-- Kongreye/workshopa götürülen HER ürün tek bir satırda: götürülürken
+-- gerçek stoktan düşülür (record_stock_movement RPC'siyle, client'ta
+-- movement_type='out'). Satır sonradan bir duruma taşınır: kullanıldı/
+-- satıldı, sarf edildi (tüketildi), ya da geri döndü (stoğa iade — client
+-- tarafında movement_type='return' ile telafi edilir). 'goturuldu' durumunda
+-- kalan (henüz kullanılmamış/dönmemiş) miktar "eksik/bekleyen" sayılır.
+-- Doktora özel satış takibi (congress_participant_products) ayrı ve
+-- dokunulmadı — bu tablo genel envanter/sarf kontrolü için.
+create table if not exists public.congress_stock_items (
+  id uuid primary key default gen_random_uuid(),
+  congress_id uuid not null references public.congresses (id) on delete cascade,
+  product_id uuid references public.products (id) on delete set null,
+  product_name text not null,
+  quantity integer not null check (quantity > 0),
+  status text not null default 'goturuldu' check (status in ('goturuldu', 'kullanildi', 'sarf_edildi', 'geri_dondu')),
+  unit_price numeric(10, 2),
+  note text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists congress_stock_items_congress_idx on public.congress_stock_items (congress_id);
+
+drop trigger if exists set_updated_at on public.congress_stock_items;
+create trigger set_updated_at before update on public.congress_stock_items
+for each row execute function public.set_updated_at();
+
+alter table public.congress_stock_items enable row level security;
+
+drop policy if exists "congress_stock_items_all_staff" on public.congress_stock_items;
+create policy "congress_stock_items_all_staff" on public.congress_stock_items for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

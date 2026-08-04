@@ -15,6 +15,7 @@ import {
   BellRing,
   ClipboardX,
   ClipboardList,
+  Boxes,
   Wallet,
   PackageOpen,
   CloudUpload,
@@ -226,6 +227,9 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
   const visiblePendingProducts = alerts.pendingProducts.filter((p) => !dismissed.has(`pending:${p.id}`))
   const visibleUpcomingCongresses = alerts.upcomingCongresses.filter((c) => !dismissed.has(`congress:${c.id}`))
   const visibleIncompleteChecklists = alerts.incompleteChecklists.filter((c) => !dismissed.has(`checklist:${c.id}`))
+  const visibleCongressStockShortfall = alerts.congressStockShortfall.filter(
+    (c) => !dismissed.has(`shortfall:${c.id}`),
+  )
 
   const visibleTotal =
     visibleDueReminders.length +
@@ -235,7 +239,8 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
     visiblePaymentDue.length +
     visibleDoctorsWithBalance.length +
     visiblePendingProducts.length +
-    visibleIncompleteChecklists.length
+    visibleIncompleteChecklists.length +
+    visibleCongressStockShortfall.length
 
   return (
     <header className="bg-background/70 supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-20 flex h-16 shrink-0 items-center gap-4 border-b border-border/60 px-6 md:px-8">
@@ -400,6 +405,17 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
                       ? 'hiç madde yok'
                       : `${c.missingChecklistItems}/${c.totalChecklistItems} tamamlanmadı`}
                     )
+                  </span>
+                </Link>
+              </DropdownMenuItem>
+            ))}
+            {visibleCongressStockShortfall.slice(0, 3).map((c) => (
+              <DropdownMenuItem key={c.id} asChild onSelect={() => dismiss(`shortfall:${c.id}`)}>
+                <Link to={`/kongreler/${c.congress_id}`} className="flex items-start gap-2">
+                  <NotifIcon icon={Boxes} />
+                  <span className="text-xs">
+                    <span className="font-medium">{c.name}</span> bitti ama {c.productCount} üründe{' '}
+                    {c.pendingQty} adet hâlâ "Götürüldü" durumunda — kullanıldı/döndü olarak işaretlenmedi
                   </span>
                 </Link>
               </DropdownMenuItem>

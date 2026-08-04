@@ -4,32 +4,44 @@ import {
   createChecklistItem,
   createChecklistItemsBulk,
   createCongress,
+  createCongressStockItem,
   createParticipant,
   createParticipantProduct,
   createRemainingProduct,
   deleteChecklistItem,
   deleteCongress,
+  deleteCongressStockItem,
   deleteParticipant,
   deleteParticipantProduct,
   deleteRemainingProduct,
   fetchAllChecklistItems,
+  fetchAllCongressStockItems,
   fetchAllParticipantProductSales,
   fetchChecklistItems,
   fetchCongress,
   fetchCongresses,
+  fetchCongressStockItems,
   fetchParticipants,
   fetchParticipationsByDoctorName,
   fetchRemainingProducts,
   setChecklistItemDone,
   updateCongress,
+  updateCongressStockItemStatus,
   updateParticipant,
   type CongressInput,
+  type CongressStockItemInput,
   type ParticipantInput,
   type ParticipantProductInput,
   type ParticipantWithProducts,
   type RemainingProductInput,
 } from './api'
-import type { Congress, CongressChecklistItem, CongressRemainingProduct } from '@/types/database'
+import type {
+  Congress,
+  CongressChecklistItem,
+  CongressRemainingProduct,
+  CongressStockItem,
+  CongressStockItemStatus,
+} from '@/types/database'
 
 export function useAllParticipantProductSales() {
   return useQuery({
@@ -318,6 +330,67 @@ export function useDeleteChecklistItem(congressId: string) {
       )
       queryClient.invalidateQueries({ queryKey: ['congress_checklist_items', congressId] })
       queryClient.invalidateQueries({ queryKey: ['congress_checklist_items_all'] })
+    },
+    onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
+  })
+}
+
+export function useCongressStockItems(congressId: string | undefined) {
+  return useQuery({
+    queryKey: ['congress_stock_items', congressId],
+    queryFn: () => fetchCongressStockItems(congressId as string),
+    enabled: !!congressId,
+  })
+}
+
+export function useAllCongressStockItems() {
+  return useQuery({ queryKey: ['congress_stock_items', 'all'], queryFn: fetchAllCongressStockItems })
+}
+
+export function useCreateCongressStockItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CongressStockItemInput) => createCongressStockItem(input),
+    onSuccess: (created, variables) => {
+      queryClient.setQueryData<CongressStockItem[]>(['congress_stock_items', variables.congress_id], (old) =>
+        old ? [...old, created] : old,
+      )
+      queryClient.invalidateQueries({ queryKey: ['congress_stock_items', variables.congress_id] })
+      queryClient.invalidateQueries({ queryKey: ['congress_stock_items', 'all'] })
+      toast.success('Ürün eklendi')
+    },
+    onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateCongressStockItemStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: CongressStockItemStatus; congressId: string }) =>
+      updateCongressStockItemStatus(id, status),
+    onSuccess: (_updated, variables) => {
+      queryClient.setQueryData<CongressStockItem[]>(['congress_stock_items', variables.congressId], (old) =>
+        old?.map((item) => (item.id === variables.id ? { ...item, status: variables.status } : item)),
+      )
+      queryClient.invalidateQueries({ queryKey: ['congress_stock_items', variables.congressId] })
+      queryClient.invalidateQueries({ queryKey: ['congress_stock_items', 'all'] })
+      toast.success('Durum güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useDeleteCongressStockItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id }: { id: string; congressId: string }) => deleteCongressStockItem(id),
+    onSuccess: (_data, variables) => {
+      queryClient.setQueryData<CongressStockItem[]>(['congress_stock_items', variables.congressId], (old) =>
+        old?.filter((item) => item.id !== variables.id),
+      )
+      queryClient.invalidateQueries({ queryKey: ['congress_stock_items', variables.congressId] })
+      queryClient.invalidateQueries({ queryKey: ['congress_stock_items', 'all'] })
+      toast.success('Ürün silindi')
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
   })

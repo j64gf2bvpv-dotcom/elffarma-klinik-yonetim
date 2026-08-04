@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.14.0] - 2026-08-04
+
+**Kongre/Workshop detay sayfasına "Ürün ve Sarf Malzeme Takibi" eklendi:** Kongreye/workshopa götürülen her ürün tek bir listede — eklenirken gerçek stoktan düşülüyor (record_stock_movement RPC'siyle). Her satırın durumu değiştirilebiliyor: **Götürüldü (Bekliyor) / Kullanıldı-Satıldı / Sarf Edildi / Geri Döndü** — "Geri Döndü" seçilince stoğa otomatik iade ediliyor, tekrar başka duruma alınırsa stoktan tekrar düşülüyor; satır silinirken de stok tutarlılığı korunuyor. Etkinlik bitmiş ama hâlâ "Götürüldü" durumunda kalan (yani hesabı kapanmamış) ürünler varsa panel başlığında uyarı rozeti çıkıyor ve bu durum artık **Bildirimler/uyarılar sisteminde de** (üst çubuk zil menüsü, Hatırlatmalar sayfası, Ana Panel Bildirimler kartı) görünüyor. Doktora özel "Aldığı Ürünler" satış takibi ve mevcut "Kalan/Kullanılmayan Ürünler" listesi olduğu gibi korundu, hiçbir şey bozulmadı — bu yeni panel genel envanter/sarf kontrolü için ek bir katman. Yeni `congress_stock_items` tablosu eklendi — **bu özelliğin çalışması için güncellenmiş `supabase/schema.sql`'in Supabase SQL editöründe çalıştırılması gerekiyor.**
+
 ## [2.13.6] - 2026-08-04
 
 **Örnek veri görselleri artık gerçek Lucide çizgisel ikonlar (emoji değil):** Renkli/karakter-fontuna bağlı emoji glifleri yerine, uygulamanın kendi ikon setinden alınmış çizgisel (stroke, dolgu yok) SVG path'leri aynı gradyan+cam parlaklığı zemininde render ediliyor — temsilciler `UserRound`, ürünler ilgili ikon (Syringe/Droplet/FlaskConical/TestTube), kongre `Presentation`. Artık işletim sistemine göre değişmiyor, tamamen "çizgisel/kurumsal" duruyor.

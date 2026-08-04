@@ -336,6 +336,17 @@ export function useDashboardData() {
         imageUrl: c.image_url,
       })
     }
+    for (const c of alerts.congressStockShortfall.slice(0, 2)) {
+      items.push({
+        key: `shortfall-${c.id}`,
+        icon: PackageOpen,
+        tone: 'destructive',
+        title: `${c.name} — ${c.pendingQty} adet ürün bekliyor`,
+        subtitle: `${c.productCount} üründe hâlâ "Götürüldü" durumunda, işaretlenmedi`,
+        to: `/kongreler/${c.congress_id}`,
+        createdAt: null,
+      })
+    }
     for (const r of alerts.dueReminders.slice(0, 3)) {
       items.push({
         key: `reminder-${r.id}`,

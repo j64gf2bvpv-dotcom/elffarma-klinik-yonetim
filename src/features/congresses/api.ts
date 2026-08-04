@@ -8,6 +8,8 @@ import type {
   CongressParticipant,
   CongressParticipantProduct,
   CongressRemainingProduct,
+  CongressStockItem,
+  CongressStockItemStatus,
 } from '@/types/database'
 
 export interface CongressInput {
@@ -261,5 +263,56 @@ export async function setChecklistItemDone(id: string, is_done: boolean): Promis
 
 export async function deleteChecklistItem(id: string): Promise<void> {
   return offlineDelete('congress_checklist_items', id, 'Kontrol listesi öğesi silme')
+}
+
+export interface CongressStockItemInput {
+  congress_id: string
+  product_id: string
+  product_name: string
+  quantity: number
+  unit_price: number | null
+  note?: string | null
+}
+
+export async function fetchCongressStockItems(congressId: string): Promise<CongressStockItem[]> {
+  const { data, error } = await supabase
+    .from('congress_stock_items')
+    .select('*')
+    .eq('congress_id', congressId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data as CongressStockItem[]
+}
+
+export type CongressStockItemWithCongress = CongressStockItem & {
+  congresses: { name: string; start_date: string | null; end_date: string | null } | null
+}
+
+export async function fetchAllCongressStockItems(): Promise<CongressStockItemWithCongress[]> {
+  const { data, error } = await supabase
+    .from('congress_stock_items')
+    .select('*, congresses(name, start_date, end_date)')
+  if (error) throw error
+  return data as unknown as CongressStockItemWithCongress[]
+}
+
+export async function createCongressStockItem(input: CongressStockItemInput): Promise<CongressStockItem> {
+  const createdBy = await getCurrentUserId()
+  return offlineInsert<CongressStockItem>(
+    'congress_stock_items',
+    { ...input, status: 'goturuldu', created_by: createdBy },
+    `Kongre/workshop ürün: ${input.product_name}`,
+  )
+}
+
+export async function updateCongressStockItemStatus(
+  id: string,
+  status: CongressStockItemStatus,
+): Promise<CongressStockItem> {
+  return offlineUpdate<CongressStockItem>('congress_stock_items', id, { status }, 'Ürün durumu güncelleme')
+}
+
+export async function deleteCongressStockItem(id: string): Promise<void> {
+  return offlineDelete('congress_stock_items', id, 'Kongre/workshop ürün silme')
 }
 

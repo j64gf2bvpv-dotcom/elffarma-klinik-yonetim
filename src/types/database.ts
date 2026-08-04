@@ -408,6 +408,22 @@ export interface CongressRemainingProduct {
   created_at: string
 }
 
+export type CongressStockItemStatus = 'goturuldu' | 'kullanildi' | 'sarf_edildi' | 'geri_dondu'
+
+export interface CongressStockItem {
+  id: string
+  congress_id: string
+  product_id: string | null
+  product_name: string
+  quantity: number
+  status: CongressStockItemStatus
+  unit_price: number | null
+  note: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface CongressChecklistItem {
   id: string
   congress_id: string

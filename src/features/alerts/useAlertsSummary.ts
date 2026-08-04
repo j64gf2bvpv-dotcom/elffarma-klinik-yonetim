@@ -2,7 +2,7 @@ import { addDays } from 'date-fns'
 import { useProducts, useAllProductLots } from '@/features/stock/hooks'
 import { useCustomers, useAllPendingProducts } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
-import { useCongresses, useAllChecklistItems } from '@/features/congresses/hooks'
+import { useCongresses, useAllChecklistItems, useAllCongressStockItems } from '@/features/congresses/hooks'
 import { useReminders } from '@/features/reminders/hooks'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 import { getExpiryStatus } from '@/lib/expiry'
@@ -16,6 +16,7 @@ export function useAlertsSummary() {
   const { data: reminders = [] } = useReminders()
   const { data: productLots = [] } = useAllProductLots()
   const { data: allChecklistItems = [] } = useAllChecklistItems()
+  const { data: allCongressStockItems = [] } = useAllCongressStockItems()
 
   const criticalStock = products.filter((p) => p.current_quantity <= p.critical_stock_threshold)
 
@@ -73,6 +74,37 @@ export function useAlertsSummary() {
     .filter((r) => !r.is_done && new Date(r.due_date) <= now)
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
 
+  // Etkinliği bitmiş (bugünden önce sona ermiş) ama "Götürüldü (Bekliyor)"
+  // durumunda kalan — yani kullanıldı/sarf edildi/geri döndü olarak
+  // işaretlenmemiş — ürünü olan kongre/workshop'lar. Etkinlik hâlâ devam
+  // ediyorsa/gelecekteyse "götürüldü" normal, uyarı değil.
+  const congressStockByCongress = new Map<
+    string,
+    { name: string; pendingQty: number; products: Set<string> }
+  >()
+  for (const item of allCongressStockItems) {
+    if (item.status !== 'goturuldu') continue
+    const congress = item.congresses
+    if (!congress) continue
+    const eventEnd = congress.end_date ?? congress.start_date
+    if (!eventEnd || new Date(eventEnd) >= now) continue
+    if (!congressStockByCongress.has(item.congress_id)) {
+      congressStockByCongress.set(item.congress_id, { name: congress.name, pendingQty: 0, products: new Set() })
+    }
+    const entry = congressStockByCongress.get(item.congress_id)!
+    entry.pendingQty += item.quantity
+    entry.products.add(item.product_name)
+  }
+  const congressStockShortfall = Array.from(congressStockByCongress.entries())
+    .map(([congressId, v]) => ({
+      id: congressId,
+      congress_id: congressId,
+      name: v.name,
+      pendingQty: v.pendingQty,
+      productCount: v.products.size,
+    }))
+    .sort((a, b) => b.pendingQty - a.pendingQty)
+
   const total =
     criticalStock.length +
     expiringProducts.length +
@@ -81,7 +113,8 @@ export function useAlertsSummary() {
     doctorsWithBalance.length +
     pendingProducts.length +
     dueReminders.length +
-    incompleteChecklists.length
+    incompleteChecklists.length +
+    congressStockShortfall.length
 
   return {
     criticalStock,
@@ -93,6 +126,7 @@ export function useAlertsSummary() {
     upcomingCongresses,
     incompleteChecklists,
     dueReminders,
+    congressStockShortfall,
     total,
   }
 }

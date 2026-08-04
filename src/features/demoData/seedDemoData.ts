@@ -6,7 +6,12 @@ import { createSale } from '@/features/sales/api'
 import { createPayment } from '@/features/payments/api'
 import { createSalesRep, updateSalesRep, deleteSalesRep } from '@/features/salesReps/api'
 import { createReminder, deleteReminder } from '@/features/reminders/api'
-import { createCongress, deleteCongress } from '@/features/congresses/api'
+import {
+  createCongress,
+  deleteCongress,
+  createCongressStockItem,
+  updateCongressStockItemStatus,
+} from '@/features/congresses/api'
 import { createVisit, deleteVisit } from '@/features/doctorVisits/api'
 import { createExpense, deleteExpense } from '@/features/expenses/api'
 import { createCommissionRule, deleteCommissionRule } from '@/features/commissions/api'
@@ -348,7 +353,7 @@ export async function seedDemoData(): Promise<SeedResult> {
     remindersCount++
   }
 
-  await createCongress({
+  const createdCongress = await createCongress({
     name: DEMO_CONGRESS.name,
     city: DEMO_CONGRESS.city,
     start_date: dateDaysAhead(DEMO_CONGRESS.daysAhead),
@@ -359,6 +364,44 @@ export async function seedDemoData(): Promise<SeedResult> {
     two_person_price: DEMO_CONGRESS.two_person_price,
     image_url: DEMO_CONGRESS.image_url,
   })
+
+  // Ürün ve Sarf Malzeme Takibi için örnek: bir ürün "sarf edildi" olarak
+  // işaretlenmiş, bir ürün hâlâ "götürüldü (bekliyor)" durumunda.
+  if (createdProducts[0]) {
+    const stockItem = await createCongressStockItem({
+      congress_id: createdCongress.id,
+      product_id: createdProducts[0].id,
+      product_name: createdProducts[0].name,
+      quantity: 5,
+      unit_price: createdProducts[0].unit_price,
+      note: `${DEMO_LABEL_PREFIX} sarf malzeme`,
+    })
+    await recordStockMovement({
+      product_id: createdProducts[0].id,
+      movement_type: 'out',
+      quantity: 5,
+      reason: 'Kongre/Workshop için götürüldü',
+      note: DEMO_CONGRESS.name,
+    })
+    await updateCongressStockItemStatus(stockItem.id, 'sarf_edildi')
+  }
+  if (createdProducts[1]) {
+    await createCongressStockItem({
+      congress_id: createdCongress.id,
+      product_id: createdProducts[1].id,
+      product_name: createdProducts[1].name,
+      quantity: 3,
+      unit_price: createdProducts[1].unit_price,
+      note: `${DEMO_LABEL_PREFIX} stand vitrini`,
+    })
+    await recordStockMovement({
+      product_id: createdProducts[1].id,
+      movement_type: 'out',
+      quantity: 3,
+      reason: 'Kongre/Workshop için götürüldü',
+      note: DEMO_CONGRESS.name,
+    })
+  }
 
   await createCommissionRule({
     name: DEMO_COMMISSION_RULE,

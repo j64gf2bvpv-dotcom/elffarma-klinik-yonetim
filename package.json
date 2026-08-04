@@ -1,7 +1,7 @@
 {
   "name": "klinik-yonetim",
   "private": true,
-  "version": "2.13.6",
+  "version": "2.14.0",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "description": "Medikal estetik klinikleri için müşteri, stok, tahsilat ve randevu yönetimi",
