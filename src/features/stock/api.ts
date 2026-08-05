@@ -54,6 +54,23 @@ export async function fetchStockMovements(productId: string): Promise<StockMovem
   return data as unknown as StockMovementWithStaff[]
 }
 
+export type StockMovementWithProduct = StockMovementWithStaff & { products: { name: string; sku: string | null } | null }
+
+/**
+ * Stok Kartı raporu için TÜM ürünlerin hareket geçmişi — `fetchStockMovements`
+ * (tek ürün, 50 kayıt sınırlı geçmiş dialogu) ile karıştırılmasın. Burada
+ * limit yok ve `products` ilişkisi de geliyor çünkü Tüm Ürünler modunda hangi
+ * hareketin hangi ürüne ait olduğu gösteriliyor.
+ */
+export async function fetchAllStockMovements(): Promise<StockMovementWithProduct[]> {
+  const { data, error } = await supabase
+    .from('stock_movements')
+    .select('*, staff(full_name), customers(full_name), products(name, sku)')
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data as unknown as StockMovementWithProduct[]
+}
+
 export interface RecordMovementInput {
   product_id: string
   movement_type: MovementType
@@ -62,6 +79,7 @@ export interface RecordMovementInput {
   customer_id?: string | null
   note?: string | null
   lot_id?: string | null
+  unit_price?: number | null
 }
 
 export async function recordStockMovement(input: RecordMovementInput): Promise<void> {
@@ -75,9 +93,41 @@ export async function recordStockMovement(input: RecordMovementInput): Promise<v
       p_customer_id: input.customer_id ?? null,
       p_note: input.note ?? null,
       p_lot_id: input.lot_id ?? null,
+      p_unit_price: input.unit_price ?? null,
     },
     `Stok hareketi: ${input.movement_type} × ${input.quantity}`,
   )
+}
+
+export interface UpdateMovementInput extends RecordMovementInput {
+  id: string
+}
+
+/**
+ * Var olan bir stok hareketini düzenler — eski etkiyi geri alıp yeni etkiyi
+ * uygulayarak products.current_quantity'yi senkron tutan `update_stock_movement`
+ * RPC'sini çağırır (bkz. schema.sql böl. 41). Doğrudan tabloya update YAPILMAZ,
+ * aksi halde current_quantity denetim kaydından sapar.
+ */
+export async function updateStockMovement(input: UpdateMovementInput): Promise<void> {
+  return offlineRpc(
+    'update_stock_movement',
+    {
+      p_movement_id: input.id,
+      p_movement_type: input.movement_type,
+      p_quantity: input.quantity,
+      p_reason: input.reason ?? null,
+      p_customer_id: input.customer_id ?? null,
+      p_note: input.note ?? null,
+      p_lot_id: input.lot_id ?? null,
+      p_unit_price: input.unit_price ?? null,
+    },
+    `Stok hareketi güncelleme: ${input.movement_type} × ${input.quantity}`,
+  )
+}
+
+export async function deleteStockMovement(id: string): Promise<void> {
+  return offlineRpc('delete_stock_movement', { p_movement_id: id }, 'Stok hareketi silme')
 }
 
 export async function fetchProductLots(productId: string): Promise<ProductLot[]> {

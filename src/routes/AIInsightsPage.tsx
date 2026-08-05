@@ -11,7 +11,7 @@ import { useAIService } from '@/features/ai/useAIService'
 import { useBusinessSnapshot } from '@/features/ai/useBusinessSnapshot'
 import { snapshotSystemMessage } from '@/features/ai/snapshotSystemMessage'
 import { AIServiceError } from '@/features/ai/types'
-import { readExcelFile } from '@/lib/importData'
+import { extractFileContent } from '@/features/smartImport/extractFileContent'
 import { exportTextReportToWord } from '@/lib/exportData'
 
 type ReportPeriod = 'gunluk' | 'haftalik' | 'aylik'
@@ -37,8 +37,8 @@ export function AIInsightsPage() {
   const [suggestions, setSuggestions] = React.useState('')
   const [suggestionsLoading, setSuggestionsLoading] = React.useState(false)
 
-  const [excelSummary, setExcelSummary] = React.useState('')
-  const [excelLoading, setExcelLoading] = React.useState(false)
+  const [fileSummary, setFileSummary] = React.useState('')
+  const [fileLoading, setFileLoading] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   async function handleAsk() {
@@ -99,33 +99,59 @@ export function AIInsightsPage() {
     }
   }
 
-  async function handleExcelFile(e: React.ChangeEvent<HTMLInputElement>) {
+  /**
+   * Excel/CSV, PDF, Word (.docx), resim veya .txt — hepsini aynı çıkarma
+   * mantığıyla (bkz. Akıllı İçe Aktar / AI Asistan'ın da kullandığı
+   * extractFileContent) okuyup AI'a özetletir. Taranmış/görsel PDF'lerde
+   * metin katmanı yoksa otomatik olarak sayfa görsellerine düşülüp vision
+   * ile okunuyor — "ne verirsem vereyim detaylı taransın" beklentisi böyle
+   * karşılanıyor. Salt özet: hiçbir kayıt oluşturmaz/içe aktarmaz.
+   */
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    setExcelLoading(true)
-    setExcelSummary('')
+    setFileLoading(true)
+    setFileSummary('')
     try {
-      const rows = await readExcelFile(file)
-      const preview = rows.slice(0, 50)
-      const result = await aiService.chat([
-        {
-          role: 'system',
-          content:
-            'Sen bir veri analistisin. Kullanıcının yüklediği Excel dosyasından okunan satırların bir örneğini ' +
-            'göreceksin (en fazla ilk 50 satır). Kısa bir özet çıkar: kaç satır/sütun var, hangi alanlar ' +
-            'göze çarpıyor, dikkat çekici örüntü/anormallik var mı. SADECE TÜRKÇE yaz — başka bir dilde tek kelime bile yazma.',
-        },
-        {
-          role: 'user',
-          content: `Dosya: ${file.name}\nToplam satır (bu örnekte): ${rows.length}\n\nÖrnek veri (JSON):\n${JSON.stringify(preview, null, 2)}`,
-        },
-      ])
-      setExcelSummary(result.content)
+      const content = await extractFileContent(file)
+      const systemMessage =
+        'Sen bir veri analistisin. Kullanıcının yüklediği belgeyi dikkatlice, EKSİKSİZ tara. Kısa ama isabetli ' +
+        'bir özet çıkar: belge ne içeriyor, kaç satır/kayıt/sayfa var, hangi alanlar göze çarpıyor, dikkat çekici ' +
+        'bir örüntü/anormallik/hata var mı. SADECE TÜRKÇE yaz — başka bir dilde tek kelime bile yazma.'
+
+      let result
+      if (content.kind === 'table') {
+        const preview = content.rows.slice(0, 50)
+        result = await aiService.chat([
+          { role: 'system', content: systemMessage },
+          {
+            role: 'user',
+            content: `Dosya: ${file.name}\nToplam satır (bu örnekte): ${content.rows.length}\n\nÖrnek veri (JSON):\n${JSON.stringify(preview, null, 2)}`,
+          },
+        ])
+      } else if (content.kind === 'image') {
+        result = await aiService.chat([
+          { role: 'system', content: systemMessage },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: `Dosya: ${file.name} — sayfa görselleri ekte, dikkatlice oku.` },
+              ...content.dataUrls.map((url) => ({ type: 'image_url' as const, image_url: { url } })),
+            ],
+          },
+        ])
+      } else {
+        result = await aiService.chat([
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: `Dosya: ${file.name}\n\nBelge içeriği:\n${content.text}` },
+        ])
+      }
+      setFileSummary(result.content)
     } catch (err) {
       toast.error('Dosya özetlenemedi', { description: err instanceof Error ? err.message : undefined })
     } finally {
-      setExcelLoading(false)
+      setFileLoading(false)
     }
   }
 
@@ -214,19 +240,25 @@ export function AIInsightsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Excel Dosyası Özetle</CardTitle>
+            <CardTitle className="text-base">Dosya Özetle</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={excelLoading} className="w-fit">
-              {excelLoading ? <Loader2 className="animate-spin" /> : <Upload />}
-              Excel Yükle
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={fileLoading} className="w-fit">
+              {fileLoading ? <Loader2 className="animate-spin" /> : <Upload />}
+              Dosya Yükle
             </Button>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleExcelFile} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.xlsx,.xls,.csv,.pdf,.docx,.txt"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
             <p className="text-muted-foreground text-xs">
-              PDF/Word okuma bu sürümde yok — yalnızca Excel/CSV desteklenir.
+              Excel, CSV, PDF, Word (.docx), resim veya .txt yükleyin — taranmış PDF'ler de görsel olarak okunur.
             </p>
-            {excelSummary && (
-              <p className="rounded-lg border bg-muted/30 p-3 text-sm whitespace-pre-wrap">{excelSummary}</p>
+            {fileSummary && (
+              <p className="rounded-lg border bg-muted/30 p-3 text-sm whitespace-pre-wrap">{fileSummary}</p>
             )}
           </CardContent>
         </Card>

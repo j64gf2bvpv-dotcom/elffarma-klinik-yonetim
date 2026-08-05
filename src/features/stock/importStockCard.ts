@@ -1,9 +1,8 @@
 import { format } from 'date-fns'
 
 import { readCell, parseFlexibleDate, type ImportSummary } from '@/lib/importData'
-import { createSale } from '@/features/sales/api'
-import { createHistoricalSampleRequest } from '@/features/samples/api'
-import type { StockCardRow } from './stockCardReport'
+import { createSale, type SaleWithRelations } from '@/features/sales/api'
+import { createHistoricalSampleRequest, type SampleRequestWithRelations } from '@/features/samples/api'
 import type { Customer, Product } from '@/types/database'
 
 export const STOCK_CARD_IMPORT_HEADERS = ['Tarih', 'Ürün', 'Doktor', 'Tür', 'Adet', 'Birim Fiyat', 'Not']
@@ -30,7 +29,9 @@ export const STOCK_CARD_IMPORT_FIELD_HINTS: Record<string, string> = {
   Not: 'yoksa boş bırak',
 }
 
-function normalizeKind(text: string): StockCardRow['kind'] | null {
+type ImportKind = 'satis' | 'iade' | 'numune'
+
+function normalizeKind(text: string): ImportKind | null {
   const t = text.trim().toLocaleLowerCase('tr')
   if (t.startsWith('sat')) return 'satis'
   if (t.startsWith('iade')) return 'iade'
@@ -40,6 +41,26 @@ function normalizeKind(text: string): StockCardRow['kind'] | null {
 
 function rowKey(productId: string, doctorId: string, date: string, kind: string, quantity: number, unitPrice: number) {
   return `${productId}|${doctorId}|${date}|${kind}|${quantity}|${unitPrice}`
+}
+
+/**
+ * `sales`/`sampleRequests`'ten aynı biçimde dedup anahtarı üretir — Stok
+ * Kartı artık gerçek stok hareketlerinden (stock_movements) kurulduğu için
+ * (bkz. stockCardReport.ts) bu içe aktarma kendi dedup setini doğrudan
+ * satış/numune tablolarından kuruyor, StockCardRow'a bağımlı değil.
+ */
+function existingImportKeys(sales: SaleWithRelations[], sampleRequests: SampleRequestWithRelations[]): Set<string> {
+  const keys = new Set<string>()
+  for (const s of sales) {
+    if (!s.product_id) continue
+    keys.add(rowKey(s.product_id, s.customer_id, s.sale_date, s.type === 'return' ? 'iade' : 'satis', s.quantity, Number(s.unit_price)))
+  }
+  for (const request of sampleRequests) {
+    for (const item of request.sample_items) {
+      keys.add(rowKey(item.product_id, request.customer_id, request.request_date, 'numune', item.quantity, Number(item.unit_price)))
+    }
+  }
+  return keys
 }
 
 /**
@@ -54,12 +75,11 @@ export async function importStockCardRows(
   rawRows: Record<string, unknown>[],
   products: Product[],
   customers: Customer[],
-  existingRows: StockCardRow[],
+  sales: SaleWithRelations[],
+  sampleRequests: SampleRequestWithRelations[],
 ): Promise<ImportSummary> {
   const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
-  const existingKeys = new Set(
-    existingRows.map((r) => rowKey(r.productId, r.doctorId, r.date, r.kind, r.quantity, r.unitPrice)),
-  )
+  const existingKeys = existingImportKeys(sales, sampleRequests)
 
   for (let i = 0; i < rawRows.length; i++) {
     const row = rawRows[i]

@@ -1685,6 +1685,278 @@ create policy "congress_consumables_all_staff" on public.congress_consumables fo
 -- olsun diye eklendi — clinics.is_vip'ten (kliniğin kendisi VIP mi) ayrı).
 alter table public.customers add column if not exists is_vip boolean not null default false;
 
+-- =========================================================
+-- 39. ÜRÜN OTOMATİK KOD NUMARASI (products.sku boşsa otomatik sıradaki numara atanır)
+-- =========================================================
+-- Stok Kartı ekranındaki "Kod:" alanı bazı ürünlerde boş kalıyordu (SKU
+-- opsiyonel bir alan). Artık her ürünün mutlaka bir kodu olsun diye: SKU boş
+-- bırakılarak eklenen HER ürüne (ProductForm, toplu Excel/Akıllı İçe Aktar,
+-- doğrudan SQL — hepsi) trigger ile 4 haneli sıradaki numara ("0001", "0002"
+-- ...) otomatik atanıyor. Elle girilen SKU'lara dokunulmuyor.
+create sequence if not exists public.product_sku_seq;
+
+-- Geçmişe dönük: kodu olmayan mevcut ürünlere, eklenme sırasına göre numara ver
+with numbered as (
+  select id, row_number() over (order by created_at) as rn
+  from public.products
+  where sku is null or btrim(sku) = ''
+)
+update public.products p
+set sku = to_char(n.rn, 'FM0000')
+from numbered n
+where p.id = n.id;
+
+-- Sequence'i artık numaralanmış ürün sayısının üstünden devam edecek şekilde
+-- ayarla (yeni ürünlerin numarası geçmiş kayıtlarla çakışmasın)
+select setval('public.product_sku_seq', (select count(*) from public.products), true);
+
+create or replace function public.assign_product_sku()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.sku is null or btrim(new.sku) = '' then
+    new.sku := to_char(nextval('public.product_sku_seq'), 'FM0000');
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists set_product_sku on public.products;
+create trigger set_product_sku before insert on public.products
+for each row execute function public.assign_product_sku();
+
+-- =========================================================
+-- 40. STOK HAREKETİNE BİRİM FİYAT (stock_movements.unit_price) — Stok Kartı raporunda "hangi fiyattan verildiği" gösterilebilsin diye
+-- =========================================================
+-- Satış/numune akışları (SaleForm, createSampleRequest) artık kendi birim
+-- fiyatlarını buraya da yazıyor; elle girilen stok hareketlerinde
+-- (StockMovementDialog) bu alan opsiyonel manuel giriş.
+alter table public.stock_movements add column if not exists unit_price numeric(10, 2);
+comment on column public.stock_movements.unit_price is 'Opsiyonel: bu hareketin birim fiyatı — satış/numune otomatik dolduruyor, elle hareketlerde manuel girilebilir';
+
+create or replace function public.record_stock_movement(
+  p_product_id uuid,
+  p_movement_type text,
+  p_quantity integer,
+  p_reason text default null,
+  p_customer_id uuid default null,
+  p_note text default null,
+  p_lot_id uuid default null,
+  p_unit_price numeric default null
+)
+returns public.stock_movements
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_delta integer;
+  v_row public.stock_movements;
+begin
+  if not public.is_active_staff() then
+    raise exception 'Yetkisiz işlem';
+  end if;
+
+  v_delta := case p_movement_type
+    when 'in' then p_quantity
+    when 'out' then -p_quantity
+    when 'sample' then -p_quantity
+    when 'return' then p_quantity
+    when 'disposal' then -p_quantity
+    when 'adjustment' then p_quantity
+    else 0
+  end;
+
+  insert into public.stock_movements (product_id, movement_type, quantity, reason, customer_id, staff_id, note, lot_id, unit_price)
+  values (p_product_id, p_movement_type, abs(p_quantity), p_reason, p_customer_id, auth.uid(), p_note, p_lot_id, p_unit_price)
+  returning * into v_row;
+
+  update public.products
+  set current_quantity = greatest(0, current_quantity + v_delta),
+      updated_at = now()
+  where id = p_product_id;
+
+  if p_lot_id is not null then
+    update public.product_lots
+    set quantity = greatest(0, quantity + v_delta),
+        updated_at = now()
+    where id = p_lot_id;
+  end if;
+
+  return v_row;
+end;
+$$;
+
+-- =========================================================
+-- 41. STOK HAREKETİNİ DÜZENLEME / SİLME (Stok Kartı > Hareket Dökümü'nden elle girilmiş kayıtlar üzerinde oynanabilsin diye)
+-- =========================================================
+-- Ortak delta hesaplama record_stock_movement/update/delete arasında
+-- tekrarlanmasın diye tek bir yardımcı fonksiyona alındı.
+create or replace function public.stock_movement_delta(p_movement_type text, p_quantity integer)
+returns integer
+language sql
+immutable
+as $$
+  select case p_movement_type
+    when 'in' then p_quantity
+    when 'out' then -p_quantity
+    when 'sample' then -p_quantity
+    when 'return' then p_quantity
+    when 'disposal' then -p_quantity
+    when 'adjustment' then p_quantity
+    else 0
+  end;
+$$;
+
+create or replace function public.record_stock_movement(
+  p_product_id uuid,
+  p_movement_type text,
+  p_quantity integer,
+  p_reason text default null,
+  p_customer_id uuid default null,
+  p_note text default null,
+  p_lot_id uuid default null,
+  p_unit_price numeric default null
+)
+returns public.stock_movements
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_delta integer;
+  v_row public.stock_movements;
+begin
+  if not public.is_active_staff() then
+    raise exception 'Yetkisiz işlem';
+  end if;
+
+  v_delta := public.stock_movement_delta(p_movement_type, p_quantity);
+
+  insert into public.stock_movements (product_id, movement_type, quantity, reason, customer_id, staff_id, note, lot_id, unit_price)
+  values (p_product_id, p_movement_type, abs(p_quantity), p_reason, p_customer_id, auth.uid(), p_note, p_lot_id, p_unit_price)
+  returning * into v_row;
+
+  update public.products
+  set current_quantity = greatest(0, current_quantity + v_delta),
+      updated_at = now()
+  where id = p_product_id;
+
+  if p_lot_id is not null then
+    update public.product_lots
+    set quantity = greatest(0, quantity + v_delta),
+        updated_at = now()
+    where id = p_lot_id;
+  end if;
+
+  return v_row;
+end;
+$$;
+
+-- product_id sabit kalır (hareket başka bir ürüne taşınmaz) — sadece tür/adet/
+-- fiyat/sebep/not/doktor/lot düzenlenebilir. Eski etkiyi geri alıp yeni etkiyi
+-- uygulayarak products.current_quantity (ve varsa lot miktarı) her zaman
+-- gerçek hareket kaydıyla senkron kalır.
+create or replace function public.update_stock_movement(
+  p_movement_id uuid,
+  p_movement_type text,
+  p_quantity integer,
+  p_reason text default null,
+  p_customer_id uuid default null,
+  p_note text default null,
+  p_lot_id uuid default null,
+  p_unit_price numeric default null
+)
+returns public.stock_movements
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_old public.stock_movements;
+  v_old_delta integer;
+  v_new_delta integer;
+  v_row public.stock_movements;
+begin
+  if not public.is_active_staff() then
+    raise exception 'Yetkisiz işlem';
+  end if;
+
+  select * into v_old from public.stock_movements where id = p_movement_id;
+  if not found then
+    raise exception 'Hareket bulunamadı';
+  end if;
+
+  v_old_delta := public.stock_movement_delta(v_old.movement_type, v_old.quantity);
+  v_new_delta := public.stock_movement_delta(p_movement_type, abs(p_quantity));
+
+  update public.products
+  set current_quantity = greatest(0, current_quantity - v_old_delta + v_new_delta),
+      updated_at = now()
+  where id = v_old.product_id;
+
+  if v_old.lot_id is not null then
+    update public.product_lots
+    set quantity = greatest(0, quantity - v_old_delta),
+        updated_at = now()
+    where id = v_old.lot_id;
+  end if;
+  if p_lot_id is not null then
+    update public.product_lots
+    set quantity = greatest(0, quantity + v_new_delta),
+        updated_at = now()
+    where id = p_lot_id;
+  end if;
+
+  update public.stock_movements
+  set movement_type = p_movement_type,
+      quantity = abs(p_quantity),
+      reason = p_reason,
+      customer_id = p_customer_id,
+      note = p_note,
+      lot_id = p_lot_id,
+      unit_price = p_unit_price
+  where id = p_movement_id
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
+create or replace function public.delete_stock_movement(p_movement_id uuid)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_row public.stock_movements;
+  v_delta integer;
+begin
+  if not public.is_active_staff() then
+    raise exception 'Yetkisiz işlem';
+  end if;
+
+  select * into v_row from public.stock_movements where id = p_movement_id;
+  if not found then
+    raise exception 'Hareket bulunamadı';
+  end if;
+
+  v_delta := public.stock_movement_delta(v_row.movement_type, v_row.quantity);
+
+  update public.products
+  set current_quantity = greatest(0, current_quantity - v_delta),
+      updated_at = now()
+  where id = v_row.product_id;
+
+  if v_row.lot_id is not null then
+    update public.product_lots
+    set quantity = greatest(0, quantity - v_delta),
+        updated_at = now()
+    where id = v_row.lot_id;
+  end if;
+
+  delete from public.stock_movements where id = p_movement_id;
+end;
+$$;
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

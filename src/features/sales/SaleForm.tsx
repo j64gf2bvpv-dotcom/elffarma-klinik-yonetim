@@ -102,6 +102,7 @@ export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) 
       quantity: values.quantity,
       reason: values.type === 'sale' ? 'Satış' : 'İade',
       customer_id: values.customer_id,
+      unit_price: values.unit_price,
       note:
         values.type === 'sale'
           ? `${doctorName} için satış${repName ? ` — ${repName} tarafından elden teslim edildi` : ''}`

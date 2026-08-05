@@ -1,74 +1,69 @@
-import type { SaleWithRelations } from '@/features/sales/api'
-import type { SampleRequestWithRelations } from '@/features/samples/api'
-
-export type StockCardRowKind = 'satis' | 'iade' | 'numune'
+import type { StockMovementWithProduct } from './api'
+import type { MovementType } from '@/types/database'
 
 export interface StockCardRow {
   id: string
   date: string
   productId: string
   productName: string
-  doctorId: string
-  doctorName: string
-  kind: StockCardRowKind
-  quantity: number
-  unitPrice: number
-  total: number
+  productSku: string | null
+  doctorId: string | null
+  doctorName: string | null
+  kind: MovementType
+  reason: string | null
+  note: string | null
+  unitPrice: number | null
+  lotId: string | null
+  inQty: number
+  outQty: number
+  balance: number
 }
 
-export const stockCardRowKindLabels: Record<StockCardRowKind, string> = {
-  satis: 'Satış',
-  iade: 'İade',
-  numune: 'Numune',
-}
+const INCREASES_STOCK: ReadonlySet<MovementType> = new Set(['in', 'return', 'adjustment'])
 
 /**
- * "Stok Kartı" dökümü: hangi ürünün hangi doktora, ne zaman, hangi fiyattan
- * satıldığını/numune verildiğini tek bir kronolojik listede birleştirir.
- * `sales` (satış/iade, gerçek fiyatlı) ve `sample_requests` + `sample_items`
- * (numune, gerçek fiyatlı ama stok_movements'ta fiyat yok) ayrı tablolar
- * olduğu için burada client tarafında birleştiriliyor — DB'de ikisini
- * birleştiren ortak bir görünüm yok. `productId` verilmezse TÜM ürünler
- * için (toplu rapor), verilirse sadece o ürün için döner.
+ * "Stok Kartı" — gerçek `stock_movements` denetim kaydından, ürün başına
+ * kronolojik Giriş/Çıkış/Güncel Stok defteri kurar. Her ürünün kendi hareketleri
+ * tarihe göre artan sırayla gezilip bakiye 0'dan biriktirilir — ürünler her
+ * zaman `record_stock_movement` RPC'siyle 0 stokla oluşturulduğu için (bkz.
+ * `createProduct`) bu, ürünün en son hareketindeki bakiyeyi `products.
+ * current_quantity` ile birebir eşleştirir (yani rapor gerçekten "stokla
+ * entegre"). `productId` verilmezse tüm ürünler için (toplu rapor), verilirse
+ * sadece o ürün için döner — ama bakiye her zaman o ürünün TÜM geçmişinden
+ * hesaplanır, filtre bakiyeyi etkilemez.
  */
-export function buildStockCardReport(
-  sales: SaleWithRelations[],
-  sampleRequests: SampleRequestWithRelations[],
-  productId?: string,
-): StockCardRow[] {
-  const rows: StockCardRow[] = []
-
-  for (const s of sales) {
-    if (!s.product_id) continue
-    if (productId && s.product_id !== productId) continue
-    rows.push({
-      id: `sale-${s.id}`,
-      date: s.sale_date,
-      productId: s.product_id,
-      productName: s.product_name,
-      doctorId: s.customer_id,
-      doctorName: s.customers?.full_name ?? 'Bilinmeyen',
-      kind: s.type === 'return' ? 'iade' : 'satis',
-      quantity: s.quantity,
-      unitPrice: Number(s.unit_price),
-      total: s.quantity * Number(s.unit_price),
-    })
+export function buildStockLedger(movements: StockMovementWithProduct[], productId?: string): StockCardRow[] {
+  const byProduct = new Map<string, StockMovementWithProduct[]>()
+  for (const m of movements) {
+    const list = byProduct.get(m.product_id)
+    if (list) list.push(m)
+    else byProduct.set(m.product_id, [m])
   }
 
-  for (const request of sampleRequests) {
-    for (const item of request.sample_items) {
-      if (productId && item.product_id !== productId) continue
+  const rows: StockCardRow[] = []
+  for (const [pid, list] of byProduct) {
+    if (productId && pid !== productId) continue
+    const sorted = [...list].sort((a, b) => a.created_at.localeCompare(b.created_at))
+    let balance = 0
+    for (const m of sorted) {
+      const isIn = INCREASES_STOCK.has(m.movement_type)
+      balance += isIn ? m.quantity : -m.quantity
       rows.push({
-        id: `sample-${item.id}`,
-        date: request.request_date,
-        productId: item.product_id,
-        productName: item.products?.name ?? 'Bilinmeyen ürün',
-        doctorId: request.customer_id,
-        doctorName: request.customers?.full_name ?? 'Bilinmeyen',
-        kind: 'numune',
-        quantity: item.quantity,
-        unitPrice: Number(item.unit_price),
-        total: item.quantity * Number(item.unit_price),
+        id: m.id,
+        date: m.created_at,
+        productId: m.product_id,
+        productName: m.products?.name ?? 'Bilinmeyen ürün',
+        productSku: m.products?.sku ?? null,
+        doctorId: m.customer_id,
+        doctorName: m.customers?.full_name ?? null,
+        kind: m.movement_type,
+        reason: m.reason,
+        note: m.note,
+        unitPrice: m.unit_price != null ? Number(m.unit_price) : null,
+        lotId: m.lot_id,
+        inQty: isIn ? m.quantity : 0,
+        outQty: isIn ? 0 : m.quantity,
+        balance,
       })
     }
   }
@@ -77,36 +72,31 @@ export function buildStockCardReport(
 }
 
 export interface StockCardSummary {
-  soldQty: number
-  returnedQty: number
-  sampleQty: number
-  soldRevenue: number
-  sampleValue: number
+  inQty: number
+  outQty: number
+  currentStock: number
   doctorCount: number
   productCount: number
 }
 
-export function summarizeStockCard(rows: StockCardRow[]): StockCardSummary {
+/** `rows` en yeniden en eskiye sıralı geldiği için her ürünün İLK karşılaşılan satırı en güncel bakiyesidir. */
+export function summarizeStockLedger(rows: StockCardRow[]): StockCardSummary {
   const doctors = new Set<string>()
-  const productsSeen = new Set<string>()
-  let soldQty = 0
-  let returnedQty = 0
-  let sampleQty = 0
-  let soldRevenue = 0
-  let sampleValue = 0
+  const latestBalanceByProduct = new Map<string, number>()
+  let inQty = 0
+  let outQty = 0
   for (const r of rows) {
-    doctors.add(r.doctorId)
-    productsSeen.add(r.productId)
-    if (r.kind === 'satis') {
-      soldQty += r.quantity
-      soldRevenue += r.total
-    } else if (r.kind === 'iade') {
-      returnedQty += r.quantity
-      soldRevenue -= r.total
-    } else {
-      sampleQty += r.quantity
-      sampleValue += r.total
-    }
+    if (r.doctorId) doctors.add(r.doctorId)
+    if (!latestBalanceByProduct.has(r.productId)) latestBalanceByProduct.set(r.productId, r.balance)
+    inQty += r.inQty
+    outQty += r.outQty
   }
-  return { soldQty, returnedQty, sampleQty, soldRevenue, sampleValue, doctorCount: doctors.size, productCount: productsSeen.size }
+  const currentStock = [...latestBalanceByProduct.values()].reduce((sum, v) => sum + v, 0)
+  return {
+    inQty,
+    outQty,
+    currentStock,
+    doctorCount: doctors.size,
+    productCount: latestBalanceByProduct.size,
+  }
 }

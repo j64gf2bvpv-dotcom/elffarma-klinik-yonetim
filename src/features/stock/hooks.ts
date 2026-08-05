@@ -4,15 +4,19 @@ import {
   createProduct,
   createProductLot,
   deactivateProduct,
+  deleteStockMovement,
   fetchAllProductLots,
+  fetchAllStockMovements,
   fetchProductLots,
   fetchProducts,
   fetchStockMovements,
   recordStockMovement,
   updateProduct,
+  updateStockMovement,
   type ProductInput,
   type ProductLotInput,
   type RecordMovementInput,
+  type UpdateMovementInput,
 } from './api'
 import type { BrandLine, Product, ProductLot } from '@/types/database'
 
@@ -26,6 +30,10 @@ export function useStockMovements(productId: string | undefined) {
     queryFn: () => fetchStockMovements(productId as string),
     enabled: !!productId,
   })
+}
+
+export function useAllStockMovements() {
+  return useQuery({ queryKey: ['stock_movements', 'all'], queryFn: fetchAllStockMovements })
 }
 
 export function useCreateProduct() {
@@ -88,7 +96,7 @@ export function useRecordStockMovement() {
         )
       }
       queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['stock_movements', variables.product_id] })
+      queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       if (variables.lot_id) {
         queryClient.invalidateQueries({ queryKey: ['product_lots', variables.product_id] })
         queryClient.invalidateQueries({ queryKey: ['product_lots', 'all'] })
@@ -96,6 +104,38 @@ export function useRecordStockMovement() {
       toast.success('Stok hareketi kaydedildi')
     },
     onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
+  })
+}
+
+function invalidateStockMovementEffects(queryClient: ReturnType<typeof useQueryClient>, lotId?: string | null) {
+  queryClient.invalidateQueries({ queryKey: ['products'] })
+  queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
+  if (lotId) {
+    queryClient.invalidateQueries({ queryKey: ['product_lots'] })
+  }
+}
+
+export function useUpdateStockMovement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: UpdateMovementInput) => updateStockMovement(input),
+    onSuccess: (_data, variables) => {
+      invalidateStockMovementEffects(queryClient, variables.lot_id)
+      toast.success('Stok hareketi güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useDeleteStockMovement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteStockMovement(id),
+    onSuccess: () => {
+      invalidateStockMovementEffects(queryClient)
+      toast.success('Stok hareketi silindi')
+    },
+    onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
   })
 }
 

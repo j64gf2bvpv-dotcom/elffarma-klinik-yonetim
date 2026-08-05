@@ -157,9 +157,8 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     <ProductForm
                       product={product}
                       trigger={
-                        <button type="button" className="text-left hover:underline" title="Tüm bilgileri düzenle">
+                        <button type="button" className="block text-left hover:underline" title="Tüm bilgileri düzenle">
                           {product.name}
-                          {product.sku && <span className="ml-2 text-xs text-muted-foreground">{product.sku}</span>}
                           {product.barcode && (
                             <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>
                           )}

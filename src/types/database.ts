@@ -86,6 +86,7 @@ export interface StockMovement {
   staff_id: string | null
   note: string | null
   lot_id: string | null
+  unit_price: number | null
   created_at: string
 }
 

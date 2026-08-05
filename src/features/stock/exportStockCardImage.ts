@@ -1,15 +1,18 @@
+import { format } from 'date-fns'
+import { tr as trLocale } from 'date-fns/locale/tr'
+
+import { tr } from '@/i18n/tr'
 import type { StockCardRow } from './stockCardReport'
-import { stockCardRowKindLabels } from './stockCardReport'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
 }
 
 /**
- * Stok Kartı raporunu (başlık + özet + Tarih/[Ürün]/Doktor/Tür/Adet/Fiyat/
- * Tutar tablosu) Canvas ile çizip PNG olarak indirir — Günlük Özet PNG
- * dışa aktarımıyla (exportSummaryImage.ts) aynı yöntem. `showProduct`
- * true ise (toplu/tüm ürünler raporu) ayrı bir Ürün kolonu ekleniyor.
+ * Stok Kartı raporunu (başlık + özet + Tarih/[Ürün]/Doktor/Tür/Fiyat/Giriş/
+ * Çıkış/Güncel Stok tablosu) Canvas ile çizip PNG olarak indirir — Günlük Özet
+ * PNG dışa aktarımıyla (exportSummaryImage.ts) aynı yöntem. `showProduct` true
+ * ise (toplu/tüm ürünler raporu) ayrı bir Ürün kolonu ekleniyor.
  */
 export function exportStockCardImage(
   title: string,
@@ -58,20 +61,22 @@ export function exportStockCardImage(
   const cols = showProduct
     ? [
         { label: 'TARİH', x: 28, key: 'date' as const },
-        { label: 'ÜRÜN', x: 118, key: 'product' as const },
-        { label: 'DOKTOR', x: 318, key: 'doctor' as const },
-        { label: 'TÜR', x: 478, key: 'kind' as const },
-        { label: 'ADET', x: 548, key: 'qty' as const },
-        { label: 'BİRİM FİYAT', x: 618, key: 'price' as const },
-        { label: 'TUTAR', x: 748, key: 'total' as const },
+        { label: 'ÜRÜN', x: 148, key: 'product' as const },
+        { label: 'DOKTOR', x: 328, key: 'doctor' as const },
+        { label: 'TÜR', x: 488, key: 'kind' as const },
+        { label: 'FİYAT', x: 588, key: 'price' as const },
+        { label: 'GİRİŞ', x: 718, key: 'in' as const },
+        { label: 'ÇIKIŞ', x: 788, key: 'out' as const },
+        { label: 'GÜNCEL STOK', x: 858, key: 'balance' as const },
       ]
     : [
         { label: 'TARİH', x: 28, key: 'date' as const },
-        { label: 'DOKTOR', x: 118, key: 'doctor' as const },
-        { label: 'TÜR', x: 338, key: 'kind' as const },
-        { label: 'ADET', x: 428, key: 'qty' as const },
-        { label: 'BİRİM FİYAT', x: 508, key: 'price' as const },
-        { label: 'TUTAR', x: 638, key: 'total' as const },
+        { label: 'DOKTOR', x: 148, key: 'doctor' as const },
+        { label: 'TÜR', x: 328, key: 'kind' as const },
+        { label: 'FİYAT', x: 428, key: 'price' as const },
+        { label: 'GİRİŞ', x: 558, key: 'in' as const },
+        { label: 'ÇIKIŞ', x: 628, key: 'out' as const },
+        { label: 'GÜNCEL STOK', x: 698, key: 'balance' as const },
       ]
 
   ctx.fillStyle = '#a8a2b3'
@@ -86,25 +91,28 @@ export function exportStockCardImage(
   }
 
   const cellText: Record<(typeof cols)[number]['key'], (row: StockCardRow) => string> = {
-    date: (r) => r.date,
-    product: (r) => r.productName.slice(0, 22),
-    doctor: (r) => r.doctorName.slice(0, 22),
-    kind: (r) => stockCardRowKindLabels[r.kind],
-    qty: (r) => String(r.quantity),
-    price: (r) => currency(r.unitPrice),
-    total: (r) => currency(r.total),
+    date: (r) => format(new Date(r.date), 'd MMM yyyy HH:mm', { locale: trLocale }),
+    product: (r) => r.productName.slice(0, 30),
+    doctor: (r) => (r.doctorName ?? '—').slice(0, 26),
+    kind: (r) => tr.movementType[r.kind],
+    price: (r) => (r.unitPrice != null ? currency(r.unitPrice) : '—'),
+    in: (r) => (r.inQty ? String(r.inQty) : ''),
+    out: (r) => (r.outQty ? String(r.outQty) : ''),
+    balance: (r) => String(r.balance),
+  }
+
+  const kindColor: Record<StockCardRow['kind'], string> = {
+    in: '#4ade80',
+    return: '#4ade80',
+    adjustment: '#f0b429',
+    sample: '#f0b429',
+    out: '#f87171',
+    disposal: '#f87171',
   }
 
   for (const row of rows) {
     for (const col of cols) {
-      ctx.fillStyle =
-        col.key === 'kind'
-          ? row.kind === 'numune'
-            ? '#f0b429'
-            : row.kind === 'iade'
-              ? '#f87171'
-              : '#4ade80'
-          : '#ffffff'
+      ctx.fillStyle = col.key === 'kind' ? kindColor[row.kind] : '#ffffff'
       ctx.font = '13px "Segoe UI", sans-serif'
       ctx.fillText(cellText[col.key](row), col.x, y)
     }

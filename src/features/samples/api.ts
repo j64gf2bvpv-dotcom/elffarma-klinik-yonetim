@@ -68,6 +68,7 @@ export async function createSampleRequest(input: SampleRequestInput): Promise<Sa
       quantity: item.quantity,
       reason: 'Numune',
       customer_id: input.customer_id,
+      unit_price: item.unit_price,
       note: `Numune talebi #${request.id}`,
     })
   }
