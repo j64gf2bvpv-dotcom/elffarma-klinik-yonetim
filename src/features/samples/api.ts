@@ -75,6 +75,32 @@ export async function createSampleRequest(input: SampleRequestInput): Promise<Sa
   return request
 }
 
+/**
+ * `createSampleRequest` ile aynı ama record_stock_movement ÇAĞIRMAZ — geçmişte
+ * (Excel'de) zaten yaşanmış, bugünkü stok miktarına tekrar dokunulmaması
+ * gereken numune kayıtlarını içe aktarmak için (bkz. Stok Kartı içe aktarma).
+ */
+export async function createHistoricalSampleRequest(input: SampleRequestInput): Promise<SampleRequest> {
+  const createdBy = await getCurrentUserId()
+  const request = await offlineInsert<SampleRequest>(
+    'sample_requests',
+    {
+      customer_id: input.customer_id,
+      sales_rep_id: input.sales_rep_id ?? null,
+      request_date: input.request_date,
+      note: input.note ?? null,
+      created_by: createdBy,
+    },
+    'Numune talebi (geçmiş kayıt içe aktarma)',
+  )
+
+  for (const item of input.items) {
+    await offlineInsert('sample_items', { sample_request_id: request.id, ...item }, `Numune ürünü: ${item.product_id}`)
+  }
+
+  return request
+}
+
 export interface SampleRequestStatusInput {
   status: SampleRequestStatus
   tracking_number?: string | null

@@ -134,3 +134,24 @@ export function printRows<T>(title: string, columns: ExportColumn<T>[], rows: T[
   doc.autoPrint()
   window.open(doc.output('bloburl'), '_blank')
 }
+
+/**
+ * Rapor tablosunu, bir e-posta gövdesine yapıştırılabilecek düz metin
+ * bir listeye çevirir — sütunlar sabit genişlikte hizalanır. URL üzerinden
+ * webmail'e ön dolum yapılabilmesi için satır sayısı `maxRows` ile sınırlanır
+ * (URL uzunluğu tarayıcılarda ~2000 karakterle sınırlı); sınır aşılırsa
+ * altına kalan satır sayısını belirten bir not eklenir.
+ */
+export function buildPlainTextReport<T>(title: string, columns: ExportColumn<T>[], rows: T[], maxRows = 40): string {
+  const widths = columns.map(
+    (col) => Math.max(col.header.length, ...rows.slice(0, maxRows).map((r) => String(col.value(r)).length), 0) + 2,
+  )
+  const line = (cells: string[]) => cells.map((c, i) => c.padEnd(widths[i])).join('').trimEnd()
+
+  const lines = [title, new Date().toLocaleDateString('tr-TR'), '', line(columns.map((c) => c.header))]
+  for (const row of rows.slice(0, maxRows)) {
+    lines.push(line(columns.map((c) => String(c.value(row)))))
+  }
+  if (rows.length > maxRows) lines.push('', `... ve ${rows.length - maxRows} satır daha (tam liste ekli dosyada)`)
+  return lines.join('\n')
+}

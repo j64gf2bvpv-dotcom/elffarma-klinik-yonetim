@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { ImageDown, IdCard } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -7,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
+import { ImportMenu } from '@/components/ImportMenu'
+import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { ProductMultiCombobox } from '@/features/stock/ProductMultiCombobox'
 import { useSales } from '@/features/sales/hooks'
@@ -14,9 +17,16 @@ import { useSampleRequests } from '@/features/samples/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
 import { useCustomers } from '@/features/customers/hooks'
+import { useProducts } from '@/features/stock/hooks'
 import { computeCariLedger, cariBalance } from '@/features/customers/cariLedger'
 import { buildStockCardReport, summarizeStockCard, stockCardRowKindLabels, type StockCardRow } from './stockCardReport'
 import { exportStockCardImage } from './exportStockCardImage'
+import {
+  importStockCardRows,
+  STOCK_CARD_IMPORT_HEADERS,
+  STOCK_CARD_IMPORT_SAMPLE_ROWS,
+  STOCK_CARD_IMPORT_FIELD_HINTS,
+} from './importStockCard'
 import type { Product } from '@/types/database'
 
 type ReportMode = 'single' | 'all'
@@ -38,11 +48,13 @@ export function StockCardPanel() {
   const [product, setProduct] = React.useState<Product | null>(null)
   const [allProductIds, setAllProductIds] = React.useState<string[]>([])
 
+  const queryClient = useQueryClient()
   const { data: sales = [] } = useSales()
   const { data: sampleRequests = [] } = useSampleRequests()
   const { data: allPayments = [] } = usePayments({})
   const { data: invoices = [] } = useInvoices()
   const { data: customers = [] } = useCustomers('')
+  const { data: allProducts = [] } = useProducts('')
 
   const cariLedger = React.useMemo(
     () => computeCariLedger(allPayments, sales, invoices),
@@ -70,14 +82,41 @@ export function StockCardPanel() {
       ? `${summary.soldQty} satıldı · ${summary.sampleQty} numune verildi · ${summary.doctorCount} doktor · ${currency(summary.soldRevenue)} ciro`
       : `${summary.productCount} ürün · ${summary.soldQty} satıldı · ${summary.sampleQty} numune verildi · ${summary.doctorCount} doktor · ${currency(summary.soldRevenue)} ciro`
 
+  async function handleImport(rawRows: Record<string, unknown>[]) {
+    const result = await importStockCardRows(rawRows, allProducts, customers, allRows)
+    if (result.added > 0) {
+      await queryClient.invalidateQueries({ queryKey: ['sales'] })
+      await queryClient.invalidateQueries({ queryKey: ['sample_requests'] })
+    }
+    return result
+  }
+
   return (
     <div className="grid gap-4">
-      <Tabs value={mode} onValueChange={(v) => setMode(v as ReportMode)}>
-        <TabsList>
-          <TabsTrigger value="single">Tek Ürün</TabsTrigger>
-          <TabsTrigger value="all">Tüm Ürünler</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Tabs value={mode} onValueChange={(v) => setMode(v as ReportMode)}>
+          <TabsList>
+            <TabsTrigger value="single">Tek Ürün</TabsTrigger>
+            <TabsTrigger value="all">Tüm Ürünler</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex items-center gap-2">
+          <ImportMenu
+            label="Eski Excel Listesini Yükle"
+            onImport={handleImport}
+            templateFilename="stok-karti-sablon"
+            templateHeaders={STOCK_CARD_IMPORT_HEADERS}
+            templateSampleRows={STOCK_CARD_IMPORT_SAMPLE_ROWS}
+          />
+          <SmartImportDialog
+            title="Stok Kartını Akıllı İçe Aktar"
+            targetLabel="stok kartı satış/numune"
+            fieldHeaders={STOCK_CARD_IMPORT_HEADERS}
+            fieldHints={STOCK_CARD_IMPORT_FIELD_HINTS}
+            onImport={handleImport}
+          />
+        </div>
+      </div>
 
       <Card>
         <CardContent className="flex flex-wrap items-center gap-3 pt-6">

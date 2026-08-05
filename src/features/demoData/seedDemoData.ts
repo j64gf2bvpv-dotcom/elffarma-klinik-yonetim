@@ -75,10 +75,10 @@ const DEMO_CUSTOMERS = [
 ]
 
 const DEMO_PRODUCTS = [
-  { name: '[Örnek] Botoks 100u', sku: `${DEMO_SKU_PREFIX}BTX100`, unit_cost: 800, unit_price: 1200, icon: icons.syringe, tone: iconTones.blue },
-  { name: '[Örnek] Dolgu Hyaluronik 1ml', sku: `${DEMO_SKU_PREFIX}DLG1`, unit_cost: 500, unit_price: 900, icon: icons.droplet, tone: iconTones.teal },
-  { name: '[Örnek] Mezoterapi Seti', sku: `${DEMO_SKU_PREFIX}MEZO`, unit_cost: 350, unit_price: 600, icon: icons.flaskConical, tone: iconTones.green },
-  { name: '[Örnek] PRP Kit', sku: `${DEMO_SKU_PREFIX}PRP`, unit_cost: 400, unit_price: 750, icon: icons.testTube, tone: iconTones.red },
+  { name: '[Örnek] Bvrs PL', sku: `${DEMO_SKU_PREFIX}BVRSPL`, unit_cost: 800, unit_price: 1200, icon: icons.syringe, tone: iconTones.blue },
+  { name: '[Örnek] Bvrs AMC', sku: `${DEMO_SKU_PREFIX}BVRSAMC`, unit_cost: 700, unit_price: 1100, icon: icons.droplet, tone: iconTones.teal },
+  { name: '[Örnek] Sapphire PDRN', sku: `${DEMO_SKU_PREFIX}SAPPDRN`, unit_cost: 500, unit_price: 900, icon: icons.flaskConical, tone: iconTones.green },
+  { name: '[Örnek] Fillicia', sku: `${DEMO_SKU_PREFIX}FILLICIA`, unit_cost: 450, unit_price: 800, icon: icons.testTube, tone: iconTones.red },
 ]
 
 const DEMO_SALES_REPS = [

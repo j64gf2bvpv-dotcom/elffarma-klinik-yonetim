@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { exportToExcel, exportToPdf, exportToWord, printRows, type ExportColumn } from '@/lib/exportData'
+import { buildPlainTextReport, exportToExcel, exportToPdf, exportToWord, printRows, type ExportColumn } from '@/lib/exportData'
 import { WEBMAIL_URL } from '@/lib/companyInfo'
 
 interface ExportMenuProps<T> {
@@ -60,9 +60,14 @@ export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = '
       return
     }
     exportToPdf(title, filename, columns, rows)
-    window.open(WEBMAIL_URL, '_blank', 'noopener,noreferrer')
+    const body = buildPlainTextReport(title, columns, rows)
+    // Roundcube tarzı "yeni ileti" derin bağlantısı deneniyor (cPanel/genel hosting webmail'lerinde en yaygın
+    // yazılım budur) — webmail farklı bir yazılımsa alanlar boş gelebilir, o durumda gerçek "Yeni İleti" adresini
+    // isteyip bu parametreleri güncellemek gerekir.
+    const composeUrl = `${WEBMAIL_URL}?_task=mail&_action=compose&_subject=${encodeURIComponent(title)}&_body=${encodeURIComponent(body)}`
+    window.open(composeUrl, '_blank', 'noopener,noreferrer')
     toast.info('Rapor PDF olarak indirildi', {
-      description: 'Webmail açıldı — yeni bir e-posta oluşturup indirilen dosyayı ekleyin.',
+      description: 'Webmail yeni ileti penceresi rapor metniyle açılmaya çalışıldı; tam liste için indirilen PDF\'i de ekleyin.',
     })
   }
 
