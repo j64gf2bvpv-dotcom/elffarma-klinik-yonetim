@@ -62,11 +62,16 @@ export async function importPaymentRows(
       summary.errors.push(`${rowLabel}: Doktor, Tutar veya Tarih eksik`)
       continue
     }
-    const doctor = doctors.find((d) => d.full_name.toLocaleLowerCase('tr') === doctorName.toLocaleLowerCase('tr'))
-    if (!doctor) {
+    const matches = doctors.filter((d) => d.full_name.toLocaleLowerCase('tr') === doctorName.toLocaleLowerCase('tr'))
+    if (matches.length === 0) {
       summary.errors.push(`${rowLabel}: "${doctorName}" adında doktor bulunamadı`)
       continue
     }
+    if (matches.length > 1) {
+      summary.errors.push(`${rowLabel}: "${doctorName}" adında birden fazla doktor var, elle eklenmeli`)
+      continue
+    }
+    const doctor = matches[0]
     const paidAt = parseFlexibleDate(dateText)
     if (!paidAt) {
       summary.errors.push(`${rowLabel}: Geçersiz tarih (${dateText})`)

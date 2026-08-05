@@ -19,7 +19,9 @@ import { InvoiceForm } from '@/features/invoices/InvoiceForm'
 import { useInvoices, useDeleteInvoice } from '@/features/invoices/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useExpenses } from '@/features/expenses/hooks'
+import { useRecordStockMovement } from '@/features/stock/hooks'
 import { cn } from '@/lib/utils'
+import type { SaleWithRelations } from '@/features/sales/api'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -50,8 +52,26 @@ function SalesTab({
 }) {
   const { data: allSales = [], isLoading } = useSales()
   const deleteMutation = useDeleteSale()
+  const recordMovement = useRecordStockMovement()
 
   const sales = React.useMemo(() => filterSalesByDate(allSales, from, to), [allSales, from, to])
+
+  async function handleDelete(sale: SaleWithRelations) {
+    if (!confirm(`${sale.product_name} (${sale.quantity} adet) ${sale.type === 'sale' ? 'satış' : 'iade'} kaydı silinsin mi?`)) return
+    // Satış/iade silinince stoktaki etkisi de tersine çevrilmeli, aksi halde
+    // kayıt silinir ama current_quantity yanlış kalır (kongre ürün panelindeki
+    // aynı desen — bkz. CongressStockItemsPanel.handleDelete).
+    if (sale.product_id) {
+      await recordMovement.mutateAsync({
+        product_id: sale.product_id,
+        movement_type: sale.type === 'sale' ? 'in' : 'out',
+        quantity: sale.quantity,
+        reason: `${sale.type === 'sale' ? 'Satış' : 'İade'} kaydı silindi — stok düzeltmesi`,
+        note: sale.product_name,
+      })
+    }
+    deleteMutation.mutate(sale.id)
+  }
 
   const totalSales = sales.filter((s) => s.type === 'sale').reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
   const totalReturns = sales
@@ -137,7 +157,7 @@ function SalesTab({
                     <TableCell className="font-medium">{currency(s.quantity * Number(s.unit_price))}</TableCell>
                     <TableCell>{s.sales_reps?.name ?? '—'}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(s.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(s)}>
                         <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </TableCell>

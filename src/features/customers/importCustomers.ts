@@ -38,6 +38,7 @@ export const CUSTOMER_IMPORT_SAMPLE_ROWS = [
 export const CUSTOMER_IMPORT_FIELD_HINTS: Record<string, string> = {
   Tip: '"Şahıs" veya "Hastane"',
   'Ödeme Vadesi': 'YYYY-AA-GG formatında tarih, yoksa boş',
+  'KDV Oranı': 'sayı, % işareti olmadan (ör. 18), yoksa boş',
   'Fatura Durumu': '"Faturalı" veya "Faturasız"',
   Etiketler: 'virgülle ayrılmış kısa etiketler, yoksa boş',
 }
@@ -89,7 +90,11 @@ export async function importCustomerRows(
         next_payment_due: readCell(row, 'Ödeme Vadesi') || null,
         tc_no: readCell(row, 'TC Kimlik No') || null,
         tax_number: readCell(row, 'Vergi Numarası') || null,
-        vat_rate: vatRateText ? Number(vatRateText) : null,
+        vat_rate: (() => {
+          if (!vatRateText) return null
+          const n = Number(vatRateText.replace(/[^\d.-]/g, ''))
+          return Number.isFinite(n) ? n : null
+        })(),
         address: readCell(row, 'Adres') || null,
         is_invoiced: /faturalı|evet/i.test(isInvoicedText),
         tags: readCell(row, 'Etiketler')

@@ -92,6 +92,17 @@ export async function importProductRows(
       continue
     }
 
+    const criticalStockText = readCell(row, 'Kritik Stok Eşiği')
+    const criticalStock = criticalStockText ? Number(criticalStockText.replace(/[^\d.-]/g, '')) : 5
+    if (criticalStockText && !Number.isFinite(criticalStock)) {
+      errors.push(`${rowLabel}: Kritik stok eşiği sayı değil ("${criticalStockText}")`)
+      continue
+    }
+    const unitCostText = readCell(row, 'Birim Maliyet')
+    const unitCostNum = unitCostText ? Number(unitCostText.replace(/[^\d.-]/g, '')) : null
+    const unitPriceText = readCell(row, 'Satış Fiyatı')
+    const unitPriceNum = unitPriceText ? Number(unitPriceText.replace(/[^\d.-]/g, '')) : null
+
     const brandText = readCell(row, 'Ürün Hattı')
     seenNamesInBatch.add(nameKey)
     if (sku) seenSkusInBatch.add(sku)
@@ -101,9 +112,9 @@ export async function importProductRows(
         sku,
         category: readCell(row, 'Kategori') || null,
         unit: readCell(row, 'Birim') || 'adet',
-        critical_stock_threshold: Number(readCell(row, 'Kritik Stok Eşiği') || 5),
-        unit_cost: readCell(row, 'Birim Maliyet') ? Number(readCell(row, 'Birim Maliyet')) : null,
-        unit_price: readCell(row, 'Satış Fiyatı') ? Number(readCell(row, 'Satış Fiyatı')) : null,
+        critical_stock_threshold: criticalStock,
+        unit_cost: Number.isFinite(unitCostNum) ? unitCostNum : null,
+        unit_price: Number.isFinite(unitPriceNum) ? unitPriceNum : null,
         campaign: readCell(row, 'Kampanya') || null,
         expiry_date: readCell(row, 'Son Kullanım Tarihi') || null,
         barcode: readCell(row, 'Barkod') || null,

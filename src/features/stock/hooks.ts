@@ -85,7 +85,7 @@ export function useRecordStockMovement() {
       const delta =
         variables.movement_type === 'out' || variables.movement_type === 'sample' || variables.movement_type === 'disposal'
           ? -variables.quantity
-          : variables.movement_type === 'in' || variables.movement_type === 'return'
+          : variables.movement_type === 'in' || variables.movement_type === 'return' || variables.movement_type === 'adjustment'
             ? variables.quantity
             : 0
       if (delta !== 0) {
