@@ -1,14 +1,14 @@
 import * as React from 'react'
-import { ImageDown, IdCard, Search } from 'lucide-react'
+import { ImageDown, IdCard } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
+import { ProductMultiCombobox } from '@/features/stock/ProductMultiCombobox'
 import { useSales } from '@/features/sales/hooks'
 import { useSampleRequests } from '@/features/samples/hooks'
 import { usePayments } from '@/features/payments/hooks'
@@ -36,7 +36,7 @@ export function StockCardPanel() {
   const [mode, setMode] = React.useState<ReportMode>('single')
   const [productId, setProductId] = React.useState<string | undefined>(undefined)
   const [product, setProduct] = React.useState<Product | null>(null)
-  const [allSearch, setAllSearch] = React.useState('')
+  const [allProductIds, setAllProductIds] = React.useState<string[]>([])
 
   const { data: sales = [] } = useSales()
   const { data: sampleRequests = [] } = useSampleRequests()
@@ -56,12 +56,10 @@ export function StockCardPanel() {
 
   const allRows = React.useMemo<StockCardRow[]>(() => buildStockCardReport(sales, sampleRequests), [sales, sampleRequests])
   const filteredAllRows = React.useMemo(() => {
-    const q = allSearch.trim().toLocaleLowerCase('tr')
-    if (!q) return allRows
-    return allRows.filter(
-      (r) => r.productName.toLocaleLowerCase('tr').includes(q) || r.doctorName.toLocaleLowerCase('tr').includes(q),
-    )
-  }, [allRows, allSearch])
+    if (allProductIds.length === 0) return allRows
+    const idSet = new Set(allProductIds)
+    return allRows.filter((r) => idSet.has(r.productId))
+  }, [allRows, allProductIds])
 
   const rows = mode === 'single' ? singleRows : filteredAllRows
   const summary = React.useMemo(() => summarizeStockCard(rows), [rows])
@@ -104,13 +102,11 @@ export function StockCardPanel() {
               )}
             </>
           ) : (
-            <div className="relative max-w-sm flex-1">
-              <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Ürün veya doktor adına göre filtrele..."
-                value={allSearch}
-                onChange={(e) => setAllSearch(e.target.value)}
-                className="pl-9"
+            <div className="max-w-sm flex-1">
+              <ProductMultiCombobox
+                value={allProductIds}
+                onChange={setAllProductIds}
+                placeholder="Ürün seçin (boş = tümü)"
               />
             </div>
           )}
