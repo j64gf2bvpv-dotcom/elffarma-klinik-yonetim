@@ -47,6 +47,7 @@ import { useSnoozedAlerts } from '@/features/alerts/useSnoozedAlerts'
 import { useDeleteReminder } from '@/features/reminders/hooks'
 import { useOfflineSync } from '@/features/offline/useOfflineSync'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
+import { WEBMAIL_URL } from '@/lib/companyInfo'
 import { tr } from '@/i18n/tr'
 import { ElffarmaLogo } from '@/components/brand/ElffarmaLogo'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -365,7 +366,7 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
 
         <TopBarIconTooltip label="Elffarma Webmail'i aç">
           <a
-            href="https://webmail.elffarma.com/"
+            href={WEBMAIL_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"

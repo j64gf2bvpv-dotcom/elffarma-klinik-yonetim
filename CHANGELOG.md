@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.16.0] - 2026-08-05
+
+**Yeni: Stok > Stok Kartı raporu:** Stok sayfasına üçüncü bir sekme eklendi, iki modlu: **Tek Ürün** (ürün seçilince o ürünün tüm satış ve numune kayıtları tek kronolojik dökümde: hangi doktora, ne zaman, kaç adet, hangi fiyattan verildiği ve o doktorun güncel cari bakiyesi) ve **Tüm Ürünler** (ürün seçmeden, tüm ürünlerin aynı dökümü tek tabloda, ürün adına/doktor adına göre filtrelenebilir, ayrı bir "Ürün" kolonuyla). Üstte toplam satılan/numune/ciro/doktor (ve toplu modda ürün) sayısı özeti var. Excel/Word/PDF (mevcut dışa aktarma menüsüyle) ve ayrıca **PNG görsel** olarak indirilebiliyor (Canvas ile çizilen yeni bir dışa aktarma — Günlük Özet'teki PNG yöntemiyle aynı teknik). Ürün kodu alanı (SKU) "Stok Kodu / SKU" olarak yeniden etiketlendi. Not: kongrede doktora dağıtılan ürünler bu raporun kapsamı dışında — o veri `product_id`/`customer_id` ile bağlı tutulmadığı için güvenilir şekilde eşleştirilemiyor.
+
+**Yeni: Dışa aktarılabilen her panelde "E-posta ile Gönder (Webmail)":** Ortak `ExportMenu` bileşenine (uygulama genelindeki tüm liste/rapor sayfalarında kullanılıyor) yeni bir seçenek eklendi — seçilince raporu PDF olarak indirir ve Elffarma Webmail'i (topbar'daki kısayolla aynı adres) yeni sekmede açar; e-posta ekini webmail tarafında elle eklemeniz gerekiyor (genel webmail arayüzü URL üzerinden otomatik dosya eki desteklemediği için — WhatsApp gönderiminde olduğu gibi son adım manuel). Şema değişikliği yok.
+
 ## [2.15.15] - 2026-08-04
 
 **Uçtan uca denetim: Günlük Hareket içe aktarmadaki unutulmuş debug logları temizlendi:** Çok önceki bir oturumdan kalan `console.error('[debug daily-movement] ...')` satırları (5 adet) kaldırıldı — işlevsellik değişmedi, sadece geliştirme sırasında bırakılan gürültü temizlendi. Bu, program genelinde yapılan bir sağlık taramasının parçası (bkz. sohbetteki detaylı rapor): tüm menü/rota eşleşmeleri, tüm tablo/sütun/RPC referansları, TypeScript derlemesi, lint ve üretim derlemesi (`npm run build`) doğrulandı — başka bir kod hatası bulunmadı. Şema değişikliği yok.

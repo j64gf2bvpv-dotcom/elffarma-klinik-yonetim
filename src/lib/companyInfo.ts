@@ -10,3 +10,5 @@ export const companyInfo = {
   accountType: 'TL Hesabı',
   iban: 'TR77 0001 0019 7497 6425 6550 01',
 }
+
+export const WEBMAIL_URL = 'https://webmail.elffarma.com/'

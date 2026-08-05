@@ -17,6 +17,7 @@ import { ProductLotsDialog } from '@/features/stock/ProductLotsDialog'
 import { useDeactivateProduct, useProducts, useRecordStockMovement } from '@/features/stock/hooks'
 import { createProduct, recordStockMovement } from '@/features/stock/api'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
+import { StockCardPanel } from '@/features/stock/StockCardPanel'
 import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -535,6 +536,7 @@ export function StockPage() {
         <TabsList className="mb-4">
           <TabsTrigger value="products">Ürünler</TabsTrigger>
           <TabsTrigger value="count">Günlük Sayım</TabsTrigger>
+          <TabsTrigger value="card">Stok Kartı</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products">
@@ -583,6 +585,10 @@ export function StockPage() {
 
         <TabsContent value="count">
           <DailyCountPanel />
+        </TabsContent>
+
+        <TabsContent value="card">
+          <StockCardPanel />
         </TabsContent>
       </Tabs>
     </div>

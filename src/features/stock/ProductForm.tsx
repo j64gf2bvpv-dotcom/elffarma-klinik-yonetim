@@ -128,7 +128,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
                 name="sku"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SKU (opsiyonel)</FormLabel>
+                    <FormLabel>Stok Kodu / SKU (opsiyonel)</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>

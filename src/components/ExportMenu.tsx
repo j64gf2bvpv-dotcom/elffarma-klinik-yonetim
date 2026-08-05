@@ -1,4 +1,4 @@
-import { FileSpreadsheet, FileText, Download, FileType, Printer } from 'lucide-react'
+import { FileSpreadsheet, FileText, Download, FileType, Printer, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { exportToExcel, exportToPdf, exportToWord, printRows, type ExportColumn } from '@/lib/exportData'
+import { WEBMAIL_URL } from '@/lib/companyInfo'
 
 interface ExportMenuProps<T> {
   title: string
@@ -53,6 +54,18 @@ export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = '
     printRows(title, columns, rows)
   }
 
+  function handleMail() {
+    if (rows.length === 0) {
+      toast.error('Gönderilecek veri yok')
+      return
+    }
+    exportToPdf(title, filename, columns, rows)
+    window.open(WEBMAIL_URL, '_blank', 'noopener,noreferrer')
+    toast.info('Rapor PDF olarak indirildi', {
+      description: 'Webmail açıldı — yeni bir e-posta oluşturup indirilen dosyayı ekleyin.',
+    })
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -73,6 +86,9 @@ export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = '
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handlePrint}>
           <Printer className="text-muted-foreground" /> Yazdır
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleMail}>
+          <Mail className="text-primary" /> E-posta ile Gönder (Webmail)
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
