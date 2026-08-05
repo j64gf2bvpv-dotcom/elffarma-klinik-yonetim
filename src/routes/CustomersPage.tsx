@@ -18,13 +18,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { CustomerForm } from '@/features/customers/CustomerForm'
 import { useCustomers, useDeleteCustomer } from '@/features/customers/hooks'
-import { createCustomer, type InvoiceFilter } from '@/features/customers/api'
+import { type InvoiceFilter } from '@/features/customers/api'
+import {
+  importCustomerRows,
+  CUSTOMER_IMPORT_HEADERS,
+  CUSTOMER_IMPORT_SAMPLE_ROWS,
+  CUSTOMER_IMPORT_FIELD_HINTS,
+} from '@/features/customers/importCustomers'
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
-import { formatTrPhoneForDisplay, normalizeTrPhone } from '@/features/whatsapp/normalizePhone'
+import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
 import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
-import { readCell, type ImportSummary } from '@/lib/importData'
+import type { ImportSummary } from '@/lib/importData'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
 import type { Customer } from '@/types/database'
 
@@ -67,56 +73,7 @@ export function CustomersPage() {
   }
 
   async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
-    const existingPhones = new Set(allCustomers.map((c) => c.phone))
-    const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-      const rowLabel = `Satır ${i + 2}`
-      const fullName = readCell(row, 'Ad Soyad', 'Ad', 'İsim')
-      const phoneRaw = readCell(row, 'Telefon', 'Phone')
-      if (!fullName || !phoneRaw) {
-        summary.errors.push(`${rowLabel}: Ad Soyad veya Telefon eksik`)
-        continue
-      }
-      const normalized = normalizeTrPhone(phoneRaw)
-      if (!normalized) {
-        summary.errors.push(`${rowLabel}: Geçersiz telefon numarası (${phoneRaw})`)
-        continue
-      }
-      if (existingPhones.has(normalized.canonical)) {
-        summary.skipped++
-        continue
-      }
-
-      const tip = readCell(row, 'Tip', 'Doktor Tipi')
-      const isInvoicedText = readCell(row, 'Fatura Durumu', 'Faturalı')
-      const vatRateText = readCell(row, 'KDV Oranı')
-
-      try {
-        await createCustomer({
-          full_name: fullName,
-          phone: phoneRaw,
-          doctor_type: /hastane/i.test(tip) ? 'hastane' : 'sahis',
-          province: readCell(row, 'İl') || null,
-          hospital_name: readCell(row, 'Hastane') || null,
-          next_payment_due: readCell(row, 'Ödeme Vadesi') || null,
-          tc_no: readCell(row, 'TC Kimlik No') || null,
-          tax_number: readCell(row, 'Vergi Numarası') || null,
-          vat_rate: vatRateText ? Number(vatRateText) : null,
-          address: readCell(row, 'Adres') || null,
-          is_invoiced: /faturalı|evet/i.test(isInvoicedText),
-          tags: readCell(row, 'Etiketler')
-            ? readCell(row, 'Etiketler').split(',').map((t) => t.trim()).filter(Boolean)
-            : [],
-        })
-        existingPhones.add(normalized.canonical)
-        summary.added++
-      } catch (err) {
-        summary.errors.push(`${rowLabel}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
-      }
-    }
-
+    const summary = await importCustomerRows(rows, allCustomers)
     if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['customers'] })
     return summary
   }
@@ -150,60 +107,14 @@ export function CustomersPage() {
             <ImportMenu
               onImport={handleImport}
               templateFilename="cari-kart-sablon"
-              templateHeaders={[
-                'Ad Soyad',
-                'Telefon',
-                'Tip',
-                'İl',
-                'Hastane',
-                'Ödeme Vadesi',
-                'TC Kimlik No',
-                'Vergi Numarası',
-                'KDV Oranı',
-                'Adres',
-                'Fatura Durumu',
-                'Etiketler',
-              ]}
-              templateSampleRows={[
-                {
-                  'Ad Soyad': 'Dr. Ayşe Yılmaz',
-                  Telefon: '0532 123 45 67',
-                  Tip: 'Şahıs',
-                  İl: 'İstanbul',
-                  Hastane: '',
-                  'Ödeme Vadesi': '2026-08-15',
-                  'TC Kimlik No': '',
-                  'Vergi Numarası': '',
-                  'KDV Oranı': '',
-                  Adres: '',
-                  'Fatura Durumu': 'Faturasız',
-                  Etiketler: 'botoks, vip',
-                },
-              ]}
+              templateHeaders={CUSTOMER_IMPORT_HEADERS}
+              templateSampleRows={CUSTOMER_IMPORT_SAMPLE_ROWS}
             />
             <SmartImportDialog
               title="Doktorları Akıllı İçe Aktar"
               targetLabel="doktor/cari kart"
-              fieldHeaders={[
-                'Ad Soyad',
-                'Telefon',
-                'Tip',
-                'İl',
-                'Hastane',
-                'Ödeme Vadesi',
-                'TC Kimlik No',
-                'Vergi Numarası',
-                'KDV Oranı',
-                'Adres',
-                'Fatura Durumu',
-                'Etiketler',
-              ]}
-              fieldHints={{
-                Tip: '"Şahıs" veya "Hastane"',
-                'Ödeme Vadesi': 'YYYY-AA-GG formatında tarih, yoksa boş',
-                'Fatura Durumu': '"Faturalı" veya "Faturasız"',
-                Etiketler: 'virgülle ayrılmış kısa etiketler, yoksa boş',
-              }}
+              fieldHeaders={CUSTOMER_IMPORT_HEADERS}
+              fieldHints={CUSTOMER_IMPORT_FIELD_HINTS}
               onImport={handleImport}
             />
             <CustomerForm />

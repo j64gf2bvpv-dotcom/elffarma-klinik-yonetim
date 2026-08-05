@@ -22,7 +22,13 @@ import {
   useInstallmentPlans,
   usePayments,
 } from '@/features/payments/hooks'
-import { createPayment, type PaymentWithCustomer } from '@/features/payments/api'
+import { type PaymentWithCustomer } from '@/features/payments/api'
+import {
+  importPaymentRows,
+  PAYMENT_IMPORT_HEADERS,
+  PAYMENT_IMPORT_SAMPLE_ROWS,
+  PAYMENT_IMPORT_FIELD_HINTS,
+} from '@/features/payments/importPayments'
 import { calculateReceivablesRisk } from '@/features/payments/calculateReceivablesRisk'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
@@ -30,8 +36,7 @@ import { tr } from '@/i18n/tr'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
 import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
-import { readCell, parseFlexibleDate, type ImportSummary } from '@/lib/importData'
-import type { PaymentMethod } from '@/types/database'
+import type { ImportSummary } from '@/lib/importData'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -87,70 +92,8 @@ export function PaymentsPage() {
   const riskRows = React.useMemo(() => calculateReceivablesRisk(allInstallments), [allInstallments])
   const unpaidInstallments = allInstallments.filter((i) => !i.paid_payment_id)
 
-  const paymentMethodByLabel = React.useMemo(() => {
-    const map = new Map<string, PaymentMethod>()
-    for (const [key, label] of Object.entries(tr.paymentMethod)) map.set(label.toLocaleLowerCase('tr'), key as PaymentMethod)
-    return map
-  }, [])
-
   async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
-    const existingKeys = new Set(
-      allPayments.map((p) => `${p.customer_id}|${format(new Date(p.paid_at), 'yyyy-MM-dd')}|${Number(p.amount)}|${p.payment_method}`),
-    )
-    const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-      const rowLabel = `Satır ${i + 2}`
-      const doctorName = readCell(row, 'Doktor', 'Ad Soyad')
-      const amountText = readCell(row, 'Tutar')
-      const dateText = readCell(row, 'Tarih')
-      if (!doctorName || !amountText || !dateText) {
-        summary.errors.push(`${rowLabel}: Doktor, Tutar veya Tarih eksik`)
-        continue
-      }
-      const doctor = doctors.find((d) => d.full_name.toLocaleLowerCase('tr') === doctorName.toLocaleLowerCase('tr'))
-      if (!doctor) {
-        summary.errors.push(`${rowLabel}: "${doctorName}" adında doktor bulunamadı`)
-        continue
-      }
-      const paidAt = parseFlexibleDate(dateText)
-      if (!paidAt) {
-        summary.errors.push(`${rowLabel}: Geçersiz tarih (${dateText})`)
-        continue
-      }
-      const amount = Number(amountText.replace(/[^\d.-]/g, ''))
-      if (!amount || amount <= 0) {
-        summary.errors.push(`${rowLabel}: Geçersiz tutar (${amountText})`)
-        continue
-      }
-      const methodText = readCell(row, 'Yöntem').toLocaleLowerCase('tr')
-      const paymentMethod = paymentMethodByLabel.get(methodText) ?? 'nakit'
-      const repName = readCell(row, 'Satış Temsilcisi')
-      const rep = repName ? salesReps.find((r) => r.name.toLocaleLowerCase('tr') === repName.toLocaleLowerCase('tr')) : undefined
-
-      const key = `${doctor.id}|${format(paidAt, 'yyyy-MM-dd')}|${amount}|${paymentMethod}`
-      if (existingKeys.has(key)) {
-        summary.skipped++
-        continue
-      }
-
-      try {
-        await createPayment({
-          customer_id: doctor.id,
-          amount,
-          payment_method: paymentMethod,
-          description: readCell(row, 'Açıklama') || null,
-          paid_at: paidAt.toISOString(),
-          sales_rep_id: rep?.id ?? null,
-        })
-        existingKeys.add(key)
-        summary.added++
-      } catch (err) {
-        summary.errors.push(`${rowLabel}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
-      }
-    }
-
+    const summary = await importPaymentRows(rows, allPayments, doctors, salesReps)
     if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['payments'] })
     return summary
   }
@@ -184,30 +127,14 @@ export function PaymentsPage() {
             <ImportMenu
               onImport={handleImport}
               templateFilename="tahsilat-sablon"
-              templateHeaders={['Doktor', 'Tutar', 'Tarih', 'Yöntem', 'Satış Temsilcisi', 'Açıklama']}
-              templateSampleRows={[
-                {
-                  Doktor: 'Dr. Ayşe Yılmaz',
-                  Tutar: 5000,
-                  Tarih: '15.03.2026',
-                  Yöntem: 'Nakit',
-                  'Satış Temsilcisi': '',
-                  Açıklama: '',
-                },
-              ]}
+              templateHeaders={PAYMENT_IMPORT_HEADERS}
+              templateSampleRows={PAYMENT_IMPORT_SAMPLE_ROWS}
             />
             <SmartImportDialog
               title="Tahsilatları Akıllı İçe Aktar"
               targetLabel="tahsilat/ödeme"
-              fieldHeaders={['Doktor', 'Tutar', 'Tarih', 'Yöntem', 'Satış Temsilcisi', 'Açıklama']}
-              fieldHints={{
-                Doktor: 'sistemde kayıtlı doktorun tam adı',
-                Tutar: 'sayı, para birimi/nokta olmadan',
-                Tarih: 'GG.AA.YYYY veya YYYY-AA-GG formatında',
-                Yöntem: '"Nakit", "Kredi Kartı", "Havale/EFT" veya "POS", yoksa "Nakit" yaz',
-                'Satış Temsilcisi': 'yoksa boş bırak',
-                Açıklama: 'yoksa boş bırak',
-              }}
+              fieldHeaders={PAYMENT_IMPORT_HEADERS}
+              fieldHints={PAYMENT_IMPORT_FIELD_HINTS}
               onImport={handleImport}
             />
             <InstallmentPlanForm />

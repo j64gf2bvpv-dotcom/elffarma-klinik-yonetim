@@ -15,7 +15,7 @@ import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
 import { ProductLotsDialog } from '@/features/stock/ProductLotsDialog'
 import { useDeactivateProduct, useProducts, useRecordStockMovement } from '@/features/stock/hooks'
-import { createProduct, recordStockMovement } from '@/features/stock/api'
+import { recordStockMovement } from '@/features/stock/api'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
 import { cn } from '@/lib/utils'
@@ -24,7 +24,13 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
 import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import { DailyMovementImportButton } from '@/features/stock/DailyMovementImportButton'
-import { readCell, type ImportSummary } from '@/lib/importData'
+import {
+  importProductRows,
+  PRODUCT_IMPORT_HEADERS,
+  PRODUCT_IMPORT_SAMPLE_ROWS,
+  PRODUCT_IMPORT_FIELD_HINTS,
+} from '@/features/stock/importProducts'
+import type { ImportSummary } from '@/lib/importData'
 import type { BrandLine, Product } from '@/types/database'
 
 const ALL_BRANDS = 'all'
@@ -297,95 +303,8 @@ export function StockPage() {
     }
   }
 
-  /**
-   * Stok kritik olduğu için içe aktarma ya HEPSİ ya HİÇBİRİ şeklinde çalışır:
-   * önce tüm satırlar (isim eksikliği, sayı olmayan stok miktarı vb.) yazma
-   * yapılmadan doğrulanır; herhangi bir satırda hata varsa hiçbir ürün
-   * oluşturulmaz, tüm hatalar birden gösterilir (kısmi/karışık bir içe
-   * aktarma — bazı satırlar eklenmiş bazıları eklenmemiş — bırakılmaz).
-   * Zaten var olan ürünler (SKU/isim eşleşmesi) hata değil, atlanan kayıt
-   * sayılır.
-   */
   async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
-    const existingSkus = new Set(allProducts.filter((p) => p.sku).map((p) => p.sku))
-    const existingNames = new Set(allProducts.map((p) => p.name.toLocaleLowerCase('tr')))
-    const seenSkusInBatch = new Set<string>()
-    const seenNamesInBatch = new Set<string>()
-    const errors: string[] = []
-    let skipped = 0
-
-    const planned: { input: Parameters<typeof createProduct>[0]; initialQty: number }[] = []
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-      const rowLabel = `Satır ${i + 2}`
-      const name = readCell(row, 'Ürün', 'Ürün Adı')
-      if (!name) {
-        errors.push(`${rowLabel}: Ürün adı eksik`)
-        continue
-      }
-      const nameKey = name.toLocaleLowerCase('tr')
-      const sku = readCell(row, 'SKU') || null
-      if (
-        (sku && existingSkus.has(sku)) ||
-        existingNames.has(nameKey) ||
-        seenNamesInBatch.has(nameKey) ||
-        (sku && seenSkusInBatch.has(sku))
-      ) {
-        skipped++
-        continue
-      }
-
-      const initialQtyText = readCell(row, 'Başlangıç Stoğu', 'Stok')
-      const initialQty = initialQtyText ? Number(initialQtyText.replace(/[^\d.-]/g, '')) : 0
-      if (initialQtyText && !Number.isFinite(initialQty)) {
-        errors.push(`${rowLabel}: Başlangıç stoğu sayı değil ("${initialQtyText}")`)
-        continue
-      }
-
-      const brandText = readCell(row, 'Ürün Hattı')
-      seenNamesInBatch.add(nameKey)
-      if (sku) seenSkusInBatch.add(sku)
-      planned.push({
-        input: {
-          name,
-          sku,
-          category: readCell(row, 'Kategori') || null,
-          unit: readCell(row, 'Birim') || 'adet',
-          critical_stock_threshold: Number(readCell(row, 'Kritik Stok Eşiği') || 5),
-          unit_cost: readCell(row, 'Birim Maliyet') ? Number(readCell(row, 'Birim Maliyet')) : null,
-          unit_price: readCell(row, 'Satış Fiyatı') ? Number(readCell(row, 'Satış Fiyatı')) : null,
-          campaign: readCell(row, 'Kampanya') || null,
-          expiry_date: readCell(row, 'Son Kullanım Tarihi') || null,
-          barcode: readCell(row, 'Barkod') || null,
-          brand_line: /dermakor/i.test(brandText) ? 'dermakor' : /swiss/i.test(brandText) ? 'swiss' : null,
-        },
-        initialQty,
-      })
-    }
-
-    if (errors.length > 0) {
-      return { added: 0, skipped: 0, errors }
-    }
-
-    const summary: ImportSummary = { added: 0, skipped, errors: [] }
-    for (const p of planned) {
-      try {
-        const created = await createProduct(p.input)
-        if (p.initialQty > 0) {
-          await recordStockMovement({
-            product_id: created.id,
-            movement_type: 'in',
-            quantity: p.initialQty,
-            reason: 'İçe aktarma — başlangıç stoğu',
-          })
-        }
-        summary.added++
-      } catch (err) {
-        summary.errors.push(`${p.input.name}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
-      }
-    }
-
+    const summary = await importProductRows(rows, allProducts)
     if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['products'] })
     return summary
   }
@@ -419,61 +338,14 @@ export function StockPage() {
             <ImportMenu
               onImport={handleImport}
               templateFilename="stok-sablon"
-              templateHeaders={[
-                'Ürün',
-                'SKU',
-                'Kategori',
-                'Birim',
-                'Kritik Stok Eşiği',
-                'Birim Maliyet',
-                'Satış Fiyatı',
-                'Kampanya',
-                'Barkod',
-                'Ürün Hattı',
-                'Son Kullanım Tarihi',
-                'Başlangıç Stoğu',
-              ]}
-              templateSampleRows={[
-                {
-                  Ürün: 'Botoks 100u',
-                  SKU: 'BTX-100',
-                  Kategori: 'Botoks',
-                  Birim: 'adet',
-                  'Kritik Stok Eşiği': 5,
-                  'Birim Maliyet': 800,
-                  'Satış Fiyatı': 1200,
-                  Kampanya: '',
-                  Barkod: '',
-                  'Ürün Hattı': 'Dermakor',
-                  'Son Kullanım Tarihi': '2027-01-01',
-                  'Başlangıç Stoğu': 20,
-                },
-              ]}
+              templateHeaders={PRODUCT_IMPORT_HEADERS}
+              templateSampleRows={PRODUCT_IMPORT_SAMPLE_ROWS}
             />
             <SmartImportDialog
               title="Ürünleri Akıllı İçe Aktar"
               targetLabel="stok/ürün"
-              fieldHeaders={[
-                'Ürün',
-                'SKU',
-                'Kategori',
-                'Birim',
-                'Kritik Stok Eşiği',
-                'Birim Maliyet',
-                'Satış Fiyatı',
-                'Kampanya',
-                'Barkod',
-                'Ürün Hattı',
-                'Son Kullanım Tarihi',
-                'Başlangıç Stoğu',
-              ]}
-              fieldHints={{
-                Birim: 'ör. "adet", "kutu" — yoksa "adet" yaz',
-                'Kritik Stok Eşiği': 'sayı, yoksa 5 yaz',
-                'Ürün Hattı': '"Dermakor" veya "Swiss", yoksa boş',
-                'Son Kullanım Tarihi': 'YYYY-AA-GG formatında, yoksa boş',
-                'Başlangıç Stoğu': 'sayı, yoksa 0 yaz',
-              }}
+              fieldHeaders={PRODUCT_IMPORT_HEADERS}
+              fieldHints={PRODUCT_IMPORT_FIELD_HINTS}
               onImport={handleImport}
             />
             <DailyMovementImportButton />

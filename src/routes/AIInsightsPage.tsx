@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Sparkles, Loader2, FileDown, Upload, Lightbulb, Search } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Sparkles, Loader2, FileDown, Upload, Lightbulb, Search, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -11,8 +12,25 @@ import { useAIService } from '@/features/ai/useAIService'
 import { useBusinessSnapshot } from '@/features/ai/useBusinessSnapshot'
 import { snapshotSystemMessage } from '@/features/ai/snapshotSystemMessage'
 import { AIServiceError } from '@/features/ai/types'
-import { extractFileContent } from '@/features/smartImport/extractFileContent'
+import { extractFileContent, type ExtractedContent } from '@/features/smartImport/extractFileContent'
+import { extractRowsWithAI } from '@/features/smartImport/aiExtractRows'
+import { parseAiJsonObject } from '@/features/smartImport/parseAiJsonArray'
+import { useProducts } from '@/features/stock/hooks'
+import { importProductRows, PRODUCT_IMPORT_HEADERS, PRODUCT_IMPORT_FIELD_HINTS } from '@/features/stock/importProducts'
+import {
+  importStockCardRows,
+  STOCK_CARD_IMPORT_HEADERS,
+  STOCK_CARD_IMPORT_FIELD_HINTS,
+} from '@/features/stock/importStockCard'
+import { useCustomers } from '@/features/customers/hooks'
+import { importCustomerRows, CUSTOMER_IMPORT_HEADERS, CUSTOMER_IMPORT_FIELD_HINTS } from '@/features/customers/importCustomers'
+import { usePayments } from '@/features/payments/hooks'
+import { importPaymentRows, PAYMENT_IMPORT_HEADERS, PAYMENT_IMPORT_FIELD_HINTS } from '@/features/payments/importPayments'
+import { useSalesReps } from '@/features/salesReps/hooks'
+import { useSales } from '@/features/sales/hooks'
+import { useSampleRequests } from '@/features/samples/hooks'
 import { exportTextReportToWord } from '@/lib/exportData'
+import type { ImportSummary } from '@/lib/importData'
 
 type ReportPeriod = 'gunluk' | 'haftalik' | 'aylik'
 
@@ -22,9 +40,22 @@ const periodLabels: Record<ReportPeriod, string> = {
   aylik: 'Aylık',
 }
 
+type FileCategory = 'urun' | 'doktor' | 'tahsilat' | 'stok_hareket' | 'bilinmiyor'
+
+const CATEGORY_VALUES: readonly FileCategory[] = ['urun', 'doktor', 'tahsilat', 'stok_hareket', 'bilinmiyor']
+
+const CATEGORY_LABELS: Record<FileCategory, string> = {
+  urun: 'Stok / Ürünler',
+  doktor: 'Doktor / Cari',
+  tahsilat: 'Tahsilat',
+  stok_hareket: 'Stok Kartı (Satış/Numune Geçmişi)',
+  bilinmiyor: 'Bilinmiyor',
+}
+
 export function AIInsightsPage() {
   const aiService = useAIService()
   const snapshot = useBusinessSnapshot()
+  const queryClient = useQueryClient()
 
   const [question, setQuestion] = React.useState('')
   const [answer, setAnswer] = React.useState('')
@@ -37,9 +68,23 @@ export function AIInsightsPage() {
   const [suggestions, setSuggestions] = React.useState('')
   const [suggestionsLoading, setSuggestionsLoading] = React.useState(false)
 
+  const [fileName, setFileName] = React.useState('')
+  const [fileContent, setFileContent] = React.useState<ExtractedContent | null>(null)
   const [fileSummary, setFileSummary] = React.useState('')
+  const [fileCategory, setFileCategory] = React.useState<FileCategory | null>(null)
   const [fileLoading, setFileLoading] = React.useState(false)
+  const [routing, setRouting] = React.useState(false)
+  const [routeResult, setRouteResult] = React.useState<{ category: FileCategory; summary: ImportSummary } | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  // "İlgili bölüme aktar" adımında hangi hedefe yazılacağını belirlemek için
+  // gereken veriler — hepsi burada, tek yerde toplandı.
+  const { data: allProducts = [] } = useProducts('')
+  const { data: allCustomers = [] } = useCustomers('')
+  const { data: allPayments = [] } = usePayments({})
+  const { data: salesReps = [] } = useSalesReps()
+  const { data: sales = [] } = useSales()
+  const { data: sampleRequests = [] } = useSampleRequests()
 
   async function handleAsk() {
     if (!question.trim()) return
@@ -104,8 +149,9 @@ export function AIInsightsPage() {
    * mantığıyla (bkz. Akıllı İçe Aktar / AI Asistan'ın da kullandığı
    * extractFileContent) okuyup AI'a özetletir. Taranmış/görsel PDF'lerde
    * metin katmanı yoksa otomatik olarak sayfa görsellerine düşülüp vision
-   * ile okunuyor — "ne verirsem vereyim detaylı taransın" beklentisi böyle
-   * karşılanıyor. Salt özet: hiçbir kayıt oluşturmaz/içe aktarmaz.
+   * ile okunuyor. Özetle birlikte AI'dan verinin programın hangi bölümüne
+   * ait olduğunu da (kategori) belirlemesi istenir — tanınırsa aşağıda
+   * "İlgili bölüme aktar" butonu çıkar (bkz. handleRouteToTarget).
    */
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -113,12 +159,27 @@ export function AIInsightsPage() {
     if (!file) return
     setFileLoading(true)
     setFileSummary('')
+    setFileCategory(null)
+    setRouteResult(null)
+    setFileContent(null)
+    setFileName(file.name)
     try {
       const content = await extractFileContent(file)
+      setFileContent(content)
+
       const systemMessage =
-        'Sen bir veri analistisin. Kullanıcının yüklediği belgeyi dikkatlice, EKSİKSİZ tara. Kısa ama isabetli ' +
-        'bir özet çıkar: belge ne içeriyor, kaç satır/kayıt/sayfa var, hangi alanlar göze çarpıyor, dikkat çekici ' +
-        'bir örüntü/anormallik/hata var mı. SADECE TÜRKÇE yaz — başka bir dilde tek kelime bile yazma.'
+        'Sen bu klinik yönetim programının bir parçasısın. Kullanıcının yüklediği belgeyi dikkatlice, EKSİKSİZ tara. ' +
+        'İki şeyi belirle:\n' +
+        '(1) "kategori": Bu veri programın hangi bölümüne ait — TAM OLARAK şu seçeneklerden biri: ' +
+        '"urun" (stok/ürün kataloğu: ürün adı, kod, fiyat, stok miktarı gibi bilgiler), ' +
+        '"doktor" (doktor/cari kart: isim, telefon, klinik/hastane, adres gibi), ' +
+        '"tahsilat" (ödeme/tahsilat kaydı: doktor, tutar, tarih, ödeme yöntemi), ' +
+        '"stok_hareket" (geçmiş satış/numune dökümü: hangi doktora hangi üründen kaç adet, ne zaman verildiği), ' +
+        '"bilinmiyor" (yukarıdakilerden hiçbiri değilse ya da emin değilsen).\n' +
+        '(2) "ozet": Kısa ama isabetli bir özet — belge ne içeriyor, kaç satır/kayıt/sayfa var, hangi alanlar ' +
+        'göze çarpıyor, dikkat çekici bir örüntü/anormallik/hata var mı.\n' +
+        'SADECE şu JSON objesini döndür (başka açıklama/metin ekleme): { "kategori": "...", "ozet": "..." }. ' +
+        'SADECE TÜRKÇE yaz — başka bir dilde tek kelime bile yazma.'
 
       let result
       if (content.kind === 'table') {
@@ -147,11 +208,78 @@ export function AIInsightsPage() {
           { role: 'user', content: `Dosya: ${file.name}\n\nBelge içeriği:\n${content.text}` },
         ])
       }
-      setFileSummary(result.content)
+
+      const parsed = parseAiJsonObject(result.content)
+      const kategoriRaw = typeof parsed.kategori === 'string' ? parsed.kategori : 'bilinmiyor'
+      const kategori = (CATEGORY_VALUES as string[]).includes(kategoriRaw) ? (kategoriRaw as FileCategory) : 'bilinmiyor'
+      const ozet = typeof parsed.ozet === 'string' && parsed.ozet ? parsed.ozet : 'Özet oluşturulamadı.'
+
+      setFileCategory(kategori)
+      setFileSummary(ozet)
     } catch (err) {
       toast.error('Dosya özetlenemedi', { description: err instanceof Error ? err.message : undefined })
     } finally {
       setFileLoading(false)
+    }
+  }
+
+  /**
+   * Tespit edilen kategoriye göre dosyayı ilgili bölümün AI çıkarım
+   * şemasıyla (StockPage/CustomersPage/PaymentsPage/StockCardPanel'in
+   * "Akıllı İçe Aktar"ıyla AYNI standalone fonksiyonlar — tekrar yazılmadı)
+   * yeniden AI'a okutup kayıtları oluşturur. Sonuçta hangi bölüme kaç kayıt
+   * eklendiği/atlandığı/hata verdiği açıkça gösterilir.
+   */
+  async function handleRouteToTarget() {
+    if (!fileContent || !fileCategory || fileCategory === 'bilinmiyor') return
+    setRouting(true)
+    try {
+      let summary: ImportSummary
+      switch (fileCategory) {
+        case 'urun': {
+          const rows = await extractRowsWithAI(aiService, fileContent, 'stok/ürün', PRODUCT_IMPORT_HEADERS, PRODUCT_IMPORT_FIELD_HINTS)
+          summary = await importProductRows(rows, allProducts)
+          if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['products'] })
+          break
+        }
+        case 'doktor': {
+          const rows = await extractRowsWithAI(aiService, fileContent, 'doktor/cari kart', CUSTOMER_IMPORT_HEADERS, CUSTOMER_IMPORT_FIELD_HINTS)
+          summary = await importCustomerRows(rows, allCustomers)
+          if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['customers'] })
+          break
+        }
+        case 'tahsilat': {
+          const rows = await extractRowsWithAI(aiService, fileContent, 'tahsilat/ödeme', PAYMENT_IMPORT_HEADERS, PAYMENT_IMPORT_FIELD_HINTS)
+          summary = await importPaymentRows(rows, allPayments, allCustomers, salesReps)
+          if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['payments'] })
+          break
+        }
+        case 'stok_hareket': {
+          const rows = await extractRowsWithAI(
+            aiService,
+            fileContent,
+            'stok kartı satış/numune',
+            STOCK_CARD_IMPORT_HEADERS,
+            STOCK_CARD_IMPORT_FIELD_HINTS,
+          )
+          summary = await importStockCardRows(rows, allProducts, allCustomers, sales, sampleRequests)
+          if (summary.added > 0) {
+            await queryClient.invalidateQueries({ queryKey: ['sales'] })
+            await queryClient.invalidateQueries({ queryKey: ['sample_requests'] })
+          }
+          break
+        }
+      }
+      setRouteResult({ category: fileCategory, summary })
+      if (summary.added > 0) {
+        toast.success(`${summary.added} kayıt "${CATEGORY_LABELS[fileCategory]}" bölümüne eklendi`)
+      } else {
+        toast.info('Eklenecek yeni kayıt bulunamadı')
+      }
+    } catch (err) {
+      toast.error('Aktarılamadı', { description: err instanceof Error ? err.message : undefined })
+    } finally {
+      setRouting(false)
     }
   }
 
@@ -256,9 +384,43 @@ export function AIInsightsPage() {
             />
             <p className="text-muted-foreground text-xs">
               Excel, CSV, PDF, Word (.docx), resim veya .txt yükleyin — taranmış PDF'ler de görsel olarak okunur.
+              Stok/ürün, doktor/cari, tahsilat ya da geçmiş satış/numune verisi tanınırsa ilgili bölüme aktarma
+              seçeneği çıkar.
             </p>
+            {fileName && fileLoading && (
+              <p className="text-muted-foreground text-sm">{fileName} taranıyor...</p>
+            )}
             {fileSummary && (
               <p className="rounded-lg border bg-muted/30 p-3 text-sm whitespace-pre-wrap">{fileSummary}</p>
+            )}
+            {fileCategory && fileCategory !== 'bilinmiyor' && !routeResult && (
+              <div className="flex items-center justify-between gap-3 rounded-lg border bg-primary/5 p-3">
+                <p className="text-sm">
+                  Bu dosya <strong>{CATEGORY_LABELS[fileCategory]}</strong> bölümüne ait görünüyor.
+                </p>
+                <Button size="sm" onClick={handleRouteToTarget} disabled={routing}>
+                  {routing ? <Loader2 className="animate-spin" /> : <ArrowRight className="size-3.5" />}
+                  {CATEGORY_LABELS[fileCategory]} Bölümüne Aktar
+                </Button>
+              </div>
+            )}
+            {routeResult && (
+              <div className="rounded-lg border bg-success/10 p-3 text-sm">
+                <p>
+                  <strong>{fileName}</strong> dosyası <strong>{CATEGORY_LABELS[routeResult.category]}</strong> bölümüne
+                  aktarıldı: <strong>{routeResult.summary.added}</strong> kayıt eklendi
+                  {routeResult.summary.skipped > 0 ? `, ${routeResult.summary.skipped} atlandı (zaten kayıtlı)` : ''}
+                  {routeResult.summary.errors.length > 0 ? `, ${routeResult.summary.errors.length} hata` : ''}.
+                </p>
+                {routeResult.summary.errors.length > 0 && (
+                  <ul className="text-destructive mt-1.5 list-inside list-disc text-xs">
+                    {routeResult.summary.errors.slice(0, 5).map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                    {routeResult.summary.errors.length > 5 && <li>...ve {routeResult.summary.errors.length - 5} tane daha</li>}
+                  </ul>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
