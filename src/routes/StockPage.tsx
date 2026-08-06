@@ -18,6 +18,7 @@ import { useDeactivateProduct, useProducts, useRecordStockMovement } from '@/fea
 import { recordStockMovement } from '@/features/stock/api'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
+import { SafeThumbnail } from '@/components/SafeThumbnail'
 import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -149,15 +150,12 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                   className={cn((isCritical || expiryStatus === 'expired') && 'bg-destructive/5')}
                 >
                   <TableCell>
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="size-9 rounded-md border object-cover"
-                      />
-                    ) : (
-                      <div className="size-9 rounded-md border bg-muted" />
-                    )}
+                    <SafeThumbnail
+                      src={product.image_url}
+                      alt={product.name}
+                      className="size-9 rounded-md border object-cover"
+                      fallback={<div className="size-9 rounded-md border bg-muted" />}
+                    />
                   </TableCell>
                   <TableCell className="font-medium">
                     <ProductForm

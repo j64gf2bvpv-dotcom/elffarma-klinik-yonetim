@@ -29,7 +29,8 @@ import { ChecklistPanel } from '@/features/congresses/ChecklistPanel'
 import { CongressStockItemsPanel } from '@/features/congresses/CongressStockItemsPanel'
 import { ConsumablesPanel } from '@/features/congresses/ConsumablesPanel'
 import { useCongress, useDeleteCongress, useDeleteParticipantProduct, useParticipants } from '@/features/congresses/hooks'
-import type { AttendanceStatus } from '@/types/database'
+import { useProducts, useRecordStockMovement } from '@/features/stock/hooks'
+import type { AttendanceStatus, CongressParticipantProduct } from '@/types/database'
 
 const attendanceLabels: Record<AttendanceStatus, string> = {
   registered: 'Kayıtlı',
@@ -54,6 +55,8 @@ export function CongressDetailPage() {
   const { data: participants = [] } = useParticipants(id)
   const deleteCongressMutation = useDeleteCongress()
   const deleteProductMutation = useDeleteParticipantProduct()
+  const { data: products = [] } = useProducts('')
+  const recordMovementMutation = useRecordStockMovement()
 
   if (isLoading) {
     return (
@@ -102,6 +105,26 @@ export function CongressDetailPage() {
     if (!confirm(`${congress!.name} silinsin mi? Tüm doktor ve ürün kayıtları da silinecek.`)) return
     await deleteCongressMutation.mutateAsync(congress!.id)
     navigate('/kongreler')
+  }
+
+  // congress_participant_products tablosunda product_id kolonu yok (sadece
+  // product_name), bu yüzden ürün ekleme sırasında düşülen stoğu silme
+  // sırasında geri iade edebilmek için ada göre eşleştiriyoruz — diğer
+  // kayıt silme akışlarındaki (CongressStockItemsPanel, SalesPage) "stoğu
+  // geri al + onay iste" deseniyle tutarlı olsun diye.
+  async function handleDeleteProduct(product: CongressParticipantProduct) {
+    if (!confirm(`${product.product_name} (${product.quantity} adet) silinsin mi?`)) return
+    const matchedProduct = products.find((p) => p.name === product.product_name)
+    if (matchedProduct) {
+      await recordMovementMutation.mutateAsync({
+        product_id: matchedProduct.id,
+        movement_type: 'return',
+        quantity: product.quantity,
+        reason: 'Kongre ürün kaydı silindi — stoğa iade',
+        note: congress?.name ?? 'Kongre/Workshop',
+      })
+    }
+    await deleteProductMutation.mutateAsync({ id: product.id, congressId: congress!.id })
   }
 
   return (
@@ -393,9 +416,7 @@ export function CongressDetailPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() =>
-                              deleteProductMutation.mutate({ id: product.id, congressId: congress.id })
-                            }
+                            onClick={() => handleDeleteProduct(product)}
                           >
                             <Trash2 className="size-3.5 text-destructive" />
                           </Button>

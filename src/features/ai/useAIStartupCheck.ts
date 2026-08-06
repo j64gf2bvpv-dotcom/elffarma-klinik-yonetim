@@ -21,7 +21,7 @@ export function useAIStartupCheck() {
       const result = await aiService.testConnection()
       if (!result.ok) {
         toast.warning('AI sağlayıcısına bağlanılamadı', {
-          description: `${result.message} (Ayarlar > Yapay Zekâ'dan kontrol edebilirsiniz.)`,
+          description: `${result.message} (Ayarlar > Yapay Zeka'dan kontrol edebilirsiniz.)`,
         })
       } else if (result.modelAvailable === false) {
         toast.warning('AI modeli yüklü değil', { description: result.message })

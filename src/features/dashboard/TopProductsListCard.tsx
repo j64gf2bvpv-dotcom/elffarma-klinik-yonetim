@@ -3,6 +3,7 @@ import { ArrowRight, ArrowUpRight, ArrowDownRight, Package, Trophy } from 'lucid
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { SafeThumbnail } from '@/components/SafeThumbnail'
 import { cn } from '@/lib/utils'
 import { placeholderColor } from '@/lib/placeholderColor'
 
@@ -35,20 +36,19 @@ export function TopProductsListCard({
             <span className="flex size-5 shrink-0 items-center justify-center text-xs font-semibold text-muted-foreground">
               {i + 1}
             </span>
-            {item.imageUrl ? (
-              <img
-                src={item.imageUrl}
-                alt={item.name}
-                className="size-9 shrink-0 rounded-lg border object-cover"
-              />
-            ) : (
-              <span
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white"
-                style={{ backgroundColor: placeholderColor(item.name) }}
-              >
-                <Package className="size-4" />
-              </span>
-            )}
+            <SafeThumbnail
+              src={item.imageUrl}
+              alt={item.name}
+              className="size-9 shrink-0 rounded-lg border object-cover"
+              fallback={
+                <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white"
+                  style={{ backgroundColor: placeholderColor(item.name) }}
+                >
+                  <Package className="size-4" />
+                </span>
+              }
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{item.name}</p>
               <p className="text-xs text-muted-foreground">{item.qty} adet</p>

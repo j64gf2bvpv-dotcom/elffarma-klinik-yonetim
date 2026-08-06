@@ -6,6 +6,7 @@ import { ArrowRight, Presentation } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { SafeThumbnail } from '@/components/SafeThumbnail'
 import { cn } from '@/lib/utils'
 import { placeholderColor } from '@/lib/placeholderColor'
 import type { Congress } from '@/types/database'
@@ -43,16 +44,19 @@ export function UpcomingCongressesCard({ congresses }: { congresses: Congress[] 
               to={`/kongreler/${c.id}`}
               className="flex min-w-0 items-center gap-3 rounded-lg p-1.5 text-sm transition-colors hover:bg-accent"
             >
-              {c.image_url ? (
-                <img src={c.image_url} alt={c.name} className="size-12 shrink-0 rounded-lg border object-cover" />
-              ) : (
-                <span
-                  className="flex size-12 shrink-0 items-center justify-center rounded-lg border text-white"
-                  style={{ backgroundColor: placeholderColor(c.name) }}
-                >
-                  <Presentation className="size-5" />
-                </span>
-              )}
+              <SafeThumbnail
+                src={c.image_url}
+                alt={c.name}
+                className="size-12 shrink-0 rounded-lg border object-cover"
+                fallback={
+                  <span
+                    className="flex size-12 shrink-0 items-center justify-center rounded-lg border text-white"
+                    style={{ backgroundColor: placeholderColor(c.name) }}
+                  >
+                    <Presentation className="size-5" />
+                  </span>
+                }
+              />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{c.name}</p>
                 <p className="text-muted-foreground truncate text-xs">

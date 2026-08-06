@@ -909,7 +909,7 @@ export function DashboardPage() {
             {!aiInsightsLoading && aiInsightsError && (
               <p className="text-destructive text-sm">
                 Yapay zekaya ulaşılamadı{aiInsightsError instanceof Error ? `: ${aiInsightsError.message}` : ''} —
-                Ayarlar &gt; Yapay Zekâ'dan sağlayıcıyı kontrol edin.
+                Ayarlar &gt; Yapay Zeka'dan sağlayıcıyı kontrol edin.
               </p>
             )}
             {!aiInsightsLoading && !aiInsightsError && !aiInsightsText && (

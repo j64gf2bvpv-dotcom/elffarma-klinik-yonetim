@@ -451,8 +451,8 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
                   <NotifIcon icon={ClipboardX} />
                   <span className="text-xs">
                     <span className="font-medium">{lot.products?.name ?? 'Ürün'}</span>
-                    {lot.lot_no ? ` (Lot: ${lot.lot_no})` : ''} SKT {lot.band} gün içinde
-                    {lot.status === 'expired' ? ' doldu' : ''}
+                    {lot.lot_no ? ` (Lot: ${lot.lot_no})` : ''} SKT{' '}
+                    {lot.status === 'expired' ? 'doldu' : `${lot.band} gün içinde doluyor`}
                   </span>
                 </Link>
               </DropdownMenuItem>

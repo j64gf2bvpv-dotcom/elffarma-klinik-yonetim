@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CongressForm } from '@/features/congresses/CongressForm'
 import { useCongresses } from '@/features/congresses/hooks'
+import { SafeThumbnail } from '@/components/SafeThumbnail'
 import { placeholderColor } from '@/lib/placeholderColor'
 import type { Congress } from '@/types/database'
 
@@ -53,18 +54,17 @@ export function CongressesPage() {
             <Card className="h-full transition-colors hover:border-primary/50">
               <CardContent className="pt-6">
                 <div className="mb-3 flex items-start gap-3">
-                  {congress.image_url ? (
-                    <span className="flex size-16 shrink-0 items-center justify-center rounded-lg border bg-muted p-1">
-                      <img src={congress.image_url} alt={congress.name} className="size-full object-contain" />
-                    </span>
-                  ) : (
-                    <span
-                      className="flex size-16 shrink-0 items-center justify-center rounded-lg border text-white"
-                      style={{ backgroundColor: placeholderColor(congress.name) }}
-                    >
-                      <Presentation className="size-6" />
-                    </span>
-                  )}
+                  <span
+                    className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border text-white"
+                    style={congress.image_url ? undefined : { backgroundColor: placeholderColor(congress.name) }}
+                  >
+                    <SafeThumbnail
+                      src={congress.image_url}
+                      alt={congress.name}
+                      className="size-full bg-muted object-contain p-1"
+                      fallback={<Presentation className="size-6" />}
+                    />
+                  </span>
                   <div className="min-w-0 flex-1">
                     <h3 className="mb-1 truncate text-lg font-semibold">{congress.name}</h3>
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">

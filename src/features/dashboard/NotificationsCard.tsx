@@ -5,8 +5,29 @@ import { tr as trLocale } from 'date-fns/locale/tr'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { SafeThumbnail } from '@/components/SafeThumbnail'
 import { cn } from '@/lib/utils'
 import type { NotificationItem } from './useDashboardData'
+
+function NotificationThumb({ item }: { item: NotificationItem }) {
+  return (
+    <SafeThumbnail
+      src={item.imageUrl}
+      alt=""
+      className="mt-0.5 size-8 shrink-0 rounded-lg border object-cover"
+      fallback={
+        <span
+          className={cn(
+            'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg',
+            item.tone === 'primary' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive',
+          )}
+        >
+          <item.icon className="size-4" />
+        </span>
+      }
+    />
+  )
+}
 
 export function NotificationsCard({ items }: { items: NotificationItem[] }) {
   return (
@@ -29,22 +50,7 @@ export function NotificationsCard({ items }: { items: NotificationItem[] }) {
             to={item.to}
             className="flex min-w-0 items-start gap-3 rounded-lg px-1 py-1.5 text-sm transition-colors hover:bg-accent"
           >
-            {item.imageUrl ? (
-              <img
-                src={item.imageUrl}
-                alt=""
-                className="mt-0.5 size-8 shrink-0 rounded-lg border object-cover"
-              />
-            ) : (
-              <span
-                className={cn(
-                  'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg',
-                  item.tone === 'primary' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive',
-                )}
-              >
-                <item.icon className="size-4" />
-              </span>
-            )}
+            <NotificationThumb item={item} />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{item.title}</p>
               <p className="text-muted-foreground truncate text-xs">{item.subtitle}</p>

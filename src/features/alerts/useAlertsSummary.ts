@@ -1,4 +1,4 @@
-import { addDays } from 'date-fns'
+import { addDays, format } from 'date-fns'
 import { useProducts, useAllProductLots } from '@/features/stock/hooks'
 import { useCustomers, useAllPendingProducts } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
@@ -55,9 +55,15 @@ export function useAlertsSummary() {
     .map((d) => ({ ...d, balance: Number(d.total_debt) - (paidByCustomer.get(d.id) ?? 0) }))
     .sort((a, b) => b.balance - a.balance)
 
-  const upcomingWindow = addDays(new Date(), 14)
+  // start_date salt tarih (saatsiz) sütun olduğu için new Date(c.start_date) UTC
+  // gece yarısına denk gelir — new Date() (o anki saat) ile kıyaslanınca yerel
+  // saat UTC+3'te gece yarısından sonra (~03:00) bugün başlayan kongre "yaklaşan"
+  // listesinden düşer. Karşılaştırmayı salt tarih string'i (YYYY-MM-DD, lexicographic
+  // olarak da doğru sıralanır) üzerinden yapmak saat dilimi etkisini tamamen kaldırır.
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const upcomingWindowStr = format(addDays(new Date(), 14), 'yyyy-MM-dd')
   const upcomingCongresses = congresses.filter(
-    (c) => c.start_date && new Date(c.start_date) >= new Date() && new Date(c.start_date) <= upcomingWindow,
+    (c) => c.start_date && c.start_date >= todayStr && c.start_date <= upcomingWindowStr,
   )
 
   const incompleteChecklists = upcomingCongresses
@@ -69,9 +75,11 @@ export function useAlertsSummary() {
     .filter((c) => c.totalChecklistItems === 0 || c.missingChecklistItems > 0)
     .sort((a, b) => (a.start_date ?? '').localeCompare(b.start_date ?? ''))
 
-  const now = new Date()
+  // due_date de salt tarih — yukarıdaki kongre karşılaştırmasıyla aynı sebepten
+  // string kıyaslaması kullanılıyor (bugün vadesi gelen hatırlatma yerel gece
+  // yarısından itibaren, ~03:00'ten değil, "vadesi geldi" sayılsın).
   const dueReminders = reminders
-    .filter((r) => !r.is_done && new Date(r.due_date) <= now)
+    .filter((r) => !r.is_done && r.due_date <= todayStr)
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
 
   // Etkinliği bitmiş (bugünden önce sona ermiş) ama "Götürüldü (Bekliyor)"
@@ -87,7 +95,10 @@ export function useAlertsSummary() {
     const congress = item.congresses
     if (!congress) continue
     const eventEnd = congress.end_date ?? congress.start_date
-    if (!eventEnd || new Date(eventEnd) >= now) continue
+    // Yukarıdakilerle aynı sebepten string kıyaslaması: new Date(eventEnd) UTC
+    // gece yarısına denk geldiği için etkinliğin son gününün sabahından itibaren
+    // "bitti" sayılıp uyarı erken tetiklenmesin.
+    if (!eventEnd || eventEnd >= todayStr) continue
     if (!congressStockByCongress.has(item.congress_id)) {
       congressStockByCongress.set(item.congress_id, { name: congress.name, pendingQty: 0, products: new Set() })
     }

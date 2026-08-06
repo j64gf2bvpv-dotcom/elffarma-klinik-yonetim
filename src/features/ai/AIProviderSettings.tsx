@@ -85,7 +85,7 @@ export function AIProviderSettings() {
           <Bot className="size-5" />
         </span>
         <div>
-          <CardTitle>Yapay Zekâ</CardTitle>
+          <CardTitle>Yapay Zeka</CardTitle>
           <CardDescription>
             AI sağlayıcısını, adresini ve modelini yönetin — tüm AI işlemleri buradaki ayara göre tek bir
             AIService üzerinden çalışır. Sohbet etmek için sağ alt köşedeki AI simgesini kullanın.

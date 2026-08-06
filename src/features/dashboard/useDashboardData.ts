@@ -176,7 +176,7 @@ export function useDashboardData() {
   const cariTotals = React.useMemo(() => computeCariTotals(customers, cariLedger), [customers, cariLedger])
   const cariSparkline = React.useMemo(() => {
     const items = [
-      ...sales.map((s) => ({ date: new Date(s.sale_date), amount: s.type === 'sale' ? netAmount(s) : netAmount(s) })),
+      ...sales.map((s) => ({ date: new Date(s.sale_date), amount: netAmount(s) })),
       ...invoices.map((inv) => ({ date: new Date(inv.issue_date), amount: Number(inv.amount) })),
       ...allPayments.map((p) => ({ date: new Date(p.paid_at), amount: -Number(p.amount) })),
     ]

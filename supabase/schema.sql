@@ -1893,17 +1893,30 @@ begin
       updated_at = now()
   where id = v_old.product_id;
 
-  if v_old.lot_id is not null then
+  -- Eski ve yeni lot AYNIYSA tek update'te birleştirilmeli — ayrı ayrı
+  -- (önce eski etkiyi çıkar, sonra yeni etkiyi ekle) yapılırsa aradaki greatest(0,...)
+  -- taban değeri erken sıfıra kırpıp asıl (- eski + yeni) toplamının negatif
+  -- ara sonucunu kalıcı olarak kaybedebilir (örn. lot 2 iken 10 birimlik bir
+  -- hareket 3'e düşürülürse: ayrı adımlarda greatest(0,2-10)=0 sonra 0+3=3,
+  -- oysa doğrusu greatest(0,2-10+3)=0).
+  if v_old.lot_id is not null and v_old.lot_id = p_lot_id then
     update public.product_lots
-    set quantity = greatest(0, quantity - v_old_delta),
-        updated_at = now()
-    where id = v_old.lot_id;
-  end if;
-  if p_lot_id is not null then
-    update public.product_lots
-    set quantity = greatest(0, quantity + v_new_delta),
+    set quantity = greatest(0, quantity - v_old_delta + v_new_delta),
         updated_at = now()
     where id = p_lot_id;
+  else
+    if v_old.lot_id is not null then
+      update public.product_lots
+      set quantity = greatest(0, quantity - v_old_delta),
+          updated_at = now()
+      where id = v_old.lot_id;
+    end if;
+    if p_lot_id is not null then
+      update public.product_lots
+      set quantity = greatest(0, quantity + v_new_delta),
+          updated_at = now()
+      where id = p_lot_id;
+    end if;
   end if;
 
   update public.stock_movements

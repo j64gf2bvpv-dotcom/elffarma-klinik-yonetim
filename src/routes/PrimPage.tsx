@@ -59,7 +59,13 @@ export function PrimPage() {
   const { data: adjustments = [] } = useCommissionAdjustments(from, to)
   const deleteAdjustmentMutation = useDeleteCommissionAdjustment()
   const { data: sales = [], isLoading: salesLoading } = useSalesInRange(from, to)
-  const { data: payments = [], isLoading: paymentsLoading } = usePayments({ from, to })
+  // payments.paid_at timestamptz olduğu için gün-sonu saatine genişletilmiyorsa
+  // seçilen "to" gününde öğleden sonra yapılan tahsilatlar prim hesabından
+  // sessizce düşer (bkz. PaymentsPage.tsx/BudgetYearPage.tsx'deki aynı desen).
+  const { data: payments = [], isLoading: paymentsLoading } = usePayments({
+    from,
+    to: to ? new Date(to + 'T23:59:59').toISOString() : undefined,
+  })
   const { data: products = [] } = useProducts('')
   const { data: customers = [] } = useCustomers('')
   const { data: salesReps = [] } = useSalesReps()

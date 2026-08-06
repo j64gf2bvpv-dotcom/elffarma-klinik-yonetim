@@ -417,7 +417,7 @@ export function CongressStockItemsPanel({
                   onClick={() => handleStatusChange(item, 'goturuldu')}
                   title="Yanlışlıkla işaretlendiyse geri al"
                 >
-                  Bekliyor'a Al
+                  Beklemeye Al
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => handleDelete(item)} title="Sil">
                   <Trash2 className="text-destructive size-3.5" />

@@ -49,7 +49,11 @@ export async function fetchCustomers(
 ): Promise<Customer[]> {
   let query = supabase.from('customers').select('*').order('full_name', { ascending: true })
   if (search.trim()) {
-    const term = search.trim()
+    // Virgül PostgREST .or() filtresinde koşul ayıracı — arama teriminde
+    // geçerse (ör. "Dr. Ayşe, İstanbul") filtreyi bozup sorguyu hataya
+    // düşürüyordu. Arama içeriğinde virgülün anlamlı bir rolü olmadığından
+    // basitçe boşlukla değiştirmek güvenli.
+    const term = search.trim().replace(/,/g, ' ')
     query = query.or(`full_name.ilike.%${term}%,phone.ilike.%${term}%`)
   }
   if (invoiceFilter === 'invoiced') query = query.eq('is_invoiced', true)

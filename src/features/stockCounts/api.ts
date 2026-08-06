@@ -105,10 +105,16 @@ export async function completeCount(stockCountId: string): Promise<void> {
     if (item.counted_quantity == null) continue
     const diff = item.counted_quantity - item.expected_quantity
     if (diff === 0) continue
+    // 'adjustment' hareket tipiyle imzalı (negatif olabilen) diff göndermek,
+    // record_stock_movement RPC'sinin stock_movements.quantity'ye HER ZAMAN
+    // abs() uygulaması yüzünden Stok Kartı defterinde işareti kaybediyordu —
+    // negatif farklar (sayımda eksik çıkan stok) ledger'da artış gibi
+    // görünüyordu. addStockToCountItem'daki gibi in/out + mutlak değer
+    // kullanmak işareti hem gerçek stokta hem denetim kaydında doğru tutar.
     await recordStockMovement({
       product_id: item.product_id,
-      movement_type: 'adjustment',
-      quantity: diff,
+      movement_type: diff > 0 ? 'in' : 'out',
+      quantity: Math.abs(diff),
       reason: 'Günlük sayım',
       note: `Beklenen: ${item.expected_quantity}, Sayılan: ${item.counted_quantity}`,
     })
