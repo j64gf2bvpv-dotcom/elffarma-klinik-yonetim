@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.6] - 2026-08-07
+
+**Excel'de birleştirilmiş hücreler artık "eksik veri" gibi görünmüyor + hatalı satırları elle düzeltip tekrar deneme:** Bir ürün adı hücresi birleştirilmişse (merge), ham veride değer sadece sol-üst hücrede duruyordu — okuyucu bunu "boş" sayıp o satırı "Ürün adı eksik" diye reddediyordu. Artık dosyanın gerçek merge bilgisi kullanılarak birleştirilmiş aralıktaki tüm hücrelere değer kopyalanıyor (Excel'de göze görünen ne ise okunan da o). Ayrıca Yapay Zeka Analiz > Dosya Özetle'de aktarım sonrası hâlâ hatalı satır kalırsa, dosyayı yeniden yüklemeden doğrudan sayfa içinde her alanı elle düzeltip "Düzeltilenleri Tekrar Dene" ile sadece o satırları yeniden gönderebiliyorsunuz. Şema değişikliği yok.
+
 ## [2.17.5] - 2026-08-07
 
 **Ürün içe aktarmada "ya hepsi ya hiçbiri" kaldırıldı:** Gerçek bir Excel'de tek bir satırda ürün adı eksikse (ör. başlık/toplam satırı, boş hücre) daha önce TÜM listedeki geçerli ürünler de reddediliyordu ("0 kayıt eklendi, 1 hata" gibi) — kullanıcı 18 doğru satır varken sırf 1 satır yüzünden hiçbirini alamıyordu. Artık diğer içe aktarma türleriyle (doktor/cari, tahsilat, stok kartı) aynı davranışa alındı: geçerli satırlar eklenir, sorunlu satırlar açıkça "kaç eklendi / kaç hata" şeklinde raporlanır ama diğerlerini engellemez. Şema değişikliği yok.

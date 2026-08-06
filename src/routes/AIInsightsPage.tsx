@@ -1,12 +1,13 @@
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Sparkles, Loader2, FileDown, Upload, Lightbulb, Search, ArrowRight } from 'lucide-react'
+import { Sparkles, Loader2, FileDown, Upload, Lightbulb, Search, ArrowRight, Check } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAIService } from '@/features/ai/useAIService'
 import { useBusinessSnapshot } from '@/features/ai/useBusinessSnapshot'
@@ -52,6 +53,24 @@ const CATEGORY_LABELS: Record<FileCategory, string> = {
   bilinmiyor: 'Bilinmiyor',
 }
 
+type RoutableCategory = Exclude<FileCategory, 'bilinmiyor'>
+
+/** Her kategori için AI çıkarım şeması — hem ilk aktarımda hem hatalı
+ * satırları düzeltip tekrar denerken (bkz. handleRetryFailedRows) kullanılır. */
+const CATEGORY_IMPORT_CONFIG: Record<
+  RoutableCategory,
+  { label: string; headers: string[]; hints?: Record<string, string> }
+> = {
+  urun: { label: 'stok/ürün', headers: PRODUCT_IMPORT_HEADERS, hints: PRODUCT_IMPORT_FIELD_HINTS },
+  doktor: { label: 'doktor/cari kart', headers: CUSTOMER_IMPORT_HEADERS, hints: CUSTOMER_IMPORT_FIELD_HINTS },
+  tahsilat: { label: 'tahsilat/ödeme', headers: PAYMENT_IMPORT_HEADERS, hints: PAYMENT_IMPORT_FIELD_HINTS },
+  stok_hareket: {
+    label: 'stok kartı satış/numune',
+    headers: STOCK_CARD_IMPORT_HEADERS,
+    hints: STOCK_CARD_IMPORT_FIELD_HINTS,
+  },
+}
+
 export function AIInsightsPage() {
   const aiService = useAIService()
   const snapshot = useBusinessSnapshot()
@@ -75,10 +94,17 @@ export function AIInsightsPage() {
   // AI'ın tespiti yanlış çıkarsa ya da dosya örnek şablona benzemediği için
   // "bilinmiyor" dönerse, kullanıcı hedef bölümü elle seçip yine de
   // aktarabilsin diye — akış hiçbir zaman çıkmaz sokağa girmesin.
-  const [manualCategory, setManualCategory] = React.useState<Exclude<FileCategory, 'bilinmiyor'> | ''>('')
+  const [manualCategory, setManualCategory] = React.useState<RoutableCategory | ''>('')
   const [fileLoading, setFileLoading] = React.useState(false)
   const [routing, setRouting] = React.useState(false)
-  const [routeResult, setRouteResult] = React.useState<{ category: FileCategory; summary: ImportSummary } | null>(null)
+  const [routeResult, setRouteResult] = React.useState<{ category: RoutableCategory; summary: ImportSummary } | null>(
+    null,
+  )
+  // AI'dan çıkarılan ham satırlar — hata veren satırları elle düzeltip TEK
+  // TEK "tekrar dene" yapabilmek için saklanıyor (bkz. handleRetryFailedRows).
+  const [extractedRows, setExtractedRows] = React.useState<Record<string, unknown>[] | null>(null)
+  // Kullanıcının hatalı satırlarda yaptığı düzeltmeler — satır indeksine göre.
+  const [correctionDrafts, setCorrectionDrafts] = React.useState<Record<number, Record<string, unknown>>>({})
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   // "İlgili bölüme aktar" adımında hangi hedefe yazılacağını belirlemek için
@@ -166,6 +192,8 @@ export function AIInsightsPage() {
     setFileCategory(null)
     setManualCategory('')
     setRouteResult(null)
+    setExtractedRows(null)
+    setCorrectionDrafts({})
     setFileContent(null)
     setFileName(file.name)
     try {
@@ -229,54 +257,59 @@ export function AIInsightsPage() {
     }
   }
 
+  /** Belirli bir kategori için satırları ilgili bölümün import fonksiyonuna
+   * yazdırır (StockPage/CustomersPage/PaymentsPage/StockCardPanel'in "Akıllı
+   * İçe Aktar"ıyla AYNI standalone fonksiyonlar) — hem ilk aktarımda hem
+   * hatalı satırlar düzeltilip tekrar denenirken bu TEK fonksiyon kullanılır. */
+  async function importRowsForCategory(
+    category: RoutableCategory,
+    rows: Record<string, unknown>[],
+  ): Promise<ImportSummary> {
+    switch (category) {
+      case 'urun': {
+        const summary = await importProductRows(rows, allProducts)
+        if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['products'] })
+        return summary
+      }
+      case 'doktor': {
+        const summary = await importCustomerRows(rows, allCustomers)
+        if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['customers'] })
+        return summary
+      }
+      case 'tahsilat': {
+        const summary = await importPaymentRows(rows, allPayments, allCustomers, salesReps)
+        if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['payments'] })
+        return summary
+      }
+      case 'stok_hareket': {
+        const summary = await importStockCardRows(rows, allProducts, allCustomers, sales, sampleRequests)
+        if (summary.added > 0) {
+          await queryClient.invalidateQueries({ queryKey: ['sales'] })
+          await queryClient.invalidateQueries({ queryKey: ['sample_requests'] })
+        }
+        return summary
+      }
+    }
+  }
+
   /**
-   * Tespit edilen kategoriye göre dosyayı ilgili bölümün AI çıkarım
-   * şemasıyla (StockPage/CustomersPage/PaymentsPage/StockCardPanel'in
-   * "Akıllı İçe Aktar"ıyla AYNI standalone fonksiyonlar — tekrar yazılmadı)
-   * yeniden AI'a okutup kayıtları oluşturur. Sonuçta hangi bölüme kaç kayıt
-   * eklendiği/atlandığı/hata verdiği açıkça gösterilir.
+   * Tespit edilen (ya da elle seçilen) kategoriye göre dosyayı ilgili
+   * bölümün AI çıkarım şemasıyla yeniden AI'a okutup kayıtları oluşturur.
+   * Çıkarılan ham satırlar `extractedRows`'a saklanır ki hata veren satırlar
+   * varsa kullanıcı bunları elle düzeltip tekrar deneyebilsin (bkz.
+   * handleRetryFailedRows) — dosyayı düzeltip yeniden yüklemek zorunda
+   * kalmadan.
    */
   async function handleRouteToTarget() {
     const targetCategory = manualCategory
     if (!fileContent || !targetCategory) return
     setRouting(true)
     try {
-      let summary: ImportSummary
-      switch (targetCategory) {
-        case 'urun': {
-          const rows = await extractRowsWithAI(aiService, fileContent, 'stok/ürün', PRODUCT_IMPORT_HEADERS, PRODUCT_IMPORT_FIELD_HINTS)
-          summary = await importProductRows(rows, allProducts)
-          if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['products'] })
-          break
-        }
-        case 'doktor': {
-          const rows = await extractRowsWithAI(aiService, fileContent, 'doktor/cari kart', CUSTOMER_IMPORT_HEADERS, CUSTOMER_IMPORT_FIELD_HINTS)
-          summary = await importCustomerRows(rows, allCustomers)
-          if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['customers'] })
-          break
-        }
-        case 'tahsilat': {
-          const rows = await extractRowsWithAI(aiService, fileContent, 'tahsilat/ödeme', PAYMENT_IMPORT_HEADERS, PAYMENT_IMPORT_FIELD_HINTS)
-          summary = await importPaymentRows(rows, allPayments, allCustomers, salesReps)
-          if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['payments'] })
-          break
-        }
-        case 'stok_hareket': {
-          const rows = await extractRowsWithAI(
-            aiService,
-            fileContent,
-            'stok kartı satış/numune',
-            STOCK_CARD_IMPORT_HEADERS,
-            STOCK_CARD_IMPORT_FIELD_HINTS,
-          )
-          summary = await importStockCardRows(rows, allProducts, allCustomers, sales, sampleRequests)
-          if (summary.added > 0) {
-            await queryClient.invalidateQueries({ queryKey: ['sales'] })
-            await queryClient.invalidateQueries({ queryKey: ['sample_requests'] })
-          }
-          break
-        }
-      }
+      const cfg = CATEGORY_IMPORT_CONFIG[targetCategory]
+      const rows = await extractRowsWithAI(aiService, fileContent, cfg.label, cfg.headers, cfg.hints)
+      const summary = await importRowsForCategory(targetCategory, rows)
+      setExtractedRows(rows)
+      setCorrectionDrafts({})
       setRouteResult({ category: targetCategory, summary })
       if (summary.added > 0) {
         toast.success(`${summary.added} kayıt "${CATEGORY_LABELS[targetCategory]}" bölümüne eklendi`)
@@ -285,6 +318,49 @@ export function AIInsightsPage() {
       }
     } catch (err) {
       toast.error('Aktarılamadı', { description: err instanceof Error ? err.message : undefined })
+    } finally {
+      setRouting(false)
+    }
+  }
+
+  /** `summary.errors`'daki her mesaj "Satır N: ..." ile başlar (bkz. import*Rows
+   * fonksiyonları) — N'den `extractedRows` içindeki satır indeksini geri
+   * çıkarıp hatalı satırları elle düzenlenebilir hale getiriyoruz. */
+  const failedRowRefs = React.useMemo(() => {
+    if (!routeResult || !extractedRows) return []
+    const refs: { index: number; rowLabel: string; message: string }[] = []
+    for (const err of routeResult.summary.errors) {
+      const m = err.match(/^Satır (\d+):\s*(.*)$/)
+      if (!m) continue
+      const index = Number(m[1]) - 2
+      if (index >= 0 && index < extractedRows.length) refs.push({ index, rowLabel: m[1], message: m[2] })
+    }
+    return refs
+  }, [routeResult, extractedRows])
+
+  /** Hatalı satırları kullanıcının düzelttiği değerlerle birleştirip TÜM
+   * satırları (sadece hatalılar değil) aynı import fonksiyonuna yeniden
+   * gönderir — daha önce başarıyla eklenenler artık veritabanında var
+   * olduğu için "zaten kayıtlı" olarak atlanır, sadece düzeltilenler
+   * gerçekten eklenir. Böylece satır numaralandırması hep dosyadaki gerçek
+   * sırayla tutarlı kalır. */
+  async function handleRetryFailedRows() {
+    if (!routeResult || !extractedRows) return
+    const mergedRows = extractedRows.map((row, i) => correctionDrafts[i] ?? row)
+    setRouting(true)
+    try {
+      const retrySummary = await importRowsForCategory(routeResult.category, mergedRows)
+      setRouteResult({ category: routeResult.category, summary: retrySummary })
+      setCorrectionDrafts({})
+      if (retrySummary.errors.length === 0) {
+        toast.success('Düzeltilen satırlar da eklendi, hata kalmadı')
+      } else if (retrySummary.added > 0) {
+        toast.success(`${retrySummary.added} kayıt daha eklendi, ${retrySummary.errors.length} satır hâlâ düzeltilmeli`)
+      } else {
+        toast.error(`${retrySummary.errors.length} satır hâlâ düzeltilmeli`)
+      }
+    } catch (err) {
+      toast.error('Tekrar denenemedi', { description: err instanceof Error ? err.message : undefined })
     } finally {
       setRouting(false)
     }
@@ -446,6 +522,48 @@ export function AIInsightsPage() {
                     {routeResult.summary.errors.length > 5 && <li>...ve {routeResult.summary.errors.length - 5} tane daha</li>}
                   </ul>
                 )}
+              </div>
+            )}
+            {routeResult && failedRowRefs.length > 0 && extractedRows && (
+              <div className="grid gap-2.5 rounded-lg border p-3">
+                <p className="text-sm font-medium">
+                  Hatalı {failedRowRefs.length} satırı aşağıdan düzenleyip tekrar deneyebilirsiniz — dosyayı yeniden
+                  yüklemeniz gerekmez.
+                </p>
+                <div className="grid gap-2">
+                  {failedRowRefs.map(({ index, rowLabel, message }) => {
+                    const headers = CATEGORY_IMPORT_CONFIG[routeResult.category].headers
+                    const draft = correctionDrafts[index] ?? extractedRows[index]
+                    return (
+                      <div key={index} className="bg-muted/20 rounded-md border p-2">
+                        <p className="text-destructive mb-1.5 text-xs">
+                          Satır {rowLabel}: {message}
+                        </p>
+                        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                          {headers.map((h) => (
+                            <div key={h} className="grid gap-0.5">
+                              <label className="text-muted-foreground text-[11px]">{h}</label>
+                              <Input
+                                value={String(draft[h] ?? '')}
+                                onChange={(e) =>
+                                  setCorrectionDrafts((prev) => ({
+                                    ...prev,
+                                    [index]: { ...(prev[index] ?? extractedRows[index]), [h]: e.target.value },
+                                  }))
+                                }
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <Button size="sm" className="w-fit" onClick={handleRetryFailedRows} disabled={routing}>
+                  {routing ? <Loader2 className="animate-spin" /> : <Check className="size-3.5" />}
+                  Düzeltilenleri Tekrar Dene
+                </Button>
               </div>
             )}
           </CardContent>

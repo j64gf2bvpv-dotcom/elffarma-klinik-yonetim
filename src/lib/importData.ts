@@ -14,6 +14,31 @@ export function downloadExcelTemplate(
   saveAs(new Blob([buffer], { type: 'application/octet-stream' }), `${filename}.xlsx`)
 }
 
+/**
+ * Birleştirilmiş (merge) bir hücrede değer ham veride SADECE sol-üst hücrede
+ * durur — aralıktaki diğer hücreler gerçekten boştur. `sheet_to_json` satır
+ * satır okurken bu boş hücreler "veri eksik" gibi görünüp (ör. bir ürün adı
+ * alt satıya doğru birleştirilmişse) yanlışlıkla içe aktarma hatasına yol
+ * açıyordu. Gerçek merge aralıklarını (`sheet['!merges']`) kullanarak
+ * sol-üst hücrenin değerini aralıktaki TÜM hücrelere kopyalıyoruz — Excel'de
+ * göze görünen ne ise okunan veri de o olsun diye (heuristik değil, dosyanın
+ * kendi merge meta verisine dayanıyor).
+ */
+function fillMergedCells(sheet: XLSX.WorkSheet) {
+  const merges = sheet['!merges']
+  if (!merges) return
+  for (const range of merges) {
+    const topLeftCell = sheet[XLSX.utils.encode_cell({ r: range.s.r, c: range.s.c })]
+    if (!topLeftCell) continue
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        if (r === range.s.r && c === range.s.c) continue
+        sheet[XLSX.utils.encode_cell({ r, c })] = { ...topLeftCell }
+      }
+    }
+  }
+}
+
 export function readExcelFile(file: File): Promise<Record<string, unknown>[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -22,6 +47,7 @@ export function readExcelFile(file: File): Promise<Record<string, unknown>[]> {
         const data = event.target?.result
         const workbook = XLSX.read(data, { type: 'array' })
         const sheet = workbook.Sheets[workbook.SheetNames[0]]
+        fillMergedCells(sheet)
         resolve(XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' }))
       } catch (err) {
         reject(err instanceof Error ? err : new Error(String(err)))

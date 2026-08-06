@@ -68,7 +68,7 @@ export async function importProductRows(
   const errors: string[] = []
   let skipped = 0
 
-  const planned: { input: ProductInput; initialQty: number }[] = []
+  const planned: { rowLabel: string; input: ProductInput; initialQty: number }[] = []
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]
@@ -112,6 +112,7 @@ export async function importProductRows(
     seenNamesInBatch.add(nameKey)
     if (sku) seenSkusInBatch.add(sku)
     planned.push({
+      rowLabel,
       input: {
         name,
         sku,
@@ -143,7 +144,7 @@ export async function importProductRows(
       }
       summary.added++
     } catch (err) {
-      summary.errors.push(`${p.input.name}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
+      summary.errors.push(`${p.rowLabel}: ${p.input.name} — ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
     }
   }
 
