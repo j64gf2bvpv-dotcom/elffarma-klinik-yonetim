@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.5] - 2026-08-07
+
+**Ürün içe aktarmada "ya hepsi ya hiçbiri" kaldırıldı:** Gerçek bir Excel'de tek bir satırda ürün adı eksikse (ör. başlık/toplam satırı, boş hücre) daha önce TÜM listedeki geçerli ürünler de reddediliyordu ("0 kayıt eklendi, 1 hata" gibi) — kullanıcı 18 doğru satır varken sırf 1 satır yüzünden hiçbirini alamıyordu. Artık diğer içe aktarma türleriyle (doktor/cari, tahsilat, stok kartı) aynı davranışa alındı: geçerli satırlar eklenir, sorunlu satırlar açıkça "kaç eklendi / kaç hata" şeklinde raporlanır ama diğerlerini engellemez. Şema değişikliği yok.
+
 ## [2.17.4] - 2026-08-07
 
 **Akıllı İçe Aktar / Dosya Özetle'de Excel sütun eşleme kör noktası kapatıldı:** Excel/CSV tablolarında hedef alan (ör. "Ürün") hangi kaynak sütuna karşılık geldiğini AI'a SADECE sütun başlığı metniyle soruyorduk — başlık satırı bir logo/başlık satırından sonra geldiği için okuyucunun ilk satırı başlık sayması, birleşik hücreler ya da alışılmadık bir başlık ismi gibi durumlarda AI hiçbir ipucu bulamayıp aynı alanı TÜM satırlarda boş bırakıyor, bu da "Ürün adı eksik" gibi toplu hatalarla içe aktarmanın tamamen başarısız olmasına yol açıyordu (gerçek bir kullanıcı dosyasında gözlemlendi). Artık her sütundan birkaç örnek DEĞER de mapping isteğine ekleniyor (bir insan da başlığa değil veriye bakar) ve AI'ın döndürdüğü sütun adı birebir eşleşmezse boşluk/büyük-küçük harf farkına karşı normalize edilerek asıl sütun aranıyor. Şema değişikliği yok.
