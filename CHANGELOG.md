@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.4] - 2026-08-07
+
+**Akıllı İçe Aktar / Dosya Özetle'de Excel sütun eşleme kör noktası kapatıldı:** Excel/CSV tablolarında hedef alan (ör. "Ürün") hangi kaynak sütuna karşılık geldiğini AI'a SADECE sütun başlığı metniyle soruyorduk — başlık satırı bir logo/başlık satırından sonra geldiği için okuyucunun ilk satırı başlık sayması, birleşik hücreler ya da alışılmadık bir başlık ismi gibi durumlarda AI hiçbir ipucu bulamayıp aynı alanı TÜM satırlarda boş bırakıyor, bu da "Ürün adı eksik" gibi toplu hatalarla içe aktarmanın tamamen başarısız olmasına yol açıyordu (gerçek bir kullanıcı dosyasında gözlemlendi). Artık her sütundan birkaç örnek DEĞER de mapping isteğine ekleniyor (bir insan da başlığa değil veriye bakar) ve AI'ın döndürdüğü sütun adı birebir eşleşmezse boşluk/büyük-küçük harf farkına karşı normalize edilerek asıl sütun aranıyor. Şema değişikliği yok.
+
 ## [2.17.3] - 2026-08-07
 
 **Yapay Zeka Analiz > Dosya Özetle sağlamlaştırıldı:** Çok kayıtlı bir belgede AI yanıtı token limitinde kesilirse artık tüm çıkarım hata verip kayboluyor değil — dizinin içindeki tam objeler teker teker kurtarılıyor, sadece yarım kalan son kayıt atlanıyor; ayrıca tam kayıt çıkarma çağrısına daha yüksek token tavanı tanındı (Claude sağlayıcısının 2048 varsayılanı büyük belgelerde kesintiye yol açıyordu). Kategori tespiti "bilinmiyor" dönerse ya da yanlış çıkarsa akış artık çıkmaz sokağa girmiyor — kullanıcı hedef bölümü (Stok/Ürün, Doktor/Cari, Tahsilat, Stok Kartı) elle seçip yine de aktarabiliyor. Şema değişikliği yok.

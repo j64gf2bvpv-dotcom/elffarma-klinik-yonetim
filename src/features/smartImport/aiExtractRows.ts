@@ -23,20 +23,59 @@ export async function extractRowsWithAI(
   if (content.kind === 'table') {
     if (content.rows.length === 0) throw new Error('Dosyada satır bulunamadı')
     const sourceHeaders = Object.keys(content.rows[0])
+
+    // Sadece sütun BAŞLIĞI metnini göndermek yetersiz kalabiliyor: gerçek
+    // Excel dosyalarında başlık satırı üstte bir logo/başlık satırından sonra
+    // geliyorsa (xlsx okuyucusu ilk satırı başlık sayar) ya da başlık hücreleri
+    // birleşikse, sütun adları "__EMPTY", "__EMPTY_1" gibi anlamsız çıkabilir —
+    // bu durumda AI'ın eşleştirecek hiçbir ipucu kalmıyor ve TÜM satırlarda
+    // aynı alan (ör. ürün adı) boş dönüp topluca hataya düşüyor. Bir insan
+    // böyle bir tabloya baktığında başlığa değil örnek DEĞERLERE bakıp
+    // sütunu tanır — o yüzden her sütundan birkaç örnek değeri de mapping
+    // isteğine ekliyoruz.
+    const sampleValuesByHeader = new Map<string, string[]>()
+    for (const h of sourceHeaders) sampleValuesByHeader.set(h, [])
+    for (const row of content.rows.slice(0, 5)) {
+      for (const h of sourceHeaders) {
+        const v = row[h]
+        if (v !== undefined && v !== null && String(v).trim() !== '') {
+          sampleValuesByHeader.get(h)?.push(String(v).trim())
+        }
+      }
+    }
+    const columnsDescription = sourceHeaders
+      .map((h) => `"${h}" (örnek değerler: ${(sampleValuesByHeader.get(h) ?? []).slice(0, 3).join(' | ') || 'yok'})`)
+      .join('\n')
+
     const mappingInstruction =
-      `Bir tablonun sütun başlıkları şunlar: ${sourceHeaders.map((h) => `"${h}"`).join(', ')}. ` +
+      `Bir tablonun sütunları ve her birinden birkaç örnek değer aşağıda listelenmiştir:\n${columnsDescription}\n\n` +
       `Bu sütunlardan hangisinin şu hedef alanlara karşılık geldiğini belirle: ${fieldHeaders.map((h) => `"${h}"`).join(', ')}. ` +
+      `Başlık metni anlamsız/otomatik üretilmiş görünse bile (ör. "__EMPTY" gibi), örnek değerlere bakarak içeriğin ne olduğunu ` +
+      `anla ve buna göre eşleştir — bir insan da başlığa değil verinin içeriğine bakarak karar verir. ` +
       `SADECE şu formatta bir JSON objesi döndür (başka açıklama/metin ekleme): { "Hedef Alan": "Kaynak Sütun Adı", ... }. ` +
+      `"Kaynak Sütun Adı" yukarıdaki sütun adlarından BİRİYLE (tırnak içindeki metinle) BİREBİR aynı olmalı. ` +
       `Bir hedef alan için uygun bir kaynak sütun yoksa değerini boş string "" yap. Değerleri KOPYALAMA, sadece sütun adlarını eşleştir.\n${hints}`
 
     const mappingResult = await aiService.chat([{ role: 'user', content: mappingInstruction }])
     const mapping = parseAiJsonObject(mappingResult.content)
 
+    // AI bazen sütun adını birebir değil, boşluk/büyük-küçük harf farkıyla ya
+    // da hafif parafrazla döndürebiliyor — birebir eşleşme yoksa normalize
+    // edilmiş (boşluksuz, küçük harf) karşılaştırmayla asıl sütunu bul, yine
+    // de bulunamazsa alan boş kalsın (hata mesajıyla kullanıcıya görünür).
+    const normalize = (s: string) => s.trim().toLocaleLowerCase('tr').replace(/\s+/g, ' ')
+    const normalizedToActual = new Map(sourceHeaders.map((h) => [normalize(h), h]))
+    function resolveSourceColumn(name: string): string | null {
+      if (sourceHeaders.includes(name)) return name
+      return normalizedToActual.get(normalize(name)) ?? null
+    }
+
     return content.rows.map((sourceRow) => {
       const out: Record<string, unknown> = {}
       for (const h of fieldHeaders) {
-        const sourceCol = mapping[h]
-        out[h] = typeof sourceCol === 'string' && sourceCol ? (sourceRow[sourceCol] ?? '') : ''
+        const mapped = mapping[h]
+        const sourceCol = typeof mapped === 'string' && mapped ? resolveSourceColumn(mapped) : null
+        out[h] = sourceCol ? (sourceRow[sourceCol] ?? '') : ''
       }
       return out
     })
