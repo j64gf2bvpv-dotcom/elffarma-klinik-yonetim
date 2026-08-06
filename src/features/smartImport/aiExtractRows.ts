@@ -51,18 +51,25 @@ export async function extractRowsWithAI(
     `Bir alan belgede gerçekten yoksa boş string "" kullan — ama önce belgede o bilginin başka bir ` +
     `adla/yerde geçip geçmediğini kontrol et.\n${hints}`
 
-  const result = await aiService.chat([
-    {
-      role: 'user',
-      content:
-        content.kind === 'image'
-          ? [
-              { type: 'text', text: instruction },
-              ...content.dataUrls.map((url) => ({ type: 'image_url' as const, image_url: { url } })),
-            ]
-          : `${instruction}\n\nBelge içeriği:\n${content.text}`,
-    },
-  ])
+  const result = await aiService.chat(
+    [
+      {
+        role: 'user',
+        content:
+          content.kind === 'image'
+            ? [
+                { type: 'text', text: instruction },
+                ...content.dataUrls.map((url) => ({ type: 'image_url' as const, image_url: { url } })),
+              ]
+            : `${instruction}\n\nBelge içeriği:\n${content.text}`,
+      },
+    ],
+    // Sağlayıcı varsayılanı (ör. Claude'da 2048 token) çok kayıtlı bir belgede
+    // yanıtı ortasından keser — parseAiJsonArray o durumda elden geleni kurtarır
+    // ama asıl çözüm baştan yeterli tavan tanımak: onlarca/yüzlerce kayıt JSON
+    // olarak sığsın diye üst sınırı yükselt.
+    { maxTokens: 8000 },
+  )
 
   const parsedRows = parseAiJsonArray(result.content)
   if (parsedRows.length === 0) throw new Error('Belgeden kayıt çıkarılamadı')

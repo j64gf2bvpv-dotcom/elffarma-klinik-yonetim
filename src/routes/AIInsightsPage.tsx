@@ -72,6 +72,10 @@ export function AIInsightsPage() {
   const [fileContent, setFileContent] = React.useState<ExtractedContent | null>(null)
   const [fileSummary, setFileSummary] = React.useState('')
   const [fileCategory, setFileCategory] = React.useState<FileCategory | null>(null)
+  // AI'ın tespiti yanlış çıkarsa ya da dosya örnek şablona benzemediği için
+  // "bilinmiyor" dönerse, kullanıcı hedef bölümü elle seçip yine de
+  // aktarabilsin diye — akış hiçbir zaman çıkmaz sokağa girmesin.
+  const [manualCategory, setManualCategory] = React.useState<Exclude<FileCategory, 'bilinmiyor'> | ''>('')
   const [fileLoading, setFileLoading] = React.useState(false)
   const [routing, setRouting] = React.useState(false)
   const [routeResult, setRouteResult] = React.useState<{ category: FileCategory; summary: ImportSummary } | null>(null)
@@ -160,6 +164,7 @@ export function AIInsightsPage() {
     setFileLoading(true)
     setFileSummary('')
     setFileCategory(null)
+    setManualCategory('')
     setRouteResult(null)
     setFileContent(null)
     setFileName(file.name)
@@ -215,6 +220,7 @@ export function AIInsightsPage() {
       const ozet = typeof parsed.ozet === 'string' && parsed.ozet ? parsed.ozet : 'Özet oluşturulamadı.'
 
       setFileCategory(kategori)
+      setManualCategory(kategori !== 'bilinmiyor' ? kategori : '')
       setFileSummary(ozet)
     } catch (err) {
       toast.error('Dosya özetlenemedi', { description: err instanceof Error ? err.message : undefined })
@@ -231,11 +237,12 @@ export function AIInsightsPage() {
    * eklendiği/atlandığı/hata verdiği açıkça gösterilir.
    */
   async function handleRouteToTarget() {
-    if (!fileContent || !fileCategory || fileCategory === 'bilinmiyor') return
+    const targetCategory = manualCategory
+    if (!fileContent || !targetCategory) return
     setRouting(true)
     try {
       let summary: ImportSummary
-      switch (fileCategory) {
+      switch (targetCategory) {
         case 'urun': {
           const rows = await extractRowsWithAI(aiService, fileContent, 'stok/ürün', PRODUCT_IMPORT_HEADERS, PRODUCT_IMPORT_FIELD_HINTS)
           summary = await importProductRows(rows, allProducts)
@@ -270,9 +277,9 @@ export function AIInsightsPage() {
           break
         }
       }
-      setRouteResult({ category: fileCategory, summary })
+      setRouteResult({ category: targetCategory, summary })
       if (summary.added > 0) {
-        toast.success(`${summary.added} kayıt "${CATEGORY_LABELS[fileCategory]}" bölümüne eklendi`)
+        toast.success(`${summary.added} kayıt "${CATEGORY_LABELS[targetCategory]}" bölümüne eklendi`)
       } else {
         toast.info('Eklenecek yeni kayıt bulunamadı')
       }
@@ -384,8 +391,8 @@ export function AIInsightsPage() {
             />
             <p className="text-muted-foreground text-xs">
               Excel, CSV, PDF, Word (.docx), resim veya .txt yükleyin — taranmış PDF'ler de görsel olarak okunur.
-              Stok/ürün, doktor/cari, tahsilat ya da geçmiş satış/numune verisi tanınırsa ilgili bölüme aktarma
-              seçeneği çıkar.
+              Stok/ürün, doktor/cari, tahsilat ya da geçmiş satış/numune verisi olduğu sürece, dosya örnek bir
+              şablona benzemese bile, hedef bölümü kendiniz seçip içeri aktarabilirsiniz.
             </p>
             {fileName && fileLoading && (
               <p className="text-muted-foreground text-sm">{fileName} taranıyor...</p>
@@ -393,15 +400,34 @@ export function AIInsightsPage() {
             {fileSummary && (
               <p className="rounded-lg border bg-muted/30 p-3 text-sm whitespace-pre-wrap">{fileSummary}</p>
             )}
-            {fileCategory && fileCategory !== 'bilinmiyor' && !routeResult && (
-              <div className="flex items-center justify-between gap-3 rounded-lg border bg-primary/5 p-3">
+            {fileCategory && !routeResult && (
+              <div className="grid gap-2 rounded-lg border bg-primary/5 p-3">
                 <p className="text-sm">
-                  Bu dosya <strong>{CATEGORY_LABELS[fileCategory]}</strong> bölümüne ait görünüyor.
+                  {fileCategory === 'bilinmiyor'
+                    ? 'Yapay zeka bu dosyanın hangi bölüme ait olduğundan emin olamadı — örnek şablona benzemiyor olabilir. Aşağıdan hedef bölümü siz seçebilirsiniz, veri yine de doğru içeri aktarılır.'
+                    : `Bu dosya ${CATEGORY_LABELS[fileCategory]} bölümüne ait görünüyor — gerekirse aşağıdan değiştirebilirsiniz.`}
                 </p>
-                <Button size="sm" onClick={handleRouteToTarget} disabled={routing}>
-                  {routing ? <Loader2 className="animate-spin" /> : <ArrowRight className="size-3.5" />}
-                  {CATEGORY_LABELS[fileCategory]} Bölümüne Aktar
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select
+                    value={manualCategory}
+                    onValueChange={(v) => setManualCategory(v as Exclude<FileCategory, 'bilinmiyor'>)}
+                  >
+                    <SelectTrigger className="w-56">
+                      <SelectValue placeholder="Hedef bölüm seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORY_VALUES.filter((c) => c !== 'bilinmiyor').map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {CATEGORY_LABELS[c]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button size="sm" onClick={handleRouteToTarget} disabled={routing || !manualCategory}>
+                    {routing ? <Loader2 className="animate-spin" /> : <ArrowRight className="size-3.5" />}
+                    Bölüme Aktar
+                  </Button>
+                </div>
               </div>
             )}
             {routeResult && (
