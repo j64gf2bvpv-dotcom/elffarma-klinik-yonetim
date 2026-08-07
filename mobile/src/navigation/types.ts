@@ -26,6 +26,7 @@ export type PaymentsStackParamList = {
 export type MoreStackParamList = {
   MoreMenu: undefined
   ComingSoon: { title: string }
+  CrmActivities: undefined
 }
 
 export type MainTabParamList = {

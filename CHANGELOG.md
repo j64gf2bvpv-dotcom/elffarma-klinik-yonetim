@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.14] - 2026-08-07
+
+**Mobil "Aktiviteler" ekranı eklendi ("Diğer" > CRM):** gocust referansındaki Activities ekranına benzer şekilde, üstte "Bekleyen Görevler" sayacı (yeni Görev Yönetimi'nden) ve altında masaüstü CRM modülünün `crm_activities` verisinden gerçek zamanlı, kronolojik aktivite akışı (arama/WhatsApp/e-posta/toplantı/video görüşme/not, ikon+tarihle) — salt okunur, aktivite/fırsat oluşturma masaüstünde kalıyor. Ayrıca Cari Hesap satırlarına dokununca telefon/e-posta açan hızlı aksiyon ikonları eklendi. Harita görünümü ve kartvizit tarama (referansta görülen diğer iki özellik) için ayrı bir altyapı kararı gerekiyor — bkz. güncellenen mobil önizleme. Şema değişikliği yok.
+
 ## [2.17.13] - 2026-08-07
 
 **Mobil liste ekranları (Cari Hesap, Stok, Tahsilatlar) Dashboard'daki yeni görsel dile taşındı:** düz metin satırları yerine ikon rozetli kart satırları (`ListItemCard`) ve tutarlı başlık satırı (`ScreenHeader`) kullanılıyor — davranış/veri aynı, sadece görünüm. Ayrıca kök dizine çift tıkla çalışan **"Mobil Uygulamayı Başlat.command"** eklendi (Finder'dan çift tıklayınca `mobile/`de `npm run web` çalıştırıp tarayıcıda açar); bu makinede Xcode/Android Studio kurulu olmadığından iOS/Android simülatör hedefleri (`expo run:ios`/`run:android`) kullanılamıyor, bu yüzden web modu seçildi. Şema değişikliği yok.

@@ -70,7 +70,11 @@ export function MoreMenuScreen({ navigation }: Props) {
         ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: theme.colors.border }} />}
         renderItem={({ item }) => (
           <Pressable
-            onPress={() => navigation.navigate('ComingSoon', { title: item.label })}
+            onPress={() =>
+              item.key === 'CRM'
+                ? navigation.navigate('CrmActivities')
+                : navigation.navigate('ComingSoon', { title: item.label })
+            }
             style={({ pressed }) => [
               { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
               pressed && { opacity: 0.6 },

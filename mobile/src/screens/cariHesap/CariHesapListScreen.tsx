@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { FlatList, RefreshControl, Text, View } from 'react-native'
-import { Building2 } from 'lucide-react-native'
+import { FlatList, Linking, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Building2, Phone, Mail } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
@@ -93,6 +93,30 @@ export function CariHesapListScreen({ navigation }: Props) {
   )
 }
 
+function QuickActionButton({ icon: Icon, onPress }: { icon: typeof Phone; onPress: () => void }) {
+  const theme = useTheme()
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => [
+        {
+          width: 28,
+          height: 28,
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        pressed && { opacity: 0.6 },
+      ]}
+    >
+      <Icon size={13} color={theme.colors.foreground} />
+    </Pressable>
+  )
+}
+
 function CariRow({ customer, balance, onPress }: { customer: Customer; balance: number; onPress: () => void }) {
   const theme = useTheme()
   return (
@@ -102,7 +126,15 @@ function CariRow({ customer, balance, onPress }: { customer: Customer; balance: 
       title={customer.full_name}
       subtitle={customer.hospital_name ?? undefined}
       onPress={onPress}
-      right={<Badge variant={balance > 0 ? 'destructive' : 'secondary'}>{currency(balance)}</Badge>}
+      right={
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <QuickActionButton icon={Phone} onPress={() => Linking.openURL(`tel:${customer.phone}`)} />
+          {customer.email && (
+            <QuickActionButton icon={Mail} onPress={() => Linking.openURL(`mailto:${customer.email}`)} />
+          )}
+          <Badge variant={balance > 0 ? 'destructive' : 'secondary'}>{currency(balance)}</Badge>
+        </View>
+      }
     />
   )
 }
