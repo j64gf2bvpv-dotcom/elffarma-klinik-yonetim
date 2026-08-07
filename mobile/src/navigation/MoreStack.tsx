@@ -19,6 +19,11 @@ import { AIAnalysisScreen } from '@/screens/more/AIAnalysisScreen'
 import { InstagramLeadsScreen } from '@/screens/more/InstagramLeadsScreen'
 import { VehiclesScreen } from '@/screens/more/VehiclesScreen'
 import { SettingsScreen } from '@/screens/more/SettingsScreen'
+import { OpportunitiesScreen } from '@/screens/more/OpportunitiesScreen'
+import { TasksScreen } from '@/screens/more/TasksScreen'
+import { SamplesScreen } from '@/screens/more/SamplesScreen'
+import { FuelLogsScreen } from '@/screens/more/FuelLogsScreen'
+import { InstallmentsScreen } from '@/screens/more/InstallmentsScreen'
 import type { MoreStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<MoreStackParamList>()
@@ -49,6 +54,11 @@ export function MoreStack() {
       <Stack.Screen name="InstagramLeads" component={InstagramLeadsScreen} options={{ title: 'Instagram Doktor Listesi' }} />
       <Stack.Screen name="Vehicles" component={VehiclesScreen} options={{ title: 'Araçlar' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ayarlar' }} />
+      <Stack.Screen name="Opportunities" component={OpportunitiesScreen} options={{ title: 'Fırsat Yönetimi' }} />
+      <Stack.Screen name="Tasks" component={TasksScreen} options={{ title: 'Görevler' }} />
+      <Stack.Screen name="Samples" component={SamplesScreen} options={{ title: 'Numune Talepleri' }} />
+      <Stack.Screen name="FuelLogs" component={FuelLogsScreen} options={{ title: 'Yakıt Kayıtları' }} />
+      <Stack.Screen name="Installments" component={InstallmentsScreen} options={{ title: 'Taksit Planları' }} />
       <Stack.Screen
         name="ComingSoon"
         component={ComingSoonScreen}

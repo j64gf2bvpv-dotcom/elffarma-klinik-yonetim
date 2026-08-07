@@ -42,6 +42,11 @@ export type MoreStackParamList = {
   InstagramLeads: undefined
   Vehicles: undefined
   Settings: undefined
+  Opportunities: undefined
+  Tasks: undefined
+  Samples: undefined
+  FuelLogs: undefined
+  Installments: undefined
 }
 
 export type MainTabParamList = {

@@ -18,6 +18,11 @@ import {
   SlidersHorizontal,
   ScanLine,
   MapPin,
+  TrendingUp,
+  CheckSquare,
+  Package,
+  Fuel,
+  CalendarClock,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
@@ -54,7 +59,12 @@ const items: MenuItem[] = [
   { key: 'AI Analiz', label: 'Yapay Zeka Analiz', icon: Sparkles },
   { key: 'Instagram Doktor Listesi', label: 'Instagram Doktor Listesi', icon: AtSign },
   { key: 'Araçlar', label: 'Araçlar', icon: Car },
+  { key: 'Yakıt Kayıtları', label: 'Yakıt Kayıtları', icon: Fuel },
   { key: 'Ayarlar', label: 'Ayarlar', icon: SlidersHorizontal, adminOnly: true },
+  { key: 'Fırsat Yönetimi', label: 'Fırsat Yönetimi', icon: TrendingUp },
+  { key: 'Görevler', label: 'Görevler', icon: CheckSquare },
+  { key: 'Numune Talepleri', label: 'Numune Talepleri', icon: Package },
+  { key: 'Taksit Planları', label: 'Taksit Planları', icon: CalendarClock },
 ]
 
 export function MoreMenuScreen({ navigation }: Props) {
@@ -91,7 +101,12 @@ export function MoreMenuScreen({ navigation }: Props) {
                 'AI Analiz': 'AIAnalysis',
                 'Instagram Doktor Listesi': 'InstagramLeads',
                 'Araçlar': 'Vehicles',
+                'Yakıt Kayıtları': 'FuelLogs',
                 'Ayarlar': 'Settings',
+                'Fırsat Yönetimi': 'Opportunities',
+                'Görevler': 'Tasks',
+                'Numune Talepleri': 'Samples',
+                'Taksit Planları': 'Installments',
               }
               const route = routeMap[item.key]
               if (route) return navigation.navigate(route as never)
