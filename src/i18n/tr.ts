@@ -18,6 +18,7 @@ export const tr = {
     tasks: 'Görevler',
     agenda: 'Ajanda',
     vehicles: 'Araçlar',
+    teamPerformance: 'Ekip Performansı',
     settings: 'Ayarlar',
   },
   movementType: {

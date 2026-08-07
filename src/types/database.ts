@@ -556,6 +556,17 @@ export interface BudgetTarget {
   updated_at: string
 }
 
+export interface CustomerRevenueTarget {
+  id: string
+  customer_id: string
+  year: number
+  month: number
+  target_revenue: number
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type AIMessageRole = 'system' | 'user' | 'assistant'
 
 export interface AIConversation {

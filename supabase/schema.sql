@@ -2022,6 +2022,38 @@ comment on column public.customers.latitude is 'Opsiyonel: adres geocode edilere
 comment on column public.customers.longitude is 'Opsiyonel: adres geocode edilerek önbelleğe alınmış boylam (mobil Harita/Rota Planlama)';
 comment on column public.customers.geocoded_at is 'Opsiyonel: latitude/longitude en son ne zaman hesaplandı — adres değişince yeniden geocode tetiklemek için';
 
+-- =========================================================
+-- 44. CUSTOMER_REVENUE_TARGETS (doktor bazında aylık ciro hedefi)
+-- =========================================================
+-- budget_targets (19) şirket genelinde tek bir aylık hedef tutuyordu — bu
+-- tablo aynı mantığı doktor/cari bazına indiriyor (gocust referansındaki
+-- "September/October Revenue Target" doktor kartı fikri). Gerçekleşen
+-- tutar burada saklanmaz, ilgili ay için customers.id üzerinden payments'tan
+-- canlı hesaplanır.
+create table if not exists public.customer_revenue_targets (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customers (id) on delete cascade,
+  year integer not null,
+  month integer not null check (month between 1 and 12),
+  target_revenue numeric(12, 2) not null default 0,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (customer_id, year, month)
+);
+create index if not exists customer_revenue_targets_customer_idx on public.customer_revenue_targets (customer_id);
+
+drop trigger if exists set_updated_at on public.customer_revenue_targets;
+create trigger set_updated_at before update on public.customer_revenue_targets
+  for each row execute function public.set_updated_at();
+
+alter table public.customer_revenue_targets enable row level security;
+drop policy if exists "customer_revenue_targets_all_staff" on public.customer_revenue_targets;
+create policy "customer_revenue_targets_all_staff" on public.customer_revenue_targets for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.customer_revenue_targets is 'Doktor/cari bazında aylık ciro hedefi — Cari Kart''ta ilerleme çubuğu olarak gösterilir';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

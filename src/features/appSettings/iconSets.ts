@@ -71,6 +71,9 @@ import {
   ListChecks,
   ClipboardCheck,
   SquareCheckBig,
+  Activity,
+  BarChart3,
+  Radar,
 } from 'lucide-react'
 
 export type NavKey =
@@ -92,6 +95,7 @@ export type NavKey =
   | 'tasks'
   | 'agenda'
   | 'vehicles'
+  | 'teamPerformance'
   | 'settings'
 
 export type IconVariant = 'outline' | 'bold' | '3d' | 'duotone' | 'thin'
@@ -129,6 +133,7 @@ export const iconSets: IconSet[] = [
       tasks: CheckSquare,
       agenda: CalendarDays,
       vehicles: Car,
+      teamPerformance: Activity,
       settings: SlidersHorizontal,
     },
   },
@@ -156,6 +161,7 @@ export const iconSets: IconSet[] = [
       tasks: SquareCheckBig,
       agenda: CalendarDays,
       vehicles: Car,
+      teamPerformance: BarChart3,
       settings: Settings2,
     },
   },
@@ -183,6 +189,7 @@ export const iconSets: IconSet[] = [
       tasks: ClipboardCheck,
       agenda: CalendarDays,
       vehicles: Car,
+      teamPerformance: Radar,
       settings: Settings,
     },
   },
@@ -210,6 +217,7 @@ export const iconSets: IconSet[] = [
       tasks: ListChecks,
       agenda: CalendarDays,
       vehicles: Car,
+      teamPerformance: TrendingUp,
       settings: Cog,
     },
   },
@@ -237,6 +245,7 @@ export const iconSets: IconSet[] = [
       tasks: ListChecks,
       agenda: Calendar,
       vehicles: Car,
+      teamPerformance: LineChart,
       settings: Settings,
     },
   },

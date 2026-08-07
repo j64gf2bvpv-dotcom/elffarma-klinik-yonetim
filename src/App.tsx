@@ -26,6 +26,7 @@ import { RemindersPage } from '@/routes/RemindersPage'
 import { TasksPage } from '@/routes/TasksPage'
 import { AgendaPage } from '@/routes/AgendaPage'
 import { VehiclesPage } from '@/routes/VehiclesPage'
+import { TeamPerformancePage } from '@/routes/TeamPerformancePage'
 import { SettingsPage } from '@/routes/SettingsPage'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -77,6 +78,7 @@ function App() {
             <Route path="gorevler" element={<TasksPage />} />
             <Route path="ajanda" element={<AgendaPage />} />
             <Route path="araclar" element={<VehiclesPage />} />
+            <Route path="ekip-performansi" element={<TeamPerformancePage />} />
             <Route element={<AdminRoute />}>
               <Route path="ayarlar" element={<SettingsPage />} />
             </Route>

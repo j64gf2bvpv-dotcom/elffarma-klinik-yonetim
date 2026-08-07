@@ -56,6 +56,7 @@ import { useVisitsByDoctorName } from '@/features/doctorVisits/hooks'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { SampleRequestForm } from '@/features/samples/SampleRequestForm'
 import { useSampleRequests, useUpdateSampleRequestStatus } from '@/features/samples/hooks'
+import { CustomerRevenueTargetCard } from '@/features/customerTargets/CustomerRevenueTargetCard'
 import { CrmActivityForm } from '@/features/crm/CrmActivityForm'
 import { CrmOpportunityForm } from '@/features/crm/CrmOpportunityForm'
 import { useCrmActivities, useCrmOpportunities } from '@/features/crm/hooks'
@@ -395,6 +396,7 @@ export function CustomerDetailPage() {
 
         <TabsContent value="finans">
           <div className="grid gap-6 md:grid-cols-2">
+            <CustomerRevenueTargetCard customerId={customer.id} payments={payments} />
             <Card>
               <CardHeader className="flex-row items-center justify-between">
                 <CardTitle className="text-sm text-muted-foreground">Cari Hesap</CardTitle>
