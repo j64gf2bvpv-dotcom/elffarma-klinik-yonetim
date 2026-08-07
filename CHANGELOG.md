@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.12] - 2026-08-07
+
+**Mobil Dashboard yeniden tasarlandı:** Karşılama başlığı (baş harf rozeti + saatine göre selamlama), kritik stok uyarı şeridi, "Aylık Hedef" ilerleme kartı (Bütçe Yılı'ndaki gerçek ciro hedefine karşı bu ayki tahsilat) ve yeni Görev Yönetimi modülünden beslenen "Görevlerim" listesi eklendi — dokunarak görev tamamlanabiliyor. Bunun için mobile'a salt-okunur `features/budget` (aylık hedef) ve `features/tasks` (bana atanan görevler) eklendi. Şema değişikliği yok (mevcut `budget_targets`/`tasks` tablolarını okuyor).
+
 ## [2.17.11] - 2026-08-07
 
 **Görev Yönetimi** (yeni modül): Personele atanabilen, durum (Bekliyor/Devam Ediyor/Tamamlandı/İptal) ve öncelik (Düşük/Normal/Yüksek) taşıyan, opsiyonel olarak bir doktora bağlanabilen genel görevler için yeni bir `Görevler` sayfası eklendi (Hatırlatmalar'ın altına, `/gorevler`). Durum bazlı pano görünümü, "Bana Atananlar" filtresi ve gecikmiş görevler için bildirim ziline/Hatırlatmalar sayfasına otomatik uyarı entegrasyonu var. Yeni `tasks` tablosu (`supabase/schema.sql`), diğer tüm tablolarla aynı paylaşımlı-güven RLS modelini kullanıyor — Supabase SQL editöründe şemanın güncel halini tekrar çalıştırman gerekiyor.
