@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.9] - 2026-08-07
+
+**Cari Kart'a sıralama ve bölge filtresi eklendi:** Doktor listesi artık "Sırala" seçiciyle Ada Göre (A-Z/Z-A), Şehre Göre ya da Bölgeye Göre sıralanabiliyor (varsayılan hâlâ ada göre A-Z). Ayrıca daha önce sadece doktor kartında elle atanıp hiçbir listede kullanılmayan **Bölge** (regions tablosu — şehir/ilçe hiyerarşisi, İl alanından ayrı) artık Cari Kart listesinde bir filtre olarak seçilebiliyor; bir bölge seçip Excel/Word/PDF'e aktarınca sadece o bölgedeki doktorları içeren "bölgesel" bir çıktı alınmış oluyor. Dışa aktarım dosyasına da her zaman bir "Bölge" kolonu eklendi. Şema değişikliği yok.
+
 ## [2.17.8] - 2026-08-07
 
 **Dosya Özetle / Akıllı İçe Aktar artık çok sekmeli Excel dosyalarını okuyor:** Daha önce bir Excel dosyasının SADECE ilk sayfası okunuyordu — bir sekmede doktorlar, başka bir sekmede ürünler gibi birden fazla bölüm içeren dosyalarda diğer sekmeler tamamen atlanıyordu. Artık çalışma kitabındaki (workbook) tüm sekmeler okunuyor. Yapay Zeka Analiz > Dosya Özetle'de çok sekmeli bir dosya yüklendiğinde her sekme AYRI bir bölüm olarak ele alınıyor: yapay zeka her sekme için ayrı ayrı kategori (Stok/Ürün, Doktor/Cari, Tahsilat, Stok Kartı) ve özet çıkarıyor, her sekme kendi hedef bölümüne (gerekirse elle düzeltilerek) ayrı ayrı aktarılabiliyor ya da tek "Tümünü İlgili Bölümlere Aktar" butonuyla hepsi birden aktarılabiliyor. Akıllı İçe Aktar (tek hedefli, ör. sadece "Doktorları İçe Aktar") tarafında da aynı sınıra takılmadan, aynı türde veri içeren birden fazla sekme (ör. "Doktorlar 2025", "Doktorlar 2026") tek seferde okunup birleştiriliyor. Şema değişikliği yok.
