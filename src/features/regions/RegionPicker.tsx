@@ -11,7 +11,8 @@ import type { Region } from '@/types/database'
 
 const NONE = '__none__'
 
-function regionLabel(region: Region, byId: Map<string, Region>): string {
+/** Bir bölgeyi üst bölgesiyle birlikte gösterir (ör. "İstanbul / Kadıköy") — CustomerPage'in bölge filtresi de kullanır. */
+export function regionLabel(region: Region, byId: Map<string, Region>): string {
   const parent = region.parent_region_id ? byId.get(region.parent_region_id) : undefined
   return parent ? `${parent.name} / ${region.name}` : region.name
 }

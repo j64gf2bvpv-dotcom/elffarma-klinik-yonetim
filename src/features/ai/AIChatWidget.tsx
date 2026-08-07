@@ -215,9 +215,12 @@ async function attachmentToParts(file: File): Promise<{ text?: string; imageUrls
   const content = await extractFileContent(file)
   if (content.kind === 'image') return { imageUrls: content.dataUrls }
   if (content.kind === 'table') {
-    const preview = content.rows.slice(0, 50)
+    const totalRows = content.sheets.reduce((sum, s) => sum + s.rows.length, 0)
+    const sheetsText = content.sheets
+      .map((s) => `Sayfa: ${s.name} (${s.rows.length} satır)\nÖrnek veri (JSON):\n${JSON.stringify(s.rows.slice(0, 50), null, 2)}`)
+      .join('\n\n')
     return {
-      text: `Dosya: ${file.name}\nToplam satır: ${content.rows.length}\n\nÖrnek veri (JSON):\n${JSON.stringify(preview, null, 2)}`,
+      text: `Dosya: ${file.name}\nToplam satır: ${totalRows}\n\n${sheetsText}`,
       imageUrls: [],
     }
   }

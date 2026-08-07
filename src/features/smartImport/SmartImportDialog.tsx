@@ -62,7 +62,7 @@ export function SmartImportDialog({ title, targetLabel, fieldHeaders, fieldHints
     setParsing(true)
     try {
       const content = await extractFileContent(file)
-      if (content.kind === 'table' && content.rows.length === 0) {
+      if (content.kind === 'table' && content.sheets.every((s) => s.rows.length === 0)) {
         toast.error('Dosyada satır bulunamadı')
         return
       }

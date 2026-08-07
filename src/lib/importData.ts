@@ -58,6 +58,42 @@ export function readExcelFile(file: File): Promise<Record<string, unknown>[]> {
   })
 }
 
+export interface ExcelSheet {
+  name: string
+  rows: Record<string, unknown>[]
+}
+
+/**
+ * `readExcelFile`'ın aksine SADECE ilk sayfayla sınırlı kalmaz — bir
+ * çalışma kitabındaki (workbook) TÜM sayfaları/sekmeleri okur (ör. bir
+ * sekmede doktorlar, başka bir sekmede ürünler olan bir dosya). Tamamen
+ * boş sayfalar (ör. şablonda kalan kullanılmamış bir sekme) sonuçtan
+ * elenir. Akıllı İçe Aktar / Dosya Özetle bunu kullanır — diğer sıkı-
+ * şablonlu (tek sayfa varsayan) içe aktarmalar `readExcelFile`'da kalır.
+ */
+export function readExcelWorkbookSheets(file: File): Promise<ExcelSheet[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const data = event.target?.result
+        const workbook = XLSX.read(data, { type: 'array' })
+        const sheets = workbook.SheetNames.map((name) => {
+          const sheet = workbook.Sheets[name]
+          fillMergedCells(sheet)
+          const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
+          return { name, rows }
+        }).filter((s) => s.rows.length > 0)
+        resolve(sheets)
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error(String(err)))
+      }
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('Dosya okunamadı'))
+    reader.readAsArrayBuffer(file)
+  })
+}
+
 /**
  * Basit "tek satır başlık" varsayımı yapmayan, ham hücre matrisi (array of
  * arrays) döner — birleştirilmiş (merge) tarih başlıkları gibi çok satırlı /

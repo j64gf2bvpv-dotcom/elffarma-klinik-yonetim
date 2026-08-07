@@ -13,6 +13,10 @@ As of 2026-07-26 (v1.0.0 in `CHANGELOG.md`) this is treated as **the live produc
 
 An older phased build plan lives at `/Users/erkankongul/.claude/plans/swift-beaming-mochi.md` — it describes the *original* MVP (customers/stock/payments/appointments only) and is kept for historical "why" context, but it does **not** reflect the current module set; don't use it to infer what exists today.
 
+## Mobile companion app (`mobile/`)
+
+A native React Native (Expo) mobile app lives in `mobile/` at the repo root, alongside this desktop app — same repo, own `package.json`/lockfile, connects to the **exact same Supabase project** (no schema changes, no separate backend). It is being built in phases per `/Users/erkankongul/.claude/plans/greedy-gathering-galaxy.md`; `mobile/README.md` documents current scope and how to run it. `shared/` at the repo root holds DOM-free TypeScript **copies** (not the live originals — see `shared/README.md`) of types/i18n/business-logic reused by both apps; when you change `src/types/database.ts`, `src/i18n/tr.ts`, `src/lib/paymentDue.ts`, `src/lib/expiry.ts`, `src/lib/pctDelta.ts`, or `src/features/customers/cariLedger.ts`, update the matching file in `shared/src/` too. Schema/RLS/RPC changes in `supabase/schema.sql` apply to both apps automatically (single source of truth) — no mobile-side action needed beyond re-checking `mobile/src/features/*/api.ts` still matches if a table/RPC signature changed.
+
 ## Commands
 
 ```bash

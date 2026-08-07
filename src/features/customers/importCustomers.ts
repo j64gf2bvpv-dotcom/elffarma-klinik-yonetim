@@ -45,10 +45,13 @@ export const CUSTOMER_IMPORT_FIELD_HINTS: Record<string, string> = {
 
 /**
  * CustomersPage'in Akıllı İçe Aktar'ı ile Yapay Zeka Analiz > Dosya
- * Özetle'nin "ilgili bölüme aktar"ı bu TEK fonksiyonu paylaşıyor. Telefon
- * numarasına göre dedup yapılır (zaten kayıtlı numara hata değil, atlanan
- * kayıt sayılır). `summary.added > 0` ise `['customers']` query'sini
- * invalidate etmek çağıranın işi.
+ * Özetle'nin "ilgili bölüme aktar"ı bu TEK fonksiyonu paylaşıyor. Ad Soyad
+ * dışındaki HİÇBİR alan (Telefon dahil) satırı reddetmez — telefon eksik ya
+ * da tanınmayan bir formatta olsa bile (ör. kaynak veride "yok" gibi bir
+ * metin) kayıt, mevcut ne veri varsa onunla eklenir; sadece telefon
+ * normalize edilebiliyorsa mükerrer numara kontrolü (dedup) için kullanılır.
+ * `summary.added > 0` ise `['customers']` query'sini invalidate etmek
+ * çağıranın işi.
  */
 export async function importCustomerRows(
   rows: Record<string, unknown>[],
@@ -61,17 +64,13 @@ export async function importCustomerRows(
     const row = rows[i]
     const rowLabel = `Satır ${i + 2}`
     const fullName = readCell(row, 'Ad Soyad', 'Ad', 'İsim')
+    if (!fullName) {
+      summary.errors.push(`${rowLabel}: Ad Soyad eksik`)
+      continue
+    }
     const phoneRaw = readCell(row, 'Telefon', 'Phone')
-    if (!fullName || !phoneRaw) {
-      summary.errors.push(`${rowLabel}: Ad Soyad veya Telefon eksik`)
-      continue
-    }
-    const normalized = normalizeTrPhone(phoneRaw)
-    if (!normalized) {
-      summary.errors.push(`${rowLabel}: Geçersiz telefon numarası (${phoneRaw})`)
-      continue
-    }
-    if (existingPhones.has(normalized.canonical)) {
+    const normalized = phoneRaw ? normalizeTrPhone(phoneRaw) : null
+    if (normalized && existingPhones.has(normalized.canonical)) {
       summary.skipped++
       continue
     }
@@ -101,7 +100,7 @@ export async function importCustomerRows(
           ? readCell(row, 'Etiketler').split(',').map((t) => t.trim()).filter(Boolean)
           : [],
       })
-      existingPhones.add(normalized.canonical)
+      if (normalized) existingPhones.add(normalized.canonical)
       summary.added++
     } catch (err) {
       summary.errors.push(`${rowLabel}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)

@@ -19,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { CustomerForm } from '@/features/customers/CustomerForm'
 import { useCustomers, useDeleteCustomer } from '@/features/customers/hooks'
 import { type InvoiceFilter } from '@/features/customers/api'
+import { useRegions } from '@/features/regions/hooks'
+import { regionLabel } from '@/features/regions/RegionPicker'
 import {
   importCustomerRows,
   CUSTOMER_IMPORT_HEADERS,
@@ -36,6 +38,16 @@ import type { Customer } from '@/types/database'
 
 const ALL_PROVINCES = '__all__'
 const ALL_TAGS = '__all_tags__'
+const ALL_REGIONS = '__all_regions__'
+
+type SortOption = 'name_asc' | 'name_desc' | 'province_asc' | 'region_asc'
+
+const SORT_LABELS: Record<SortOption, string> = {
+  name_asc: 'Ada Göre (A-Z)',
+  name_desc: 'Ada Göre (Z-A)',
+  province_asc: 'Şehre Göre (A-Z)',
+  region_asc: 'Bölgeye Göre (A-Z)',
+}
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -49,19 +61,43 @@ export function CustomersPage() {
   const [invoiceFilter, setInvoiceFilter] = React.useState<InvoiceFilter>('all')
   const [provinceFilter, setProvinceFilter] = React.useState(ALL_PROVINCES)
   const [tagFilter, setTagFilter] = React.useState(ALL_TAGS)
+  const [regionFilter, setRegionFilter] = React.useState(ALL_REGIONS)
+  const [sortBy, setSortBy] = React.useState<SortOption>('name_asc')
   const { data: allCustomers = [], isLoading } = useCustomers(
     search,
     invoiceFilter,
     provinceFilter === ALL_PROVINCES ? undefined : provinceFilter,
   )
+  const { data: regions = [] } = useRegions()
+  const regionById = React.useMemo(() => new Map(regions.map((r) => [r.id, r])), [regions])
   const availableTags = React.useMemo(
     () => Array.from(new Set(allCustomers.flatMap((c) => c.tags))).sort((a, b) => a.localeCompare(b, 'tr')),
     [allCustomers],
   )
-  const customers = React.useMemo(
-    () => (tagFilter === ALL_TAGS ? allCustomers : allCustomers.filter((c) => c.tags.includes(tagFilter))),
-    [allCustomers, tagFilter],
-  )
+  const customers = React.useMemo(() => {
+    let result = tagFilter === ALL_TAGS ? allCustomers : allCustomers.filter((c) => c.tags.includes(tagFilter))
+    if (regionFilter !== ALL_REGIONS) result = result.filter((c) => c.region_id === regionFilter)
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'name_desc':
+          return b.full_name.localeCompare(a.full_name, 'tr')
+        case 'province_asc':
+          return (a.province ?? '').localeCompare(b.province ?? '', 'tr') || a.full_name.localeCompare(b.full_name, 'tr')
+        case 'region_asc': {
+          const aRegion = a.region_id ? regionById.get(a.region_id) : undefined
+          const bRegion = b.region_id ? regionById.get(b.region_id) : undefined
+          const aLabel = aRegion ? regionLabel(aRegion, regionById) : ''
+          const bLabel = bRegion ? regionLabel(bRegion, regionById) : ''
+          return aLabel.localeCompare(bLabel, 'tr') || a.full_name.localeCompare(b.full_name, 'tr')
+        }
+        case 'name_asc':
+        default:
+          return a.full_name.localeCompare(b.full_name, 'tr')
+      }
+    })
+    return result
+  }, [allCustomers, tagFilter, regionFilter, sortBy, regionById])
   const deleteMutation = useDeleteCustomer()
   const queryClient = useQueryClient()
   const [customerToDelete, setCustomerToDelete] = React.useState<Customer | null>(null)
@@ -94,6 +130,13 @@ export function CustomersPage() {
                 { header: 'Telefon', value: (c) => formatTrPhoneForDisplay(c.phone) },
                 { header: 'Tip', value: (c) => (c.doctor_type === 'hastane' ? 'Hastane' : 'Şahıs') },
                 { header: 'İl', value: (c) => c.province ?? '' },
+                {
+                  header: 'Bölge',
+                  value: (c) => {
+                    const region = c.region_id ? regionById.get(c.region_id) : undefined
+                    return region ? regionLabel(region, regionById) : ''
+                  },
+                },
                 { header: 'Hastane', value: (c) => c.hospital_name ?? '' },
                 { header: 'Ödeme Vadesi', value: (c) => c.next_payment_due ?? '' },
                 { header: 'TC Kimlik No', value: (c) => c.tc_no ?? '' },
@@ -168,6 +211,33 @@ export function CustomersPage() {
             </SelectContent>
           </Select>
         )}
+        {regions.length > 0 && (
+          <Select value={regionFilter} onValueChange={setRegionFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Bölge" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_REGIONS}>Tüm Bölgeler</SelectItem>
+              {regions.map((region) => (
+                <SelectItem key={region.id} value={region.id}>
+                  {regionLabel(region, regionById)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Sırala" />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
