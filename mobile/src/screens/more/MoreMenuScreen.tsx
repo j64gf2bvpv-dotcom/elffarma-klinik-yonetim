@@ -16,6 +16,7 @@ import {
   AtSign,
   Car,
   SlidersHorizontal,
+  ScanLine,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
@@ -45,6 +46,7 @@ const items: MenuItem[] = [
   { key: 'Kongreler', label: 'Kongreler', icon: Presentation },
   { key: 'Prim', label: 'Prim', icon: Percent },
   { key: 'CRM', label: 'CRM', icon: Handshake },
+  { key: 'Kartvizit Tara', label: 'Kartvizit Tara', icon: ScanLine },
   { key: 'Giderler', label: 'Giderler', icon: ReceiptText },
   { key: 'Bütçe Yılı', label: 'Bütçe Yılı', icon: Target },
   { key: 'AI Analiz', label: 'Yapay Zeka Analiz', icon: Sparkles },
@@ -70,11 +72,11 @@ export function MoreMenuScreen({ navigation }: Props) {
         ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: theme.colors.border }} />}
         renderItem={({ item }) => (
           <Pressable
-            onPress={() =>
-              item.key === 'CRM'
-                ? navigation.navigate('CrmActivities')
-                : navigation.navigate('ComingSoon', { title: item.label })
-            }
+            onPress={() => {
+              if (item.key === 'CRM') return navigation.navigate('CrmActivities')
+              if (item.key === 'Kartvizit Tara') return navigation.navigate('BusinessCardScan')
+              return navigation.navigate('ComingSoon', { title: item.label })
+            }}
             style={({ pressed }) => [
               { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
               pressed && { opacity: 0.6 },

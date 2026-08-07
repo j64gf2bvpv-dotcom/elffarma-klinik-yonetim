@@ -1,8 +1,23 @@
 // Masaüstündeki src/features/customers/api.ts'in Faz 1 alt kümesi — Cari
-// Hesap ekranı sadece okuma (liste + detay) yapıyor, bu yüzden create/update/
-// delete/pending-products burada yok (Müşteriler CRUD'u Faz 2'de eklenecek).
+// Hesap ekranı sadece okuma (liste + detay) yapıyor, bu yüzden update/delete/
+// pending-products burada yok (tam CRUD Faz 2'de). createCustomer istisna:
+// kartvizit tarama sonucunu kaydedebilmek için minimal (ad+telefon zorunlu)
+// bir ekleme yolu — masaüstündeki CustomerCombobox "Yeni Doktor Ekle" hızlı
+// formuyla aynı asgari alan seti.
 import { supabase } from '@/lib/supabaseClient'
+import { offlineInsert } from '@/lib/offlineMutation'
 import type { Customer } from '@shared/types/database'
+
+export interface CreateCustomerInput {
+  full_name: string
+  phone: string
+  email?: string | null
+  hospital_name?: string | null
+}
+
+export async function createCustomer(input: CreateCustomerInput): Promise<Customer> {
+  return offlineInsert<Customer>('customers', { ...input }, `Doktor: ${input.full_name}`)
+}
 
 export type InvoiceFilter = 'all' | 'invoiced' | 'not_invoiced'
 

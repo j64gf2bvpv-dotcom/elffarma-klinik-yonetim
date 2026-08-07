@@ -27,6 +27,7 @@ export type MoreStackParamList = {
   MoreMenu: undefined
   ComingSoon: { title: string }
   CrmActivities: undefined
+  BusinessCardScan: undefined
 }
 
 export type MainTabParamList = {

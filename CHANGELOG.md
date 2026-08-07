@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.15] - 2026-08-08
+
+**Mobil "Kartvizit Tara" eklendi (Diğer > Kartvizit Tara):** gocust referansındaki kartvizit tarama fikrinin Elffarma karşılığı — yeni bir OCR servisi yerine mevcut AIService altyapısı (Ayarlar > Yapay Zekâ'da seçili sağlayıcı — varsayılan Gemini, görsel destekliyor) kullanılıyor. Kamerayla/galeriden kartvizit fotoğrafı seçilir → AI ad/telefon/e-posta/hastane bilgisini JSON olarak çıkarır → düzenlenebilir bir mini formda kontrol edilip "Doktor Olarak Kaydet" ile gerçek bir cari kayda dönüşür (mobilde ilk kez bir müşteri oluşturma yolu — minimal, ad+telefon zorunlu; tam Cari Kart formu hâlâ Faz 2'de). Etkin sağlayıcı Ollama (yerel, görsel desteklemiyor) ise anlaşılır bir hata gösterir. Bunun için mobile'a `expo-image-picker` eklendi ve masaüstündeki AIService'in tek-seferlik (streaming olmayan) OpenAI-uyumlu + Claude sohbet çağrıları mobile'a taşındı (`features/ai`). Harita görünümü/rota planlama (referanstaki diğer özellik) hâlâ karar bekliyor — ücretli bir Maps API anahtarı gerektiriyor. Şema değişikliği yok.
+
 ## [2.17.14] - 2026-08-07
 
 **Mobil "Aktiviteler" ekranı eklendi ("Diğer" > CRM):** gocust referansındaki Activities ekranına benzer şekilde, üstte "Bekleyen Görevler" sayacı (yeni Görev Yönetimi'nden) ve altında masaüstü CRM modülünün `crm_activities` verisinden gerçek zamanlı, kronolojik aktivite akışı (arama/WhatsApp/e-posta/toplantı/video görüşme/not, ikon+tarihle) — salt okunur, aktivite/fırsat oluşturma masaüstünde kalıyor. Ayrıca Cari Hesap satırlarına dokununca telefon/e-posta açan hızlı aksiyon ikonları eklendi. Harita görünümü ve kartvizit tarama (referansta görülen diğer iki özellik) için ayrı bir altyapı kararı gerekiyor — bkz. güncellenen mobil önizleme. Şema değişikliği yok.
