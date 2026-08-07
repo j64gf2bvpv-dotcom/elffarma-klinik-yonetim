@@ -1,0 +1,923 @@
+<style>
+  :root {
+    --bg: #1c1a16;
+    --bg-deep: #16140f;
+    --card: #25221b;
+    --card-2: #2a261e;
+    --fg: #ece8df;
+    --muted: #918a7c;
+    --border: #3d3829;
+    --gold: #d9a441;
+    --gold-dim: #b88a35;
+    --gold-fg: #1c1a16;
+    --red: #e05555;
+    --green: #3da062;
+    --amber: #e0a843;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --phone-w: 360px;
+    --phone-h: 740px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 24px;
+    min-height: 100vh;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+  }
+  .header p {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--phone-w), 1fr));
+    gap: 28px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .phone {
+    width: var(--phone-w);
+    height: var(--phone-h);
+    background: var(--bg);
+    border-radius: 28px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    margin: 0 auto;
+  }
+
+  .phone-label {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+
+  /* Status bar */
+  .status-bar {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+    flex-shrink: 0;
+  }
+  .status-bar .icons { display: flex; gap: 4px; align-items: center; }
+  .status-bar .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--fg); opacity: 0.6; }
+
+  /* Screen content */
+  .screen {
+    flex: 1;
+    overflow: hidden;
+    padding: 8px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Bottom tab bar */
+  .tab-bar {
+    height: 56px;
+    background: var(--bg-deep);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    flex-shrink: 0;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .tab-item.active { color: var(--gold); }
+  .tab-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+
+  /* Components */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 14px;
+    border: 1px solid var(--border);
+  }
+
+  .card-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 12px;
+    border: 1px solid var(--border);
+    flex: 1;
+    min-width: 0;
+  }
+  .stat-card .icon { width: 28px; height: 28px; border-radius: 7px; background: rgba(217,164,65,0.15); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+  .stat-card .label { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .stat-card .value { font-size: 18px; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .stat-card .sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-bar .fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--gold);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .badge-red { background: var(--red); color: #fff; }
+  .badge-gold { background: rgba(217,164,65,0.2); color: var(--gold); }
+  .badge-green { background: rgba(61,160,98,0.2); color: var(--green); }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .list-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .list-item:last-child { border-bottom: none; }
+  .list-item-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(217,164,65,0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .list-item-text { flex: 1; min-width: 0; }
+  .list-item-title { font-size: 13px; font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-item-sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+
+  .text-field {
+    background: var(--card-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+  .text-field .label { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .text-field .value { font-size: 14px; color: var(--fg); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--gold); color: var(--gold-fg); }
+  .btn-outline { background: transparent; color: var(--fg); border: 1px solid var(--border); }
+
+  .greeting-row { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 19px;
+    background: rgba(217,164,65,0.15);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold); font-weight: 700; font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .map-area {
+    flex: 1;
+    background: #1a2a1a;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    min-height: 200px;
+  }
+  .map-pin {
+    position: absolute;
+    width: 24px; height: 24px;
+    background: var(--gold);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 2px solid var(--bg);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .map-pin::after {
+    content: '';
+    position: absolute;
+    width: 6px; height: 6px;
+    background: var(--bg);
+    border-radius: 50%;
+    top: 7px; left: 7px;
+  }
+
+  .scan-placeholder {
+    background: var(--card);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+  }
+
+  .row-gap-8 { display: flex; gap: 8px; }
+  .flex-1 { flex: 1; }
+  .text-sm { font-size: 13px; }
+  .text-xs { font-size: 11px; }
+  .text-gold { color: var(--gold); }
+  .text-muted { color: var(--muted); }
+  .text-red { color: var(--red); }
+  .text-green { color: var(--green); }
+  .font-bold { font-weight: 700; }
+  .font-semi { font-weight: 600; }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .mt-2 { margin-top: 8px; }
+  .mt-4 { margin-top: 16px; }
+  .mb-2 { margin-bottom: 8px; }
+
+  /* SVG icons */
+  svg { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Elffarma Mobil — Tüm Ekranlar</h1>
+  <p>Siyah/Gold tema · 9 ekran · React Native (Expo)</p>
+</div>
+
+<div class="grid">
+
+  <!-- 1. LOGIN -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar">
+        <span>21:34</span>
+        <div class="icons"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+      <div class="screen" style="justify-content: center; padding: 24px;">
+        <div style="width:52px;height:52px;border-radius:14px;background:var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1c1a16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        </div>
+        <div style="font-size:22px;font-weight:700;color:var(--fg);margin-bottom:2px;">Elffarma Paket Programı</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:22px;">Devam etmek için giriş yapın</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="text-field"><div class="label">E-posta</div><div class="value" style="color:var(--muted);">ornek@elffarma.com</div></div>
+          <div class="text-field"><div class="label">Şifre</div><div class="value" style="color:var(--muted);">••••••••</div></div>
+          <button class="btn btn-primary">Giriş Yap</button>
+          <button class="btn btn-outline" style="border:none;color:var(--muted);">Şifremi Unuttum</button>
+        </div>
+      </div>
+      <div style="height:56px;flex-shrink:0;"></div>
+    </div>
+    <div class="phone-label">Giriş</div>
+  </div>
+
+  <!-- 2. DASHBOARD -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar">
+        <span>09:14</span>
+        <div class="icons"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+      <div class="screen" style="padding-top:4px;">
+        <div class="greeting-row">
+          <div class="avatar">EK</div>
+          <div style="flex:1;">
+            <div style="font-size:16px;font-weight:700;color:var(--fg);">Günaydın, Erkan</div>
+            <div style="font-size:11px;color:var(--muted);">8 Ağustos 2026, Cuma</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <div class="badge badge-red">3</div>
+            <div style="width:32px;height:32px;border-radius:16px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:rgba(224,168,67,0.1);border-radius:var(--radius);padding:10px;display:flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span style="font-size:12px;color:var(--fg);flex:1;">3 üründe kritik stok seviyesi</span>
+        </div>
+
+        <div>
+          <div class="section-label">Aylık Hedef</div>
+          <div class="card">
+            <div class="card-row" style="margin-bottom:8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              <span style="font-weight:600;font-size:13px;flex:1;">Tahsilat</span>
+              <span style="font-weight:700;font-size:14px;" class="tabular">₺145.000</span>
+              <span style="font-size:11px;color:var(--muted);">/ ₺250.000</span>
+            </div>
+            <div class="progress-bar"><div class="fill" style="width:58%;"></div></div>
+          </div>
+        </div>
+
+        <div class="row-gap-8" style="flex-wrap:wrap;">
+          <div class="stat-card">
+            <div class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+            <div class="label">Toplam Cari</div>
+            <div class="value tabular">₺892K</div>
+            <div class="sub">Açık bakiye</div>
+          </div>
+          <div class="stat-card">
+            <div class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+            <div class="label">Ürün Çeşidi</div>
+            <div class="value tabular">147</div>
+            <div class="sub">Aktif</div>
+          </div>
+          <div class="stat-card">
+            <div class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div class="label">Bugünkü</div>
+            <div class="value tabular">12</div>
+            <div class="sub">İşlem</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">Görevlerim</div>
+          <div class="card" style="display:flex;flex-direction:column;gap:10px;">
+            <div class="card-row" style="gap:10px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+              <span style="font-size:12px;flex:1;color:var(--fg);">Dr. Ahmet Yılmaz'ı ara</span>
+              <span style="font-size:10px;color:var(--red);font-weight:700;">5 Ağu</span>
+            </div>
+            <div class="card-row" style="gap:10px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+              <span style="font-size:12px;flex:1;color:var(--fg);">Kongre ürün dağıtımını tamamla</span>
+              <span style="font-size:10px;color:var(--muted);">10 Ağu</span>
+            </div>
+            <div class="card-row" style="gap:10px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+              <span style="font-size:12px;flex:1;color:var(--fg);">Stok sayımını bitir</span>
+              <span style="font-size:10px;color:var(--muted);">12 Ağu</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item active"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>Anasayfa</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>Stok</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg></div>Cari</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></div>Tahsilat</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>Diğer</div>
+      </div>
+    </div>
+    <div class="phone-label">Dashboard</div>
+  </div>
+
+  <!-- 3. STOK -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>09:14</span><div class="icons"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+      <div class="screen">
+        <div style="font-size:20px;font-weight:700;color:var(--fg);">Stok</div>
+        <div class="text-field" style="display:flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span style="font-size:13px;color:var(--muted);">Ürün ara...</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-gold">Tümü</span>
+          <span class="badge" style="background:var(--border);color:var(--muted);">Dermakor</span>
+          <span class="badge" style="background:var(--border);color:var(--muted);">Swiss</span>
+        </div>
+        <div style="flex:1;overflow:hidden;">
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dermakor Bio 5ml</div>
+              <div class="list-item-sub">Dermakor · Kod: 0001</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:14px;font-weight:700;color:var(--fg);" class="tabular">24</div>
+              <div class="badge badge-red" style="margin-top:2px;">Kritik</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Swiss Filler 1ml</div>
+              <div class="list-item-sub">Swiss · Kod: 0002</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:14px;font-weight:700;color:var(--fg);" class="tabular">87</div>
+              <div class="badge badge-green" style="margin-top:2px;">Yeterli</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dermakor Lidokain</div>
+              <div class="list-item-sub">Dermakor · Kod: 0003</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:14px;font-weight:700;color:var(--fg);" class="tabular">3</div>
+              <div class="badge badge-red" style="margin-top:2px;">Kritik</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Mesotherapy Cocktail</div>
+              <div class="list-item-sub">Swiss · Kod: 0004</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:14px;font-weight:700;color:var(--fg);" class="tabular">52</div>
+              <div class="badge badge-green" style="margin-top:2px;">Yeterli</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">PRP Tube 10ml</div>
+              <div class="list-item-sub">Dermakor · Kod: 0005</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:14px;font-weight:700;color:var(--fg);" class="tabular">15</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>Anasayfa</div>
+        <div class="tab-item active"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>Stok</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/></svg></div>Cari</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div>Tahsilat</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>Diğer</div>
+      </div>
+    </div>
+    <div class="phone-label">Stok Listesi</div>
+  </div>
+
+  <!-- 4. CARİ HESAP -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>09:14</span><div class="icons"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+      <div class="screen">
+        <div style="font-size:20px;font-weight:700;color:var(--fg);">Cari Hesap</div>
+        <div class="text-field" style="display:flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span style="font-size:13px;color:var(--muted);">Doktor ara...</span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div class="stat-card" style="padding:8px 10px;">
+            <div class="label">Toplam Bakiye</div>
+            <div class="value tabular" style="font-size:15px;">₺892.400</div>
+          </div>
+          <div class="stat-card" style="padding:8px 10px;">
+            <div class="label">Vadesi Geçen</div>
+            <div class="value tabular text-red" style="font-size:15px;">₺124.500</div>
+          </div>
+        </div>
+        <div style="flex:1;overflow:hidden;">
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Ahmet Yılmaz</div>
+              <div class="list-item-sub">DOC-000001 · İstanbul</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:700;color:var(--red);" class="tabular">₺45.000</div>
+              <div style="font-size:10px;color:var(--red);">Vade geçti</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Ayşe Kaya</div>
+              <div class="list-item-sub">DOC-000002 · Ankara</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:700;color:var(--fg);" class="tabular">₺12.500</div>
+              <div style="font-size:10px;color:var(--muted);">15 Ağu</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Mehmet Demir</div>
+              <div class="list-item-sub">DOC-000003 · İzmir</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:700;color:var(--red);" class="tabular">₺78.000</div>
+              <div style="font-size:10px;color:var(--red);">Vade geçti</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Fatma Şahin</div>
+              <div class="list-item-sub">DOC-000004 · Bursa</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:700;color:var(--green);" class="tabular">₺0</div>
+              <div style="font-size:10px;color:var(--green);">Tamamlandı</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Can Öztürk</div>
+              <div class="list-item-sub">DOC-000005 · Antalya</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:700;color:var(--fg);" class="tabular">₺23.000</div>
+              <div style="font-size:10px;color:var(--muted);">30 Ağu</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>Anasayfa</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>Stok</div>
+        <div class="tab-item active"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/></svg></div>Cari</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div>Tahsilat</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>Diğer</div>
+      </div>
+    </div>
+    <div class="phone-label">Cari Hesap</div>
+  </div>
+
+  <!-- 5. TAHSİLATLAR -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>09:14</span><div class="icons"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+      <div class="screen">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:20px;font-weight:700;color:var(--fg);">Tahsilatlar</div>
+          <button class="btn btn-primary" style="padding:6px 12px;font-size:12px;">+ Ekle</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div class="stat-card" style="padding:8px 10px;">
+            <div class="label">Bu Ay</div>
+            <div class="value tabular text-gold" style="font-size:15px;">₺145.000</div>
+          </div>
+          <div class="stat-card" style="padding:8px 10px;">
+            <div class="label">Bugün</div>
+            <div class="value tabular" style="font-size:15px;">₺12.500</div>
+          </div>
+        </div>
+        <div style="flex:1;overflow:hidden;">
+          <div class="list-item">
+            <div class="list-item-icon" style="background:rgba(61,160,98,0.15);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Ayşe Kaya</div>
+              <div class="list-item-sub">Nakit · 8 Ağu 2026</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--green);" class="tabular">₺5.000</div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon" style="background:rgba(61,160,98,0.15);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Can Öztürk</div>
+              <div class="list-item-sub">Havale · 7 Ağu 2026</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--green);" class="tabular">₺7.500</div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon" style="background:rgba(217,164,65,0.12);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            </div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Ahmet Yılmaz</div>
+              <div class="list-item-sub">Kredi Kartı · 6 Ağu 2026</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--gold);" class="tabular">₺15.000</div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon" style="background:rgba(61,160,98,0.15);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Fatma Şahin</div>
+              <div class="list-item-sub">Nakit · 5 Ağu 2026</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--green);" class="tabular">₺3.200</div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon" style="background:rgba(217,164,65,0.12);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            </div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Mehmet Demir</div>
+              <div class="list-item-sub">POS · 4 Ağu 2026</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--gold);" class="tabular">₺22.000</div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>Anasayfa</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>Stok</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/></svg></div>Cari</div>
+        <div class="tab-item active"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div>Tahsilat</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>Diğer</div>
+      </div>
+    </div>
+    <div class="phone-label">Tahsilatlar</div>
+  </div>
+
+  <!-- 6. DİĞER (More Menu) -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>09:14</span><div class="icons"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+      <div class="screen">
+        <div style="font-size:20px;font-weight:700;color:var(--fg);margin-bottom:4px;">Diğer</div>
+        <div style="flex:1;overflow:hidden;">
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="list-item-text"><div class="list-item-title">Müşteriler</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div class="list-item-text"><div class="list-item-title">Satışlar</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M11 2a2 2 0 0 0-2 2v5H4a2 2 0 0 0-2 2v2c0 1.1.9 2 2 2h5v5c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2v-5h5a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-5V4a2 2 0 0 0-2-2h-2z"/></svg></div>
+            <div class="list-item-text"><div class="list-item-title">Doktor Ziyaretleri</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <div class="list-item-text"><div class="list-item-title">Ajanda</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
+            <div class="list-item-text"><div class="list-item-title">Hatırlatmalar</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>
+            <div class="list-item-text"><div class="list-item-title">Kongreler</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+            <div class="list-item-text"><div class="list-item-title">CRM</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></div>
+            <div class="list-item-text"><div class="list-item-title">Kartvizit Tara</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+            <div class="list-item-text"><div class="list-item-title">Harita</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+            <div class="list-item-text"><div class="list-item-title">Yapay Zeka Analiz</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>Anasayfa</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>Stok</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/></svg></div>Cari</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div>Tahsilat</div>
+        <div class="tab-item active"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>Diğer</div>
+      </div>
+    </div>
+    <div class="phone-label">Diğer (Menü)</div>
+  </div>
+
+  <!-- 7. CRM AKTİVİTELER -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>09:14</span><div class="icons"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+      <div class="screen">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--fg);">Aktiviteler</div>
+          <div style="font-size:12px;color:var(--muted);">Doktor aktivite geçmişi</div>
+        </div>
+        <div class="card" style="display:flex;align-items:center;gap:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span style="font-weight:600;font-size:13px;flex:1;color:var(--fg);">Bekleyen Görevler</span>
+          <span style="color:var(--gold);font-weight:700;font-size:17px;" class="tabular">5</span>
+        </div>
+        <div style="flex:1;overflow:hidden;">
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Ahmet Yılmaz</div>
+              <div class="list-item-sub">Arama · Randevu teyidi · 7 Ağu 14:30</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Ayşe Kaya</div>
+              <div class="list-item-sub">WhatsApp · Fiyat teklifi · 6 Ağu 11:20</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Mehmet Demir</div>
+              <div class="list-item-sub">E-posta · Kampanya bilgisi · 5 Ağu 09:15</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Fatma Şahin</div>
+              <div class="list-item-sub">Toplantı · Ürün demo · 4 Ağu 15:00</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" y2="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Can Öztürk</div>
+              <div class="list-item-sub">Video Görüşme · Online demo · 3 Ağu</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="list-item-text">
+              <div class="list-item-title">Dr. Ahmet Yılmaz</div>
+              <div class="list-item-sub">Not · Fiyat güncellemesi · 2 Ağu</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>Anasayfa</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>Stok</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/></svg></div>Cari</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div>Tahsilat</div>
+        <div class="tab-item active"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>Diğer</div>
+      </div>
+    </div>
+    <div class="phone-label">CRM Aktiviteler</div>
+  </div>
+
+  <!-- 8. KARTVİZİT TARA -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>09:14</span><div class="icons"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+      <div class="screen">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--fg);">Kartvizit Tara</div>
+          <div style="font-size:12px;color:var(--muted);">Fotoğraftan yeni doktor ekle</div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:12px;color:var(--muted);">Bir kartvizit fotoğrafı çekin veya galeriden seçin.</div>
+          <button class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold-fg)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Kamerayla Çek
+          </button>
+          <button class="btn btn-outline">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+            Galeriden Seç
+          </button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div style="height:140px;background:linear-gradient(135deg,#2a261e,#1c1a16);display:flex;align-items:center;justify-content:center;position:relative;">
+            <div style="text-align:center;color:var(--muted);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" stroke-width="1.5" style="margin:0 auto 8px;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+              <div style="font-size:11px;">Kartvizit önizlemesi</div>
+            </div>
+          </div>
+          <div style="padding:10px;display:flex;gap:8px;">
+            <button class="btn btn-outline" style="flex:1;font-size:12px;">Değiştir</button>
+            <button class="btn btn-primary" style="flex:1;font-size:12px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold-fg)" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+              Analiz Et
+            </button>
+          </div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+          <div class="text-field"><div class="label">Ad Soyad</div><div class="value">Dr. Selin Arslan</div></div>
+          <div class="text-field"><div class="label">Telefon</div><div class="value">+90 532 123 45 67</div></div>
+          <div class="text-field"><div class="label">E-posta (opsiyonel)</div><div class="value">s.arslan@klinik.com</div></div>
+          <div class="text-field"><div class="label">Hastane/Klinik (opsiyonel)</div><div class="value">Estetik Merkezi Ankara</div></div>
+          <button class="btn btn-primary">Doktor Olarak Kaydet</button>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>Anasayfa</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>Stok</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/></svg></div>Cari</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div>Tahsilat</div>
+        <div class="tab-item active"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>Diğer</div>
+      </div>
+    </div>
+    <div class="phone-label">Kartvizit Tarama (AI)</div>
+  </div>
+
+  <!-- 9. HARİTA -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>09:14</span><div class="icons"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>
+      <div class="screen">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--fg);">Harita</div>
+          <div style="font-size:12px;color:var(--muted);">12 doktor haritada</div>
+        </div>
+        <div class="card" style="display:flex;align-items:center;gap:10px;padding:10px 12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span style="font-size:12px;color:var(--fg);flex:1;">3 doktorun konumu henüz hesaplanmadı</span>
+          <button class="btn btn-primary" style="padding:5px 10px;font-size:11px;">Hesapla</button>
+        </div>
+        <div class="map-area">
+          <!-- Simulated map -->
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center, #1e2a1e 0%, #16140f 100%);"></div>
+          <!-- Grid lines -->
+          <div style="position:absolute;inset:0;opacity:0.15;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;"></div>
+          <!-- Road lines -->
+          <div style="position:absolute;top:40%;left:0;right:0;height:2px;background:var(--border);opacity:0.5;"></div>
+          <div style="position:absolute;top:0;bottom:0;left:55%;width:2px;background:var(--border);opacity:0.5;"></div>
+          <div style="position:absolute;top:60%;left:10%;width:50%;height:1px;background:var(--border);opacity:0.3;transform:rotate(15deg);"></div>
+
+          <!-- Map pins -->
+          <div class="map-pin" style="top:25%;left:30%;"></div>
+          <div class="map-pin" style="top:45%;left:60%;"></div>
+          <div class="map-pin" style="top:35%;left:45%;"></div>
+          <div class="map-pin" style="top:65%;left:25%;"></div>
+          <div class="map-pin" style="top:55%;left:70%;"></div>
+          <div class="map-pin" style="top:20%;left:55%;"></div>
+
+          <!-- Callout popup -->
+          <div style="position:absolute;top:15%;left:20%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;max-width:160px;box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+            <div style="font-weight:700;font-size:12px;color:var(--fg);">Dr. Ahmet Yılmaz</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px;">Özel Klinik İstanbul</div>
+            <div style="display:flex;align-items:center;gap:3px;margin-top:4px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              <span style="font-size:10px;color:#2563eb;font-weight:600;">Yol Tarifi</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>Anasayfa</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>Stok</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/></svg></div>Cari</div>
+        <div class="tab-item"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div>Tahsilat</div>
+        <div class="tab-item active"><div class="tab-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>Diğer</div>
+      </div>
+    </div>
+    <div class="phone-label">Harita (Google Maps)</div>
+  </div>
+
+</div>
+
+</body>
+</html>

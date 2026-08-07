@@ -75,10 +75,26 @@ export function MoreMenuScreen({ navigation }: Props) {
         renderItem={({ item }) => (
           <Pressable
             onPress={() => {
-              if (item.key === 'CRM') return navigation.navigate('CrmActivities')
-              if (item.key === 'Kartvizit Tara') return navigation.navigate('BusinessCardScan')
-              if (item.key === 'Harita') return navigation.navigate('Map')
-              return navigation.navigate('ComingSoon', { title: item.label })
+              const routeMap: Record<string, string> = {
+                'Müşteriler': 'Customers',
+                'Satışlar': 'Sales',
+                'Doktor Ziyaretleri': 'DoctorVisits',
+                'Ajanda': 'Agenda',
+                'Hatırlatmalar': 'Reminders',
+                'Kongreler': 'Congresses',
+                'Prim': 'Prim',
+                'CRM': 'CrmActivities',
+                'Kartvizit Tara': 'BusinessCardScan',
+                'Harita': 'Map',
+                'Giderler': 'Expenses',
+                'Bütçe Yılı': 'Budget',
+                'AI Analiz': 'AIAnalysis',
+                'Instagram Doktor Listesi': 'InstagramLeads',
+                'Araçlar': 'Vehicles',
+                'Ayarlar': 'Settings',
+              }
+              const route = routeMap[item.key]
+              if (route) return navigation.navigate(route as never)
             }}
             style={({ pressed }) => [
               { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },

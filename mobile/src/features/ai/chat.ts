@@ -158,3 +158,50 @@ export async function chatWithImage(imageBase64: string, mimeType: string, instr
     throw new AIServiceError(`AI sağlayıcısına bağlanılamadı: ${message}`, 'connection', err)
   }
 }
+
+async function resolveTextConfig(): Promise<{ provider: AIProviderId; baseUrl: string; model: string; apiKey?: string }> {
+  const { data: settingsRow } = await supabase.from('app_settings').select('value').eq('key', AI_SETTINGS_KEY).maybeSingle()
+  const settings = (settingsRow?.value as AISettings | undefined) ?? { provider: 'ollama', baseUrl: 'http://localhost:11434', model: 'qwen2.5:3b' }
+
+  if (settings.provider === 'ollama') {
+    return {
+      provider: 'ollama',
+      baseUrl: settings.baseUrl || 'http://localhost:11434',
+      model: settings.model || 'qwen2.5:3b',
+      apiKey: undefined,
+    }
+  }
+
+  const userId = await getCurrentUserId()
+  let personalKey: string | undefined
+  const field = personalKeyField(settings.provider)
+  if (field && userId) {
+    const { data } = await supabase.from('staff_ai_keys').select(field).eq('staff_id', userId).maybeSingle()
+    personalKey = (data as Record<string, string | null> | null)?.[field] ?? undefined
+  }
+
+  return {
+    provider: settings.provider,
+    baseUrl: settings.baseUrl || providerDefaults[settings.provider as Exclude<AIProviderId, 'ollama'>].baseUrl,
+    model: settings.model || providerDefaults[settings.provider as Exclude<AIProviderId, 'ollama'>].model,
+    apiKey: personalKey || envKeyForProvider(settings.provider),
+  }
+}
+
+/** Metin-only sohbet — Ollama dahil tüm sağlayıcılar. AI Analiz ekranı için. */
+export async function chatWithText(prompt: string): Promise<string> {
+  const config = await resolveTextConfig()
+  const messages: AIMessage[] = [
+    { role: 'user', content: prompt },
+  ]
+
+  try {
+    if (config.provider === 'claude') return await claudeChat(config.baseUrl, config.apiKey, config.model, messages)
+    const label = config.provider === 'ollama' ? 'Ollama' : config.provider === 'gemini' ? 'Gemini' : 'OpenAI'
+    return await openaiCompatibleChat(config.baseUrl, config.apiKey, config.model, messages, label)
+  } catch (err) {
+    if (err instanceof AIServiceError) throw err
+    const message = err instanceof Error ? err.message : String(err)
+    throw new AIServiceError(`AI sağlayıcısına bağlanılamadı: ${message}`, 'connection', err)
+  }
+}

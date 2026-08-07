@@ -29,6 +29,19 @@ export type MoreStackParamList = {
   CrmActivities: undefined
   BusinessCardScan: undefined
   Map: undefined
+  Customers: undefined
+  Sales: undefined
+  DoctorVisits: undefined
+  Agenda: undefined
+  Reminders: undefined
+  Congresses: undefined
+  Prim: undefined
+  Expenses: undefined
+  Budget: undefined
+  AIAnalysis: undefined
+  InstagramLeads: undefined
+  Vehicles: undefined
+  Settings: undefined
 }
 
 export type MainTabParamList = {

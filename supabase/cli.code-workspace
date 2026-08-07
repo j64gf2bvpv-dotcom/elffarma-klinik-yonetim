@@ -1,0 +1,29 @@
+{
+	"folders": [
+		{
+			"path": "../../ui-ux-pro-max-skill-main/cli"
+		},
+		{
+			"path": "../../ui-ux-pro-max-skill-main/docs"
+		},
+		{
+			"path": "../../ui-ux-pro-max-skill-main/preview"
+		},
+		{
+			"path": "../../ui-ux-pro-max-skill-main/projects"
+		},
+		{
+			"path": "../../ui-ux-pro-max-skill-main/screenshots"
+		},
+		{
+			"path": "../../ui-ux-pro-max-skill-main/scripts"
+		},
+		{
+			"path": "../../ui-ux-pro-max-skill-main/src"
+		},
+		{
+			"path": "../../ui-ux-pro-max-skill-main/stack"
+		}
+	],
+	"settings": {}
+}

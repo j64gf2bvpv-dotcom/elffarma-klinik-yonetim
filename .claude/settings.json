@@ -46,7 +46,12 @@
       "Bash(pkill -f \"Electron.app/Contents/MacOS/Electron \\\\.\" 2>/dev/null; pkill -f \"node_modules/.bin/vite\" 2>/dev/null; sleep 2 *)",
       "Bash(grep -rn \"Link to={\\\\`\" src)",
       "Bash(grep -rn \"navigate\\(\\\\`\" src)",
-      "Bash(awk 'NR==836,NR==1730' src/routes/DashboardPage.tsx)"
+      "Bash(awk 'NR==836,NR==1730' src/routes/DashboardPage.tsx)",
+      "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
+      "Bash(git stash *)",
+      "Bash(git pull *)",
+      "Bash(curl -fsSL https://composio.dev/install)",
+      "Bash(bash)"
     ],
     "additionalDirectories": [
       "/private/tmp"

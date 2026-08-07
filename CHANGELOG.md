@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.19] - 2026-08-08
+
+**Mobil uygulamanın tüm "Yakında" ekranları gerçek ekranlara dönüştürüldü:** "Diğer" menüsündeki 12 placeholder ekranın tamamı fonksiyonel hale getirildi — 13 yeni ekran (Müşteriler, Satışlar, Doktor Ziyaretleri, Ajanda, Hatırlatmalar, Kongreler, Prim, Giderler, Bütçe Yılı, AI Analiz, Instagram Doktor Listesi, Araçlar, Ayarlar). 9 yeni feature API/hooks katmanı (doctorVisits, expenses, reminders, congresses, salesReps, vehicles, staff, appSettings, instagramLeads) + 2 mevcut feature genişletildi (budget: aylık hedef listesi + düzenleme, sales: müşteri join + yeni satış oluşturma). AI metin-sohbet desteği eklendi (`chatWithText`, Ollama dahil tüm sağlayıcılar). Tüm ekranlar tutarlı UI bileşenleri (Screen, ScreenHeader, ListItemCard, Card, Badge, TextField, Button) kullanıyor, offline yazma kuyruğu entegre. Şema değişikliği yok — mevcut tablolar kullanılıyor.
+
 ## [2.17.18] - 2026-08-08
 
 **Ekip Performansı sayfası eklendi (Faz 9):** gocust'un "Track team performance" ve "ARYA AI Suggestions" ekranlarından ilham alındı. Yeni `/ekip-performansi` sayfası: satış temsilcisi başına bu ayki Aktivite Sayısı (ziyaret+CRM aktivitesi) × Ciro dağılımını gösteren bir dağılım grafiği (medyan bölünmesiyle 4 çeyrek: Zayıf/Aktif ama Sonuçsuz/Az Aktif ama Verimli/Güçlü — gocust'un tam formülü bilinmediği için şeffaf kendi mantığımız), gerçek tahsilat riski özeti (toplam açık bakiye, gecikmiş tutar, ortalama gecikme günü, en riskli 5 doktor — mevcut `calculateReceivablesRisk`'ten), aylık ciro trendi (bu ay vs geçen ay %) ve bunların hepsine dayanan (uydurma sayı yok) 3 maddelik AI öneri kartı (mevcut AIService altyapısı). **Doktor bazlı aylık ciro hedefi** eklendi: Cari Kart > Finans sekmesine yeni `customer_revenue_targets` tablosundan beslenen bir "Aylık Hedef" kartı geldi (son 3 ay, hedef/gerçekleşen ilerleme çubuğu, kalem ikonundan düzenlenebilir).
