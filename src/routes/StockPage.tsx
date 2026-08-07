@@ -303,7 +303,7 @@ export function StockPage() {
 
   async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
     const summary = await importProductRows(rows, allProducts)
-    if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['products'] })
+    if (summary.added > 0 || (summary.updated ?? 0) > 0) await queryClient.invalidateQueries({ queryKey: ['products'] })
     return summary
   }
 

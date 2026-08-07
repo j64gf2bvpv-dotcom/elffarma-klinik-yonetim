@@ -50,25 +50,36 @@ export const PRODUCT_IMPORT_FIELD_HINTS: Record<string, string> = {
  * `summary.errors`), kullanıcı sadece onları düzeltip ayrıca tekrar
  * deneyebilir. (Önceden ya HEPSİ ya HİÇBİRİ şeklinde çalışıyordu — gerçek
  * Excel dosyalarında tek bir bozuk/başlıksız satır yüzünden onlarca geçerli
- * ürünün topluca reddedilmesi kötü bir deneyimdi.) Zaten var olan ürünler
- * (SKU/isim eşleşmesi) hata değil, atlanan kayıt sayılır. StockPage'in
- * Excel/Akıllı İçe Aktar'ı ile Yapay Zeka Analiz > Dosya Özetle'nin "ilgili
- * bölüme aktar"ı bu TEK fonksiyonu paylaşıyor. Sorumluluk çağırana ait:
- * `summary.added > 0` ise `['products']` query'sini invalidate etmek
- * çağıranın işi.
+ * ürünün topluca reddedilmesi kötü bir deneyimdi.)
+ *
+ * Dosyada zaten kayıtlı bir ürünle (SKU/isim eşleşmesi) karşılaşılırsa
+ * kayıt sessizce atlanmaz — dosyada bir miktar/stok değeri varsa ve mevcut
+ * `current_quantity`'den FARKLIYSA, `record_stock_movement` RPC'siyle (in/out
+ * + mutlak fark, bkz. stockCounts/api.ts'teki completeCount ile aynı desen —
+ * işareti kaybetmemek için) stok bu değere denkleştirilip `summary.updated`
+ * sayılır; hiç fark yoksa (ya da dosyada miktar hiç yoksa) gerçekten
+ * yapılacak bir şey olmadığı için atlanan kayıt sayılır. Kullanıcı "dosyada
+ * ne varsa hepsi işlensin, sessizce hiçbir şey yapılmadan 'zaten kayıtlı'
+ * denip geçilmesin" istiyor — bu davranış onu karşılıyor.
+ *
+ * StockPage'in Excel/Akıllı İçe Aktar'ı ile Yapay Zeka Analiz > Dosya
+ * Özetle'nin "ilgili bölüme aktar"ı bu TEK fonksiyonu paylaşıyor. Sorumluluk
+ * çağırana ait: `summary.added > 0 || summary.updated` ise `['products']`
+ * query'sini invalidate etmek çağıranın işi.
  */
 export async function importProductRows(
   rows: Record<string, unknown>[],
   existingProducts: Product[],
 ): Promise<ImportSummary> {
-  const existingSkus = new Set(existingProducts.filter((p) => p.sku).map((p) => p.sku))
-  const existingNames = new Set(existingProducts.map((p) => p.name.toLocaleLowerCase('tr')))
+  const existingBySku = new Map(existingProducts.filter((p) => p.sku).map((p) => [p.sku as string, p]))
+  const existingByName = new Map(existingProducts.map((p) => [p.name.toLocaleLowerCase('tr'), p]))
   const seenSkusInBatch = new Set<string>()
   const seenNamesInBatch = new Set<string>()
   const errors: string[] = []
   let skipped = 0
 
   const planned: { rowLabel: string; input: ProductInput; initialQty: number }[] = []
+  const quantityUpdates: { rowLabel: string; product: Product; newQty: number }[] = []
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]
@@ -80,13 +91,22 @@ export async function importProductRows(
     }
     const nameKey = name.toLocaleLowerCase('tr')
     const sku = readCell(row, 'SKU') || null
-    if (
-      (sku && existingSkus.has(sku)) ||
-      existingNames.has(nameKey) ||
-      seenNamesInBatch.has(nameKey) ||
-      (sku && seenSkusInBatch.has(sku))
-    ) {
-      skipped++
+    const existing = (sku && existingBySku.get(sku)) || existingByName.get(nameKey)
+
+    if (existing || seenNamesInBatch.has(nameKey) || (sku && seenSkusInBatch.has(sku))) {
+      if (existing) {
+        const qtyText = readCell(row, 'Başlangıç Stoğu', 'Stok')
+        const qty = qtyText ? Number(qtyText.replace(/[^\d.-]/g, '')) : NaN
+        if (Number.isFinite(qty) && qty !== existing.current_quantity) {
+          quantityUpdates.push({ rowLabel, product: existing, newQty: qty })
+        } else {
+          skipped++
+        }
+      } else {
+        // Dosyanın kendi içinde tekrar eden bir satır (aynı ürün iki kez
+        // listelenmiş) — ikinci kez işlemeye/güncellemeye gerek yok.
+        skipped++
+      }
       continue
     }
 
@@ -130,7 +150,7 @@ export async function importProductRows(
     })
   }
 
-  const summary: ImportSummary = { added: 0, skipped, errors }
+  const summary: ImportSummary = { added: 0, skipped, errors, updated: 0 }
   for (const p of planned) {
     try {
       const created = await createProduct(p.input)
@@ -145,6 +165,24 @@ export async function importProductRows(
       summary.added++
     } catch (err) {
       summary.errors.push(`${p.rowLabel}: ${p.input.name} — ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
+    }
+  }
+
+  for (const u of quantityUpdates) {
+    try {
+      const diff = u.newQty - u.product.current_quantity
+      await recordStockMovement({
+        product_id: u.product.id,
+        movement_type: diff > 0 ? 'in' : 'out',
+        quantity: Math.abs(diff),
+        reason: 'İçe aktarma — stok miktarını dosyayla eşitleme',
+        note: `Önceki: ${u.product.current_quantity}, Yeni: ${u.newQty}`,
+      })
+      summary.updated = (summary.updated ?? 0) + 1
+    } catch (err) {
+      summary.errors.push(
+        `${u.rowLabel}: ${u.product.name} — ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`,
+      )
     }
   }
 

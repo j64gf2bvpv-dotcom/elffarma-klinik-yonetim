@@ -80,7 +80,8 @@ export function SmartImportDialog({ title, targetLabel, fieldHeaders, fieldHints
     setImporting(true)
     try {
       const summary = await onImport(rows)
-      toast.success(`${summary.added} kayıt eklendi`, {
+      const updatedText = summary.updated ? `, ${summary.updated} güncellendi` : ''
+      toast.success(`${summary.added} kayıt eklendi${updatedText}`, {
         description:
           summary.skipped > 0 || summary.errors.length > 0
             ? `${summary.skipped} atlandı, ${summary.errors.length} hata`

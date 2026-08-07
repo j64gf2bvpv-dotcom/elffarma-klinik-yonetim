@@ -268,7 +268,9 @@ export function AIInsightsPage() {
     switch (category) {
       case 'urun': {
         const summary = await importProductRows(rows, allProducts)
-        if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['products'] })
+        if (summary.added > 0 || (summary.updated ?? 0) > 0) {
+          await queryClient.invalidateQueries({ queryKey: ['products'] })
+        }
         return summary
       }
       case 'doktor': {
@@ -311,10 +313,15 @@ export function AIInsightsPage() {
       setExtractedRows(rows)
       setCorrectionDrafts({})
       setRouteResult({ category: targetCategory, summary })
-      if (summary.added > 0) {
-        toast.success(`${summary.added} kayıt "${CATEGORY_LABELS[targetCategory]}" bölümüne eklendi`)
+      const updatedCount = summary.updated ?? 0
+      if (summary.added > 0 || updatedCount > 0) {
+        const parts = [
+          summary.added > 0 ? `${summary.added} eklendi` : '',
+          updatedCount > 0 ? `${updatedCount} güncellendi` : '',
+        ].filter(Boolean)
+        toast.success(`"${CATEGORY_LABELS[targetCategory]}" bölümü: ${parts.join(', ')}`)
       } else {
-        toast.info('Eklenecek yeni kayıt bulunamadı')
+        toast.info('Eklenecek/güncellenecek kayıt bulunamadı')
       }
     } catch (err) {
       toast.error('Aktarılamadı', { description: err instanceof Error ? err.message : undefined })
@@ -511,7 +518,8 @@ export function AIInsightsPage() {
                 <p>
                   <strong>{fileName}</strong> dosyası <strong>{CATEGORY_LABELS[routeResult.category]}</strong> bölümüne
                   aktarıldı: <strong>{routeResult.summary.added}</strong> kayıt eklendi
-                  {routeResult.summary.skipped > 0 ? `, ${routeResult.summary.skipped} atlandı (zaten kayıtlı)` : ''}
+                  {(routeResult.summary.updated ?? 0) > 0 ? `, ${routeResult.summary.updated} kayıt güncellendi` : ''}
+                  {routeResult.summary.skipped > 0 ? `, ${routeResult.summary.skipped} atlandı (değişiklik yok)` : ''}
                   {routeResult.summary.errors.length > 0 ? `, ${routeResult.summary.errors.length} hata` : ''}.
                 </p>
                 {routeResult.summary.errors.length > 0 && (

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.7] - 2026-08-07
+
+**Ürün içe aktarmada "zaten kayıtlı" artık sessizce hiçbir şey yapmıyor — stok miktarı dosyayla eşitleniyor:** Dosyadaki bir ürün adı sistemde zaten kayıtlıysa (ör. mevcut stok listesini yeniden yüklerken) önceden sadece "atlandı" deniyordu, dosyadaki güncel adet hiçbir işe yaramıyordu. Artık dosyada bir miktar varsa ve sistemdeki güncel stoktan farklıysa, `record_stock_movement` ile (denetim kaydı bırakarak) stok o değere eşitleniyor ve "X kayıt güncellendi" olarak raporlanıyor; miktar zaten aynıysa hâlâ "atlandı" (yapılacak bir şey yok) deniyor. Amaç: dosyadaki hiçbir satır sessizce yok sayılmasın. Şema değişikliği yok.
+
 ## [2.17.6] - 2026-08-07
 
 **Excel'de birleştirilmiş hücreler artık "eksik veri" gibi görünmüyor + hatalı satırları elle düzeltip tekrar deneme:** Bir ürün adı hücresi birleştirilmişse (merge), ham veride değer sadece sol-üst hücrede duruyordu — okuyucu bunu "boş" sayıp o satırı "Ürün adı eksik" diye reddediyordu. Artık dosyanın gerçek merge bilgisi kullanılarak birleştirilmiş aralıktaki tüm hücrelere değer kopyalanıyor (Excel'de göze görünen ne ise okunan da o). Ayrıca Yapay Zeka Analiz > Dosya Özetle'de aktarım sonrası hâlâ hatalı satır kalırsa, dosyayı yeniden yüklemeden doğrudan sayfa içinde her alanı elle düzeltip "Düzeltilenleri Tekrar Dene" ile sadece o satırları yeniden gönderebiliyorsunuz. Şema değişikliği yok.

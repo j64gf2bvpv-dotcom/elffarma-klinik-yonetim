@@ -104,6 +104,11 @@ export interface ImportSummary {
   added: number
   skipped: number
   errors: string[]
+  /** Yeni kayıt oluşturmak yerine VAR OLAN bir kaydı güncelleyen import
+   * fonksiyonlarında dolu gelir (ör. dosyada zaten kayıtlı bir ürün varsa
+   * stok miktarını dosyadaki değere eşitleme) — bunu desteklemeyenlerde
+   * undefined kalır. */
+  updated?: number
 }
 
 /**
