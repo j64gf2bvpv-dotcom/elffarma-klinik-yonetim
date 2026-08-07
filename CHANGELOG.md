@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.7] - 2026-08-07
+
+**Doktor/Cari içe aktarmada telefon eksikliği artık satırı reddetmiyor:** "Ad Soyad" ve "Telefon"un ikisi de doluysa geçerli sayılan, telefon eksik ya da tanınmayan bir formatta (ör. kaynak Excel'de "yok" gibi bir metin) olduğunda tüm satırı "Geçersiz telefon numarası" diye atan kural kaldırıldı. Artık sadece Ad Soyad zorunlu — telefon (ve zaten opsiyonel olan TC/Vergi No/Adres/KDV gibi diğer alanlar) eksik veya hatalı da olsa kayıt, dosyada gerçekten ne varsa onunla ekleniyor; telefon sadece normalize edilebiliyorsa mükerrer numara kontrolünde kullanılıyor. Hem CustomersPage'in kendi Akıllı İçe Aktar'ını hem Dosya Özetle'nin "Doktor/Cari bölümüne aktar"ını aynı anda kapsıyor (ortak `importCustomerRows`). Şema değişikliği yok.
+
 ## [2.17.6] - 2026-08-07
 
 **Excel'de birleştirilmiş hücreler artık "eksik veri" gibi görünmüyor + hatalı satırları elle düzeltip tekrar deneme:** Bir ürün adı hücresi birleştirilmişse (merge), ham veride değer sadece sol-üst hücrede duruyordu — okuyucu bunu "boş" sayıp o satırı "Ürün adı eksik" diye reddediyordu. Artık dosyanın gerçek merge bilgisi kullanılarak birleştirilmiş aralıktaki tüm hücrelere değer kopyalanıyor (Excel'de göze görünen ne ise okunan da o). Ayrıca Yapay Zeka Analiz > Dosya Özetle'de aktarım sonrası hâlâ hatalı satır kalırsa, dosyayı yeniden yüklemeden doğrudan sayfa içinde her alanı elle düzeltip "Düzeltilenleri Tekrar Dene" ile sadece o satırları yeniden gönderebiliyorsunuz. Şema değişikliği yok.
