@@ -16,6 +16,7 @@ import {
   ClipboardX,
   ClipboardList,
   Boxes,
+  CheckSquare,
   Wallet,
   PackageOpen,
   CloudUpload,
@@ -75,6 +76,7 @@ const navItems: { to: string; label: string; key: NavKey; end?: boolean }[] = [
   { to: '/musteriler', label: tr.nav.customers, key: 'customers' },
   { to: '/doktor-ziyaretleri', label: tr.nav.doctorVisits, key: 'doctorVisits' },
   { to: '/hatirlatmalar', label: tr.nav.reminders, key: 'reminders' },
+  { to: '/gorevler', label: tr.nav.tasks, key: 'tasks' },
   { to: '/ajanda', label: tr.nav.agenda, key: 'agenda' },
   { to: '/prim', label: tr.nav.commissions, key: 'commissions' },
   { to: '/crm', label: tr.nav.crm, key: 'crm' },
@@ -273,6 +275,9 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
   const visibleCongressStockShortfall = alerts.congressStockShortfall.filter(
     (c) => !dismissed.has(`shortfall:${c.id}`) && !isSnoozed(`shortfall:${c.id}`),
   )
+  const visibleOverdueTasks = alerts.overdueTasks.filter(
+    (t) => !dismissed.has(`task:${t.id}`) && !isSnoozed(`task:${t.id}`),
+  )
 
   const visibleTotal =
     visibleDueReminders.length +
@@ -283,7 +288,8 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
     visibleDoctorsWithBalance.length +
     visiblePendingProducts.length +
     visibleIncompleteChecklists.length +
-    visibleCongressStockShortfall.length
+    visibleCongressStockShortfall.length +
+    visibleOverdueTasks.length
 
   // Bildirim ziline tıklanıp açılan liste okunduktan sonra KAPATILINCA (zile
   // tekrar tıklayınca veya dışarı tıklayınca) o an görünen bildirimler geçici
@@ -303,6 +309,7 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
       ...visiblePendingProducts.map((p) => `pending:${p.id}`),
       ...visibleIncompleteChecklists.map((c) => `checklist:${c.id}`),
       ...visibleCongressStockShortfall.map((c) => `shortfall:${c.id}`),
+      ...visibleOverdueTasks.map((t) => `task:${t.id}`),
     ])
   }
 
@@ -495,6 +502,16 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
                   <NotifIcon icon={Presentation} tone="primary" />
                   <span className="text-xs">
                     <span className="font-medium">{c.name}</span> kongresi yaklaşıyor
+                  </span>
+                </Link>
+              </DropdownMenuItem>
+            ))}
+            {visibleOverdueTasks.slice(0, 3).map((t) => (
+              <DropdownMenuItem key={t.id} asChild onSelect={() => dismiss(`task:${t.id}`)}>
+                <Link to="/gorevler" className="flex items-start gap-2">
+                  <NotifIcon icon={CheckSquare} />
+                  <span className="text-xs">
+                    <span className="font-medium">{t.title}</span> görevinin vadesi geçti
                   </span>
                 </Link>
               </DropdownMenuItem>

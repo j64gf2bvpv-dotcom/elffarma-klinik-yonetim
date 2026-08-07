@@ -500,6 +500,24 @@ export interface Reminder {
   created_at: string
 }
 
+export type TaskStatus = 'bekliyor' | 'devam_ediyor' | 'tamamlandi' | 'iptal'
+export type TaskPriority = 'dusuk' | 'normal' | 'yuksek'
+
+export interface Task {
+  id: string
+  title: string
+  description: string | null
+  status: TaskStatus
+  priority: TaskPriority
+  due_date: string | null
+  assigned_to: string | null
+  customer_id: string | null
+  completed_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface InstagramLead {
   id: string
   full_name: string

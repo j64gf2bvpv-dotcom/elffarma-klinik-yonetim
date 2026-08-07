@@ -3,7 +3,7 @@ import { format, isToday, isPast } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { BellRing, Trash2, AlertTriangle, ClipboardX, ClipboardList, CalendarClock, Wallet, PackageOpen, Presentation, Boxes } from 'lucide-react'
+import { BellRing, Trash2, AlertTriangle, ClipboardX, ClipboardList, CalendarClock, Wallet, PackageOpen, Presentation, Boxes, CheckSquare } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -107,6 +107,7 @@ export function RemindersPage() {
   const visibleCongressStockShortfall = alerts.congressStockShortfall.filter(
     (c) => !dismissed.has(`shortfall:${c.id}`),
   )
+  const visibleOverdueTasks = alerts.overdueTasks.filter((t) => !dismissed.has(`task:${t.id}`))
 
   const systemAlertCount =
     visibleCriticalStock.length +
@@ -116,7 +117,8 @@ export function RemindersPage() {
     visibleDoctorsWithBalance.length +
     visiblePendingProducts.length +
     visibleIncompleteChecklists.length +
-    visibleCongressStockShortfall.length
+    visibleCongressStockShortfall.length +
+    visibleOverdueTasks.length
 
   function handleDeleteAll() {
     const alertKeys = [
@@ -129,6 +131,7 @@ export function RemindersPage() {
       ...visibleUpcomingCongresses.map((c) => `congress:${c.id}`),
       ...visibleIncompleteChecklists.map((c) => `checklist:${c.id}`),
       ...visibleCongressStockShortfall.map((c) => `shortfall:${c.id}`),
+      ...visibleOverdueTasks.map((t) => `task:${t.id}`),
     ]
     if (reminders.length === 0 && alertKeys.length === 0) return
     dismissMany(alertKeys)
@@ -257,6 +260,15 @@ export function RemindersPage() {
                   icon={Boxes}
                   title={c.name}
                   subtitle={`Etkinlik bitti ama ${c.productCount} üründe ${c.pendingQty} adet hâlâ "Götürüldü" durumunda`}
+                />
+              ))}
+              {visibleOverdueTasks.map((t) => (
+                <AlertRow
+                  key={`task-${t.id}`}
+                  to="/gorevler"
+                  icon={CheckSquare}
+                  title={t.title}
+                  subtitle="Görev vadesi geçti"
                 />
               ))}
             </CardContent>

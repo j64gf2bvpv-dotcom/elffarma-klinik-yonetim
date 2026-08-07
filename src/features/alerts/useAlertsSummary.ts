@@ -4,6 +4,7 @@ import { useCustomers, useAllPendingProducts } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useCongresses, useAllChecklistItems, useAllCongressStockItems } from '@/features/congresses/hooks'
 import { useReminders } from '@/features/reminders/hooks'
+import { useTasks } from '@/features/tasks/hooks'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 import { getExpiryStatus } from '@/lib/expiry'
 
@@ -14,6 +15,7 @@ export function useAlertsSummary() {
   const { data: allPayments = [] } = usePayments({})
   const { data: pendingProducts = [] } = useAllPendingProducts()
   const { data: reminders = [] } = useReminders()
+  const { data: tasks = [] } = useTasks()
   const { data: productLots = [] } = useAllProductLots()
   const { data: allChecklistItems = [] } = useAllChecklistItems()
   const { data: allCongressStockItems = [] } = useAllCongressStockItems()
@@ -82,6 +84,10 @@ export function useAlertsSummary() {
     .filter((r) => !r.is_done && r.due_date <= todayStr)
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
 
+  const overdueTasks = tasks
+    .filter((t) => t.status !== 'tamamlandi' && t.status !== 'iptal' && t.due_date != null && t.due_date <= todayStr)
+    .sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? ''))
+
   // Etkinliği bitmiş (bugünden önce sona ermiş) ama "Götürüldü (Bekliyor)"
   // durumunda kalan — yani kullanıldı/sarf edildi/geri döndü olarak
   // işaretlenmemiş — ürünü olan kongre/workshop'lar. Etkinlik hâlâ devam
@@ -125,7 +131,8 @@ export function useAlertsSummary() {
     pendingProducts.length +
     dueReminders.length +
     incompleteChecklists.length +
-    congressStockShortfall.length
+    congressStockShortfall.length +
+    overdueTasks.length
 
   return {
     criticalStock,
@@ -138,6 +145,7 @@ export function useAlertsSummary() {
     incompleteChecklists,
     dueReminders,
     congressStockShortfall,
+    overdueTasks,
     total,
   }
 }

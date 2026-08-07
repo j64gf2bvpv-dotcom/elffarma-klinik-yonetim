@@ -23,6 +23,7 @@ import { CongressDetailPage } from '@/routes/CongressDetailPage'
 import { DoctorVisitsPage } from '@/routes/DoctorVisitsPage'
 import { SalesPage } from '@/routes/SalesPage'
 import { RemindersPage } from '@/routes/RemindersPage'
+import { TasksPage } from '@/routes/TasksPage'
 import { AgendaPage } from '@/routes/AgendaPage'
 import { VehiclesPage } from '@/routes/VehiclesPage'
 import { SettingsPage } from '@/routes/SettingsPage'
@@ -73,6 +74,7 @@ function App() {
             <Route path="doktor-ziyaretleri" element={<DoctorVisitsPage />} />
             <Route path="satislar" element={<SalesPage />} />
             <Route path="hatirlatmalar" element={<RemindersPage />} />
+            <Route path="gorevler" element={<TasksPage />} />
             <Route path="ajanda" element={<AgendaPage />} />
             <Route path="araclar" element={<VehiclesPage />} />
             <Route element={<AdminRoute />}>

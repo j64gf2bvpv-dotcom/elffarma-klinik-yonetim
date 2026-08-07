@@ -15,6 +15,7 @@ export const tr = {
     expenses: 'Giderler',
     budget: 'Bütçe Yılı',
     reminders: 'Hatırlatmalar',
+    tasks: 'Görevler',
     agenda: 'Ajanda',
     vehicles: 'Araçlar',
     settings: 'Ayarlar',
@@ -47,6 +48,17 @@ export const tr = {
     muzakere: 'Müzakere',
     kazanildi: 'Kazanıldı',
     kaybedildi: 'Kaybedildi',
+  } as Record<string, string>,
+  taskStatus: {
+    bekliyor: 'Bekliyor',
+    devam_ediyor: 'Devam Ediyor',
+    tamamlandi: 'Tamamlandı',
+    iptal: 'İptal',
+  } as Record<string, string>,
+  taskPriority: {
+    dusuk: 'Düşük',
+    normal: 'Normal',
+    yuksek: 'Yüksek',
   } as Record<string, string>,
   staffRole: {
     admin: 'Yönetici',

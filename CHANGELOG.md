@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.11] - 2026-08-07
+
+**Görev Yönetimi** (yeni modül): Personele atanabilen, durum (Bekliyor/Devam Ediyor/Tamamlandı/İptal) ve öncelik (Düşük/Normal/Yüksek) taşıyan, opsiyonel olarak bir doktora bağlanabilen genel görevler için yeni bir `Görevler` sayfası eklendi (Hatırlatmalar'ın altına, `/gorevler`). Durum bazlı pano görünümü, "Bana Atananlar" filtresi ve gecikmiş görevler için bildirim ziline/Hatırlatmalar sayfasına otomatik uyarı entegrasyonu var. Yeni `tasks` tablosu (`supabase/schema.sql`), diğer tüm tablolarla aynı paylaşımlı-güven RLS modelini kullanıyor — Supabase SQL editöründe şemanın güncel halini tekrar çalıştırman gerekiyor.
+
 ## [2.17.10] - 2026-08-07
 
 **Ürün içe aktarmada "zaten kayıtlı" artık sessizce hiçbir şey yapmıyor — stok miktarı dosyayla eşitleniyor:** Dosyadaki bir ürün adı sistemde zaten kayıtlıysa (ör. mevcut stok listesini yeniden yüklerken) önceden sadece "atlandı" deniyordu, dosyadaki güncel adet hiçbir işe yaramıyordu. Artık dosyada bir miktar varsa ve sistemdeki güncel stoktan farklıysa, `record_stock_movement` ile (denetim kaydı bırakarak) stok o değere eşitleniyor ve "X kayıt güncellendi" olarak raporlanıyor; miktar zaten aynıysa hâlâ "atlandı" (yapılacak bir şey yok) deniyor. Amaç: dosyadaki hiçbir satır sessizce yok sayılmasın. Şema değişikliği yok.

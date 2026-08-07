@@ -1970,6 +1970,44 @@ begin
 end;
 $$;
 
+-- =========================================================
+-- 42. TASKS (Görev Yönetimi)
+-- =========================================================
+-- Genel amaçlı görev/iş takibi — CRM aktivitelerinin "follow_up_date"i veya
+-- reminders'ın tek seferlik hatırlatmalarından farklı olarak, bir personele
+-- atanabilen, durum (bekliyor/devam ediyor/tamamlandı/iptal) ve öncelik
+-- taşıyan, opsiyonel olarak bir doktor/cariye bağlanabilen kalemler.
+create table if not exists public.tasks (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  status text not null default 'bekliyor' check (
+    status in ('bekliyor', 'devam_ediyor', 'tamamlandi', 'iptal')
+  ),
+  priority text not null default 'normal' check (priority in ('dusuk', 'normal', 'yuksek')),
+  due_date date,
+  assigned_to uuid references public.staff (id) on delete set null,
+  customer_id uuid references public.customers (id) on delete set null,
+  completed_at timestamptz,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists tasks_due_date_idx on public.tasks (due_date);
+create index if not exists tasks_assigned_to_idx on public.tasks (assigned_to);
+create index if not exists tasks_status_idx on public.tasks (status);
+
+drop trigger if exists set_updated_at on public.tasks;
+create trigger set_updated_at before update on public.tasks
+  for each row execute function public.set_updated_at();
+
+alter table public.tasks enable row level security;
+drop policy if exists "tasks_all_staff" on public.tasks;
+create policy "tasks_all_staff" on public.tasks for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.tasks is 'Görev Yönetimi — personele atanabilen, durum/öncelik taşıyan genel iş kalemleri';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

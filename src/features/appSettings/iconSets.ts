@@ -67,6 +67,10 @@ import {
   UserSearch,
   Contact2,
   Car,
+  CheckSquare,
+  ListChecks,
+  ClipboardCheck,
+  SquareCheckBig,
 } from 'lucide-react'
 
 export type NavKey =
@@ -85,6 +89,7 @@ export type NavKey =
   | 'expenses'
   | 'budget'
   | 'reminders'
+  | 'tasks'
   | 'agenda'
   | 'vehicles'
   | 'settings'
@@ -121,6 +126,7 @@ export const iconSets: IconSet[] = [
       expenses: ReceiptText,
       budget: Target,
       reminders: BellRing,
+      tasks: CheckSquare,
       agenda: CalendarDays,
       vehicles: Car,
       settings: SlidersHorizontal,
@@ -147,6 +153,7 @@ export const iconSets: IconSet[] = [
       expenses: CreditCard,
       budget: TrendingUp,
       reminders: BellRing,
+      tasks: SquareCheckBig,
       agenda: CalendarDays,
       vehicles: Car,
       settings: Settings2,
@@ -173,6 +180,7 @@ export const iconSets: IconSet[] = [
       expenses: Coins,
       budget: PiggyBank,
       reminders: BellRing,
+      tasks: ClipboardCheck,
       agenda: CalendarDays,
       vehicles: Car,
       settings: Settings,
@@ -199,6 +207,7 @@ export const iconSets: IconSet[] = [
       expenses: Wallet,
       budget: LineChart,
       reminders: AlarmClock,
+      tasks: ListChecks,
       agenda: CalendarDays,
       vehicles: Car,
       settings: Cog,
@@ -225,6 +234,7 @@ export const iconSets: IconSet[] = [
       expenses: Receipt,
       budget: Target,
       reminders: Bell,
+      tasks: ListChecks,
       agenda: Calendar,
       vehicles: Car,
       settings: Settings,
