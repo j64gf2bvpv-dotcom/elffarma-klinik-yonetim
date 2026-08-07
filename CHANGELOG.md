@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.8] - 2026-08-07
+
+**Dosya Özetle / Akıllı İçe Aktar artık çok sekmeli Excel dosyalarını okuyor:** Daha önce bir Excel dosyasının SADECE ilk sayfası okunuyordu — bir sekmede doktorlar, başka bir sekmede ürünler gibi birden fazla bölüm içeren dosyalarda diğer sekmeler tamamen atlanıyordu. Artık çalışma kitabındaki (workbook) tüm sekmeler okunuyor. Yapay Zeka Analiz > Dosya Özetle'de çok sekmeli bir dosya yüklendiğinde her sekme AYRI bir bölüm olarak ele alınıyor: yapay zeka her sekme için ayrı ayrı kategori (Stok/Ürün, Doktor/Cari, Tahsilat, Stok Kartı) ve özet çıkarıyor, her sekme kendi hedef bölümüne (gerekirse elle düzeltilerek) ayrı ayrı aktarılabiliyor ya da tek "Tümünü İlgili Bölümlere Aktar" butonuyla hepsi birden aktarılabiliyor. Akıllı İçe Aktar (tek hedefli, ör. sadece "Doktorları İçe Aktar") tarafında da aynı sınıra takılmadan, aynı türde veri içeren birden fazla sekme (ör. "Doktorlar 2025", "Doktorlar 2026") tek seferde okunup birleştiriliyor. Şema değişikliği yok.
+
 ## [2.17.7] - 2026-08-07
 
 **Doktor/Cari içe aktarmada telefon eksikliği artık satırı reddetmiyor:** "Ad Soyad" ve "Telefon"un ikisi de doluysa geçerli sayılan, telefon eksik ya da tanınmayan bir formatta (ör. kaynak Excel'de "yok" gibi bir metin) olduğunda tüm satırı "Geçersiz telefon numarası" diye atan kural kaldırıldı. Artık sadece Ad Soyad zorunlu — telefon (ve zaten opsiyonel olan TC/Vergi No/Adres/KDV gibi diğer alanlar) eksik veya hatalı da olsa kayıt, dosyada gerçekten ne varsa onunla ekleniyor; telefon sadece normalize edilebiliyorsa mükerrer numara kontrolünde kullanılıyor. Hem CustomersPage'in kendi Akıllı İçe Aktar'ını hem Dosya Özetle'nin "Doktor/Cari bölümüne aktar"ını aynı anda kapsıyor (ortak `importCustomerRows`). Şema değişikliği yok.

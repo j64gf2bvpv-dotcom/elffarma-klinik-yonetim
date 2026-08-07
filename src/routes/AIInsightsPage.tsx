@@ -71,6 +71,24 @@ const CATEGORY_IMPORT_CONFIG: Record<
   },
 }
 
+/** Yüklenen dosyanın bir "bölümü" — tek sayfalık bir dosyada bu tektir, çok
+ * sekmeli bir Excel'de her sekme kendi FileSection'ıdır (bkz. `sections`). */
+interface FileSection {
+  /** Çok sekmeli bir dosyada sekme adı; tek bölümlü dosyalarda dosya adı. */
+  name: string
+  content: ExtractedContent
+  summary: string
+  category: FileCategory
+  manualCategory: RoutableCategory | ''
+  routing: boolean
+  routeResult: { category: RoutableCategory; summary: ImportSummary } | null
+  // AI'dan çıkarılan ham satırlar — hata veren satırları elle düzeltip TEK
+  // TEK "tekrar dene" yapabilmek için saklanıyor (bkz. handleRetrySection).
+  extractedRows: Record<string, unknown>[] | null
+  // Kullanıcının hatalı satırlarda yaptığı düzeltmeler — satır indeksine göre.
+  correctionDrafts: Record<number, Record<string, unknown>>
+}
+
 export function AIInsightsPage() {
   const aiService = useAIService()
   const snapshot = useBusinessSnapshot()
@@ -88,23 +106,13 @@ export function AIInsightsPage() {
   const [suggestionsLoading, setSuggestionsLoading] = React.useState(false)
 
   const [fileName, setFileName] = React.useState('')
-  const [fileContent, setFileContent] = React.useState<ExtractedContent | null>(null)
-  const [fileSummary, setFileSummary] = React.useState('')
-  const [fileCategory, setFileCategory] = React.useState<FileCategory | null>(null)
-  // AI'ın tespiti yanlış çıkarsa ya da dosya örnek şablona benzemediği için
-  // "bilinmiyor" dönerse, kullanıcı hedef bölümü elle seçip yine de
-  // aktarabilsin diye — akış hiçbir zaman çıkmaz sokağa girmesin.
-  const [manualCategory, setManualCategory] = React.useState<RoutableCategory | ''>('')
   const [fileLoading, setFileLoading] = React.useState(false)
-  const [routing, setRouting] = React.useState(false)
-  const [routeResult, setRouteResult] = React.useState<{ category: RoutableCategory; summary: ImportSummary } | null>(
-    null,
-  )
-  // AI'dan çıkarılan ham satırlar — hata veren satırları elle düzeltip TEK
-  // TEK "tekrar dene" yapabilmek için saklanıyor (bkz. handleRetryFailedRows).
-  const [extractedRows, setExtractedRows] = React.useState<Record<string, unknown>[] | null>(null)
-  // Kullanıcının hatalı satırlarda yaptığı düzeltmeler — satır indeksine göre.
-  const [correctionDrafts, setCorrectionDrafts] = React.useState<Record<number, Record<string, unknown>>>({})
+  // Yüklenen dosya tek sayfalık (PDF/Word/resim/tek sekmeli Excel) ise TEK
+  // elemanlı, çok sekmeli bir Excel çalışma kitabıysa (ör. bir sekmede
+  // doktorlar, başka bir sekmede ürünler) sekme SAYISI kadar elemanlıdır —
+  // her biri kendi özetini/kategorisini/aktarım durumunu bağımsız tutar.
+  const [sections, setSections] = React.useState<FileSection[]>([])
+  const [bulkRouting, setBulkRouting] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   // "İlgili bölüme aktar" adımında hangi hedefe yazılacağını belirlemek için
@@ -183,73 +191,110 @@ export function AIInsightsPage() {
    * ait olduğunu da (kategori) belirlemesi istenir — tanınırsa aşağıda
    * "İlgili bölüme aktar" butonu çıkar (bkz. handleRouteToTarget).
    */
+  const systemCategorizeMessage =
+    'Sen bu klinik yönetim programının bir parçasısın. Kullanıcının yüklediği belgeyi/sayfayı dikkatlice, EKSİKSİZ tara. ' +
+    'İki şeyi belirle:\n' +
+    '(1) "kategori": Bu veri programın hangi bölümüne ait — TAM OLARAK şu seçeneklerden biri: ' +
+    '"urun" (stok/ürün kataloğu: ürün adı, kod, fiyat, stok miktarı gibi bilgiler), ' +
+    '"doktor" (doktor/cari kart: isim, telefon, klinik/hastane, adres gibi), ' +
+    '"tahsilat" (ödeme/tahsilat kaydı: doktor, tutar, tarih, ödeme yöntemi), ' +
+    '"stok_hareket" (geçmiş satış/numune dökümü: hangi doktora hangi üründen kaç adet, ne zaman verildiği), ' +
+    '"bilinmiyor" (yukarıdakilerden hiçbiri değilse ya da emin değilsen).\n' +
+    '(2) "ozet": Kısa ama isabetli bir özet — bu bölüm ne içeriyor, kaç satır/kayıt var, hangi alanlar ' +
+    'göze çarpıyor, dikkat çekici bir örüntü/anormallik/hata var mı.\n' +
+    'SADECE şu JSON objesini döndür (başka açıklama/metin ekleme): { "kategori": "...", "ozet": "..." }. ' +
+    'SADECE TÜRKÇE yaz — başka bir dilde tek kelime bile yazma.'
+
+  /** Tek bir bölümü (tam dosya ya da bir Excel sekmesi) AI'a kategori+özet
+   * için sorar — çok sekmeli dosyalarda handleFileUpload bunu her sekme için
+   * ayrı ayrı çağırır. */
+  async function categorizeSection(
+    displayLabel: string,
+    content: ExtractedContent,
+  ): Promise<{ kategori: FileCategory; ozet: string }> {
+    let result
+    if (content.kind === 'table') {
+      const rows = content.sheets[0]?.rows ?? []
+      const preview = rows.slice(0, 50)
+      result = await aiService.chat([
+        { role: 'system', content: systemCategorizeMessage },
+        {
+          role: 'user',
+          content: `Dosya/sayfa: ${displayLabel}\nToplam satır (bu örnekte): ${rows.length}\n\nÖrnek veri (JSON):\n${JSON.stringify(preview, null, 2)}`,
+        },
+      ])
+    } else if (content.kind === 'image') {
+      result = await aiService.chat([
+        { role: 'system', content: systemCategorizeMessage },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: `Dosya: ${displayLabel} — sayfa görselleri ekte, dikkatlice oku.` },
+            ...content.dataUrls.map((url) => ({ type: 'image_url' as const, image_url: { url } })),
+          ],
+        },
+      ])
+    } else {
+      result = await aiService.chat([
+        { role: 'system', content: systemCategorizeMessage },
+        { role: 'user', content: `Dosya: ${displayLabel}\n\nBelge içeriği:\n${content.text}` },
+      ])
+    }
+
+    const parsed = parseAiJsonObject(result.content)
+    const kategoriRaw = typeof parsed.kategori === 'string' ? parsed.kategori : 'bilinmiyor'
+    const kategori = (CATEGORY_VALUES as string[]).includes(kategoriRaw) ? (kategoriRaw as FileCategory) : 'bilinmiyor'
+    const ozet = typeof parsed.ozet === 'string' && parsed.ozet ? parsed.ozet : 'Özet oluşturulamadı.'
+    return { kategori, ozet }
+  }
+
+  /**
+   * Excel/CSV, PDF, Word (.docx), resim veya .txt — hepsini aynı çıkarma
+   * mantığıyla (bkz. Akıllı İçe Aktar / AI Asistan'ın da kullandığı
+   * extractFileContent) okuyup AI'a özetletir. Taranmış/görsel PDF'lerde
+   * metin katmanı yoksa otomatik olarak sayfa görsellerine düşülüp vision
+   * ile okunuyor. Bir Excel dosyasında BİRDEN FAZLA sekme varsa (ör. bir
+   * sekmede doktorlar, başka bir sekmede ürünler) her sekme AYRI bir "bölüm"
+   * (FileSection) olarak ele alınır ve TEK TEK kategori+özet için AI'a
+   * sorulur — böylece karışık/çok bölümlü bir dosyanın tamamı, her sekme
+   * kendi doğru hedefine yönlendirilerek içeri aktarılabilir (bkz.
+   * handleRouteSection / handleRouteAllSections).
+   */
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     setFileLoading(true)
-    setFileSummary('')
-    setFileCategory(null)
-    setManualCategory('')
-    setRouteResult(null)
-    setExtractedRows(null)
-    setCorrectionDrafts({})
-    setFileContent(null)
+    setSections([])
     setFileName(file.name)
     try {
       const content = await extractFileContent(file)
-      setFileContent(content)
+      const rawSections: { name: string; content: ExtractedContent }[] =
+        content.kind === 'table'
+          ? content.sheets
+              .filter((sheet) => sheet.rows.length > 0)
+              .map((sheet) => ({ name: sheet.name, content: { kind: 'table', sheets: [sheet] } as ExtractedContent }))
+          : [{ name: file.name, content }]
 
-      const systemMessage =
-        'Sen bu klinik yönetim programının bir parçasısın. Kullanıcının yüklediği belgeyi dikkatlice, EKSİKSİZ tara. ' +
-        'İki şeyi belirle:\n' +
-        '(1) "kategori": Bu veri programın hangi bölümüne ait — TAM OLARAK şu seçeneklerden biri: ' +
-        '"urun" (stok/ürün kataloğu: ürün adı, kod, fiyat, stok miktarı gibi bilgiler), ' +
-        '"doktor" (doktor/cari kart: isim, telefon, klinik/hastane, adres gibi), ' +
-        '"tahsilat" (ödeme/tahsilat kaydı: doktor, tutar, tarih, ödeme yöntemi), ' +
-        '"stok_hareket" (geçmiş satış/numune dökümü: hangi doktora hangi üründen kaç adet, ne zaman verildiği), ' +
-        '"bilinmiyor" (yukarıdakilerden hiçbiri değilse ya da emin değilsen).\n' +
-        '(2) "ozet": Kısa ama isabetli bir özet — belge ne içeriyor, kaç satır/kayıt/sayfa var, hangi alanlar ' +
-        'göze çarpıyor, dikkat çekici bir örüntü/anormallik/hata var mı.\n' +
-        'SADECE şu JSON objesini döndür (başka açıklama/metin ekleme): { "kategori": "...", "ozet": "..." }. ' +
-        'SADECE TÜRKÇE yaz — başka bir dilde tek kelime bile yazma.'
+      if (rawSections.length === 0) throw new Error('Dosyada okunacak veri bulunamadı')
 
-      let result
-      if (content.kind === 'table') {
-        const preview = content.rows.slice(0, 50)
-        result = await aiService.chat([
-          { role: 'system', content: systemMessage },
-          {
-            role: 'user',
-            content: `Dosya: ${file.name}\nToplam satır (bu örnekte): ${content.rows.length}\n\nÖrnek veri (JSON):\n${JSON.stringify(preview, null, 2)}`,
-          },
-        ])
-      } else if (content.kind === 'image') {
-        result = await aiService.chat([
-          { role: 'system', content: systemMessage },
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: `Dosya: ${file.name} — sayfa görselleri ekte, dikkatlice oku.` },
-              ...content.dataUrls.map((url) => ({ type: 'image_url' as const, image_url: { url } })),
-            ],
-          },
-        ])
-      } else {
-        result = await aiService.chat([
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: `Dosya: ${file.name}\n\nBelge içeriği:\n${content.text}` },
-        ])
+      const newSections: FileSection[] = []
+      for (const raw of rawSections) {
+        const displayLabel = rawSections.length > 1 ? `${file.name} — sayfa: ${raw.name}` : file.name
+        const { kategori, ozet } = await categorizeSection(displayLabel, raw.content)
+        newSections.push({
+          name: raw.name,
+          content: raw.content,
+          summary: ozet,
+          category: kategori,
+          manualCategory: kategori !== 'bilinmiyor' ? kategori : '',
+          routing: false,
+          routeResult: null,
+          extractedRows: null,
+          correctionDrafts: {},
+        })
       }
-
-      const parsed = parseAiJsonObject(result.content)
-      const kategoriRaw = typeof parsed.kategori === 'string' ? parsed.kategori : 'bilinmiyor'
-      const kategori = (CATEGORY_VALUES as string[]).includes(kategoriRaw) ? (kategoriRaw as FileCategory) : 'bilinmiyor'
-      const ozet = typeof parsed.ozet === 'string' && parsed.ozet ? parsed.ozet : 'Özet oluşturulamadı.'
-
-      setFileCategory(kategori)
-      setManualCategory(kategori !== 'bilinmiyor' ? kategori : '')
-      setFileSummary(ozet)
+      setSections(newSections)
     } catch (err) {
       toast.error('Dosya özetlenemedi', { description: err instanceof Error ? err.message : undefined })
     } finally {
@@ -292,51 +337,79 @@ export function AIInsightsPage() {
     }
   }
 
+  function updateSection(index: number, patch: Partial<FileSection> | ((s: FileSection) => Partial<FileSection>)) {
+    setSections((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, ...(typeof patch === 'function' ? patch(s) : patch) } : s)),
+    )
+  }
+
   /**
-   * Tespit edilen (ya da elle seçilen) kategoriye göre dosyayı ilgili
-   * bölümün AI çıkarım şemasıyla yeniden AI'a okutup kayıtları oluşturur.
-   * Çıkarılan ham satırlar `extractedRows`'a saklanır ki hata veren satırlar
+   * Bir bölümü (dosyanın tamamı ya da tek bir Excel sekmesi), tespit edilen
+   * (ya da elle seçilen) kategoriye göre ilgili bölümün AI çıkarım
+   * şemasıyla yeniden AI'a okutup kayıtları oluşturur. Çıkarılan ham
+   * satırlar `section.extractedRows`'a saklanır ki hata veren satırlar
    * varsa kullanıcı bunları elle düzeltip tekrar deneyebilsin (bkz.
-   * handleRetryFailedRows) — dosyayı düzeltip yeniden yüklemek zorunda
-   * kalmadan.
+   * handleRetrySection) — dosyayı düzeltip yeniden yüklemek zorunda
+   * kalmadan. `handleRouteAllSections` çok sekmeli dosyalarda bunu her
+   * sekme için sırayla çağırır.
    */
-  async function handleRouteToTarget() {
-    const targetCategory = manualCategory
-    if (!fileContent || !targetCategory) return
-    setRouting(true)
+  async function handleRouteSection(index: number, section: FileSection) {
+    const targetCategory = section.manualCategory
+    if (!targetCategory) return
+    updateSection(index, { routing: true })
     try {
       const cfg = CATEGORY_IMPORT_CONFIG[targetCategory]
-      const rows = await extractRowsWithAI(aiService, fileContent, cfg.label, cfg.headers, cfg.hints)
+      const rows = await extractRowsWithAI(aiService, section.content, cfg.label, cfg.headers, cfg.hints)
       const summary = await importRowsForCategory(targetCategory, rows)
-      setExtractedRows(rows)
-      setCorrectionDrafts({})
-      setRouteResult({ category: targetCategory, summary })
+      updateSection(index, {
+        routing: false,
+        extractedRows: rows,
+        correctionDrafts: {},
+        routeResult: { category: targetCategory, summary },
+      })
+      const suffix = sections.length > 1 ? ` (${section.name})` : ''
       if (summary.added > 0) {
-        toast.success(`${summary.added} kayıt "${CATEGORY_LABELS[targetCategory]}" bölümüne eklendi`)
+        toast.success(`${summary.added} kayıt "${CATEGORY_LABELS[targetCategory]}" bölümüne eklendi${suffix}`)
       } else {
-        toast.info('Eklenecek yeni kayıt bulunamadı')
+        toast.info(`Eklenecek yeni kayıt bulunamadı${suffix}`)
       }
     } catch (err) {
+      updateSection(index, { routing: false })
       toast.error('Aktarılamadı', { description: err instanceof Error ? err.message : undefined })
+    }
+  }
+
+  /** Çok sekmeli bir dosyada, hedef bölümü seçilmiş (ve henüz aktarılmamış)
+   * TÜM sekmeleri sırayla aktarır — kullanıcı her sekmeye ayrı ayrı
+   * tıklamak zorunda kalmasın diye. */
+  async function handleRouteAllSections() {
+    setBulkRouting(true)
+    try {
+      for (let i = 0; i < sections.length; i++) {
+        const section = sections[i]
+        if (section.manualCategory && !section.routeResult) {
+          await handleRouteSection(i, section)
+        }
+      }
     } finally {
-      setRouting(false)
+      setBulkRouting(false)
     }
   }
 
   /** `summary.errors`'daki her mesaj "Satır N: ..." ile başlar (bkz. import*Rows
-   * fonksiyonları) — N'den `extractedRows` içindeki satır indeksini geri
-   * çıkarıp hatalı satırları elle düzenlenebilir hale getiriyoruz. */
-  const failedRowRefs = React.useMemo(() => {
-    if (!routeResult || !extractedRows) return []
+   * fonksiyonları) — N'den `section.extractedRows` içindeki satır indeksini
+   * geri çıkarıp hatalı satırları elle düzenlenebilir hale getiriyoruz. */
+  function getFailedRowRefs(section: FileSection) {
+    if (!section.routeResult || !section.extractedRows) return []
     const refs: { index: number; rowLabel: string; message: string }[] = []
-    for (const err of routeResult.summary.errors) {
+    for (const err of section.routeResult.summary.errors) {
       const m = err.match(/^Satır (\d+):\s*(.*)$/)
       if (!m) continue
       const index = Number(m[1]) - 2
-      if (index >= 0 && index < extractedRows.length) refs.push({ index, rowLabel: m[1], message: m[2] })
+      if (index >= 0 && index < section.extractedRows.length) refs.push({ index, rowLabel: m[1], message: m[2] })
     }
     return refs
-  }, [routeResult, extractedRows])
+  }
 
   /** Hatalı satırları kullanıcının düzelttiği değerlerle birleştirip TÜM
    * satırları (sadece hatalılar değil) aynı import fonksiyonuna yeniden
@@ -344,14 +417,17 @@ export function AIInsightsPage() {
    * olduğu için "zaten kayıtlı" olarak atlanır, sadece düzeltilenler
    * gerçekten eklenir. Böylece satır numaralandırması hep dosyadaki gerçek
    * sırayla tutarlı kalır. */
-  async function handleRetryFailedRows() {
-    if (!routeResult || !extractedRows) return
-    const mergedRows = extractedRows.map((row, i) => correctionDrafts[i] ?? row)
-    setRouting(true)
+  async function handleRetrySection(index: number, section: FileSection) {
+    if (!section.routeResult || !section.extractedRows) return
+    const mergedRows = section.extractedRows.map((row, i) => section.correctionDrafts[i] ?? row)
+    updateSection(index, { routing: true })
     try {
-      const retrySummary = await importRowsForCategory(routeResult.category, mergedRows)
-      setRouteResult({ category: routeResult.category, summary: retrySummary })
-      setCorrectionDrafts({})
+      const retrySummary = await importRowsForCategory(section.routeResult.category, mergedRows)
+      updateSection(index, {
+        routing: false,
+        routeResult: { category: section.routeResult.category, summary: retrySummary },
+        correctionDrafts: {},
+      })
       if (retrySummary.errors.length === 0) {
         toast.success('Düzeltilen satırlar da eklendi, hata kalmadı')
       } else if (retrySummary.added > 0) {
@@ -360,9 +436,8 @@ export function AIInsightsPage() {
         toast.error(`${retrySummary.errors.length} satır hâlâ düzeltilmeli`)
       }
     } catch (err) {
+      updateSection(index, { routing: false })
       toast.error('Tekrar denenemedi', { description: err instanceof Error ? err.message : undefined })
-    } finally {
-      setRouting(false)
     }
   }
 
@@ -467,105 +542,153 @@ export function AIInsightsPage() {
             />
             <p className="text-muted-foreground text-xs">
               Excel, CSV, PDF, Word (.docx), resim veya .txt yükleyin — taranmış PDF'ler de görsel olarak okunur.
-              Stok/ürün, doktor/cari, tahsilat ya da geçmiş satış/numune verisi olduğu sürece, dosya örnek bir
-              şablona benzemese bile, hedef bölümü kendiniz seçip içeri aktarabilirsiniz.
+              Bir Excel dosyasında birden fazla sayfa/sekme varsa (ör. bir sekmede doktorlar, başka bir sekmede
+              ürünler) her sekme ayrı ayrı okunup kendi bölümüne aktarılabilir. Stok/ürün, doktor/cari, tahsilat ya
+              da geçmiş satış/numune verisi olduğu sürece, dosya örnek bir şablona benzemese bile, hedef bölümü
+              kendiniz seçip içeri aktarabilirsiniz.
             </p>
             {fileName && fileLoading && (
               <p className="text-muted-foreground text-sm">{fileName} taranıyor...</p>
             )}
-            {fileSummary && (
-              <p className="rounded-lg border bg-muted/30 p-3 text-sm whitespace-pre-wrap">{fileSummary}</p>
-            )}
-            {fileCategory && !routeResult && (
-              <div className="grid gap-2 rounded-lg border bg-primary/5 p-3">
+            {sections.length > 1 && !fileLoading && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-2">
                 <p className="text-sm">
-                  {fileCategory === 'bilinmiyor'
-                    ? 'Yapay zeka bu dosyanın hangi bölüme ait olduğundan emin olamadı — örnek şablona benzemiyor olabilir. Aşağıdan hedef bölümü siz seçebilirsiniz, veri yine de doğru içeri aktarılır.'
-                    : `Bu dosya ${CATEGORY_LABELS[fileCategory]} bölümüne ait görünüyor — gerekirse aşağıdan değiştirebilirsiniz.`}
+                  <strong>{fileName}</strong> — {sections.length} sayfa bulundu
                 </p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Select
-                    value={manualCategory}
-                    onValueChange={(v) => setManualCategory(v as Exclude<FileCategory, 'bilinmiyor'>)}
-                  >
-                    <SelectTrigger className="w-56">
-                      <SelectValue placeholder="Hedef bölüm seçin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORY_VALUES.filter((c) => c !== 'bilinmiyor').map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {CATEGORY_LABELS[c]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button size="sm" onClick={handleRouteToTarget} disabled={routing || !manualCategory}>
-                    {routing ? <Loader2 className="animate-spin" /> : <ArrowRight className="size-3.5" />}
-                    Bölüme Aktar
-                  </Button>
-                </div>
-              </div>
-            )}
-            {routeResult && (
-              <div className="rounded-lg border bg-success/10 p-3 text-sm">
-                <p>
-                  <strong>{fileName}</strong> dosyası <strong>{CATEGORY_LABELS[routeResult.category]}</strong> bölümüne
-                  aktarıldı: <strong>{routeResult.summary.added}</strong> kayıt eklendi
-                  {routeResult.summary.skipped > 0 ? `, ${routeResult.summary.skipped} atlandı (zaten kayıtlı)` : ''}
-                  {routeResult.summary.errors.length > 0 ? `, ${routeResult.summary.errors.length} hata` : ''}.
-                </p>
-                {routeResult.summary.errors.length > 0 && (
-                  <ul className="text-destructive mt-1.5 list-inside list-disc text-xs">
-                    {routeResult.summary.errors.slice(0, 5).map((err, i) => (
-                      <li key={i}>{err}</li>
-                    ))}
-                    {routeResult.summary.errors.length > 5 && <li>...ve {routeResult.summary.errors.length - 5} tane daha</li>}
-                  </ul>
-                )}
-              </div>
-            )}
-            {routeResult && failedRowRefs.length > 0 && extractedRows && (
-              <div className="grid gap-2.5 rounded-lg border p-3">
-                <p className="text-sm font-medium">
-                  Hatalı {failedRowRefs.length} satırı aşağıdan düzenleyip tekrar deneyebilirsiniz — dosyayı yeniden
-                  yüklemeniz gerekmez.
-                </p>
-                <div className="grid gap-2">
-                  {failedRowRefs.map(({ index, rowLabel, message }) => {
-                    const headers = CATEGORY_IMPORT_CONFIG[routeResult.category].headers
-                    const draft = correctionDrafts[index] ?? extractedRows[index]
-                    return (
-                      <div key={index} className="bg-muted/20 rounded-md border p-2">
-                        <p className="text-destructive mb-1.5 text-xs">
-                          Satır {rowLabel}: {message}
-                        </p>
-                        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-                          {headers.map((h) => (
-                            <div key={h} className="grid gap-0.5">
-                              <label className="text-muted-foreground text-[11px]">{h}</label>
-                              <Input
-                                value={String(draft[h] ?? '')}
-                                onChange={(e) =>
-                                  setCorrectionDrafts((prev) => ({
-                                    ...prev,
-                                    [index]: { ...(prev[index] ?? extractedRows[index]), [h]: e.target.value },
-                                  }))
-                                }
-                                className="h-7 text-xs"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-                <Button size="sm" className="w-fit" onClick={handleRetryFailedRows} disabled={routing}>
-                  {routing ? <Loader2 className="animate-spin" /> : <Check className="size-3.5" />}
-                  Düzeltilenleri Tekrar Dene
+                <Button
+                  size="sm"
+                  onClick={handleRouteAllSections}
+                  disabled={bulkRouting || sections.every((s) => !s.manualCategory || s.routeResult)}
+                >
+                  {bulkRouting ? <Loader2 className="animate-spin" /> : <ArrowRight className="size-3.5" />}
+                  Tümünü İlgili Bölümlere Aktar
                 </Button>
               </div>
             )}
+            {sections.map((section, idx) => {
+              const failedRowRefs = getFailedRowRefs(section)
+              return (
+                <div key={idx} className="grid gap-2.5 rounded-lg border p-3">
+                  {sections.length > 1 && <p className="text-sm font-semibold">{section.name}</p>}
+                  <p className="rounded-lg border bg-muted/30 p-3 text-sm whitespace-pre-wrap">{section.summary}</p>
+                  {!section.routeResult && (
+                    <div className="grid gap-2 rounded-lg border bg-primary/5 p-3">
+                      <p className="text-sm">
+                        {section.category === 'bilinmiyor'
+                          ? `Yapay zeka bu ${sections.length > 1 ? 'sayfanın' : 'dosyanın'} hangi bölüme ait olduğundan emin olamadı — örnek şablona benzemiyor olabilir. Aşağıdan hedef bölümü siz seçebilirsiniz, veri yine de doğru içeri aktarılır.`
+                          : `Bu ${sections.length > 1 ? 'sayfa' : 'dosya'} ${CATEGORY_LABELS[section.category]} bölümüne ait görünüyor — gerekirse aşağıdan değiştirebilirsiniz.`}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select
+                          value={section.manualCategory}
+                          onValueChange={(v) => updateSection(idx, { manualCategory: v as RoutableCategory })}
+                        >
+                          <SelectTrigger className="w-56">
+                            <SelectValue placeholder="Hedef bölüm seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CATEGORY_VALUES.filter((c) => c !== 'bilinmiyor').map((c) => (
+                              <SelectItem key={c} value={c}>
+                                {CATEGORY_LABELS[c]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          onClick={() => handleRouteSection(idx, section)}
+                          disabled={section.routing || bulkRouting || !section.manualCategory}
+                        >
+                          {section.routing ? <Loader2 className="animate-spin" /> : <ArrowRight className="size-3.5" />}
+                          Bölüme Aktar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {section.routeResult && (
+                    <div className="rounded-lg border bg-success/10 p-3 text-sm">
+                      <p>
+                        {sections.length > 1 ? (
+                          <>Bu sayfa</>
+                        ) : (
+                          <>
+                            <strong>{fileName}</strong> dosyası
+                          </>
+                        )}{' '}
+                        <strong>{CATEGORY_LABELS[section.routeResult.category]}</strong> bölümüne aktarıldı:{' '}
+                        <strong>{section.routeResult.summary.added}</strong> kayıt eklendi
+                        {section.routeResult.summary.skipped > 0
+                          ? `, ${section.routeResult.summary.skipped} atlandı (zaten kayıtlı)`
+                          : ''}
+                        {section.routeResult.summary.errors.length > 0
+                          ? `, ${section.routeResult.summary.errors.length} hata`
+                          : ''}
+                        .
+                      </p>
+                      {section.routeResult.summary.errors.length > 0 && (
+                        <ul className="text-destructive mt-1.5 list-inside list-disc text-xs">
+                          {section.routeResult.summary.errors.slice(0, 5).map((err, i) => (
+                            <li key={i}>{err}</li>
+                          ))}
+                          {section.routeResult.summary.errors.length > 5 && (
+                            <li>...ve {section.routeResult.summary.errors.length - 5} tane daha</li>
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                  {section.routeResult && failedRowRefs.length > 0 && section.extractedRows && (
+                    <div className="grid gap-2.5 rounded-lg border p-3">
+                      <p className="text-sm font-medium">
+                        Hatalı {failedRowRefs.length} satırı aşağıdan düzenleyip tekrar deneyebilirsiniz — dosyayı
+                        yeniden yüklemeniz gerekmez.
+                      </p>
+                      <div className="grid gap-2">
+                        {failedRowRefs.map(({ index, rowLabel, message }) => {
+                          const headers = CATEGORY_IMPORT_CONFIG[section.routeResult!.category].headers
+                          const draft = section.correctionDrafts[index] ?? section.extractedRows![index]
+                          return (
+                            <div key={index} className="bg-muted/20 rounded-md border p-2">
+                              <p className="text-destructive mb-1.5 text-xs">
+                                Satır {rowLabel}: {message}
+                              </p>
+                              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                                {headers.map((h) => (
+                                  <div key={h} className="grid gap-0.5">
+                                    <label className="text-muted-foreground text-[11px]">{h}</label>
+                                    <Input
+                                      value={String(draft[h] ?? '')}
+                                      onChange={(e) =>
+                                        updateSection(idx, (s) => ({
+                                          correctionDrafts: {
+                                            ...s.correctionDrafts,
+                                            [index]: { ...(s.correctionDrafts[index] ?? s.extractedRows![index]), [h]: e.target.value },
+                                          },
+                                        }))
+                                      }
+                                      className="h-7 text-xs"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <Button
+                        size="sm"
+                        className="w-fit"
+                        onClick={() => handleRetrySection(idx, section)}
+                        disabled={section.routing}
+                      >
+                        {section.routing ? <Loader2 className="animate-spin" /> : <Check className="size-3.5" />}
+                        Düzeltilenleri Tekrar Dene
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </CardContent>
         </Card>
       </div>

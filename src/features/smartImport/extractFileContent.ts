@@ -1,14 +1,14 @@
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url'
 import * as mammoth from 'mammoth'
-import { readExcelFile } from '@/lib/importData'
+import { readExcelWorkbookSheets, type ExcelSheet } from '@/lib/importData'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
 export type ExtractedContent =
   | { kind: 'text'; text: string }
   | { kind: 'image'; dataUrls: string[] }
-  | { kind: 'table'; rows: Record<string, unknown>[] }
+  | { kind: 'table'; sheets: ExcelSheet[] }
 
 /** Bir metnin gerçek belge içeriği mi yoksa taranmış/görsel bir sayfanın
  * neredeyse boş çıktısı mı olduğunu ayırt etmek için kaba bir eşik. */
@@ -70,11 +70,14 @@ async function extractDocxText(file: File): Promise<string> {
  * yeniden "okutulması" GEREKMİYOR, bu da küçük bir yerel modelin rakamları
  * yanlış yazması riskini tamamen ortadan kaldırıyor (bkz. SmartImportDialog:
  * AI'a sadece sütun eşlemesi sorulur, değerler koddan doğrudan aktarılır).
- * PDF/Word düz metne çevrilir; resimler data URL olarak (AI'a görsel parçası
- * şeklinde) döner. PDF'te metin katmanı yoksa/çok azsa (taranmış belge)
- * otomatik olarak sayfa görsellerine düşülür — böylece "ne verirsem vereyim
- * içini okusun" beklentisi taranmış belgeler için de karşılanır. Desteklenmeyen
- * bir tür gelirse hata fırlatır.
+ * Bir çalışma kitabındaki TÜM sayfalar/sekmeler okunur (ör. bir sekmede
+ * doktorlar, başka bir sekmede ürünler olan bir dosya) — `sheets` dizisinde
+ * her biri kendi adı ve satırlarıyla ayrı ayrı döner, tek sayfalık bir dosyada
+ * bu dizi tek elemanlıdır. PDF/Word düz metne çevrilir; resimler data URL
+ * olarak (AI'a görsel parçası şeklinde) döner. PDF'te metin katmanı yoksa/
+ * çok azsa (taranmış belge) otomatik olarak sayfa görsellerine düşülür —
+ * böylece "ne verirsem vereyim içini okusun" beklentisi taranmış belgeler
+ * için de karşılanır. Desteklenmeyen bir tür gelirse hata fırlatır.
  */
 export async function extractFileContent(file: File): Promise<ExtractedContent> {
   const name = file.name.toLowerCase()
@@ -83,8 +86,8 @@ export async function extractFileContent(file: File): Promise<ExtractedContent> 
     return { kind: 'image', dataUrls: [await fileToDataUrl(file)] }
   }
   if (/\.(xlsx|xls|csv)$/.test(name)) {
-    const rows = await readExcelFile(file)
-    return { kind: 'table', rows }
+    const sheets = await readExcelWorkbookSheets(file)
+    return { kind: 'table', sheets }
   }
   if (/\.pdf$/.test(name)) {
     const buffer = await file.arrayBuffer()
