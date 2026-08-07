@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.16] - 2026-08-08
+
+**Harita/Rota Planlama'nın anahtar gerektirmeyen hazırlığı:** `customers` tablosuna opsiyonel `latitude`/`longitude`/`geocoded_at` sütunları eklendi (mobil Harita/Rota Planlama özelliğinin doktor konumlarını önbelleğe alacağı yer). Harita ekranının kendisi ve `react-native-maps` bağımlılığı, kullanıcının kendi Google Maps API anahtarını `mobile/.env`'e eklemesinin ardından ayrı bir adımda eklenecek — bu sürüm sadece riski/maliyeti olmayan şema hazırlığı.
+
 ## [2.17.15] - 2026-08-08
 
 **Mobil "Kartvizit Tara" eklendi (Diğer > Kartvizit Tara):** gocust referansındaki kartvizit tarama fikrinin Elffarma karşılığı — yeni bir OCR servisi yerine mevcut AIService altyapısı (Ayarlar > Yapay Zekâ'da seçili sağlayıcı — varsayılan Gemini, görsel destekliyor) kullanılıyor. Kamerayla/galeriden kartvizit fotoğrafı seçilir → AI ad/telefon/e-posta/hastane bilgisini JSON olarak çıkarır → düzenlenebilir bir mini formda kontrol edilip "Doktor Olarak Kaydet" ile gerçek bir cari kayda dönüşür (mobilde ilk kez bir müşteri oluşturma yolu — minimal, ad+telefon zorunlu; tam Cari Kart formu hâlâ Faz 2'de). Etkin sağlayıcı Ollama (yerel, görsel desteklemiyor) ise anlaşılır bir hata gösterir. Bunun için mobile'a `expo-image-picker` eklendi ve masaüstündeki AIService'in tek-seferlik (streaming olmayan) OpenAI-uyumlu + Claude sohbet çağrıları mobile'a taşındı (`features/ai`). Harita görünümü/rota planlama (referanstaki diğer özellik) hâlâ karar bekliyor — ücretli bir Maps API anahtarı gerektiriyor. Şema değişikliği yok.

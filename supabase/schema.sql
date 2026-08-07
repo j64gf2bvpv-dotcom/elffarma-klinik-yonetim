@@ -2008,6 +2008,20 @@ create policy "tasks_all_staff" on public.tasks for all
 
 comment on table public.tasks is 'Görev Yönetimi — personele atanabilen, durum/öncelik taşıyan genel iş kalemleri';
 
+-- =========================================================
+-- 43. DOKTOR KONUM BİLGİSİ (mobil Harita/Rota Planlama için)
+-- =========================================================
+-- Google Maps API anahtarı hazır olana kadar bu sütunlar boş kalır — mobil
+-- tarafta bir doktor haritada gösterilmeden önce adresi geocode edilip
+-- burada önbelleğe alınır (her açılışta yeniden geocode etmemek için).
+alter table public.customers add column if not exists latitude numeric(9, 6);
+alter table public.customers add column if not exists longitude numeric(9, 6);
+alter table public.customers add column if not exists geocoded_at timestamptz;
+
+comment on column public.customers.latitude is 'Opsiyonel: adres geocode edilerek önbelleğe alınmış enlem (mobil Harita/Rota Planlama)';
+comment on column public.customers.longitude is 'Opsiyonel: adres geocode edilerek önbelleğe alınmış boylam (mobil Harita/Rota Planlama)';
+comment on column public.customers.geocoded_at is 'Opsiyonel: latitude/longitude en son ne zaman hesaplandı — adres değişince yeniden geocode tetiklemek için';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

@@ -51,6 +51,9 @@ export interface Customer {
   birth_date: string | null
   sample_monthly_quota: number | null
   sample_yearly_quota: number | null
+  latitude: number | null
+  longitude: number | null
+  geocoded_at: string | null
   created_by: string | null
   created_at: string
   updated_at: string
