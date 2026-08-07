@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.17] - 2026-08-08
+
+**Mobil "Harita" ekranı eklendi (Diğer > Harita):** gocust referansındaki "Maps View" fikrinin ilk sürümü — doktor adresleri Google Geocoding API ile enlem/boylama çevrilip (`customers.latitude/longitude`, önbellekli) haritada pin olarak gösteriliyor; pine dokununca "Yol Tarifi" harici harita uygulamasını (Google Maps) açıyor. Gerçek çok-duraklı rota optimizasyonu ("Plan your day") bu sürümde yok — o, ayrı ve daha büyük bir algoritmik iş. Bunun için: `react-native-maps` eklendi, `mobile/app.json` → `mobile/app.config.js`'e dönüştürüldü (Android Google Maps anahtarını `.env`'den build zamanında enjekte edebilmek için), ve kullanıcının kendi Google Cloud projesinde (`elffarma-maps-2026`, `gcloud` CLI ile) Maps SDK for Android + Geocoding API'ye kısıtlı bir anahtar oluşturulup `mobile/.env`'e eklendi (anahtar commit edilmedi, gitignore'da). Android app/SHA-1 kısıtlaması henüz yok — ilk gerçek Android build'inde eklenecek. Bu native bir modül olduğu için `npx expo run:android` ile yeniden derleme gerekiyor.
+
 ## [2.17.16] - 2026-08-08
 
 **Harita/Rota Planlama'nın anahtar gerektirmeyen hazırlığı:** `customers` tablosuna opsiyonel `latitude`/`longitude`/`geocoded_at` sütunları eklendi (mobil Harita/Rota Planlama özelliğinin doktor konumlarını önbelleğe alacağı yer). Harita ekranının kendisi ve `react-native-maps` bağımlılığı, kullanıcının kendi Google Maps API anahtarını `mobile/.env`'e eklemesinin ardından ayrı bir adımda eklenecek — bu sürüm sadece riski/maliyeti olmayan şema hazırlığı.

@@ -17,6 +17,7 @@ import {
   Car,
   SlidersHorizontal,
   ScanLine,
+  MapPin,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
@@ -47,6 +48,7 @@ const items: MenuItem[] = [
   { key: 'Prim', label: 'Prim', icon: Percent },
   { key: 'CRM', label: 'CRM', icon: Handshake },
   { key: 'Kartvizit Tara', label: 'Kartvizit Tara', icon: ScanLine },
+  { key: 'Harita', label: 'Harita', icon: MapPin },
   { key: 'Giderler', label: 'Giderler', icon: ReceiptText },
   { key: 'Bütçe Yılı', label: 'Bütçe Yılı', icon: Target },
   { key: 'AI Analiz', label: 'Yapay Zeka Analiz', icon: Sparkles },
@@ -75,6 +77,7 @@ export function MoreMenuScreen({ navigation }: Props) {
             onPress={() => {
               if (item.key === 'CRM') return navigation.navigate('CrmActivities')
               if (item.key === 'Kartvizit Tara') return navigation.navigate('BusinessCardScan')
+              if (item.key === 'Harita') return navigation.navigate('Map')
               return navigation.navigate('ComingSoon', { title: item.label })
             }}
             style={({ pressed }) => [

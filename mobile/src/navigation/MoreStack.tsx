@@ -5,6 +5,7 @@ import { MoreMenuScreen } from '@/screens/more/MoreMenuScreen'
 import { ComingSoonScreen } from '@/screens/ComingSoonScreen'
 import { CrmActivitiesScreen } from '@/screens/crm/CrmActivitiesScreen'
 import { BusinessCardScanScreen } from '@/screens/crm/BusinessCardScanScreen'
+import { MapScreen } from '@/screens/crm/MapScreen'
 import type { MoreStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<MoreStackParamList>()
@@ -21,6 +22,7 @@ export function MoreStack() {
       <Stack.Screen name="MoreMenu" component={MoreMenuScreen} options={{ headerShown: false }} />
       <Stack.Screen name="CrmActivities" component={CrmActivitiesScreen} options={{ title: 'Aktiviteler' }} />
       <Stack.Screen name="BusinessCardScan" component={BusinessCardScanScreen} options={{ title: 'Kartvizit Tara' }} />
+      <Stack.Screen name="Map" component={MapScreen} options={{ title: 'Harita' }} />
       <Stack.Screen
         name="ComingSoon"
         component={ComingSoonScreen}
