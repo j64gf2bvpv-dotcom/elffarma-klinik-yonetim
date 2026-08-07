@@ -1,11 +1,13 @@
 import * as React from 'react'
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
-import { ChevronRight } from 'lucide-react-native'
+import { FlatList, RefreshControl, Text, View } from 'react-native'
+import { Building2 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { TextField } from '@/components/ui/TextField'
 import { Badge } from '@/components/ui/Badge'
+import { ListItemCard } from '@/components/ui/ListItemCard'
 import { PendingSyncBadge } from '@/components/PendingSyncBadge'
 import { useTheme } from '@/lib/ThemeContext'
 import { useCustomers } from '@/features/customers/hooks'
@@ -58,16 +60,14 @@ export function CariHesapListScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen>
-      <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.xl, fontWeight: '700', marginBottom: 12 }}>
-        Cari Hesap
-      </Text>
+    <Screen style={{ gap: 10 }}>
+      <ScreenHeader title="Cari Hesap" subtitle={`${rows.length} doktor/cari`} />
       <PendingSyncBadge />
       <TextField
         placeholder="Ara (ad, telefon)..."
         value={search}
         onChangeText={setSearch}
-        containerStyle={{ marginBottom: 12 }}
+        containerStyle={{ marginBottom: 2 }}
       />
       {isLoading && rows.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
@@ -77,7 +77,7 @@ export function CariHesapListScreen({ navigation }: Props) {
           keyExtractor={(r) => r.customer.id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
           ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: theme.colors.border }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
             <CariRow
               customer={item.customer}
@@ -96,21 +96,13 @@ export function CariHesapListScreen({ navigation }: Props) {
 function CariRow({ customer, balance, onPress }: { customer: Customer; balance: number; onPress: () => void }) {
   const theme = useTheme()
   return (
-    <Pressable
+    <ListItemCard
+      icon={Building2}
+      iconColor={balance > 0 ? theme.colors.destructive : theme.colors.primary}
+      title={customer.full_name}
+      subtitle={customer.hospital_name ?? undefined}
       onPress={onPress}
-      style={({ pressed }) => [
-        { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 8 },
-        pressed && { opacity: 0.6 },
-      ]}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: theme.colors.foreground, fontWeight: '600' }}>{customer.full_name}</Text>
-        {customer.hospital_name && (
-          <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>{customer.hospital_name}</Text>
-        )}
-      </View>
-      <Badge variant={balance > 0 ? 'destructive' : 'secondary'}>{currency(balance)}</Badge>
-      <ChevronRight size={18} color={theme.colors.mutedForeground} />
-    </Pressable>
+      right={<Badge variant={balance > 0 ? 'destructive' : 'secondary'}>{currency(balance)}</Badge>}
+    />
   )
 }

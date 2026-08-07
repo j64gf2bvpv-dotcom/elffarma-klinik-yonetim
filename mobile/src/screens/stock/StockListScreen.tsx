@@ -1,11 +1,13 @@
 import * as React from 'react'
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
-import { ChevronRight } from 'lucide-react-native'
+import { FlatList, RefreshControl, Text, View } from 'react-native'
+import { Boxes } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { TextField } from '@/components/ui/TextField'
 import { Badge } from '@/components/ui/Badge'
+import { ListItemCard } from '@/components/ui/ListItemCard'
 import { PendingSyncBadge } from '@/components/PendingSyncBadge'
 import { useTheme } from '@/lib/ThemeContext'
 import { useProducts } from '@/features/stock/hooks'
@@ -31,16 +33,14 @@ export function StockListScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen>
-      <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.xl, fontWeight: '700', marginBottom: 12 }}>
-        Stok
-      </Text>
+    <Screen style={{ gap: 10 }}>
+      <ScreenHeader title="Stok" subtitle={`${products.length} ürün`} />
       <PendingSyncBadge />
       <TextField
         placeholder="Ürün ara..."
         value={search}
         onChangeText={setSearch}
-        containerStyle={{ marginBottom: 12 }}
+        containerStyle={{ marginBottom: 2 }}
       />
       {isLoading && products.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
@@ -50,7 +50,7 @@ export function StockListScreen({ navigation }: Props) {
           keyExtractor={(p) => p.id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
           ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Ürün yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: theme.colors.border }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
             <ProductRow
               product={item}
@@ -74,23 +74,17 @@ function ProductRow({ product, onPress }: { product: Product; onPress: () => voi
   const theme = useTheme()
   const critical = product.current_quantity <= product.critical_stock_threshold
   return (
-    <Pressable
+    <ListItemCard
+      icon={Boxes}
+      iconColor={critical ? theme.colors.destructive : theme.colors.primary}
+      title={product.name}
+      subtitle={product.sku ? `Kod: ${product.sku}` : undefined}
       onPress={onPress}
-      style={({ pressed }) => [
-        { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 8 },
-        pressed && { opacity: 0.6 },
-      ]}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: theme.colors.foreground, fontWeight: '600' }}>{product.name}</Text>
-        {product.sku && (
-          <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>Kod: {product.sku}</Text>
-        )}
-      </View>
-      <Badge variant={critical ? 'destructive' : 'secondary'}>
-        {product.current_quantity} {product.unit}
-      </Badge>
-      <ChevronRight size={18} color={theme.colors.mutedForeground} />
-    </Pressable>
+      right={
+        <Badge variant={critical ? 'destructive' : 'secondary'}>
+          {product.current_quantity} {product.unit}
+        </Badge>
+      }
+    />
   )
 }

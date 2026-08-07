@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.13] - 2026-08-07
+
+**Mobil liste ekranları (Cari Hesap, Stok, Tahsilatlar) Dashboard'daki yeni görsel dile taşındı:** düz metin satırları yerine ikon rozetli kart satırları (`ListItemCard`) ve tutarlı başlık satırı (`ScreenHeader`) kullanılıyor — davranış/veri aynı, sadece görünüm. Ayrıca kök dizine çift tıkla çalışan **"Mobil Uygulamayı Başlat.command"** eklendi (Finder'dan çift tıklayınca `mobile/`de `npm run web` çalıştırıp tarayıcıda açar); bu makinede Xcode/Android Studio kurulu olmadığından iOS/Android simülatör hedefleri (`expo run:ios`/`run:android`) kullanılamıyor, bu yüzden web modu seçildi. Şema değişikliği yok.
+
 ## [2.17.12] - 2026-08-07
 
 **Mobil Dashboard yeniden tasarlandı:** Karşılama başlığı (baş harf rozeti + saatine göre selamlama), kritik stok uyarı şeridi, "Aylık Hedef" ilerleme kartı (Bütçe Yılı'ndaki gerçek ciro hedefine karşı bu ayki tahsilat) ve yeni Görev Yönetimi modülünden beslenen "Görevlerim" listesi eklendi — dokunarak görev tamamlanabiliyor. Bunun için mobile'a salt-okunur `features/budget` (aylık hedef) ve `features/tasks` (bana atanan görevler) eklendi. Şema değişikliği yok (mevcut `budget_targets`/`tasks` tablolarını okuyor).

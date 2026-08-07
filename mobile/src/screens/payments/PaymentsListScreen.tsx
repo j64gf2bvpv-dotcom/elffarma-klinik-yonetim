@@ -2,14 +2,17 @@ import * as React from 'react'
 import { FlatList, RefreshControl, Text, View } from 'react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Plus } from 'lucide-react-native'
+import { Plus, Banknote, CreditCard, Landmark, Smartphone, type LucideIcon } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
+import { ListItemCard } from '@/components/ui/ListItemCard'
 import { PendingSyncBadge } from '@/components/PendingSyncBadge'
 import { useTheme } from '@/lib/ThemeContext'
 import { usePayments } from '@/features/payments/hooks'
+import type { PaymentWithCustomer } from '@/features/payments/api'
 import type { PaymentsStackParamList } from '@/navigation/types'
 
 type Props = NativeStackScreenProps<PaymentsStackParamList, 'PaymentsList'>
@@ -23,6 +26,13 @@ const methodLabels: Record<string, string> = {
   kredi_karti: 'Kredi Kartı',
   havale: 'Havale/EFT',
   pos: 'POS',
+}
+
+const methodIcons: Record<string, LucideIcon> = {
+  nakit: Banknote,
+  kredi_karti: CreditCard,
+  havale: Landmark,
+  pos: Smartphone,
 }
 
 /** Masaüstündeki PaymentsPage.tsx'in Faz 1 alt kümesi — liste + tahsilat
@@ -40,14 +50,17 @@ export function PaymentsListScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.xl, fontWeight: '700' }}>Tahsilatlar</Text>
-        <Button size="sm" onPress={() => navigation.navigate('RecordPayment')}>
-          <Plus size={16} color={theme.colors.primaryForeground} />
-          <Text style={{ color: theme.colors.primaryForeground, fontWeight: '600' }}>Ekle</Text>
-        </Button>
-      </View>
+    <Screen style={{ gap: 10 }}>
+      <ScreenHeader
+        title="Tahsilatlar"
+        subtitle={`${payments.length} kayıt`}
+        actions={
+          <Button size="sm" onPress={() => navigation.navigate('RecordPayment')}>
+            <Plus size={16} color={theme.colors.primaryForeground} />
+            <Text style={{ color: theme.colors.primaryForeground, fontWeight: '600' }}>Ekle</Text>
+          </Button>
+        }
+      />
       <PendingSyncBadge />
       {isLoading && payments.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
@@ -57,23 +70,26 @@ export function PaymentsListScreen({ navigation }: Props) {
           keyExtractor={(p) => p.id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
           ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: theme.colors.border }} />}
-          renderItem={({ item }) => (
-            <View style={{ paddingVertical: 12, flexDirection: 'row', justifyContent: 'space-between' }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: theme.colors.foreground, fontWeight: '600' }}>
-                  {item.customers?.full_name ?? '—'}
-                </Text>
-                <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>
-                  {methodLabels[item.payment_method] ?? item.payment_method} ·{' '}
-                  {format(new Date(item.paid_at), 'd MMM yyyy', { locale: trLocale })}
-                </Text>
-              </View>
-              <Text style={{ color: theme.colors.success, fontWeight: '700' }}>{currency(Number(item.amount))}</Text>
-            </View>
-          )}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+          renderItem={({ item }) => <PaymentRow payment={item} />}
         />
       )}
     </Screen>
+  )
+}
+
+function PaymentRow({ payment }: { payment: PaymentWithCustomer }) {
+  const theme = useTheme()
+  const Icon = methodIcons[payment.payment_method] ?? Banknote
+  return (
+    <ListItemCard
+      icon={Icon}
+      iconColor={theme.colors.success}
+      title={payment.customers?.full_name ?? '—'}
+      subtitle={`${methodLabels[payment.payment_method] ?? payment.payment_method} · ${format(new Date(payment.paid_at), 'd MMM yyyy', { locale: trLocale })}`}
+      right={
+        <Text style={{ color: theme.colors.success, fontWeight: '700' }}>{currency(Number(payment.amount))}</Text>
+      }
+    />
   )
 }
