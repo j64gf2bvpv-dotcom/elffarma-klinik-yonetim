@@ -635,3 +635,20 @@ export interface VehicleFuelLog {
   created_by: string | null
   created_at: string
 }
+
+export type CompetitorStockStatus = 'in_stock' | 'limited' | 'out_of_stock'
+export type CompetitorVisibility = 'good' | 'moderate' | 'poor'
+
+export interface CompetitorReport {
+  id: string
+  customer_id: string | null
+  doctor_name: string | null
+  competitor_name: string
+  product_name: string
+  stock_status: CompetitorStockStatus | null
+  price: number | null
+  visibility: CompetitorVisibility | null
+  notes: string | null
+  reported_by: string | null
+  created_at: string
+}

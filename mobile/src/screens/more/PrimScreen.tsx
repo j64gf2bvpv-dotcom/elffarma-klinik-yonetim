@@ -1,14 +1,16 @@
 import * as React from 'react'
-import { FlatList, RefreshControl, Text, View } from 'react-native'
-import { Percent } from 'lucide-react-native'
+import { FlatList, Modal, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Percent, Pencil, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { TextField } from '@/components/ui/TextField'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useTheme } from '@/lib/ThemeContext'
-import { useSalesReps } from '@/features/salesReps/hooks'
+import { useSalesReps, useUpdateSalesRepTarget } from '@/features/salesReps/hooks'
 import { useSales } from '@/features/sales/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import type { MoreStackParamList } from '@/navigation/types'
@@ -26,6 +28,7 @@ export function PrimScreen(_: Props) {
   const { data: reps = [] } = useSalesReps()
   const { data: sales = [] } = useSales()
   const { data: payments = [] } = usePayments({})
+  const [editingRep, setEditingRep] = React.useState<{ id: string; name: string; target: number } | null>(null)
 
   async function onRefresh() {
     setRefreshing(true)
@@ -78,6 +81,9 @@ export function PrimScreen(_: Props) {
                 </Text>
               </View>
               <Text style={{ color: theme.colors.success, fontWeight: '700' }}>{currency(item.commission)}</Text>
+              <Pressable onPress={() => setEditingRep({ id: item.rep.id, name: item.rep.name, target: item.target })} hitSlop={8}>
+                <Pencil size={14} color={theme.colors.mutedForeground} />
+              </Pressable>
             </View>
             <View style={{ gap: 6 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -97,6 +103,57 @@ export function PrimScreen(_: Props) {
           </Card>
         )}
       />
+      <EditTargetModal rep={editingRep} onClose={() => setEditingRep(null)} />
     </Screen>
+  )
+}
+
+function EditTargetModal({ rep, onClose }: { rep: { id: string; name: string; target: number } | null; onClose: () => void }) {
+  const theme = useTheme()
+  const updateMutation = useUpdateSalesRepTarget()
+  const [value, setValue] = React.useState('')
+
+  React.useEffect(() => {
+    if (rep) setValue(String(rep.target || ''))
+  }, [rep])
+
+  async function onSave() {
+    if (!rep) return
+    const num = Number(value)
+    if (isNaN(num)) return
+    await updateMutation.mutateAsync({ id: rep.id, target: num })
+    onClose()
+  }
+
+  return (
+    <Modal visible={!!rep} animationType="slide" onRequestClose={onClose}>
+      <Screen>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>
+            Hedef Düzenle
+          </Text>
+          <Pressable onPress={onClose} hitSlop={12}>
+            <X size={22} color={theme.colors.foreground} />
+          </Pressable>
+        </View>
+        {rep && (
+          <View style={{ gap: 12 }}>
+            <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.sm }}>
+              {rep.name} — Aylık ciro hedefi
+            </Text>
+            <TextField
+              label="Hedef Tutar (₺)"
+              value={value}
+              onChangeText={setValue}
+              placeholder="0"
+              keyboardType="numeric"
+            />
+            <Button onPress={onSave} loading={updateMutation.isPending} disabled={!value.trim()}>
+              Kaydet
+            </Button>
+          </View>
+        )}
+      </Screen>
+    </Modal>
   )
 }

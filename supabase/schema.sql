@@ -2054,6 +2054,34 @@ create policy "customer_revenue_targets_all_staff" on public.customer_revenue_ta
 
 comment on table public.customer_revenue_targets is 'Doktor/cari bazında aylık ciro hedefi — Cari Kart''ta ilerleme çubuğu olarak gösterilir';
 
+-- =========================================================
+-- 44. REKABET ANALİZİ (competitor_reports)
+-- =========================================================
+-- Saha ekibi doktor ziyaretinde rakip ürünlerin stok/fiyat/görünürlük
+-- durumunu raporlar. gocust Field Insights'tan ilham.
+create table if not exists public.competitor_reports (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid references public.customers (id) on delete set null,
+  doctor_name text,
+  competitor_name text not null,
+  product_name text not null,
+  stock_status text check (stock_status in ('in_stock', 'limited', 'out_of_stock')),
+  price numeric(10, 2),
+  visibility text check (visibility in ('good', 'moderate', 'poor')),
+  notes text,
+  reported_by uuid references public.staff (id),
+  created_at timestamptz not null default now()
+);
+create index if not exists competitor_reports_customer_idx on public.competitor_reports (customer_id);
+create index if not exists competitor_reports_created_idx on public.competitor_reports (created_at desc);
+
+alter table public.competitor_reports enable row level security;
+drop policy if exists "competitor_reports_all_staff" on public.competitor_reports;
+create policy "competitor_reports_all_staff" on public.competitor_reports for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.competitor_reports is 'Saha rekabet analizi — rakip ürün stok/fiyat/görünürlük raporu';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

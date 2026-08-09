@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { offlineInsert, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
+import { offlineInsert, offlineDelete, offlineUpdate, getCurrentUserId } from '@/lib/offlineMutation'
 import type { DoctorVisit } from '@shared/types/database'
 
 export interface CreateVisitInput {
@@ -29,6 +29,19 @@ export async function createVisit(input: CreateVisitInput): Promise<DoctorVisit>
     ...input,
     sales_rep_id: userId,
   }, `Ziyaret: ${input.doctor_name}`)
+}
+
+export async function checkInVisit(id: string): Promise<DoctorVisit> {
+  return offlineUpdate<DoctorVisit>('doctor_visits', id, {
+    check_in_at: new Date().toISOString(),
+    check_out_at: null,
+  }, 'Ziyaret check-in')
+}
+
+export async function checkOutVisit(id: string): Promise<DoctorVisit> {
+  return offlineUpdate<DoctorVisit>('doctor_visits', id, {
+    check_out_at: new Date().toISOString(),
+  }, 'Ziyaret check-out')
 }
 
 export async function deleteVisit(id: string): Promise<void> {

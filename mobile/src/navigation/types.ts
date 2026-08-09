@@ -47,6 +47,7 @@ export type MoreStackParamList = {
   Samples: undefined
   FuelLogs: undefined
   Installments: undefined
+  CompetitorReports: undefined
 }
 
 export type MainTabParamList = {

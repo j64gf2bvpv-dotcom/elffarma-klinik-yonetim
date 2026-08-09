@@ -1,8 +1,8 @@
 import * as React from 'react'
 import { FlatList, Modal, Pressable, RefreshControl, Text, View } from 'react-native'
-import { format, isPast, isToday } from 'date-fns'
+import { format, isPast, isToday, differenceInMinutes } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Plus, Stethoscope, Calendar, X } from 'lucide-react-native'
+import { Plus, Stethoscope, Calendar, LogIn, LogOut, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { ListItemCard } from '@/components/ui/ListItemCard'
 import { useTheme } from '@/lib/ThemeContext'
-import { useVisits, useCreateVisit } from '@/features/doctorVisits/hooks'
+import { useVisits, useCreateVisit, useCheckInVisit, useCheckOutVisit } from '@/features/doctorVisits/hooks'
 import type { MoreStackParamList } from '@/navigation/types'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'DoctorVisits'>
@@ -23,6 +23,8 @@ export function DoctorVisitsScreen(_: Props) {
   const [refreshing, setRefreshing] = React.useState(false)
   const [showAdd, setShowAdd] = React.useState(false)
   const { data: visits = [], isLoading } = useVisits()
+  const checkInMutation = useCheckInVisit()
+  const checkOutMutation = useCheckOutVisit()
 
   async function onRefresh() {
     setRefreshing(true)
@@ -30,11 +32,13 @@ export function DoctorVisitsScreen(_: Props) {
     setRefreshing(false)
   }
 
+  const activeCount = visits.filter(v => v.check_in_at && !v.check_out_at).length
+
   return (
     <Screen style={{ gap: 10 }}>
       <ScreenHeader
         title="Doktor Ziyaretleri"
-        subtitle={`${visits.length} kayıt`}
+        subtitle={`${visits.length} kayıt${activeCount > 0 ? ` · ${activeCount} aktif` : ''}`}
         actions={
           <Button size="sm" onPress={() => setShowAdd(true)}>
             <Plus size={16} color={theme.colors.primaryForeground} />
@@ -52,23 +56,51 @@ export function DoctorVisitsScreen(_: Props) {
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => {
             const overdue = item.next_visit_date != null && isPast(new Date(item.next_visit_date)) && !isToday(new Date(item.next_visit_date))
+            const isActive = !!item.check_in_at && !item.check_out_at
+            const isCompleted = !!item.check_in_at && !!item.check_out_at
+            const duration = isCompleted && item.check_in_at && item.check_out_at
+              ? differenceInMinutes(new Date(item.check_out_at), new Date(item.check_in_at))
+              : null
             return (
               <ListItemCard
                 icon={Stethoscope}
+                iconColor={isActive ? theme.colors.success : isCompleted ? theme.colors.mutedForeground : theme.colors.primary}
                 title={item.doctor_name}
                 subtitle={[
                   format(new Date(item.visit_date), 'd MMM yyyy', { locale: trLocale }),
                   item.discussed_products,
+                  item.check_in_at ? `Check-in: ${format(new Date(item.check_in_at), 'HH:mm', { locale: trLocale })}` : null,
+                  duration != null ? `${duration} dk` : null,
                 ].filter(Boolean).join(' · ') || undefined}
                 right={
-                  item.next_visit_date ? (
-                    <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                  <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                    {item.next_visit_date && (
                       <Badge variant={overdue ? 'destructive' : 'outline'}>
                         <Calendar size={10} color={overdue ? theme.colors.destructiveForeground : theme.colors.foreground} />{' '}
                         {format(new Date(item.next_visit_date), 'd MMM', { locale: trLocale })}
                       </Badge>
+                    )}
+                    {isActive && <Badge variant="default">Aktif</Badge>}
+                    {isCompleted && <Badge variant="secondary">Tamam</Badge>}
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {!item.check_in_at && (
+                        <Pressable onPress={() => checkInMutation.mutate(item.id)} hitSlop={8}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: theme.colors.success + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: theme.radius.sm }}>
+                            <LogIn size={12} color={theme.colors.success} />
+                            <Text style={{ color: theme.colors.success, fontSize: theme.fontSizes.xs, fontWeight: '600' }}>Giriş</Text>
+                          </View>
+                        </Pressable>
+                      )}
+                      {isActive && (
+                        <Pressable onPress={() => checkOutMutation.mutate(item.id)} hitSlop={8}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: theme.colors.destructive + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: theme.radius.sm }}>
+                            <LogOut size={12} color={theme.colors.destructive} />
+                            <Text style={{ color: theme.colors.destructive, fontSize: theme.fontSizes.xs, fontWeight: '600' }}>Çıkış</Text>
+                          </View>
+                        </Pressable>
+                      )}
                     </View>
-                  ) : undefined
+                  </View>
                 }
               />
             )

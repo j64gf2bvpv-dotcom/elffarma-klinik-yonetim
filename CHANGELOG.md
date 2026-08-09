@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.21] - 2026-08-10
+
+**Mobil 3 orta-vaat özellik eklendi (gocust benchmark Faz 10 devam):** gocust.com analizinden kalan 3 orta-eforlu özellik mobil uygulamaya eklendi. **Doktor Ziyaret Check-in/Check-out** (`doctor_visits.check_in_at/check_out_at`): ziyaret kartında Giriş/Çıkış butonları, aktif ziyaret rozeti, ziyaret süresi (dk) hesabı — sütunlar şemada zaten mevcuttu. **Rekabet Analizi** (yeni `competitor_reports` tablosu): rakip firma, ürün, stok durumu (Stokta/Sınırlı/Yok), fiyat, görünürlük (İyi/Orta/Zayıf) alanlarıyla rekabet raporu oluşturma/silme — şemaya yeni tablo eklendi (idempotent). **Temsilci Hedef Düzenleme** (`sales_reps.sales_target`): Prim ekranında her temsilci kartında kalem ikonu → hedef düzenleme modali — sütun şemada zaten mevcuttu.
+
 ## [2.17.20] - 2026-08-08
 
 **Mobil 5 yeni ekran eklendi (gocust benchmark Faz 10):** gocust.com/mobile-crm derinlemesine analiz edilerek eksik tespit edilen 5 özellik, mevcut şema tabloları kullanılarak mobil uygulama'ya eklendi. **Fırsat Yönetimi** (`crm_opportunities`): satış hunisi (yeni→teklif→müzakere→kazanıldı/kaybedildi), stage filtreleme, inline stage değiştirme, kazanılan/açık pipeline tutar özetleri. **Görevler** (`tasks`): durum akışı (bekliyor→devam_ediyor→tamamlandı), öncelik rozetleri, gecikme uyarısı, Ajanda'ya entegre (zaten `useMyTasks` ile birleşik). **Numune Talepleri** (`sample_requests` + `sample_items`): durum akışı (beklemede→onaylandı→gönderildi→teslim edildi), genişletilebilir kart ile kalemleri görme, takip numarası. **Yakıt Kayıtları** (`vehicle_fuel_logs`): araç bazlı yakıt gider takibi, toplam harcama özeti. **Taksit Planları** (`payment_installment_plans` + `payment_installments`): otomatik taksit oluşturma (30'ar günlük vadelerle), ödeme ilerleme çubuğu, vade/gecikme takibi, genişletilebilir taksit detayı. Şema değişikliği yok — tüm tablolar zaten mevcut.

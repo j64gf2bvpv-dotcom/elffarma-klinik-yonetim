@@ -24,6 +24,7 @@ import { TasksScreen } from '@/screens/more/TasksScreen'
 import { SamplesScreen } from '@/screens/more/SamplesScreen'
 import { FuelLogsScreen } from '@/screens/more/FuelLogsScreen'
 import { InstallmentsScreen } from '@/screens/more/InstallmentsScreen'
+import { CompetitorReportsScreen } from '@/screens/more/CompetitorReportsScreen'
 import type { MoreStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<MoreStackParamList>()
@@ -59,6 +60,7 @@ export function MoreStack() {
       <Stack.Screen name="Samples" component={SamplesScreen} options={{ title: 'Numune Talepleri' }} />
       <Stack.Screen name="FuelLogs" component={FuelLogsScreen} options={{ title: 'Yakıt Kayıtları' }} />
       <Stack.Screen name="Installments" component={InstallmentsScreen} options={{ title: 'Taksit Planları' }} />
+      <Stack.Screen name="CompetitorReports" component={CompetitorReportsScreen} options={{ title: 'Rekabet Analizi' }} />
       <Stack.Screen
         name="ComingSoon"
         component={ComingSoonScreen}

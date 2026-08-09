@@ -23,6 +23,7 @@ import {
   Package,
   Fuel,
   CalendarClock,
+  Swords,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
@@ -65,6 +66,7 @@ const items: MenuItem[] = [
   { key: 'Görevler', label: 'Görevler', icon: CheckSquare },
   { key: 'Numune Talepleri', label: 'Numune Talepleri', icon: Package },
   { key: 'Taksit Planları', label: 'Taksit Planları', icon: CalendarClock },
+  { key: 'Rekabet Analizi', label: 'Rekabet Analizi', icon: Swords },
 ]
 
 export function MoreMenuScreen({ navigation }: Props) {
@@ -107,6 +109,7 @@ export function MoreMenuScreen({ navigation }: Props) {
                 'Görevler': 'Tasks',
                 'Numune Talepleri': 'Samples',
                 'Taksit Planları': 'Installments',
+                'Rekabet Analizi': 'CompetitorReports',
               }
               const route = routeMap[item.key]
               if (route) return navigation.navigate(route as never)
