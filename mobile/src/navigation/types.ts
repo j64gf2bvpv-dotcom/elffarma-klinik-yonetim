@@ -30,30 +30,17 @@ export type MoreStackParamList = {
   BusinessCardScan: undefined
   Map: undefined
   Customers: undefined
-  Sales: undefined
   DoctorVisits: undefined
   Agenda: undefined
   Reminders: undefined
-  Congresses: undefined
-  Prim: undefined
-  Expenses: undefined
-  Budget: undefined
   AIAnalysis: undefined
-  InstagramLeads: undefined
-  Vehicles: undefined
   Settings: undefined
   Opportunities: undefined
   Tasks: undefined
-  Samples: undefined
-  FuelLogs: undefined
-  Installments: undefined
-  CompetitorReports: undefined
 }
 
 export type MainTabParamList = {
   AnasayfaTab: undefined
-  StokTab: undefined
   CariHesapTab: undefined
-  TahsilatlarTab: undefined
   DigerTab: undefined
 }

@@ -3,27 +3,16 @@ import { FlatList, Pressable, Text, View } from 'react-native'
 import { ChevronRight, type LucideIcon } from 'lucide-react-native'
 import {
   UserRound,
-  ShoppingCart,
   Stethoscope,
   CalendarDays,
   BellRing,
-  Presentation,
-  Percent,
   Handshake,
-  ReceiptText,
-  Target,
   Sparkles,
-  AtSign,
-  Car,
   SlidersHorizontal,
   ScanLine,
   MapPin,
   TrendingUp,
   CheckSquare,
-  Package,
-  Fuel,
-  CalendarClock,
-  Swords,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
@@ -40,33 +29,20 @@ interface MenuItem {
   adminOnly?: boolean
 }
 
-// Masaüstündeki AppShell navItems'ının "Diğer" içine giren kısmı — bkz. plan
-// §Navigation. Faz 1'de hepsi ComingSoonScreen'e düşüyor (Müşteriler dahil,
-// çünkü CRUD'u Faz 2'de); nav şekli baştan sabit, ekranlar fazlar ilerledikçe
-// dolduruluyor.
+// gocust'un CRM özellik kapsamına indirgenmiş "Diğer" menüsü — stok/cari/
+// muhasebe/kongre gibi gocust'ta karşılığı olmayan modüller kaldırıldı.
 const items: MenuItem[] = [
   { key: 'Müşteriler', label: 'Müşteriler', icon: UserRound },
-  { key: 'Satışlar', label: 'Satışlar', icon: ShoppingCart },
   { key: 'Doktor Ziyaretleri', label: 'Doktor Ziyaretleri', icon: Stethoscope },
   { key: 'Ajanda', label: 'Ajanda', icon: CalendarDays },
   { key: 'Hatırlatmalar', label: 'Hatırlatmalar', icon: BellRing },
-  { key: 'Kongreler', label: 'Kongreler', icon: Presentation },
-  { key: 'Prim', label: 'Prim', icon: Percent },
   { key: 'CRM', label: 'CRM', icon: Handshake },
   { key: 'Kartvizit Tara', label: 'Kartvizit Tara', icon: ScanLine },
   { key: 'Harita', label: 'Harita', icon: MapPin },
-  { key: 'Giderler', label: 'Giderler', icon: ReceiptText },
-  { key: 'Bütçe Yılı', label: 'Bütçe Yılı', icon: Target },
   { key: 'AI Analiz', label: 'Yapay Zeka Analiz', icon: Sparkles },
-  { key: 'Instagram Doktor Listesi', label: 'Instagram Doktor Listesi', icon: AtSign },
-  { key: 'Araçlar', label: 'Araçlar', icon: Car },
-  { key: 'Yakıt Kayıtları', label: 'Yakıt Kayıtları', icon: Fuel },
   { key: 'Ayarlar', label: 'Ayarlar', icon: SlidersHorizontal, adminOnly: true },
   { key: 'Fırsat Yönetimi', label: 'Fırsat Yönetimi', icon: TrendingUp },
   { key: 'Görevler', label: 'Görevler', icon: CheckSquare },
-  { key: 'Numune Talepleri', label: 'Numune Talepleri', icon: Package },
-  { key: 'Taksit Planları', label: 'Taksit Planları', icon: CalendarClock },
-  { key: 'Rekabet Analizi', label: 'Rekabet Analizi', icon: Swords },
 ]
 
 export function MoreMenuScreen({ navigation }: Props) {
@@ -89,27 +65,16 @@ export function MoreMenuScreen({ navigation }: Props) {
             onPress={() => {
               const routeMap: Record<string, string> = {
                 'Müşteriler': 'Customers',
-                'Satışlar': 'Sales',
                 'Doktor Ziyaretleri': 'DoctorVisits',
                 'Ajanda': 'Agenda',
                 'Hatırlatmalar': 'Reminders',
-                'Kongreler': 'Congresses',
-                'Prim': 'Prim',
                 'CRM': 'CrmActivities',
                 'Kartvizit Tara': 'BusinessCardScan',
                 'Harita': 'Map',
-                'Giderler': 'Expenses',
-                'Bütçe Yılı': 'Budget',
                 'AI Analiz': 'AIAnalysis',
-                'Instagram Doktor Listesi': 'InstagramLeads',
-                'Araçlar': 'Vehicles',
-                'Yakıt Kayıtları': 'FuelLogs',
                 'Ayarlar': 'Settings',
                 'Fırsat Yönetimi': 'Opportunities',
                 'Görevler': 'Tasks',
-                'Numune Talepleri': 'Samples',
-                'Taksit Planları': 'Installments',
-                'Rekabet Analizi': 'CompetitorReports',
               }
               const route = routeMap[item.key]
               if (route) return navigation.navigate(route as never)

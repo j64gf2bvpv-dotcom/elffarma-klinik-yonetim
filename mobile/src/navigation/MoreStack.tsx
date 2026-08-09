@@ -7,24 +7,13 @@ import { CrmActivitiesScreen } from '@/screens/crm/CrmActivitiesScreen'
 import { BusinessCardScanScreen } from '@/screens/crm/BusinessCardScanScreen'
 import { MapScreen } from '@/screens/crm/MapScreen'
 import { CustomersScreen } from '@/screens/more/CustomersScreen'
-import { SalesScreen } from '@/screens/more/SalesScreen'
 import { DoctorVisitsScreen } from '@/screens/more/DoctorVisitsScreen'
 import { AgendaScreen } from '@/screens/more/AgendaScreen'
 import { RemindersScreen } from '@/screens/more/RemindersScreen'
-import { CongressesScreen } from '@/screens/more/CongressesScreen'
-import { PrimScreen } from '@/screens/more/PrimScreen'
-import { ExpensesScreen } from '@/screens/more/ExpensesScreen'
-import { BudgetScreen } from '@/screens/more/BudgetScreen'
 import { AIAnalysisScreen } from '@/screens/more/AIAnalysisScreen'
-import { InstagramLeadsScreen } from '@/screens/more/InstagramLeadsScreen'
-import { VehiclesScreen } from '@/screens/more/VehiclesScreen'
 import { SettingsScreen } from '@/screens/more/SettingsScreen'
 import { OpportunitiesScreen } from '@/screens/more/OpportunitiesScreen'
 import { TasksScreen } from '@/screens/more/TasksScreen'
-import { SamplesScreen } from '@/screens/more/SamplesScreen'
-import { FuelLogsScreen } from '@/screens/more/FuelLogsScreen'
-import { InstallmentsScreen } from '@/screens/more/InstallmentsScreen'
-import { CompetitorReportsScreen } from '@/screens/more/CompetitorReportsScreen'
 import type { MoreStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<MoreStackParamList>()
@@ -43,24 +32,13 @@ export function MoreStack() {
       <Stack.Screen name="BusinessCardScan" component={BusinessCardScanScreen} options={{ title: 'Kartvizit Tara' }} />
       <Stack.Screen name="Map" component={MapScreen} options={{ title: 'Harita' }} />
       <Stack.Screen name="Customers" component={CustomersScreen} options={{ title: 'Müşteriler' }} />
-      <Stack.Screen name="Sales" component={SalesScreen} options={{ title: 'Satışlar' }} />
       <Stack.Screen name="DoctorVisits" component={DoctorVisitsScreen} options={{ title: 'Doktor Ziyaretleri' }} />
       <Stack.Screen name="Agenda" component={AgendaScreen} options={{ title: 'Ajanda' }} />
       <Stack.Screen name="Reminders" component={RemindersScreen} options={{ title: 'Hatırlatmalar' }} />
-      <Stack.Screen name="Congresses" component={CongressesScreen} options={{ title: 'Kongreler' }} />
-      <Stack.Screen name="Prim" component={PrimScreen} options={{ title: 'Prim' }} />
-      <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ title: 'Giderler' }} />
-      <Stack.Screen name="Budget" component={BudgetScreen} options={{ title: 'Bütçe Yılı' }} />
       <Stack.Screen name="AIAnalysis" component={AIAnalysisScreen} options={{ title: 'Yapay Zeka Analiz' }} />
-      <Stack.Screen name="InstagramLeads" component={InstagramLeadsScreen} options={{ title: 'Instagram Doktor Listesi' }} />
-      <Stack.Screen name="Vehicles" component={VehiclesScreen} options={{ title: 'Araçlar' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ayarlar' }} />
       <Stack.Screen name="Opportunities" component={OpportunitiesScreen} options={{ title: 'Fırsat Yönetimi' }} />
       <Stack.Screen name="Tasks" component={TasksScreen} options={{ title: 'Görevler' }} />
-      <Stack.Screen name="Samples" component={SamplesScreen} options={{ title: 'Numune Talepleri' }} />
-      <Stack.Screen name="FuelLogs" component={FuelLogsScreen} options={{ title: 'Yakıt Kayıtları' }} />
-      <Stack.Screen name="Installments" component={InstallmentsScreen} options={{ title: 'Taksit Planları' }} />
-      <Stack.Screen name="CompetitorReports" component={CompetitorReportsScreen} options={{ title: 'Rekabet Analizi' }} />
       <Stack.Screen
         name="ComingSoon"
         component={ComingSoonScreen}

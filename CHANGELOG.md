@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.22] - 2026-08-10
+
+**Mobil navigasyon gocust'un CRM özellik kapsamına indirgendi:** Kullanıcı isteği üzerine mobil uygulamanın menü yapısı, gocust.com/mobile-crm'in fiyatlandırma sayfasındaki özellik listesinde karşılığı olmayan modüllerden arındırıldı. Alt navigasyon 5 sekmeden 3'e indi (Anasayfa/Cari Hesap/Diğer — Stok ve Tahsilatlar kaldırıldı). "Diğer" menüsünden Satışlar, Kongreler, Prim, Giderler, Bütçe Yılı, Instagram Doktor Listesi, Araçlar, Yakıt Kayıtları, Numune Talepleri, Taksit Planları, Rekabet Analizi kaldırıldı; bu ekranların feature (api/hooks) klasörleri de temizlendi. Kalanlar: Müşteriler, Doktor Ziyaretleri, Ajanda, Hatırlatmalar, CRM, Kartvizit Tara, Harita, AI Analiz, Ayarlar, Fırsat Yönetimi, Görevler. Not: bu değişiklik sadece `mobile/` klasörünü etkiler, masaüstü uygulaması (src/) dokunulmadı — tüm bu modüller masaüstünde aynen duruyor. Ayrıca web önizlemesi (`expo start --web`) artık çalışıyor: `react-native-maps` native-only bir modül olduğu için tüm bundle'ı çökertiyordu, `MapScreen.web.tsx` ile web'e özel bir yer tutucu eklendi.
+
 ## [2.17.21] - 2026-08-10
 
 **Mobil 3 orta-vaat özellik eklendi (gocust benchmark Faz 10 devam):** gocust.com analizinden kalan 3 orta-eforlu özellik mobil uygulamaya eklendi. **Doktor Ziyaret Check-in/Check-out** (`doctor_visits.check_in_at/check_out_at`): ziyaret kartında Giriş/Çıkış butonları, aktif ziyaret rozeti, ziyaret süresi (dk) hesabı — sütunlar şemada zaten mevcuttu. **Rekabet Analizi** (yeni `competitor_reports` tablosu): rakip firma, ürün, stok durumu (Stokta/Sınırlı/Yok), fiyat, görünürlük (İyi/Orta/Zayıf) alanlarıyla rekabet raporu oluşturma/silme — şemaya yeni tablo eklendi (idempotent). **Temsilci Hedef Düzenleme** (`sales_reps.sales_target`): Prim ekranında her temsilci kartında kalem ikonu → hedef düzenleme modali — sütun şemada zaten mevcuttu.
