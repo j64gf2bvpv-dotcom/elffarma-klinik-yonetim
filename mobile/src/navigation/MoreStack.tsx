@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { useTheme } from '@/lib/ThemeContext'
 import { MoreMenuScreen } from '@/screens/more/MoreMenuScreen'
 import { ComingSoonScreen } from '@/screens/ComingSoonScreen'
 import { BusinessCardScanScreen } from '@/screens/crm/BusinessCardScanScreen'
@@ -22,34 +21,27 @@ import type { MoreStackParamList } from './types'
 const Stack = createNativeStackNavigator<MoreStackParamList>()
 
 export function MoreStack() {
-  const theme = useTheme()
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: theme.colors.card },
-        headerTintColor: theme.colors.foreground,
-      }}
-    >
-      <Stack.Screen name="MoreMenu" component={MoreMenuScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="BusinessCardScan" component={BusinessCardScanScreen} options={{ title: 'Kartvizit Tara' }} />
-      <Stack.Screen name="DoctorVisits" component={DoctorVisitsScreen} options={{ title: 'Doktor Ziyaretleri' }} />
-      <Stack.Screen name="Agenda" component={AgendaScreen} options={{ title: 'Ajanda' }} />
-      <Stack.Screen name="Reminders" component={RemindersScreen} options={{ title: 'Hatırlatmalar' }} />
-      <Stack.Screen name="AIAnalysis" component={AIAnalysisScreen} options={{ title: 'Yapay Zeka Analiz' }} />
-      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ayarlar' }} />
-      <Stack.Screen name="Opportunities" component={OpportunitiesScreen} options={{ title: 'Fırsat Yönetimi' }} />
-      <Stack.Screen name="Tasks" component={TasksScreen} options={{ title: 'Görevler' }} />
-      <Stack.Screen name="Quotes" component={QuotesScreen} options={{ title: 'Teklifler' }} />
-      <Stack.Screen name="Congresses" component={CongressesScreen} options={{ title: 'Kongreler' }} />
-      <Stack.Screen name="CongressDetail" component={CongressDetailScreen} options={{ title: '' }} />
-      <Stack.Screen name="Targets" component={TargetsScreen} options={{ title: 'Hedeflerim' }} />
-      <Stack.Screen name="AuditLogs" component={AuditLogsScreen} options={{ title: 'Audit Log' }} />
-      <Stack.Screen name="Stock" component={StockScreen} options={{ title: 'Stok' }} />
-      <Stack.Screen
-        name="ComingSoon"
-        component={ComingSoonScreen}
-        options={({ route }) => ({ title: route.params.title })}
-      />
+    // Alt ekranların tamamı kendi ScreenHeader'ını (geri oku dahil, bkz.
+    // components/ui/ScreenHeader.tsx) gösteriyor — native-stack header'ı
+    // hepsinde kapalı, tekrar eden çift başlık olmasın diye.
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MoreMenu" component={MoreMenuScreen} />
+      <Stack.Screen name="BusinessCardScan" component={BusinessCardScanScreen} />
+      <Stack.Screen name="DoctorVisits" component={DoctorVisitsScreen} />
+      <Stack.Screen name="Agenda" component={AgendaScreen} />
+      <Stack.Screen name="Reminders" component={RemindersScreen} />
+      <Stack.Screen name="AIAnalysis" component={AIAnalysisScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Opportunities" component={OpportunitiesScreen} />
+      <Stack.Screen name="Tasks" component={TasksScreen} />
+      <Stack.Screen name="Quotes" component={QuotesScreen} />
+      <Stack.Screen name="Congresses" component={CongressesScreen} />
+      <Stack.Screen name="CongressDetail" component={CongressDetailScreen} />
+      <Stack.Screen name="Targets" component={TargetsScreen} />
+      <Stack.Screen name="AuditLogs" component={AuditLogsScreen} />
+      <Stack.Screen name="Stock" component={StockScreen} />
+      <Stack.Screen name="ComingSoon" component={ComingSoonScreen} />
     </Stack.Navigator>
   )
 }

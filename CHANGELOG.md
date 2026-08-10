@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.42] - 2026-08-10
+
+**Mobil "Daha Fazla" ve Doktorlar alt ekranlarına gerçek geri tuşu eklendi + Ana Sayfa'da animasyonlu çubuk grafik:** Kök neden — bu ekranların (Hatırlatmalar, Ajanda, Stok, Teklifler, Kongreler, Hedeflerim, Audit Log, Görevler, Fırsatlar, Ayarlar, AI Analiz, Kartvizit Tara, Ziyaret Geçmişi, Ziyaret/Sipariş/Teklif akışları vb.) hepsi kendi `ScreenHeader`'ını (native-stack header'ı KAPALI, `headerShown:false`) gösteriyordu ama `ScreenHeader` geri tuşu içermiyordu — çift başlık + kullanılamaz/erişilemez native geri oku. `ScreenHeader.tsx` artık `useNavigation().canGoBack()` ile geri gidilebilecek ekranlarda kendi geri okunu gösteriyor (sekme köklerinde — Dashboard, Doktorlar listesi, Harita — hâlâ görünmüyor, doğru davranış). Ayrıca Ana Sayfa'daki Toplam Cari/Ürün Çeşidi/Bugünkü İşlemler artık düz sayı kartları değil, yeni `AnimatedStatBars` bileşeniyle ekrana girişte 0'dan dolan animasyonlu çubuklar (her metrik farklı birimde olduğundan ortak bir eksende karşılaştırma yapılmıyor, sayı uydurulmadı).
+
 ## [2.17.41] - 2026-08-10
 
 **Mobil Ajanda'ya doğrudan hatırlatma ekleme eklendi:** "Ajanda" ekranı önceden salt okunurdu (hatırlatma/ziyaret-takibi/görev birleşik listesi) — artık başlıkta "+" butonuyla doğrudan yeni hatırlatma eklenebiliyor, aynı form Hatırlatmalar ekranıyla paylaşılıyor (`mobile/src/components/AddReminderModal.tsx`'e taşındı, iki ekran de aynı `useCreateReminder`'ı kullanıyor — halihazırda yerel bildirim kuruyordu). Gecikmiş hatırlatmalar zaten bir önceki sürümde Dashboard'daki "Önemli Duyurular" banner'ına sayılıyordu (bkz. 2.17.36) — bu değişmedi, sadece ekleme eksikti.

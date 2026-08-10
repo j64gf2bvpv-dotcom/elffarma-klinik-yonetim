@@ -21,9 +21,11 @@ export function DoctorsStack() {
     >
       <Stack.Screen name="DoctorsList" component={DoctorsListScreen} options={{ headerShown: false }} />
       <Stack.Screen name="DoctorDetail" component={DoctorDetailScreen} options={{ title: '' }} />
-      <Stack.Screen name="VisitFlow" component={VisitFlowScreen} options={{ title: 'Ziyaret' }} />
-      <Stack.Screen name="CreateOrder" component={CreateOrderScreen} options={{ title: 'Yeni Sipariş' }} />
-      <Stack.Screen name="CreateQuote" component={CreateQuoteScreen} options={{ title: 'Yeni Teklif' }} />
+      {/* VisitFlow/CreateOrder/CreateQuote kendi ScreenHeader'ını (geri oku
+          dahil) gösteriyor — native header kapalı, çift başlık olmasın diye. */}
+      <Stack.Screen name="VisitFlow" component={VisitFlowScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="CreateOrder" component={CreateOrderScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="CreateQuote" component={CreateQuoteScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   )
 }

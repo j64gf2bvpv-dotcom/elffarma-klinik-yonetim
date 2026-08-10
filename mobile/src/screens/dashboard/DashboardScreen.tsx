@@ -22,7 +22,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
-import { StatCard } from '@/components/ui/StatCard'
+import { AnimatedStatBars } from '@/components/ui/AnimatedStatBars'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -374,16 +374,13 @@ export function DashboardScreen({ navigation }: Props) {
             </View>
           </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-            <StatCard icon={Landmark} label="Toplam Cari" value={currency(cariTotals.totalBalance)} sublabel="Açık bakiye" />
-            <StatCard icon={Boxes} label="Ürün Çeşidi" value={products.length.toLocaleString('tr-TR')} sublabel="Aktif" />
-            <StatCard
-              icon={ShoppingCart}
-              label="Bugünkü İşlemler"
-              value={todaysTransactionCount.toLocaleString('tr-TR')}
-              sublabel="Satış + tahsilat"
-            />
-          </View>
+          <AnimatedStatBars
+            items={[
+              { icon: Landmark, label: 'Toplam Cari', value: currency(cariTotals.totalBalance), color: theme.colors.primary },
+              { icon: Boxes, label: 'Ürün Çeşidi', value: products.length.toLocaleString('tr-TR'), color: theme.colors.success },
+              { icon: ShoppingCart, label: 'Bugünkü İşlemler', value: todaysTransactionCount.toLocaleString('tr-TR'), color: theme.colors.warning },
+            ]}
+          />
 
           <View>
             <SectionHeader

@@ -3,6 +3,7 @@ import { Text, View } from 'react-native'
 import { Clock } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useTheme } from '@/lib/ThemeContext'
 import type { MoreStackParamList } from '@/navigation/types'
 
@@ -16,11 +17,9 @@ export function ComingSoonScreen({ route }: Props) {
   const theme = useTheme()
   return (
     <Screen>
+      <ScreenHeader title={title} />
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
         <Clock color={theme.colors.mutedForeground} size={40} />
-        <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '600' }}>
-          {title}
-        </Text>
         <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.sm, textAlign: 'center' }}>
           Bu bölüm yakında mobilde de kullanıma açılacak.
         </Text>
