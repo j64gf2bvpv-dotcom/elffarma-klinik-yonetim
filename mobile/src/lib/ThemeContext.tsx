@@ -1,12 +1,13 @@
 import * as React from 'react'
-import { blackGoldTheme, type Theme } from './theme'
+import { redLightTheme, type Theme } from './theme'
 
-const ThemeContext = React.createContext<Theme>(blackGoldTheme)
+const ThemeContext = React.createContext<Theme>(redLightTheme)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Faz 1: tek sabit tema (Siyah/Gold). app_settings.brand_theme'e bağlı
-  // seçilebilir tema/renk modu senkronizasyonu Faz 6'da eklenecek.
-  return <ThemeContext.Provider value={blackGoldTheme}>{children}</ThemeContext.Provider>
+  // Sabit tema: masaüstünün varsayılan "Kırmızı" temasıyla eşleşen açık/beyaz
+  // zemin + kırmızı vurgu. app_settings.brand_theme'e bağlı seçilebilir
+  // tema/renk modu senkronizasyonu ileride eklenebilir.
+  return <ThemeContext.Provider value={redLightTheme}>{children}</ThemeContext.Provider>
 }
 
 export function useTheme(): Theme {

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.24] - 2026-08-10
+
+**Mobil alt navigasyon 5 sekmeye tamamlandı, sabit tema Kırmızı/Açık'a çevrildi:** Yeni **Canlı** sekmesi (`LiveScreen`) eklendi — bugünkü ziyaretler (check-in/check-out durumuyla), şu an sahada olan doktor sayısı, son CRM aktiviteleri ve açık görevler tek ekranda; mevcut "Anasayfa" ekranı **Panel** adıyla 4. sıraya taşındı (hedef/istatistik özeti, içerik değişmedi). Alt navigasyon artık: Canlı, Müşteriler, Aktiviteler, Panel, Diğer. Mobil uygulamanın sabit teması Siyah/Gold'dan masaüstünün varsayılan **Kırmızı** temasına (beyaz zemin + kırmızı vurgu/ikon rengi) çevrildi — `mobile/src/lib/theme.ts`, durum çubuğu buna göre `dark` stile alındı (`App.tsx`). Not: seçilebilir tema sistemi (masaüstündeki 10 renk) mobile henüz taşınmadı, bu sadece sabit varsayılanın değişimi.
+
 ## [2.17.23] - 2026-08-10
 
 **Mobil alt navigasyon gocust'un 5 sekmeli yapısına (Live/Customers/Activities/Dashboard/More) benzetildi:** "Cari Hesap" sekmesi kaldırılıp yerine kendi bağımsız sekmeleri olan **Müşteriler** (bakiye listesi + yeni müşteri ekleme, eski Cari Hesap + eski "Diğer > Müşteriler" ekranlarının birleşimi) ve **Aktiviteler** (eski "Diğer > CRM" ekranı, artık kendi sekmesi) eklendi. Alt navigasyon artık 4 sekme: Anasayfa, Müşteriler, Aktiviteler, Diğer — gocust'taki "Live" ve "Dashboard" ayrımı bizde tek gerçek-veri Anasayfa ekranında zaten birleşik olduğu için uydurma bir 5. sekme eklenmedi. "Diğer" menüsü daha da sadeleşti (Müşteriler ve CRM çıkarıldı, artık kendi sekmeleri var).

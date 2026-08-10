@@ -1,38 +1,38 @@
 import { formatHex } from 'culori'
 
 /**
- * Masaüstündeki `src/features/appSettings/brandThemes.ts`'in BLACK_GOLD_VARS
- * sabitiyle birebir aynı OKLCH değerleri — tek fark, CSS custom property
- * yerine (RN'de CSS değişkeni yok) düz bir JS objesi olarak hesaplanıp
- * ThemeContext üzerinden dağıtılması. Faz 1 kapsamında sadece bu sabit
- * "Siyah / Gold (Premium)" teması kullanılıyor; masaüstündeki 10 temanın
- * tamamının seçilebilir hale gelmesi (brandThemeCssVars'ın hue/chromaScale'e
- * göre prosedürel ürettiği genel formül) Faz 6'ya bırakıldı — bkz. plan.
+ * Masaüstündeki `src/features/appSettings/brandThemes.ts`'in `brandThemeCssVars`
+ * fonksiyonunun hue=23 (Kırmızı, defaultBrandTheme), chromaScale=1, mode='light'
+ * için ürettiği değerlerle birebir aynı OKLCH değerleri — tek fark, CSS custom
+ * property yerine (RN'de CSS değişkeni yok) düz bir JS objesi olarak
+ * hesaplanıp ThemeContext üzerinden dağıtılması. Mobilin sabit teması
+ * masaüstünün varsayılan "Kırmızı" temasıyla (beyaz zemin + kırmızı vurgu)
+ * eşleşsin diye Siyah/Gold'dan buna değiştirildi (kullanıcı isteği, 2026-08-10).
  */
-const BLACK_GOLD_OKLCH = {
-  primary: 'oklch(0.78 0.14 85)',
-  primaryForeground: 'oklch(0.15 0.01 85)',
-  secondary: 'oklch(0.2 0.02 85)',
-  secondaryForeground: 'oklch(0.92 0.03 85)',
-  muted: 'oklch(0.19 0.008 85)',
-  mutedForeground: 'oklch(0.65 0.015 85)',
-  accent: 'oklch(0.24 0.035 85)',
-  accentForeground: 'oklch(0.94 0.03 85)',
-  border: 'oklch(0.26 0.015 85)',
-  input: 'oklch(0.26 0.015 85)',
-  ring: 'oklch(0.78 0.14 85)',
-  gold: 'oklch(0.78 0.14 85)',
-  background: 'oklch(0.13 0.004 85)',
-  foreground: 'oklch(0.93 0.012 85)',
-  card: 'oklch(0.16 0.006 85)',
-  cardForeground: 'oklch(0.93 0.012 85)',
-  popover: 'oklch(0.16 0.006 85)',
-  popoverForeground: 'oklch(0.93 0.012 85)',
-  sidebar: 'oklch(0.1 0.006 85)',
-  sidebarForeground: 'oklch(0.95 0.015 85)',
-  sidebarBorder: 'oklch(0.2 0.012 85)',
-  sidebarAccent: 'oklch(0.3 0.06 85)',
-  sidebarAccentForeground: 'oklch(0.97 0.02 85)',
+const RED_LIGHT_OKLCH = {
+  primary: 'oklch(0.5 0.2 23)',
+  primaryForeground: 'oklch(0.99 0.003 23)',
+  secondary: 'oklch(0.95 0.03 23)',
+  secondaryForeground: 'oklch(0.32 0.12 23)',
+  muted: 'oklch(0.96 0.008 23)',
+  mutedForeground: 'oklch(0.48 0.02 23)',
+  accent: 'oklch(0.93 0.05 23)',
+  accentForeground: 'oklch(0.3 0.14 23)',
+  border: 'oklch(0.9 0.015 23)',
+  input: 'oklch(0.9 0.015 23)',
+  ring: 'oklch(0.5 0.2 23)',
+  gold: 'oklch(0.5 0.2 23)',
+  background: 'oklch(0.99 0.002 23)',
+  foreground: 'oklch(0.2 0.02 23)',
+  card: 'oklch(1 0 0)',
+  cardForeground: 'oklch(0.2 0.02 23)',
+  popover: 'oklch(1 0 0)',
+  popoverForeground: 'oklch(0.2 0.02 23)',
+  sidebar: 'oklch(0.32 0.19 23)',
+  sidebarForeground: 'oklch(0.99 0.005 23)',
+  sidebarBorder: 'oklch(0.4 0.19 23)',
+  sidebarAccent: 'oklch(0.42 0.19 23)',
+  sidebarAccentForeground: 'oklch(1 0 0)',
 } as const
 
 // Durum renkleri marka temasından bağımsız (masaüstünde de öyle — index.css'de
@@ -96,9 +96,9 @@ export interface Theme {
 
 const RADIUS_MD = 0.65 * 16 // 10.4
 
-export const blackGoldTheme: Theme = {
+export const redLightTheme: Theme = {
   colors: {
-    ...toHexMap(BLACK_GOLD_OKLCH),
+    ...toHexMap(RED_LIGHT_OKLCH),
     ...toHexMap(STATUS_OKLCH),
   } as ThemeColors,
   radius: { sm: RADIUS_MD - 4, md: RADIUS_MD, lg: RADIUS_MD + 4, xl: RADIUS_MD + 8 },

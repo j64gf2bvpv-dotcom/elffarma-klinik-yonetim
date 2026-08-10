@@ -8,6 +8,10 @@ export type DashboardStackParamList = {
   Dashboard: undefined
 }
 
+export type LiveStackParamList = {
+  Live: undefined
+}
+
 export type CustomersStackParamList = {
   CustomersList: undefined
   CustomerDetail: { customerId: string; customerName: string }
@@ -32,8 +36,9 @@ export type MoreStackParamList = {
 }
 
 export type MainTabParamList = {
-  AnasayfaTab: undefined
+  LiveTab: undefined
   CustomersTab: undefined
   ActivitiesTab: undefined
+  DashboardTab: undefined
   DigerTab: undefined
 }

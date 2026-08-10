@@ -19,7 +19,7 @@ export default function App() {
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <OfflineSyncProvider>
-                <StatusBar style="light" />
+                <StatusBar style="dark" />
                 <RootNavigator />
                 <Toast />
               </OfflineSyncProvider>

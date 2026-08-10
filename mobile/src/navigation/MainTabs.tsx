@@ -1,20 +1,21 @@
 import * as React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { Gauge, Users, Activity, MoreHorizontal } from 'lucide-react-native'
+import { Radio, Users, Activity, LayoutDashboard, MoreHorizontal } from 'lucide-react-native'
 import { useTheme } from '@/lib/ThemeContext'
-import { DashboardStack } from './DashboardStack'
+import { LiveStack } from './LiveStack'
 import { CustomersStack } from './CustomersStack'
 import { ActivitiesStack } from './ActivitiesStack'
+import { DashboardStack } from './DashboardStack'
 import { MoreStack } from './MoreStack'
 import type { MainTabParamList } from './types'
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
 
 /**
- * gocust'un Live/Customers/Activities/Dashboard/More alt navigasyonundan
- * ilham alınmış 4 sekme (Anasayfa/Müşteriler/Aktiviteler/Diğer) — "Live" ve
- * "Dashboard" ayrımı bizde yok, ikisi zaten tek gerçek-veri Anasayfa
- * ekranında birleşik olduğu için uydurma bir 5. sekme eklenmedi.
+ * gocust'un Live/Customers/Activities/Dashboard/More alt navigasyonuna
+ * birebir uyarlanmış 5 sekme. "Canlı" (Live) o an sahada olan/bugünkü
+ * ziyaret ve aktivite akışını gösterir; "Panel" (Dashboard) hedef/istatistik
+ * özetini gösterir — ikisi ayrı ekranlar, içerik tekrarı yok.
  */
 export function MainTabs() {
   const theme = useTheme()
@@ -28,9 +29,9 @@ export function MainTabs() {
       }}
     >
       <Tab.Screen
-        name="AnasayfaTab"
-        component={DashboardStack}
-        options={{ title: 'Anasayfa', tabBarIcon: ({ color, size }) => <Gauge color={color} size={size} /> }}
+        name="LiveTab"
+        component={LiveStack}
+        options={{ title: 'Canlı', tabBarIcon: ({ color, size }) => <Radio color={color} size={size} /> }}
       />
       <Tab.Screen
         name="CustomersTab"
@@ -41,6 +42,11 @@ export function MainTabs() {
         name="ActivitiesTab"
         component={ActivitiesStack}
         options={{ title: 'Aktiviteler', tabBarIcon: ({ color, size }) => <Activity color={color} size={size} /> }}
+      />
+      <Tab.Screen
+        name="DashboardTab"
+        component={DashboardStack}
+        options={{ title: 'Panel', tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} /> }}
       />
       <Tab.Screen
         name="DigerTab"
