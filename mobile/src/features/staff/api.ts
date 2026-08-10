@@ -8,6 +8,9 @@ export async function fetchStaff(): Promise<Staff[]> {
   return data as Staff[]
 }
 
-export async function updateStaff(id: string, patch: Partial<Pick<Staff, 'role' | 'is_active' | 'full_name' | 'phone'>>): Promise<Staff> {
+export async function updateStaff(
+  id: string,
+  patch: Partial<Pick<Staff, 'role' | 'is_active' | 'full_name' | 'phone' | 'avatar_url'>>,
+): Promise<Staff> {
   return offlineUpdate<Staff>('staff', id, patch, 'Personel güncelleme')
 }

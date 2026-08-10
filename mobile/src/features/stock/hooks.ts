@@ -1,12 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Toast from 'react-native-toast-message'
-import { fetchProducts, recordStockMovement, type RecordMovementInput } from './api'
-import type { BrandLine, Product } from '@shared/types/database'
+import { fetchProducts, fetchStockMovements, recordStockMovement, type RecordMovementInput } from './api'
+import type { BrandLine, MovementType, Product } from '@shared/types/database'
 
 export function useProducts(search: string, brandLine?: BrandLine) {
   return useQuery({
     queryKey: ['products', search, brandLine],
     queryFn: () => fetchProducts(search, brandLine),
+  })
+}
+
+export function useStockMovements(staffId: string | undefined, from: string, to: string, movementTypes?: MovementType[]) {
+  return useQuery({
+    queryKey: ['stock_movements', staffId, from, to, movementTypes],
+    queryFn: () => fetchStockMovements({ staffId: staffId as string, from, to, movementTypes }),
+    enabled: !!staffId,
   })
 }
 

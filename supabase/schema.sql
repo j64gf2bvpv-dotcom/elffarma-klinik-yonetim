@@ -2186,6 +2186,47 @@ create policy "audit_logs_select_admin" on public.audit_logs for select
 
 comment on table public.audit_logs is 'Değiştirilemez/silinemez işlem kaydı — sadece INSERT policy''si var, admin okuyabilir';
 
+-- =========================================================
+-- 48. PERSONEL KENDİ PROFİLİNİ DÜZENLEYEBİLİR (staff.avatar_url + self-update)
+-- =========================================================
+-- Mobil Ayarlar > Profilim: personel kendi fotoğrafını/telefonunu
+-- değiştirebilsin diye. staff tablosu daha önce sadece admin-yazılabilir
+-- (staff_update_admin) idi — bu bölüm "kendi satırını güncelleyebilir"
+-- politikasını EKLİYOR (mevcut admin politikasını değiştirmiyor/kaldırmıyor,
+-- Postgres RLS için aynı komutta birden fazla policy OR'lanır). Personelin
+-- bu yeni yetkiyi kullanarak kendi role/is_active/full_name alanlarını
+-- değiştirip yetki yükseltmesini (self-privilege-escalation) engellemek
+-- için bir BEFORE UPDATE trigger'ı bu üç alanı admin olmayan bir istekte
+-- sessizce eski değerine geri çeviriyor — RLS policy tek başına kolon
+-- bazlı kısıtlama yapamadığı için bu koruma trigger seviyesinde.
+alter table public.staff add column if not exists avatar_url text;
+comment on column public.staff.avatar_url is 'profile-images bucket''ındaki kendi profil fotoğrafı (staff/<id>.jpg), personel Ayarlar''dan kendi yükler';
+
+drop policy if exists "staff_update_self" on public.staff;
+create policy "staff_update_self" on public.staff for update
+  using (auth.uid() = id) with check (auth.uid() = id);
+
+create or replace function public.protect_staff_privileged_columns()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    new.role := old.role;
+    new.is_active := old.is_active;
+    new.full_name := old.full_name;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists staff_protect_privileged_columns on public.staff;
+create trigger staff_protect_privileged_columns
+  before update on public.staff
+  for each row execute function public.protect_staff_privileged_columns();
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

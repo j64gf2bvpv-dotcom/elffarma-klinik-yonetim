@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.44] - 2026-08-10
+
+**Mobil: personel kendi profil fotoğrafını ve telefonunu düzenleyebiliyor (⚠️ Supabase'de schema.sql'in yeniden çalıştırılması gerekiyor).** `staff` tablosu önceden sadece admin tarafından yazılabiliyordu (shared-trust modelin bilinçli istisnası) — yeni `staff_update_self` RLS policy'si personelin KENDİ satırını güncellemesine izin veriyor, ama bir `BEFORE UPDATE` trigger'ı (`protect_staff_privileged_columns`) admin olmayan bir istekte `role`/`is_active`/`full_name` alanlarını sessizce eski değerine geri çevirerek kendi kendine yetki yükseltmeyi (self-privilege-escalation) engelliyor — sadece `avatar_url`/`phone` gerçekten değişebiliyor. Yeni `staff.avatar_url` kolonu + mevcut `profile-images` bucket'ı (public, zaten "sales-rep/..." fotoğrafları için ayrılmıştı) kullanılıyor. Ayarlar ekranına fotoğraf seç/yükle (expo-image-picker + yeni `base64-arraybuffer` bağımlılığı, `mobile/src/lib/uploadImage.ts`) ve telefon düzenleme eklendi. **Bu değişikliğin çalışması için güncellenmiş `supabase/schema.sql`'in Supabase SQL Editor'da yeniden çalıştırılması gerekiyor** (idempotent, mevcut veriyi etkilemez).
+
 ## [2.17.43] - 2026-08-10
 
 **Kritik hata düzeltmesi: Mobil "Ziyarete Başla" veritabanı hatasıyla başarısız oluyordu.** `doctor_visits.sales_rep_id` şemada `staff(id)`'e değil `sales_reps(id)`'ye FK'lı (`doctor_visits_sales_rep_id_fkey`) — ama `createVisit`/`startVisitForCustomer` (mobile/src/features/doctorVisits/api.ts) giriş yapan personelin kendi auth id'sini doğrudan bu alana yazıyordu, bu da neredeyse her zaman FK ihlaline (Postgres 23503) yol açıp ziyaret check-in'ini tamamen kırıyordu — bu oturumda eklenen "Verilen Numuneler" özelliği de bu yüzden hiç tetiklenemiyordu. Artık `resolveSalesRepId()` ile giriş yapan personelin adı `sales_reps.name`'e eşleştirilip (uygulamanın her yerindeki aynı isim-bazlı bağlanma deseni) doğru id yazılıyor; eşleşme yoksa uydurma bir id kullanmak yerine `null` yazılıyor.
