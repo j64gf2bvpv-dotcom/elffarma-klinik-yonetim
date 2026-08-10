@@ -1,0 +1,25 @@
+import * as React from 'react'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { useTheme } from '@/lib/ThemeContext'
+import { DoctorsListScreen } from '@/screens/doctors/DoctorsListScreen'
+import { DoctorDetailScreen } from '@/screens/doctors/DoctorDetailScreen'
+import { VisitFlowScreen } from '@/screens/doctors/VisitFlowScreen'
+import type { DoctorsStackParamList } from './types'
+
+const Stack = createNativeStackNavigator<DoctorsStackParamList>()
+
+export function DoctorsStack() {
+  const theme = useTheme()
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: theme.colors.card },
+        headerTintColor: theme.colors.foreground,
+      }}
+    >
+      <Stack.Screen name="DoctorsList" component={DoctorsListScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="DoctorDetail" component={DoctorDetailScreen} options={{ title: '' }} />
+      <Stack.Screen name="VisitFlow" component={VisitFlowScreen} options={{ title: 'Ziyaret' }} />
+    </Stack.Navigator>
+  )
+}

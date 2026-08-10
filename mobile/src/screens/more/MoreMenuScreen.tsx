@@ -8,7 +8,6 @@ import {
   Sparkles,
   SlidersHorizontal,
   ScanLine,
-  MapPin,
   TrendingUp,
   CheckSquare,
 } from 'lucide-react-native'
@@ -27,18 +26,17 @@ interface MenuItem {
   adminOnly?: boolean
 }
 
-// gocust'un CRM özellik kapsamına indirgenmiş "Diğer" menüsü — stok/cari/
-// muhasebe/kongre gibi gocust'ta karşılığı olmayan modüller kaldırıldı.
+// Master talimat §6'daki "Daha Fazla" menüsü — Doktorlar/Harita/Aktiviteler
+// artık kendi alt sekmeleri olduğu için burada değil.
 const items: MenuItem[] = [
-  { key: 'Doktor Ziyaretleri', label: 'Doktor Ziyaretleri', icon: Stethoscope },
+  { key: 'Fırsat Yönetimi', label: 'Fırsatlar', icon: TrendingUp },
+  { key: 'Görevler', label: 'Görevler', icon: CheckSquare },
+  { key: 'Doktor Ziyaretleri', label: 'Ziyaret Geçmişi', icon: Stethoscope },
   { key: 'Ajanda', label: 'Ajanda', icon: CalendarDays },
   { key: 'Hatırlatmalar', label: 'Hatırlatmalar', icon: BellRing },
   { key: 'Kartvizit Tara', label: 'Kartvizit Tara', icon: ScanLine },
-  { key: 'Harita', label: 'Harita', icon: MapPin },
   { key: 'AI Analiz', label: 'Yapay Zeka Analiz', icon: Sparkles },
   { key: 'Ayarlar', label: 'Ayarlar', icon: SlidersHorizontal, adminOnly: true },
-  { key: 'Fırsat Yönetimi', label: 'Fırsat Yönetimi', icon: TrendingUp },
-  { key: 'Görevler', label: 'Görevler', icon: CheckSquare },
 ]
 
 export function MoreMenuScreen({ navigation }: Props) {
@@ -64,7 +62,6 @@ export function MoreMenuScreen({ navigation }: Props) {
                 'Ajanda': 'Agenda',
                 'Hatırlatmalar': 'Reminders',
                 'Kartvizit Tara': 'BusinessCardScan',
-                'Harita': 'Map',
                 'AI Analiz': 'AIAnalysis',
                 'Ayarlar': 'Settings',
                 'Fırsat Yönetimi': 'Opportunities',

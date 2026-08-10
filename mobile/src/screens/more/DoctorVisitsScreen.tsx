@@ -84,7 +84,7 @@ export function DoctorVisitsScreen(_: Props) {
                     {isCompleted && <Badge variant="secondary">Tamam</Badge>}
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       {!item.check_in_at && (
-                        <Pressable onPress={() => checkInMutation.mutate(item.id)} hitSlop={8}>
+                        <Pressable onPress={() => checkInMutation.mutate({ id: item.id })} hitSlop={8}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: theme.colors.success + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: theme.radius.sm }}>
                             <LogIn size={12} color={theme.colors.success} />
                             <Text style={{ color: theme.colors.success, fontSize: theme.fontSizes.xs, fontWeight: '600' }}>Giriş</Text>
@@ -92,7 +92,7 @@ export function DoctorVisitsScreen(_: Props) {
                         </Pressable>
                       )}
                       {isActive && (
-                        <Pressable onPress={() => checkOutMutation.mutate(item.id)} hitSlop={8}>
+                        <Pressable onPress={() => checkOutMutation.mutate({ id: item.id })} hitSlop={8}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: theme.colors.destructive + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: theme.radius.sm }}>
                             <LogOut size={12} color={theme.colors.destructive} />
                             <Text style={{ color: theme.colors.destructive, fontSize: theme.fontSizes.xs, fontWeight: '600' }}>Çıkış</Text>

@@ -21,11 +21,11 @@ function directionsUrl(lat: number, lng: number) {
 }
 
 /**
- * gocust referansındaki "Maps View" / "Plan your day" fikrinin ilk adımı —
- * gerçek rota optimizasyonu değil, doktorları haritada gösterip harici
- * harita uygulamasına ("Yol Tarifi") yönlendiren basit bir görünüm. Google
- * Maps API anahtarı ekli (mobile/.env, EXPO_PUBLIC_GOOGLE_MAPS_API_KEY) —
- * anahtar sadece Maps SDK for Android + Geocoding API'ye kısıtlı.
+ * Master talimat §13'teki Harita ekranı — doktorları haritada gösterip
+ * harici harita uygulamasına ("Yol Tarifi") yönlendiren görünüm. Gerçek
+ * yarıçap bazlı "yakınımdaki doktorlar" araması ve durum bazlı pin renkleri
+ * (Yeni/Aktif/Potansiyel/Gecikmiş) sonraki fazda eklenecek — bu sürüm
+ * gocust referansındaki "Maps View" fikrinin temel adımı.
  */
 export function MapScreen() {
   const theme = useTheme()

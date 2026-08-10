@@ -31,17 +31,38 @@ export async function createVisit(input: CreateVisitInput): Promise<DoctorVisit>
   }, `Ziyaret: ${input.doctor_name}`)
 }
 
-export async function checkInVisit(id: string): Promise<DoctorVisit> {
+export async function checkInVisit(id: string, coords?: { lat: number; lng: number }): Promise<DoctorVisit> {
   return offlineUpdate<DoctorVisit>('doctor_visits', id, {
     check_in_at: new Date().toISOString(),
     check_out_at: null,
+    check_in_lat: coords?.lat ?? null,
+    check_in_lng: coords?.lng ?? null,
   }, 'Ziyaret check-in')
 }
 
-export async function checkOutVisit(id: string): Promise<DoctorVisit> {
+export interface CompleteVisitInput {
+  notes?: string | null
+  discussed_products?: string | null
+  next_visit_date?: string | null
+}
+
+export async function checkOutVisit(id: string, completion?: CompleteVisitInput): Promise<DoctorVisit> {
   return offlineUpdate<DoctorVisit>('doctor_visits', id, {
     check_out_at: new Date().toISOString(),
+    ...(completion ?? {}),
   }, 'Ziyaret check-out')
+}
+
+/** Doktor kartından "Ziyaret Başlat" ile açılan akış — customer_id zorunlu,
+ * doktor adı customer'dan otomatik dolar (serbest metin girişi yok). */
+export async function startVisitForCustomer(customerId: string, doctorName: string): Promise<DoctorVisit> {
+  const userId = await getCurrentUserId()
+  return offlineInsert<DoctorVisit>('doctor_visits', {
+    customer_id: customerId,
+    doctor_name: doctorName,
+    visit_date: new Date().toISOString().slice(0, 10),
+    sales_rep_id: userId,
+  }, `Ziyaret: ${doctorName}`)
 }
 
 export async function deleteVisit(id: string): Promise<void> {

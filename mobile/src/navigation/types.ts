@@ -8,13 +8,14 @@ export type DashboardStackParamList = {
   Dashboard: undefined
 }
 
-export type LiveStackParamList = {
-  Live: undefined
+export type DoctorsStackParamList = {
+  DoctorsList: undefined
+  DoctorDetail: { customerId: string; customerName: string }
+  VisitFlow: { customerId: string; customerName: string }
 }
 
-export type CustomersStackParamList = {
-  CustomersList: undefined
-  CustomerDetail: { customerId: string; customerName: string }
+export type MapStackParamList = {
+  Map: undefined
 }
 
 export type ActivitiesStackParamList = {
@@ -25,7 +26,6 @@ export type MoreStackParamList = {
   MoreMenu: undefined
   ComingSoon: { title: string }
   BusinessCardScan: undefined
-  Map: undefined
   DoctorVisits: undefined
   Agenda: undefined
   Reminders: undefined
@@ -36,9 +36,9 @@ export type MoreStackParamList = {
 }
 
 export type MainTabParamList = {
-  LiveTab: undefined
-  CustomersTab: undefined
-  ActivitiesTab: undefined
-  DashboardTab: undefined
+  AnaSayfaTab: undefined
+  DoktorlarTab: undefined
+  HaritaTab: undefined
+  AktivitelerTab: undefined
   DigerTab: undefined
 }

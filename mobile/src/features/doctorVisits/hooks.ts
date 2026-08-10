@@ -1,5 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchVisits, createVisit, checkInVisit, checkOutVisit, deleteVisit, type CreateVisitInput } from './api'
+import {
+  fetchVisits,
+  createVisit,
+  checkInVisit,
+  checkOutVisit,
+  deleteVisit,
+  startVisitForCustomer,
+  type CreateVisitInput,
+  type CompleteVisitInput,
+} from './api'
 import Toast from 'react-native-toast-message'
 
 export function useVisits(from?: string, to?: string) {
@@ -18,10 +27,20 @@ export function useCreateVisit() {
   })
 }
 
+export function useStartVisitForCustomer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ customerId, doctorName }: { customerId: string; doctorName: string }) =>
+      startVisitForCustomer(customerId, doctorName),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['doctor_visits'] }),
+    onError: () => Toast.show({ type: 'error', text1: 'Ziyaret başlatılamadı' }),
+  })
+}
+
 export function useCheckInVisit() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => checkInVisit(id),
+    mutationFn: ({ id, coords }: { id: string; coords?: { lat: number; lng: number } }) => checkInVisit(id, coords),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['doctor_visits'] })
       Toast.show({ type: 'success', text1: 'Check-in yapıldı' })
@@ -33,10 +52,10 @@ export function useCheckInVisit() {
 export function useCheckOutVisit() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => checkOutVisit(id),
+    mutationFn: ({ id, completion }: { id: string; completion?: CompleteVisitInput }) => checkOutVisit(id, completion),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['doctor_visits'] })
-      Toast.show({ type: 'success', text1: 'Check-out yapıldı' })
+      Toast.show({ type: 'success', text1: 'Ziyaret tamamlandı' })
     },
     onError: () => Toast.show({ type: 'error', text1: 'Check-out başarısız' }),
   })

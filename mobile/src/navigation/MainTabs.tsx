@@ -1,22 +1,17 @@
 import * as React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { Radio, Users, Activity, LayoutDashboard, MoreHorizontal } from 'lucide-react-native'
+import { Gauge, Stethoscope, Map as MapIcon, Activity, MoreHorizontal } from 'lucide-react-native'
 import { useTheme } from '@/lib/ThemeContext'
-import { LiveStack } from './LiveStack'
-import { CustomersStack } from './CustomersStack'
-import { ActivitiesStack } from './ActivitiesStack'
 import { DashboardStack } from './DashboardStack'
+import { DoctorsStack } from './DoctorsStack'
+import { MapStack } from './MapStack'
+import { ActivitiesStack } from './ActivitiesStack'
 import { MoreStack } from './MoreStack'
 import type { MainTabParamList } from './types'
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
 
-/**
- * gocust'un Live/Customers/Activities/Dashboard/More alt navigasyonuna
- * birebir uyarlanmış 5 sekme. "Canlı" (Live) o an sahada olan/bugünkü
- * ziyaret ve aktivite akışını gösterir; "Panel" (Dashboard) hedef/istatistik
- * özetini gösterir — ikisi ayrı ekranlar, içerik tekrarı yok.
- */
+/** Master talimat §6'daki alt navigasyon: Ana Sayfa/Doktorlar/Harita/Aktiviteler/Daha Fazla. */
 export function MainTabs() {
   const theme = useTheme()
   return (
@@ -29,29 +24,29 @@ export function MainTabs() {
       }}
     >
       <Tab.Screen
-        name="LiveTab"
-        component={LiveStack}
-        options={{ title: 'Canlı', tabBarIcon: ({ color, size }) => <Radio color={color} size={size} /> }}
+        name="AnaSayfaTab"
+        component={DashboardStack}
+        options={{ title: 'Ana Sayfa', tabBarIcon: ({ color, size }) => <Gauge color={color} size={size} /> }}
       />
       <Tab.Screen
-        name="CustomersTab"
-        component={CustomersStack}
-        options={{ title: 'Müşteriler', tabBarIcon: ({ color, size }) => <Users color={color} size={size} /> }}
+        name="DoktorlarTab"
+        component={DoctorsStack}
+        options={{ title: 'Doktorlar', tabBarIcon: ({ color, size }) => <Stethoscope color={color} size={size} /> }}
       />
       <Tab.Screen
-        name="ActivitiesTab"
+        name="HaritaTab"
+        component={MapStack}
+        options={{ title: 'Harita', tabBarIcon: ({ color, size }) => <MapIcon color={color} size={size} /> }}
+      />
+      <Tab.Screen
+        name="AktivitelerTab"
         component={ActivitiesStack}
         options={{ title: 'Aktiviteler', tabBarIcon: ({ color, size }) => <Activity color={color} size={size} /> }}
       />
       <Tab.Screen
-        name="DashboardTab"
-        component={DashboardStack}
-        options={{ title: 'Panel', tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} /> }}
-      />
-      <Tab.Screen
         name="DigerTab"
         component={MoreStack}
-        options={{ title: 'Diğer', tabBarIcon: ({ color, size }) => <MoreHorizontal color={color} size={size} /> }}
+        options={{ title: 'Daha Fazla', tabBarIcon: ({ color, size }) => <MoreHorizontal color={color} size={size} /> }}
       />
     </Tab.Navigator>
   )

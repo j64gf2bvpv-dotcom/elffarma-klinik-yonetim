@@ -16,6 +16,10 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.elffarma.paketprogrami',
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription:
+          'Doktor ziyaretlerinde check-in/check-out konumunu ve haritadaki yakınımdaki doktorlar özelliğini kullanabilmek için konumunuza ihtiyaç duyuyoruz.',
+      },
     },
     android: {
       package: 'com.elffarma.paketprogrami',
@@ -26,6 +30,7 @@ module.exports = {
         monochromeImage: './assets/android-icon-monochrome.png',
       },
       predictiveBackGestureEnabled: false,
+      permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION'],
       ...(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
         ? { config: { googleMaps: { apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY } } }
         : {}),
@@ -33,6 +38,16 @@ module.exports = {
     web: {
       favicon: './assets/favicon.png',
     },
-    plugins: ['expo-sqlite', 'react-native-maps'],
+    plugins: [
+      'expo-sqlite',
+      'react-native-maps',
+      [
+        'expo-location',
+        {
+          locationWhenInUsePermission:
+            'Doktor ziyaretlerinde check-in/check-out konumunu ve haritadaki yakınımdaki doktorlar özelliğini kullanabilmek için konumunuza ihtiyaç duyuyoruz.',
+        },
+      ],
+    ],
   },
 }

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { FlatList, Linking, Modal, Pressable, RefreshControl, Text, View } from 'react-native'
-import { Building2, Phone, Mail, Plus, X } from 'lucide-react-native'
+import { Building2, Phone, Plus, Star, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
@@ -16,20 +16,28 @@ import { usePayments } from '@/features/payments/hooks'
 import { useSales } from '@/features/sales/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
 import { computeCariLedger } from '@shared/businessLogic/cariLedger'
-import type { CustomersStackParamList } from '@/navigation/types'
+import type { DoctorsStackParamList } from '@/navigation/types'
 import type { Customer } from '@shared/types/database'
 
-type Props = NativeStackScreenProps<CustomersStackParamList, 'CustomersList'>
+type Props = NativeStackScreenProps<DoctorsStackParamList, 'DoctorsList'>
+
+type DoctorFilter = 'all' | 'active' | 'potential'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
 }
 
-/** Müşteri listesi + cari bakiye tek ekranda (masaüstündeki CariHesapListPage.tsx
- * mantığı, computeCariLedger shared/'dan). */
-export function CustomersListScreen({ navigation }: Props) {
+/**
+ * Master talimat mockup'ındaki "Doktor Listesi" ekranı — arama, durum
+ * filtreleri (Tümü/Aktif/Potansiyel), her satırda ad+uzmanlık/klinik+bakiye
+ * rozeti. Bakiye computeCariLedger'dan (shared/), "aktif" doktorun
+ * customers.is_active alanına, "potansiyel" ise henüz hiç satış/tahsilatı
+ * olmayan doktorlara karşılık gelir (ayrı bir "status" sütunu şemada yok).
+ */
+export function DoctorsListScreen({ navigation }: Props) {
   const theme = useTheme()
   const [search, setSearch] = React.useState('')
+  const [filter, setFilter] = React.useState<DoctorFilter>('all')
   const [showAdd, setShowAdd] = React.useState(false)
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = React.useState(false)
@@ -44,16 +52,31 @@ export function CustomersListScreen({ navigation }: Props) {
     [allPayments, allSales, allInvoices],
   )
 
+  const hasActivity = React.useMemo(() => {
+    const set = new Set<string>()
+    for (const s of allSales) set.add(s.customer_id)
+    for (const p of allPayments) set.add(p.customer_id)
+    return set
+  }, [allSales, allPayments])
+
   const rows = React.useMemo(
     () =>
       customers
         .map((c) => {
           const entry = ledger.get(c.id) ?? { debit: 0, credit: 0 }
-          return { customer: c, balance: entry.debit - entry.credit }
+          return { customer: c, balance: entry.debit - entry.credit, isPotential: !hasActivity.has(c.id) }
         })
-        .sort((a, b) => b.balance - a.balance),
-    [customers, ledger],
+        .filter((r) => {
+          if (filter === 'active') return r.customer.is_active && !r.isPotential
+          if (filter === 'potential') return r.isPotential
+          return true
+        })
+        .sort((a, b) => a.customer.full_name.localeCompare(b.customer.full_name, 'tr')),
+    [customers, ledger, hasActivity, filter],
   )
+
+  const activeCount = customers.filter((c) => c.is_active && hasActivity.has(c.id)).length
+  const potentialCount = customers.filter((c) => !hasActivity.has(c.id)).length
 
   async function onRefresh() {
     setRefreshing(true)
@@ -64,8 +87,8 @@ export function CustomersListScreen({ navigation }: Props) {
   return (
     <Screen style={{ gap: 10 }}>
       <ScreenHeader
-        title="Müşteriler"
-        subtitle={`${rows.length} doktor/cari`}
+        title="Doktorlar"
+        subtitle={`${customers.length} kayıt`}
         actions={
           <Button size="sm" onPress={() => setShowAdd(true)}>
             <Plus size={16} color={theme.colors.primaryForeground} />
@@ -79,6 +102,19 @@ export function CustomersListScreen({ navigation }: Props) {
         onChangeText={setSearch}
         containerStyle={{ marginBottom: 2 }}
       />
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {(
+          [
+            ['all', `Tümü (${customers.length})`],
+            ['active', `Aktif (${activeCount})`],
+            ['potential', `Potansiyel (${potentialCount})`],
+          ] as [DoctorFilter, string][]
+        ).map(([key, label]) => (
+          <Pressable key={key} onPress={() => setFilter(key)} hitSlop={4}>
+            <Badge variant={filter === key ? 'default' : 'outline'}>{label}</Badge>
+          </Pressable>
+        ))}
+      </View>
       {isLoading && rows.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
       ) : (
@@ -89,17 +125,18 @@ export function CustomersListScreen({ navigation }: Props) {
           ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
-            <CustomerRow
+            <DoctorRow
               customer={item.customer}
               balance={item.balance}
+              isPotential={item.isPotential}
               onPress={() =>
-                navigation.navigate('CustomerDetail', { customerId: item.customer.id, customerName: item.customer.full_name })
+                navigation.navigate('DoctorDetail', { customerId: item.customer.id, customerName: item.customer.full_name })
               }
             />
           )}
         />
       )}
-      <AddCustomerModal visible={showAdd} onClose={() => setShowAdd(false)} />
+      <AddDoctorModal visible={showAdd} onClose={() => setShowAdd(false)} />
     </Screen>
   )
 }
@@ -128,29 +165,38 @@ function QuickActionButton({ icon: Icon, onPress }: { icon: typeof Phone; onPres
   )
 }
 
-function CustomerRow({ customer, balance, onPress }: { customer: Customer; balance: number; onPress: () => void }) {
+function DoctorRow({
+  customer,
+  balance,
+  isPotential,
+  onPress,
+}: {
+  customer: Customer
+  balance: number
+  isPotential: boolean
+  onPress: () => void
+}) {
   const theme = useTheme()
   return (
     <ListItemCard
       icon={Building2}
-      iconColor={balance > 0 ? theme.colors.destructive : theme.colors.primary}
+      iconColor={!customer.is_active ? theme.colors.mutedForeground : isPotential ? theme.colors.warning : theme.colors.success}
       title={customer.full_name}
-      subtitle={customer.hospital_name ?? undefined}
+      subtitle={[customer.specialty, customer.hospital_name, customer.province].filter(Boolean).join(' · ') || undefined}
       onPress={onPress}
       right={
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {customer.is_vip && <Star size={14} color={theme.colors.warning} fill={theme.colors.warning} />}
           <QuickActionButton icon={Phone} onPress={() => Linking.openURL(`tel:${customer.phone}`)} />
-          {customer.email && (
-            <QuickActionButton icon={Mail} onPress={() => Linking.openURL(`mailto:${customer.email}`)} />
-          )}
-          <Badge variant={balance > 0 ? 'destructive' : 'secondary'}>{currency(balance)}</Badge>
+          {!isPotential && <Badge variant={balance > 0 ? 'destructive' : 'secondary'}>{currency(balance)}</Badge>}
+          {isPotential && <Badge variant="outline">Potansiyel</Badge>}
         </View>
       }
     />
   )
 }
 
-function AddCustomerModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function AddDoctorModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const theme = useTheme()
   const createMutation = useCreateCustomer()
   const [fullName, setFullName] = React.useState('')
