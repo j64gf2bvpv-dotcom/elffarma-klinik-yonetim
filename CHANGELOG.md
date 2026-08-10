@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.41] - 2026-08-10
+
+**Mobil Ajanda'ya doğrudan hatırlatma ekleme eklendi:** "Ajanda" ekranı önceden salt okunurdu (hatırlatma/ziyaret-takibi/görev birleşik listesi) — artık başlıkta "+" butonuyla doğrudan yeni hatırlatma eklenebiliyor, aynı form Hatırlatmalar ekranıyla paylaşılıyor (`mobile/src/components/AddReminderModal.tsx`'e taşındı, iki ekran de aynı `useCreateReminder`'ı kullanıyor — halihazırda yerel bildirim kuruyordu). Gecikmiş hatırlatmalar zaten bir önceki sürümde Dashboard'daki "Önemli Duyurular" banner'ına sayılıyordu (bkz. 2.17.36) — bu değişmedi, sadece ekleme eksikti.
+
 ## [2.17.40] - 2026-08-10
 
 **Mobil Stok ekranı işlevselleşti + doktor ziyaretinde numune stoktan düşülüyor:** Dashboard'daki "kritik stok" zili ve duyuru banner'ı artık tıklanabiliyor, doğrudan Stok ekranına "sadece kritik" filtreli gidiyor (yeni `Stock: { onlyCritical?: boolean }` route param'ı). Stok listesindeki her ürün satırına hızlı Giriş(+)/Çıkış(−) ikon butonları eklendi — dokununca miktar/not girilen bir alt sayfa açılıyor, `record_stock_movement` RPC'siyle kaydediliyor (satıra dokunmak da aynı akışı Giriş'ten açıyor). Ziyaret akışına (VisitFlowScreen, check-out formu) "Verilen Numuneler" bölümü eklendi — ürün seçip +/− ile miktar ayarlanabiliyor, ziyaret tamamlanınca her biri `sample` hareket tipiyle otomatik stoktan düşülüyor (doktora satıştan ayrı, `CreateOrderScreen`'in `out` hareketiyle karışmıyor). `CreateOrderScreen`'e eksik olan "Not" alanı eklendi (`sales.note` şemada zaten vardı, forma hiç bağlanmamıştı) — hem `sales` satırına hem stok hareketine yazılıyor.

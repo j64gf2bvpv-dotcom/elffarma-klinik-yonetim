@@ -2,13 +2,15 @@ import * as React from 'react'
 import { FlatList, RefreshControl, Text, View } from 'react-native'
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { CalendarDays, BellRing, Stethoscope, CheckCircle2, Circle } from 'lucide-react-native'
+import { CalendarDays, BellRing, Stethoscope, CheckCircle2, Plus } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { ListItemCard } from '@/components/ui/ListItemCard'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { AddReminderModal } from '@/components/AddReminderModal'
 import { useTheme } from '@/lib/ThemeContext'
 import { useReminders } from '@/features/reminders/hooks'
 import { useVisits } from '@/features/doctorVisits/hooks'
@@ -38,6 +40,7 @@ export function AgendaScreen(_: Props) {
   const theme = useTheme()
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = React.useState(false)
+  const [showAdd, setShowAdd] = React.useState(false)
   const { data: reminders = [] } = useReminders()
   const { data: visits = [] } = useVisits()
   const { data: tasks = [] } = useMyTasks()
@@ -69,7 +72,15 @@ export function AgendaScreen(_: Props) {
 
   return (
     <Screen style={{ gap: 10 }}>
-      <ScreenHeader title="Ajanda" subtitle={`${items.length} yaklaşan etkinlik`} />
+      <ScreenHeader
+        title="Ajanda"
+        subtitle={`${items.length} yaklaşan etkinlik`}
+        actions={
+          <Button size="sm" onPress={() => setShowAdd(true)}>
+            <Plus size={16} color={theme.colors.primaryForeground} />
+          </Button>
+        }
+      />
       <FlatList
         data={items}
         keyExtractor={(i) => i.id}
@@ -96,6 +107,7 @@ export function AgendaScreen(_: Props) {
           )
         }}
       />
+      <AddReminderModal visible={showAdd} onClose={() => setShowAdd(false)} />
     </Screen>
   )
 }
