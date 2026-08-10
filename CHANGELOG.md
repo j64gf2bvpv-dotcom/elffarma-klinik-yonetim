@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.34] - 2026-08-10
+
+**Mobil "Benim Doktorlarım" kişisel filtresi eklendi (Faz J):** Master talimat §5'teki "satış temsilcisi kendisine atanmış doktorları görür" kuralı — RLS/erişim kontrolü **değiştirilmeden** (masaüstü+mobil paylaşımlı shared-trust güvenlik modeli korunuyor, hiçbir doktor kimseden gizlenmiyor), Doktor Listesi ekranına giriş yapan personelin adını (`staff.full_name`) `sales_reps.name` ile eşleştirip (mevcut isim-bazlı bağlanma, FK yok — Hedeflerim ekranındaki aynı desen) `customers.sales_rep_id`'ye göre filtreleyen isteğe bağlı bir "Benim Doktorlarım" rozeti eklendi; eşleşen bir satış temsilcisi kaydı yoksa rozet hiç gösterilmiyor (sessizce boş liste yerine). Şema/RLS değişikliği yok.
+
 ## [2.17.33] - 2026-08-10
 
 **Mobil Audit Log altyapısı eklendi (Faz I):** Master talimat §34'teki "silinemez işlem kaydı" — yeni `audit_logs` tablosu (idempotent migration, sadece INSERT policy'si var: update/delete için hiçbir policy tanımlı değil, RLS varsayılan olarak reddeder, yani uygulama katmanından asla değiştirilemez/silinemez; SELECT sadece `is_admin()`). Kayıt merkezi katmanda (`offlineMutation.ts`'in dört fonksiyonu + `useOfflineSync.ts`'in kuyruk flush yolu) otomatik tetikleniyor — her mevcut ve gelecekteki `api.ts` dosyası tek tek değiştirilmeden otomatik loglanıyor. Kayıt yazma hatası ana işlemi asla bloklamıyor/başarısız kılmıyor (fire-and-forget, `auditLog.ts`). Yeni "Ayarlar > Audit Log" ekranı (sadece admin) son 200 işlemi personel adı + zaman damgasıyla listeliyor. `AuditLog`/`AuditAction` tipleri hem `shared/` hem masaüstü `src/types/database.ts`'e eklendi.

@@ -11,17 +11,19 @@ import { Badge } from '@/components/ui/Badge'
 import { ListItemCard } from '@/components/ui/ListItemCard'
 import { PendingSyncBadge } from '@/components/PendingSyncBadge'
 import { useTheme } from '@/lib/ThemeContext'
+import { useAuth } from '@/lib/auth'
 import { useCustomers, useCreateCustomer } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useSales } from '@/features/sales/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
+import { useSalesReps } from '@/features/salesReps/hooks'
 import { computeCariLedger } from '@shared/businessLogic/cariLedger'
 import type { DoctorsStackParamList } from '@/navigation/types'
 import type { Customer } from '@shared/types/database'
 
 type Props = NativeStackScreenProps<DoctorsStackParamList, 'DoctorsList'>
 
-type DoctorFilter = 'all' | 'active' | 'potential'
+type DoctorFilter = 'all' | 'mine' | 'active' | 'potential'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
@@ -36,6 +38,7 @@ function currency(n: number) {
  */
 export function DoctorsListScreen({ navigation }: Props) {
   const theme = useTheme()
+  const { staff } = useAuth()
   const [search, setSearch] = React.useState('')
   const [filter, setFilter] = React.useState<DoctorFilter>('all')
   const [showAdd, setShowAdd] = React.useState(false)
@@ -46,6 +49,7 @@ export function DoctorsListScreen({ navigation }: Props) {
   const { data: allPayments = [] } = usePayments({})
   const { data: allSales = [] } = useSales()
   const { data: allInvoices = [] } = useInvoices()
+  const { data: salesReps = [] } = useSalesReps()
 
   const ledger = React.useMemo(
     () => computeCariLedger(allPayments, allSales, allInvoices),
@@ -59,6 +63,16 @@ export function DoctorsListScreen({ navigation }: Props) {
     return set
   }, [allSales, allPayments])
 
+  // Master talimat §5'teki "satış temsilcisi kendisine atanmış doktorları
+  // görür" kuralının veri-kısıtlamayan mobil karşılığı — RLS/erişim kontrolü
+  // değil, sadece varsayılan görünüm filtresi (bkz. plan: staff↔sales_reps
+  // arasında güvenilir FK yok, sadece isim eşleşmesi; hiçbir doktoru
+  // gizlemiyoruz, sadece "Benim Doktorlarım" sekmesinde önceliklendiriyoruz).
+  const myRepId = React.useMemo(
+    () => salesReps.find((r) => r.name.trim().toLowerCase() === (staff?.full_name ?? '').trim().toLowerCase())?.id,
+    [salesReps, staff?.full_name],
+  )
+
   const rows = React.useMemo(
     () =>
       customers
@@ -67,14 +81,16 @@ export function DoctorsListScreen({ navigation }: Props) {
           return { customer: c, balance: entry.debit - entry.credit, isPotential: !hasActivity.has(c.id) }
         })
         .filter((r) => {
+          if (filter === 'mine') return myRepId != null && r.customer.sales_rep_id === myRepId
           if (filter === 'active') return r.customer.is_active && !r.isPotential
           if (filter === 'potential') return r.isPotential
           return true
         })
         .sort((a, b) => a.customer.full_name.localeCompare(b.customer.full_name, 'tr')),
-    [customers, ledger, hasActivity, filter],
+    [customers, ledger, hasActivity, filter, myRepId],
   )
 
+  const myCount = myRepId != null ? customers.filter((c) => c.sales_rep_id === myRepId).length : 0
   const activeCount = customers.filter((c) => c.is_active && hasActivity.has(c.id)).length
   const potentialCount = customers.filter((c) => !hasActivity.has(c.id)).length
 
@@ -102,10 +118,11 @@ export function DoctorsListScreen({ navigation }: Props) {
         onChangeText={setSearch}
         containerStyle={{ marginBottom: 2 }}
       />
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
         {(
           [
             ['all', `Tümü (${customers.length})`],
+            ...(myRepId != null ? ([['mine', `Benim Doktorlarım (${myCount})`]] as [DoctorFilter, string][]) : []),
             ['active', `Aktif (${activeCount})`],
             ['potential', `Potansiyel (${potentialCount})`],
           ] as [DoctorFilter, string][]
