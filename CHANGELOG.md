@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.43] - 2026-08-10
+
+**Kritik hata düzeltmesi: Mobil "Ziyarete Başla" veritabanı hatasıyla başarısız oluyordu.** `doctor_visits.sales_rep_id` şemada `staff(id)`'e değil `sales_reps(id)`'ye FK'lı (`doctor_visits_sales_rep_id_fkey`) — ama `createVisit`/`startVisitForCustomer` (mobile/src/features/doctorVisits/api.ts) giriş yapan personelin kendi auth id'sini doğrudan bu alana yazıyordu, bu da neredeyse her zaman FK ihlaline (Postgres 23503) yol açıp ziyaret check-in'ini tamamen kırıyordu — bu oturumda eklenen "Verilen Numuneler" özelliği de bu yüzden hiç tetiklenemiyordu. Artık `resolveSalesRepId()` ile giriş yapan personelin adı `sales_reps.name`'e eşleştirilip (uygulamanın her yerindeki aynı isim-bazlı bağlanma deseni) doğru id yazılıyor; eşleşme yoksa uydurma bir id kullanmak yerine `null` yazılıyor.
+
 ## [2.17.42] - 2026-08-10
 
 **Mobil "Daha Fazla" ve Doktorlar alt ekranlarına gerçek geri tuşu eklendi + Ana Sayfa'da animasyonlu çubuk grafik:** Kök neden — bu ekranların (Hatırlatmalar, Ajanda, Stok, Teklifler, Kongreler, Hedeflerim, Audit Log, Görevler, Fırsatlar, Ayarlar, AI Analiz, Kartvizit Tara, Ziyaret Geçmişi, Ziyaret/Sipariş/Teklif akışları vb.) hepsi kendi `ScreenHeader`'ını (native-stack header'ı KAPALI, `headerShown:false`) gösteriyordu ama `ScreenHeader` geri tuşu içermiyordu — çift başlık + kullanılamaz/erişilemez native geri oku. `ScreenHeader.tsx` artık `useNavigation().canGoBack()` ile geri gidilebilecek ekranlarda kendi geri okunu gösteriyor (sekme köklerinde — Dashboard, Doktorlar listesi, Harita — hâlâ görünmüyor, doğru davranış). Ayrıca Ana Sayfa'daki Toplam Cari/Ürün Çeşidi/Bugünkü İşlemler artık düz sayı kartları değil, yeni `AnimatedStatBars` bileşeniyle ekrana girişte 0'dan dolan animasyonlu çubuklar (her metrik farklı birimde olduğundan ortak bir eksende karşılaştırma yapılmıyor, sayı uydurulmadı).
