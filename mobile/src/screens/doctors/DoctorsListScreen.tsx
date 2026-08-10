@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, Linking, Modal, Pressable, RefreshControl, Text, View } from 'react-native'
+import { FlatList, Linking, Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { Building2, Phone, Plus, Star, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
@@ -17,6 +17,7 @@ import { usePayments } from '@/features/payments/hooks'
 import { useSales } from '@/features/sales/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
+import { useRegions, regionLabel } from '@/features/regions/hooks'
 import { computeCariLedger } from '@shared/businessLogic/cariLedger'
 import type { DoctorsStackParamList } from '@/navigation/types'
 import type { Customer } from '@shared/types/database'
@@ -41,6 +42,7 @@ export function DoctorsListScreen({ navigation }: Props) {
   const { staff } = useAuth()
   const [search, setSearch] = React.useState('')
   const [filter, setFilter] = React.useState<DoctorFilter>('all')
+  const [regionId, setRegionId] = React.useState<string | null>(null)
   const [showAdd, setShowAdd] = React.useState(false)
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = React.useState(false)
@@ -50,6 +52,7 @@ export function DoctorsListScreen({ navigation }: Props) {
   const { data: allSales = [] } = useSales()
   const { data: allInvoices = [] } = useInvoices()
   const { data: salesReps = [] } = useSalesReps()
+  const { data: regions = [] } = useRegions()
 
   const ledger = React.useMemo(
     () => computeCariLedger(allPayments, allSales, allInvoices),
@@ -73,6 +76,18 @@ export function DoctorsListScreen({ navigation }: Props) {
     [salesReps, staff?.full_name],
   )
 
+  // Doktorları bölgesel ayırma — mevcut regions tablosu (masaüstüyle aynı,
+  // hiyerarşik parent_region_id) üzerinden. Sadece en az bir doktoru olan
+  // bölgeler chip olarak gösteriliyor, bölgesi olmayan doktorlar "Tümü"nde
+  // görünmeye devam ediyor (gizlenmiyor).
+  const regionsById = React.useMemo(() => new Map(regions.map((r) => [r.id, r])), [regions])
+  const usedRegions = React.useMemo(() => {
+    const used = new Set(customers.map((c) => c.region_id).filter((id): id is string => id != null))
+    return regions
+      .filter((r) => used.has(r.id))
+      .sort((a, b) => regionLabel(a, regionsById).localeCompare(regionLabel(b, regionsById), 'tr'))
+  }, [regions, customers, regionsById])
+
   const rows = React.useMemo(
     () =>
       customers
@@ -81,13 +96,14 @@ export function DoctorsListScreen({ navigation }: Props) {
           return { customer: c, balance: entry.debit - entry.credit, isPotential: !hasActivity.has(c.id) }
         })
         .filter((r) => {
+          if (regionId != null && r.customer.region_id !== regionId) return false
           if (filter === 'mine') return myRepId != null && r.customer.sales_rep_id === myRepId
           if (filter === 'active') return r.customer.is_active && !r.isPotential
           if (filter === 'potential') return r.isPotential
           return true
         })
         .sort((a, b) => a.customer.full_name.localeCompare(b.customer.full_name, 'tr')),
-    [customers, ledger, hasActivity, filter, myRepId],
+    [customers, ledger, hasActivity, filter, myRepId, regionId],
   )
 
   const myCount = myRepId != null ? customers.filter((c) => c.sales_rep_id === myRepId).length : 0
@@ -132,6 +148,18 @@ export function DoctorsListScreen({ navigation }: Props) {
           </Pressable>
         ))}
       </View>
+      {usedRegions.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 8 }}>
+          <Pressable onPress={() => setRegionId(null)} hitSlop={4}>
+            <Badge variant={regionId == null ? 'default' : 'outline'}>Tüm Bölgeler</Badge>
+          </Pressable>
+          {usedRegions.map((region) => (
+            <Pressable key={region.id} onPress={() => setRegionId(region.id)} hitSlop={4}>
+              <Badge variant={regionId === region.id ? 'default' : 'outline'}>{regionLabel(region, regionsById)}</Badge>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
       {isLoading && rows.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
       ) : (

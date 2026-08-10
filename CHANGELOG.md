@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.38] - 2026-08-10
+
+**Mobil Doktorlar listesi bölgesel ayrıldı:** Masaüstünde zaten var olan hiyerarşik `regions` tablosu (parent_region_id, `customers.region_id`) — şema değişikliği yok — mobile taşındı (`mobile/src/features/regions/`, salt okunur: bölge oluşturma/silme yönetimsel iş olarak masaüstünde kalıyor). Doktorlar ekranına, en az bir doktoru olan bölgeleri listeleyen yatay kaydırmalı bir "Bölge" filtre satırı eklendi ("Tüm Bölgeler" + her bölge "Üst / Alt" etiketiyle) — durum filtreleriyle (Tümü/Benim Doktorlarım/Aktif/Potansiyel) birlikte çalışıyor, bölgesi olmayan doktorlar "Tüm Bölgeler"de görünmeye devam ediyor.
+
 ## [2.17.37] - 2026-08-10
 
 **Mobil Harita: "Yakınımdaki Doktorlar" araması + doktor detayına geçiş/geri tuşu:** Yeni `mobile/src/features/map/` (haversineKm mesafe hesaplama + `useNearbyDoctors` hook'u, native ve web harita ekranları arasında paylaşılıyor) — "Konumumu Bul" butonu `expo-location` ile (web'de de çalışıyor, tarayıcı Geolocation API'si üzerinden) gerçek GPS konumunu alıp 5/10/25/50 km yarıçap seçenekleriyle doktorları mesafeye göre filtreliyor/sıralıyor, harita sadece o doktorları gösteriyor. Pin'e veya yakın listesindeki bir doktora dokununca artık Doktorlar sekmesindeki DoctorDetail ekranına gidiyor (kendi native-stack geri tuşuyla — önceden Harita'nın tab-root ekranında hiç header/geri tuşu yoktu, "Yol Tarifi" harici uygulamaya çıkıyordu ve dönüş yolu yoktu). "Yol Tarifi" ayrı bir ikon buton olarak korundu. Bunun için `MainTabParamList.DoktorlarTab` artık `NavigatorScreenParams<DoctorsStackParamList>`.
