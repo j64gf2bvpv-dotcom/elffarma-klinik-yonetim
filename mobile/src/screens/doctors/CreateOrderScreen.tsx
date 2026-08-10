@@ -48,6 +48,7 @@ export function CreateOrderScreen({ route, navigation }: Props) {
   const recordMovement = useRecordStockMovement()
   const [lines, setLines] = React.useState<OrderLine[]>([emptyLine()])
   const [pickerForLine, setPickerForLine] = React.useState<string | null>(null)
+  const [note, setNote] = React.useState('')
   const [submitting, setSubmitting] = React.useState(false)
 
   function updateLine(key: string, patch: Partial<OrderLine>) {
@@ -87,6 +88,7 @@ export function CreateOrderScreen({ route, navigation }: Props) {
           quantity,
           unit_price: unitPrice,
           sale_date: todayStr,
+          note: note.trim() || null,
         })
         await recordMovement.mutateAsync({
           product_id: line.productId,
@@ -95,7 +97,7 @@ export function CreateOrderScreen({ route, navigation }: Props) {
           reason: 'Satış',
           customer_id: customerId,
           unit_price: unitPrice,
-          note: `${customerName} için sipariş`,
+          note: note.trim() || `${customerName} için sipariş`,
         })
       }
       navigation.goBack()
@@ -165,6 +167,8 @@ export function CreateOrderScreen({ route, navigation }: Props) {
       <Button variant="outline" onPress={() => setLines((prev) => [...prev, emptyLine()])}>
         <Plus size={16} color={theme.colors.foreground} /> Ürün Ekle
       </Button>
+
+      <TextField label="Not" value={note} onChangeText={setNote} placeholder="Sipariş ile ilgili not..." multiline />
 
       <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.lg }}>Genel Toplam</Text>

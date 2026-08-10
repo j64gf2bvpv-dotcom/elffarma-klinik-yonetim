@@ -42,6 +42,7 @@ export type MoreStackParamList = {
   CongressDetail: { congressId: string; congressName: string }
   Targets: undefined
   AuditLogs: undefined
+  Stock: { onlyCritical?: boolean } | undefined
 }
 
 export type MainTabParamList = {

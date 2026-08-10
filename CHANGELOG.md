@@ -3,6 +3,14 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.40] - 2026-08-10
+
+**Mobil Stok ekranı işlevselleşti + doktor ziyaretinde numune stoktan düşülüyor:** Dashboard'daki "kritik stok" zili ve duyuru banner'ı artık tıklanabiliyor, doğrudan Stok ekranına "sadece kritik" filtreli gidiyor (yeni `Stock: { onlyCritical?: boolean }` route param'ı). Stok listesindeki her ürün satırına hızlı Giriş(+)/Çıkış(−) ikon butonları eklendi — dokununca miktar/not girilen bir alt sayfa açılıyor, `record_stock_movement` RPC'siyle kaydediliyor (satıra dokunmak da aynı akışı Giriş'ten açıyor). Ziyaret akışına (VisitFlowScreen, check-out formu) "Verilen Numuneler" bölümü eklendi — ürün seçip +/− ile miktar ayarlanabiliyor, ziyaret tamamlanınca her biri `sample` hareket tipiyle otomatik stoktan düşülüyor (doktora satıştan ayrı, `CreateOrderScreen`'in `out` hareketiyle karışmıyor). `CreateOrderScreen`'e eksik olan "Not" alanı eklendi (`sales.note` şemada zaten vardı, forma hiç bağlanmamıştı) — hem `sales` satırına hem stok hareketine yazılıyor.
+
+## [2.17.39] - 2026-08-10
+
+**Mobil Stok listesi eklendi:** "Daha Fazla > Stok" — ürün kataloğunu (ad, kategori, marka hattı, birim fiyat), güncel miktarı (kritik seviyenin altındaysa kırmızı rozet) ve son kullanma durumunu (Süresi Doldu/Yakında Doluyor, mevcut `getExpiryStatus`) günlük görüntüleme ekranı. Ayrı bir veri yolu değil — sipariş ekranı (`CreateOrderScreen.tsx`) doktora satışta zaten `record_stock_movement` RPC'siyle stoktan düşüyordu, eksik olan sadece bu kataloğu görüntüleyecek bir liste ekranıydı; arama + kategori filtresi eklendi.
+
 ## [2.17.38] - 2026-08-10
 
 **Mobil Doktorlar listesi bölgesel ayrıldı:** Masaüstünde zaten var olan hiyerarşik `regions` tablosu (parent_region_id, `customers.region_id`) — şema değişikliği yok — mobile taşındı (`mobile/src/features/regions/`, salt okunur: bölge oluşturma/silme yönetimsel iş olarak masaüstünde kalıyor). Doktorlar ekranına, en az bir doktoru olan bölgeleri listeleyen yatay kaydırmalı bir "Bölge" filtre satırı eklendi ("Tüm Bölgeler" + her bölge "Üst / Alt" etiketiyle) — durum filtreleriyle (Tümü/Benim Doktorlarım/Aktif/Potansiyel) birlikte çalışıyor, bölgesi olmayan doktorlar "Tüm Bölgeler"de görünmeye devam ediyor.

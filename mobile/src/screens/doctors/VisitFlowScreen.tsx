@@ -1,13 +1,14 @@
 import * as React from 'react'
-import { Alert, Text, View } from 'react-native'
+import { Alert, Pressable, Text, View } from 'react-native'
 import * as Location from 'expo-location'
-import { MapPin, CheckCircle2 } from 'lucide-react-native'
+import { MapPin, CheckCircle2, Minus, Plus, Package, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
+import { ProductPickerModal } from '@/components/ProductPickerModal'
 import { useTheme } from '@/lib/ThemeContext'
 import {
   useVisits,
@@ -15,8 +16,10 @@ import {
   useCheckInVisit,
   useCheckOutVisit,
 } from '@/features/doctorVisits/hooks'
+import { useRecordStockMovement } from '@/features/stock/hooks'
 import { scheduleVisitFollowUpNotification } from '@/features/notifications/localNotifications'
 import type { DoctorsStackParamList } from '@/navigation/types'
+import type { Product } from '@shared/types/database'
 
 type Props = NativeStackScreenProps<DoctorsStackParamList, 'VisitFlow'>
 
@@ -35,11 +38,15 @@ export function VisitFlowScreen({ route, navigation }: Props) {
   const startVisit = useStartVisitForCustomer()
   const checkIn = useCheckInVisit()
   const checkOut = useCheckOutVisit()
+  const recordMovement = useRecordStockMovement()
   const [locating, setLocating] = React.useState(false)
+  const [completing, setCompleting] = React.useState(false)
 
   const [notes, setNotes] = React.useState('')
   const [discussedProducts, setDiscussedProducts] = React.useState('')
   const [nextVisitDate, setNextVisitDate] = React.useState('')
+  const [samples, setSamples] = React.useState<{ product: Product; quantity: number }[]>([])
+  const [pickerOpen, setPickerOpen] = React.useState(false)
 
   const todayStr = new Date().toISOString().slice(0, 10)
   const activeVisit = visits.find(
@@ -71,20 +78,54 @@ export function VisitFlowScreen({ route, navigation }: Props) {
     }
   }
 
+  function addSample(product: Product) {
+    setSamples((prev) => {
+      const existing = prev.find((s) => s.product.id === product.id)
+      if (existing) return prev.map((s) => (s.product.id === product.id ? { ...s, quantity: s.quantity + 1 } : s))
+      return [...prev, { product, quantity: 1 }]
+    })
+    setPickerOpen(false)
+  }
+
+  function changeSampleQty(productId: string, delta: number) {
+    setSamples((prev) =>
+      prev
+        .map((s) => (s.product.id === productId ? { ...s, quantity: s.quantity + delta } : s))
+        .filter((s) => s.quantity > 0),
+    )
+  }
+
   async function onComplete() {
     if (!activeVisit) return
-    await checkOut.mutateAsync({
-      id: activeVisit.id,
-      completion: {
-        notes: notes.trim() || null,
-        discussed_products: discussedProducts.trim() || null,
-        next_visit_date: nextVisitDate || null,
-      },
-    })
-    if (nextVisitDate) {
-      scheduleVisitFollowUpNotification(activeVisit.id, customerName, nextVisitDate)
+    setCompleting(true)
+    try {
+      await checkOut.mutateAsync({
+        id: activeVisit.id,
+        completion: {
+          notes: notes.trim() || null,
+          discussed_products: discussedProducts.trim() || null,
+          next_visit_date: nextVisitDate || null,
+        },
+      })
+      // Ziyarette doktora verilen numuneler — sipariş ekranındaki (out) satış
+      // hareketinden ayrı, 'sample' hareket tipiyle stoktan düşülüyor, aynı
+      // record_stock_movement RPC'si üzerinden (CLAUDE.md kuralı korunuyor).
+      for (const sample of samples) {
+        await recordMovement.mutateAsync({
+          product_id: sample.product.id,
+          movement_type: 'sample',
+          quantity: sample.quantity,
+          customer_id: customerId,
+          note: `Ziyarette verildi: ${customerName}`,
+        })
+      }
+      if (nextVisitDate) {
+        scheduleVisitFollowUpNotification(activeVisit.id, customerName, nextVisitDate)
+      }
+      navigation.goBack()
+    } finally {
+      setCompleting(false)
     }
-    navigation.goBack()
   }
 
   if (!activeVisit) {
@@ -137,9 +178,51 @@ export function VisitFlowScreen({ route, navigation }: Props) {
         onChangeText={setNextVisitDate}
         placeholder="YYYY-MM-DD"
       />
-      <Button onPress={onComplete} loading={checkOut.isPending}>
+
+      <View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }}>
+            Verilen Numuneler
+          </Text>
+          <Pressable onPress={() => setPickerOpen(true)} hitSlop={8}>
+            <Text style={{ color: theme.colors.primary, fontWeight: '700', fontSize: theme.fontSizes.xs }}>+ Ürün Ekle</Text>
+          </Pressable>
+        </View>
+        {samples.length === 0 ? (
+          <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>
+            Ziyarette ürün verildiyse ekleyin — check-out'ta stoktan otomatik düşülür.
+          </Text>
+        ) : (
+          <Card style={{ gap: 8 }}>
+            {samples.map((s) => (
+              <View key={s.product.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Package size={14} color={theme.colors.primary} />
+                <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.sm, flex: 1 }} numberOfLines={1}>
+                  {s.product.name}
+                </Text>
+                <Pressable onPress={() => changeSampleQty(s.product.id, -1)} hitSlop={8} style={{ padding: 4 }}>
+                  <Minus size={14} color={theme.colors.foreground} />
+                </Pressable>
+                <Text style={{ color: theme.colors.foreground, fontWeight: '700', minWidth: 18, textAlign: 'center' }}>
+                  {s.quantity}
+                </Text>
+                <Pressable onPress={() => changeSampleQty(s.product.id, 1)} hitSlop={8} style={{ padding: 4 }}>
+                  <Plus size={14} color={theme.colors.foreground} />
+                </Pressable>
+                <Pressable onPress={() => changeSampleQty(s.product.id, -s.quantity)} hitSlop={8} style={{ padding: 4 }}>
+                  <X size={14} color={theme.colors.destructive} />
+                </Pressable>
+              </View>
+            ))}
+          </Card>
+        )}
+      </View>
+
+      <Button onPress={onComplete} loading={completing || checkOut.isPending}>
         Ziyareti Tamamla
       </Button>
+
+      <ProductPickerModal visible={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={addSample} />
     </Screen>
   )
 }

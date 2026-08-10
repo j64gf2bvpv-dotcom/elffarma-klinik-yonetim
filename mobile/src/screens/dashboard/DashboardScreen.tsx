@@ -220,7 +220,11 @@ export function DashboardScreen({ navigation }: Props) {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
         {criticalStockCount > 0 && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginRight: 4 }}>
+          <Pressable
+            onPress={() => navigation.navigate('DigerTab', { screen: 'Stock', params: { onlyCritical: true } })}
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginRight: 4 }}
+          >
             <Bell size={18} color={theme.colors.warning} />
             <View
               style={{
@@ -237,7 +241,7 @@ export function DashboardScreen({ navigation }: Props) {
                 {criticalStockCount}
               </Text>
             </View>
-          </View>
+          </Pressable>
         )}
         <Pressable
           onPress={onRefresh}
@@ -306,7 +310,11 @@ export function DashboardScreen({ navigation }: Props) {
 
       {announcementCount > 0 && (
         <Pressable
-          onPress={() => (overdueTasksCount > 0 ? navigation.navigate('DigerTab', { screen: 'Tasks' }) : undefined)}
+          onPress={() => {
+            if (criticalStockCount > 0) navigation.navigate('DigerTab', { screen: 'Stock', params: { onlyCritical: true } })
+            else if (overdueTasksCount > 0) navigation.navigate('DigerTab', { screen: 'Tasks' })
+            else if (overdueRemindersCount > 0) navigation.navigate('DigerTab', { screen: 'Reminders' })
+          }}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
