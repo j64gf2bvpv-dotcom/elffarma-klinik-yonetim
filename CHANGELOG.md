@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.31] - 2026-08-10
+
+**Mobil Kongre/Workshop entegrasyonu eklendi (Faz G):** Master talimat §21'deki kongre modülü mobile taşındı — "Daha Fazla > Kongreler" listesi (katılım durumu, şehir/mekan, tek/çift kişi fiyatı) ve dokununca açılan Kongre Detay ekranı: katılımcı listesi + yoklama durumu (Davetli/Katıldı/Gelmedi, rozete dokununca sırayla değişiyor) + yeni katılımcı ekleme. Doktor Detay ekranına **Etkinlikler** sekmesi eklendi — doktorun geçmiş/gelecek kongre katılımları `doctor_name` eşleştirmesiyle (masaüstündeki aynı yaklaşım, henüz FK'ye geçirilmedi) gösteriliyor. Yeni `mobile/src/features/congresses/` (api+hooks) eklendi. Şema değişikliği yok, mevcut `congresses`/`congress_participants` tabloları kullanıldı.
+
 ## [2.17.30] - 2026-08-10
 
 **Mobil Teklif (Quote) modülü + PDF çıktısı eklendi (Faz F):** Master talimat §20'deki teklif akışı — yeni `quotes`/`quote_items` tabloları (idempotent migration, `sales`/`crm_opportunities`'tan bağımsız: bir teklif kabul edilse bile otomatik siparişe dönüşmez, kullanıcı ayrıca Sipariş ekranından girer). Doktor Detay > Fırsatlar sekmesinden "Teklif Oluştur" ile çoklu ürün satırı + iskonto/KDV oranı girilip ara toplam/genel toplam otomatik hesaplanıyor. Yeni "Daha Fazla > Teklifler" ekranı durum filtreleri (Taslak/Gönderildi/Görüldü/Kabul Edildi/Reddedildi) ve her teklif için PDF paylaşım butonuyla (`expo-print` + `expo-sharing`, cihazın kendi render motoru Türkçe karakterleri sorunsuz basıyor) listeleniyor — PDF paylaşıldığında taslak teklif otomatik "Gönderildi" durumuna geçiyor. `Quote`/`QuoteItem` tipleri hem `shared/src/types/database.ts` hem masaüstü `src/types/database.ts`'e eklendi (CLAUDE.md senkron kuralı).

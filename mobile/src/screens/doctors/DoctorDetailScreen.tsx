@@ -17,6 +17,7 @@ import {
   Calendar,
   Sparkles,
   X,
+  Presentation,
   type LucideIcon,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -33,6 +34,7 @@ import { useInvoices } from '@/features/invoices/hooks'
 import { useCrmActivities } from '@/features/crm/hooks'
 import { useOpportunities } from '@/features/opportunities/hooks'
 import { useVisits } from '@/features/doctorVisits/hooks'
+import { useParticipationsByDoctorName } from '@/features/congresses/hooks'
 import { computeCariLedger, cariBalance } from '@shared/businessLogic/cariLedger'
 import { summarizeDoctorForRep } from '@/features/ai/doctorSummary'
 import { AIServiceError } from '@/features/ai/types'
@@ -42,7 +44,7 @@ import type { CrmOpportunityStage } from '@shared/types/database'
 
 type Props = NativeStackScreenProps<DoctorsStackParamList, 'DoctorDetail'>
 
-type TabKey = 'genel' | 'aktiviteler' | 'siparisler' | 'firsatlar' | 'ziyaretler'
+type TabKey = 'genel' | 'aktiviteler' | 'siparisler' | 'firsatlar' | 'ziyaretler' | 'etkinlikler'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'genel', label: 'Genel' },
@@ -50,6 +52,7 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: 'siparisler', label: 'Siparişler' },
   { key: 'firsatlar', label: 'Fırsatlar' },
   { key: 'ziyaretler', label: 'Ziyaretler' },
+  { key: 'etkinlikler', label: 'Etkinlikler' },
 ]
 
 const activityIcons: Record<string, LucideIcon> = {
@@ -100,6 +103,7 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
   const { data: allActivities = [] } = useCrmActivities()
   const { data: allOpportunities = [] } = useOpportunities('all')
   const { data: allVisits = [] } = useVisits()
+  const { data: participations = [] } = useParticipationsByDoctorName(customer?.full_name)
 
   const sales = React.useMemo(() => allSales.filter((s) => s.customer_id === customerId), [allSales, customerId])
   const activities = React.useMemo(() => allActivities.filter((a) => a.customer_id === customerId), [allActivities, customerId])
@@ -330,6 +334,26 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
               title={format(new Date(v.visit_date), 'd MMMM yyyy', { locale: trLocale })}
               subtitle={v.discussed_products ?? v.notes ?? undefined}
               right={v.check_in_at && !v.check_out_at ? <Badge variant="default">Aktif</Badge> : undefined}
+            />
+          ))}
+        </View>
+      )}
+
+      {tab === 'etkinlikler' && (
+        <View style={{ gap: 8 }}>
+          {participations.length === 0 && <Text style={{ color: theme.colors.mutedForeground }}>Etkinlik katılımı yok</Text>}
+          {participations.map((p) => (
+            <ListItemCard
+              key={p.id}
+              icon={Presentation}
+              iconColor={p.attendance_status === 'attended' ? theme.colors.success : theme.colors.mutedForeground}
+              title={p.congresses?.name ?? 'Etkinlik'}
+              subtitle={p.congresses?.start_date ? format(new Date(p.congresses.start_date), 'd MMMM yyyy', { locale: trLocale }) : undefined}
+              right={
+                <Badge variant={p.attendance_status === 'attended' ? 'success' : p.attendance_status === 'no_show' ? 'destructive' : 'outline'}>
+                  {p.attendance_status === 'attended' ? 'Katıldı' : p.attendance_status === 'no_show' ? 'Gelmedi' : 'Davetli'}
+                </Badge>
+              }
             />
           ))}
         </View>

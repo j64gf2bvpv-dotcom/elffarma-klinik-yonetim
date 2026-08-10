@@ -11,6 +11,7 @@ import {
   TrendingUp,
   CheckSquare,
   FileText,
+  Presentation,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
@@ -32,6 +33,7 @@ interface MenuItem {
 const items: MenuItem[] = [
   { key: 'Fırsat Yönetimi', label: 'Fırsatlar', icon: TrendingUp },
   { key: 'Teklifler', label: 'Teklifler', icon: FileText },
+  { key: 'Kongreler', label: 'Kongreler', icon: Presentation },
   { key: 'Görevler', label: 'Görevler', icon: CheckSquare },
   { key: 'Doktor Ziyaretleri', label: 'Ziyaret Geçmişi', icon: Stethoscope },
   { key: 'Ajanda', label: 'Ajanda', icon: CalendarDays },
@@ -68,6 +70,7 @@ export function MoreMenuScreen({ navigation }: Props) {
                 'Ayarlar': 'Settings',
                 'Fırsat Yönetimi': 'Opportunities',
                 'Teklifler': 'Quotes',
+                'Kongreler': 'Congresses',
                 'Görevler': 'Tasks',
               }
               const route = routeMap[item.key]
