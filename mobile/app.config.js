@@ -20,6 +20,13 @@ module.exports = {
         NSLocationWhenInUseUsageDescription:
           'Doktor ziyaretlerinde check-in/check-out konumunu ve haritadaki yakınımdaki doktorlar özelliğini kullanabilmek için konumunuza ihtiyaç duyuyoruz.',
       },
+      // MapScreen.tsx PROVIDER_GOOGLE'ı zorluyor (Android'le tutarlı pin/
+      // callout görünümü için) — bu anahtar olmadan react-native-maps
+      // iOS'ta da boş harita gösterir, Android'deki googleMaps.apiKey ile
+      // aynı .env değeri.
+      ...(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+        ? { config: { googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY } }
+        : {}),
     },
     android: {
       package: 'com.elffarma.paketprogrami',

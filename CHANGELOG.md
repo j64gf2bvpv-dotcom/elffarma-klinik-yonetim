@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.35] - 2026-08-10
+
+**Mobil web önizlemesi tamamen kırıktı, düzeltildi + Harita artık web'de de gerçek harita gösteriyor:** Kök neden Harita'yla ilgili değildi — `expo-sqlite` (offline yazma kuyruğu, tüm platformlarda koşulsuz import ediliyor) web'de wa-sqlite'ın `.wasm` dosyasını yüklüyor, ama Metro `.wasm`'ı asset olarak tanımıyordu; sonuç: `expo start --web` açılan HER ekranda 500 hatasıyla çöküyordu (Harita'ya özgü değil, tüm web bundle'ı). `mobile/metro.config.js`'e `resolver.assetExts` içine `wasm` eklendi + wa-sqlite'ın gerektirdiği COOP/COEP header'ları eklendi (sadece yerel dev sunucusuna etkisi var, native build'i etkilemiyor). Ayrıca `MapScreen.web.tsx` artık "web'de desteklenmiyor" yazısı yerine gerçek, etkileşimli bir harita gösteriyor — API anahtarı gerektirmeyen OpenStreetMap/Leaflet tabanlı, aynı gerçek doktor/konum verisiyle (native ile birebir aynı `useCustomers`+geocode akışı). `MapScreen.tsx`'te (native) PROVIDER_GOOGLE zorlanıyordu ama iOS için `app.config.js`'te googleMapsApiKey hiç tanımlı değildi (Android'de tanımlıydı) — bu da eklendi, iOS'ta harita artık boş kalmayacak.
+
 ## [2.17.34] - 2026-08-10
 
 **Mobil "Benim Doktorlarım" kişisel filtresi eklendi (Faz J):** Master talimat §5'teki "satış temsilcisi kendisine atanmış doktorları görür" kuralı — RLS/erişim kontrolü **değiştirilmeden** (masaüstü+mobil paylaşımlı shared-trust güvenlik modeli korunuyor, hiçbir doktor kimseden gizlenmiyor), Doktor Listesi ekranına giriş yapan personelin adını (`staff.full_name`) `sales_reps.name` ile eşleştirip (mevcut isim-bazlı bağlanma, FK yok — Hedeflerim ekranındaki aynı desen) `customers.sales_rep_id`'ye göre filtreleyen isteğe bağlı bir "Benim Doktorlarım" rozeti eklendi; eşleşen bir satış temsilcisi kaydı yoksa rozet hiç gösterilmiyor (sessizce boş liste yerine). Şema/RLS değişikliği yok.
