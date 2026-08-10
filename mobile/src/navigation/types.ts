@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native'
+
 export type RootStackParamList = {
   Login: undefined
   Main: undefined
@@ -47,5 +49,5 @@ export type MainTabParamList = {
   DoktorlarTab: undefined
   HaritaTab: undefined
   AktivitelerTab: undefined
-  DigerTab: undefined
+  DigerTab: NavigatorScreenParams<MoreStackParamList>
 }
