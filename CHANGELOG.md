@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.46] - 2026-08-10
+
+**Mobil Doktor Detay: Müşteri Belge Yönetimi + düzenlenebilir notlar + "Ürün Ver" hızlı eylemi.** Yeni "Belgeler" sekmesi — masaüstünde zaten var olan `attachments` tablosu + `documents` bucket'ı (private, şema değişikliği yok) kullanılıyor: kamerayla "Tara" veya galeriden ekle, listele, görüntüle (imzalı URL, bucket private), sil. Onay/durum akışı şemada olmadığı için eklenmedi (sadece tarama/yükleme/arşiv). "Genel" sekmesindeki notlar artık salt okunur değil — doğrudan düzenlenip kaydedilebiliyor (`customers.notes`, yeni `updateCustomerNotes`). Hızlı eylemler satırına "Ürün Ver" eklendi — ziyaret check-in'i gerektirmeden, doğrudan bir ürünü bu doktora verildi olarak kaydediyor (`record_stock_movement`, 'sample' tipi, VisitFlowScreen'deki "Verilen Numuneler"nden bağımsız bir hızlı yol).
+
 ## [2.17.45] - 2026-08-10
 
 **Mobil "Haftalık Rapor" eklendi:** "Daha Fazla > Haftalık Rapor" — bir satış temsilcisinin bir haftalık ziyaretlerini ve o ziyaretlerde hangi doktora hangi ürünün ne kadar verildiğini gün gün gösteriyor (ziyaret dışı/bağımsız numuneler ayrı bir bölümde). Personel sadece kendi raporunu görür, admin herhangi bir personeli seçebilir (yatay personel listesi). `doctor_visits.sales_rep_id` (sales_reps.id) ile `stock_movements.staff_id` (staff.id) farklı id uzayları olduğundan, seçilen personelin hem kendi staff.id'si (numuneler için) hem isim eşleşmesiyle bulunan sales_reps.id'si (ziyaretler için) birlikte kullanılıyor — Hedeflerim ekranındaki aynı bağlanma deseni. Şema değişikliği yok.

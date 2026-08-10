@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native'
+import * as ImagePicker from 'expo-image-picker'
 import { format, isPast, isToday } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import {
@@ -18,16 +19,23 @@ import {
   Sparkles,
   X,
   Presentation,
+  FileText,
+  Camera,
+  Trash2,
+  Package,
   type LucideIcon,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import Toast from 'react-native-toast-message'
 import { Screen } from '@/components/ui/Screen'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { TextField } from '@/components/ui/TextField'
 import { ListItemCard } from '@/components/ui/ListItemCard'
+import { ProductPickerModal } from '@/components/ProductPickerModal'
 import { useTheme } from '@/lib/ThemeContext'
-import { useCustomer } from '@/features/customers/hooks'
+import { useCustomer, useUpdateCustomerNotes } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useSales } from '@/features/sales/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
@@ -35,16 +43,18 @@ import { useCrmActivities } from '@/features/crm/hooks'
 import { useOpportunities } from '@/features/opportunities/hooks'
 import { useVisits } from '@/features/doctorVisits/hooks'
 import { useParticipationsByDoctorName } from '@/features/congresses/hooks'
+import { useAttachments, useUploadAttachment, useAttachmentUrl, useDeleteAttachment } from '@/features/attachments/hooks'
+import { useRecordStockMovement } from '@/features/stock/hooks'
 import { computeCariLedger, cariBalance } from '@shared/businessLogic/cariLedger'
 import { summarizeDoctorForRep } from '@/features/ai/doctorSummary'
 import { AIServiceError } from '@/features/ai/types'
 import { tr } from '@shared/i18n/tr'
 import type { DoctorsStackParamList } from '@/navigation/types'
-import type { CrmOpportunityStage } from '@shared/types/database'
+import type { CrmOpportunityStage, Product } from '@shared/types/database'
 
 type Props = NativeStackScreenProps<DoctorsStackParamList, 'DoctorDetail'>
 
-type TabKey = 'genel' | 'aktiviteler' | 'siparisler' | 'firsatlar' | 'ziyaretler' | 'etkinlikler'
+type TabKey = 'genel' | 'aktiviteler' | 'siparisler' | 'firsatlar' | 'ziyaretler' | 'etkinlikler' | 'belgeler'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'genel', label: 'Genel' },
@@ -53,6 +63,7 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: 'firsatlar', label: 'Fırsatlar' },
   { key: 'ziyaretler', label: 'Ziyaretler' },
   { key: 'etkinlikler', label: 'Etkinlikler' },
+  { key: 'belgeler', label: 'Belgeler' },
 ]
 
 const activityIcons: Record<string, LucideIcon> = {
@@ -94,6 +105,7 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
   const [aiLoading, setAiLoading] = React.useState(false)
   const [aiError, setAiError] = React.useState<string | null>(null)
   const [showAiModal, setShowAiModal] = React.useState(false)
+  const [showGiveProduct, setShowGiveProduct] = React.useState(false)
   React.useLayoutEffect(() => navigation.setOptions({ title: customerName }), [navigation, customerName])
 
   const { data: customer } = useCustomer(customerId)
@@ -191,7 +203,7 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
         </Badge>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         <QuickAction icon={Phone} label="Ara" onPress={() => customer?.phone && Linking.openURL(`tel:${customer.phone}`)} />
         <QuickAction
           icon={MessageCircle}
@@ -204,7 +216,8 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
           label="Ziyaret"
           onPress={() => navigation.navigate('VisitFlow', { customerId, customerName: customer?.full_name ?? customerName })}
         />
-      </View>
+        <QuickAction icon={Package} label="Ürün Ver" onPress={() => setShowGiveProduct(true)} />
+      </ScrollView>
 
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -252,14 +265,7 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
             <SummaryRow label="İl / İlçe" value={[customer?.province, customer?.district].filter(Boolean).join(' / ') || '—'} />
             <SummaryRow label="Klinik" value={customer?.hospital_name ?? '—'} />
           </Card>
-          {customer?.notes && (
-            <Card>
-              <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, fontWeight: '600', marginBottom: 4 }}>
-                Notlar
-              </Text>
-              <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.sm }}>{customer.notes}</Text>
-            </Card>
-          )}
+          {customer && <NotesEditor customerId={customer.id} initialNotes={customer.notes} />}
         </View>
       )}
 
@@ -339,6 +345,8 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
         </View>
       )}
 
+      {tab === 'belgeler' && <AttachmentsSection customerId={customerId} />}
+
       {tab === 'etkinlikler' && (
         <View style={{ gap: 8 }}>
           {participations.length === 0 && <Text style={{ color: theme.colors.mutedForeground }}>Etkinlik katılımı yok</Text>}
@@ -388,6 +396,13 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
           </View>
         </View>
       </Modal>
+
+      <GiveProductModal
+        visible={showGiveProduct}
+        customerId={customerId}
+        customerName={customer?.full_name ?? customerName}
+        onClose={() => setShowGiveProduct(false)}
+      />
     </Screen>
   )
 }
@@ -405,12 +420,232 @@ function QuickAction({
 }) {
   const theme = useTheme()
   return (
-    <Button variant="outline" size="sm" onPress={onPress} disabled={disabled} style={{ flex: 1, flexDirection: 'column', height: 56, gap: 2 }}>
+    <Button variant="outline" size="sm" onPress={onPress} disabled={disabled} style={{ width: 82, flexDirection: 'column', height: 56, gap: 2 }}>
       <Icon size={16} color={disabled ? theme.colors.mutedForeground : theme.colors.primary} />
       <Text style={{ color: disabled ? theme.colors.mutedForeground : theme.colors.foreground, fontSize: theme.fontSizes.xs, fontWeight: '600' }}>
         {label}
       </Text>
     </Button>
+  )
+}
+
+function NotesEditor({ customerId, initialNotes }: { customerId: string; initialNotes: string | null }) {
+  const theme = useTheme()
+  const updateNotes = useUpdateCustomerNotes()
+  const [notes, setNotes] = React.useState(initialNotes ?? '')
+  const [dirty, setDirty] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!dirty) setNotes(initialNotes ?? '')
+  }, [initialNotes, dirty])
+
+  return (
+    <Card style={{ gap: 8 }}>
+      <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, fontWeight: '600' }}>Notlar</Text>
+      <TextField
+        value={notes}
+        onChangeText={(v) => {
+          setNotes(v)
+          setDirty(true)
+        }}
+        placeholder="Bu doktorla ilgili not ekleyin..."
+        multiline
+      />
+      {dirty && (
+        <Button
+          size="sm"
+          onPress={async () => {
+            await updateNotes.mutateAsync({ id: customerId, notes: notes.trim() || null })
+            setDirty(false)
+          }}
+          loading={updateNotes.isPending}
+        >
+          Notu Kaydet
+        </Button>
+      )}
+    </Card>
+  )
+}
+
+/**
+ * Doktor Detay > "Ürün Ver" hızlı eylemi — ziyaret check-in'ine bağlı
+ * olmadan (VisitFlowScreen'deki "Verilen Numuneler"nden farklı, oraya
+ * girmeden hızlı kayıt için) doğrudan bir ürünü bu doktora verildi olarak
+ * kaydeder; aynı record_stock_movement RPC'si ('sample' tipiyle), stoktan
+ * gerçekten düşülür.
+ */
+function GiveProductModal({
+  visible,
+  customerId,
+  customerName,
+  onClose,
+}: {
+  visible: boolean
+  customerId: string
+  customerName: string
+  onClose: () => void
+}) {
+  const theme = useTheme()
+  const recordMovement = useRecordStockMovement()
+  const [product, setProduct] = React.useState<Product | null>(null)
+  const [pickerOpen, setPickerOpen] = React.useState(false)
+  const [quantity, setQuantity] = React.useState('1')
+  const [note, setNote] = React.useState('')
+
+  React.useEffect(() => {
+    if (visible) {
+      setProduct(null)
+      setQuantity('1')
+      setNote('')
+    }
+  }, [visible])
+
+  async function onSave() {
+    const qty = Number(quantity)
+    if (!product || !qty || qty <= 0) return
+    await recordMovement.mutateAsync({
+      product_id: product.id,
+      movement_type: 'sample',
+      quantity: qty,
+      customer_id: customerId,
+      note: note.trim() || `${customerName} için verildi`,
+    })
+    onClose()
+  }
+
+  return (
+    <>
+      <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
+          <View
+            style={{
+              backgroundColor: theme.colors.card,
+              borderTopLeftRadius: theme.radius.xl,
+              borderTopRightRadius: theme.radius.xl,
+              padding: theme.spacing(5),
+              gap: 12,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>Ürün Ver</Text>
+              <Pressable onPress={onClose} hitSlop={12}>
+                <X size={22} color={theme.colors.foreground} />
+              </Pressable>
+            </View>
+            <Pressable onPress={() => setPickerOpen(true)}>
+              <View
+                style={{
+                  height: 44,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  borderRadius: theme.radius.md,
+                  paddingHorizontal: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  backgroundColor: theme.colors.input,
+                }}
+              >
+                <Package size={16} color={theme.colors.mutedForeground} />
+                <Text style={{ color: product ? theme.colors.foreground : theme.colors.mutedForeground, flex: 1 }} numberOfLines={1}>
+                  {product?.name ?? 'Ürün seç...'}
+                </Text>
+              </View>
+            </Pressable>
+            <TextField label="Miktar *" value={quantity} onChangeText={setQuantity} keyboardType="numeric" />
+            <TextField label="Not" value={note} onChangeText={setNote} placeholder="Detay..." />
+            <Button onPress={onSave} loading={recordMovement.isPending} disabled={!product || !Number(quantity)}>
+              Kaydet
+            </Button>
+          </View>
+        </View>
+      </Modal>
+      <ProductPickerModal
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(p) => {
+          setProduct(p)
+          setPickerOpen(false)
+        }}
+      />
+    </>
+  )
+}
+
+/**
+ * "Müşteri Belge Yönetimi" — masaüstündeki attachments tablosu + documents
+ * bucket'ı (private, zaten var, şema değişikliği yok) mobile taşındı.
+ * "Tara" kamera ile fotoğraf çeker (gerçek çok sayfalı PDF taraması değil —
+ * expo'da ek bir tarayıcı kütüphanesi olmadan yapılabilecek gerçekçi
+ * karşılığı), "Galeri" var olan bir görseli/PDF'i seçer. Onay/durum akışı
+ * şemada yok, bu yüzden eklenmedi — sadece tarama/yükleme/görüntüleme/arşiv.
+ */
+function AttachmentsSection({ customerId }: { customerId: string }) {
+  const theme = useTheme()
+  const { data: attachments = [], isLoading } = useAttachments('customer', customerId)
+  const uploadMutation = useUploadAttachment('customer', customerId)
+  const urlMutation = useAttachmentUrl()
+  const deleteMutation = useDeleteAttachment('customer', customerId)
+
+  async function pick(source: 'camera' | 'library') {
+    const permission =
+      source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      Toast.show({ type: 'error', text1: 'İzin gerekli', text2: 'Kamera/galeri izni verilmedi' })
+      return
+    }
+    const result =
+      source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ base64: true, quality: 0.7 })
+        : await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.7 })
+    if (result.canceled || !result.assets[0]?.base64) return
+    const fileName = `belge-${format(new Date(), 'yyyyMMdd-HHmmss')}.jpg`
+    await uploadMutation.mutateAsync({ fileName, base64: result.assets[0].base64, contentType: 'image/jpeg' })
+  }
+
+  async function onView(path: string) {
+    const url = await urlMutation.mutateAsync(path)
+    Linking.openURL(url)
+  }
+
+  return (
+    <View style={{ gap: 10 }}>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Button variant="outline" size="sm" style={{ flex: 1 }} onPress={() => pick('camera')} loading={uploadMutation.isPending}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Camera size={15} color={theme.colors.foreground} />
+            <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }}>Tara</Text>
+          </View>
+        </Button>
+        <Button variant="outline" size="sm" style={{ flex: 1 }} onPress={() => pick('library')} loading={uploadMutation.isPending}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <FileText size={15} color={theme.colors.foreground} />
+            <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }}>Galeriden Ekle</Text>
+          </View>
+        </Button>
+      </View>
+
+      {isLoading && <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>}
+      {!isLoading && attachments.length === 0 && (
+        <Text style={{ color: theme.colors.mutedForeground }}>Bu doktor için henüz belge yok</Text>
+      )}
+      {attachments.map((a) => (
+        <ListItemCard
+          key={a.id}
+          icon={FileText}
+          title={a.file_name}
+          subtitle={format(new Date(a.created_at), 'd MMM yyyy HH:mm', { locale: trLocale })}
+          onPress={() => onView(a.file_path)}
+          right={
+            <Pressable onPress={() => deleteMutation.mutate({ id: a.id, filePath: a.file_path })} hitSlop={8}>
+              <Trash2 size={16} color={theme.colors.destructive} />
+            </Pressable>
+          }
+        />
+      ))}
+    </View>
   )
 }
 

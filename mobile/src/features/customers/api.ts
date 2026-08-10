@@ -5,7 +5,7 @@
 // bir ekleme yolu — masaüstündeki CustomerCombobox "Yeni Doktor Ekle" hızlı
 // formuyla aynı asgari alan seti.
 import { supabase } from '@/lib/supabaseClient'
-import { offlineInsert } from '@/lib/offlineMutation'
+import { offlineInsert, offlineUpdate } from '@/lib/offlineMutation'
 import type { Customer } from '@shared/types/database'
 
 export interface CreateCustomerInput {
@@ -43,4 +43,10 @@ export async function fetchCustomer(id: string): Promise<Customer> {
   const { data, error } = await supabase.from('customers').select('*').eq('id', id).single()
   if (error) throw error
   return data as Customer
+}
+
+/** Doktor Detay > Genel sekmesindeki not düzenleme için — sadece notes
+ * alanı, tam düzenleme formu (adres/uzmanlık/vb.) hâlâ masaüstünde. */
+export async function updateCustomerNotes(id: string, notes: string | null): Promise<Customer> {
+  return offlineUpdate<Customer>('customers', id, { notes }, 'Doktor notu güncelleme')
 }
