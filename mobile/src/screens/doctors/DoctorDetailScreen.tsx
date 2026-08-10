@@ -230,6 +230,13 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
 
       {tab === 'siparisler' && (
         <View style={{ gap: 8 }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onPress={() => navigation.navigate('CreateOrder', { customerId, customerName: customer?.full_name ?? customerName })}
+          >
+            + Yeni Sipariş
+          </Button>
           {sales.length === 0 && <Text style={{ color: theme.colors.mutedForeground }}>Sipariş yok</Text>}
           {sales.map((s) => (
             <ListItemCard

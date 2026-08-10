@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.28] - 2026-08-10
+
+**Mobil Sipariş oluşturma ekranı eklendi (Faz D):** Master talimat §17'deki sipariş akışı — Doktor Detay > Siparişler sekmesinden "Yeni Sipariş", çoklu ürün satırı (ürün seç modal + adet + birim fiyat), her satırda ara toplam ve genel toplam otomatik hesaplanıyor. Kaydedildiğinde her satır hem `sales` tablosuna satır olarak düşüyor hem de `record_stock_movement` RPC'siyle stok "out" hareketi tetikleniyor (CLAUDE.md kuralı: `products.current_quantity`'ye asla doğrudan yazılmıyor). Yeni `ProductPickerModal` bileşeni (`CustomerPickerModal` ile aynı desen) eklendi. Şema/iskonto/KDV alanı uydurulmadı — masaüstündeki `SaleForm.tsx` ile aynı düz adet×birim-fiyat modeli kullanıldı.
+
 ## [2.17.27] - 2026-08-10
 
 **Görev/hatırlatma/doktor takibi için cihaz-üzerinde bildirim altyapısı eklendi (Faz C):** `expo-notifications` + `expo-device` kuruldu. Görev veya hatırlatma oluşturulduğunda/son tarihi güncellendiğinde otomatik olarak o tarihte (09:00) yerel bir bildirim zamanlanıyor; görev tamamlanınca/iptal olunca veya kayıt silinince zamanlama iptal ediliyor (`localNotifications.ts`, her kayıt için tekil bildirim kimliği — asla birikmiyor). Ziyaret tamamlandığında sonraki takip tarihi girilmişse aynı şekilde bildirim kuruluyor. Oturum açıldığında `staff.expo_push_token` sütununa (yeni migration, `supabase/schema.sql`) Expo push token'ı kaydediliyor — bu, ileride sunucu taraflı uzaktan push (Supabase Edge Function + Expo Push API) eklenmesi için temel; bu sürümde henüz uzaktan push göndermiyor, sadece token toplanıyor. iOS/Android bildirim izinleri `app.config.js`'e eklendi. Şema değişikliği idempotent (`add column if not exists`), mevcut veri etkilenmedi.

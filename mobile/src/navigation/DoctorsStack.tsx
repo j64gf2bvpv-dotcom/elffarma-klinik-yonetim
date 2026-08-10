@@ -4,6 +4,7 @@ import { useTheme } from '@/lib/ThemeContext'
 import { DoctorsListScreen } from '@/screens/doctors/DoctorsListScreen'
 import { DoctorDetailScreen } from '@/screens/doctors/DoctorDetailScreen'
 import { VisitFlowScreen } from '@/screens/doctors/VisitFlowScreen'
+import { CreateOrderScreen } from '@/screens/doctors/CreateOrderScreen'
 import type { DoctorsStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<DoctorsStackParamList>()
@@ -20,6 +21,7 @@ export function DoctorsStack() {
       <Stack.Screen name="DoctorsList" component={DoctorsListScreen} options={{ headerShown: false }} />
       <Stack.Screen name="DoctorDetail" component={DoctorDetailScreen} options={{ title: '' }} />
       <Stack.Screen name="VisitFlow" component={VisitFlowScreen} options={{ title: 'Ziyaret' }} />
+      <Stack.Screen name="CreateOrder" component={CreateOrderScreen} options={{ title: 'Yeni Sipariş' }} />
     </Stack.Navigator>
   )
 }
