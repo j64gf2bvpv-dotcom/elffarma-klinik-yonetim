@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.48] - 2026-08-10
+
+**Mobil Ajanda gerçek ay görünümlü animasyonlu takvime dönüştürüldü:** Önceden düz kronolojik bir liste olan Ajanda'nın üstüne, ay ileri/geri gezinilebilen, gün hücrelerinde o günün etkinlik türlerini renkli noktalarla gösteren gerçek bir takvim ızgarası eklendi (ay değişince opacity fade animasyonu). Bir güne dokununca liste sadece o günün etkinliklerini gösteriyor, tekrar dokununca "Tümünü Göster"e dönüyor. Listedeki her satıra bir zil rozeti eklendi — Hatırlatmalar/Görevler/Ziyaret takibi zaten oluşturulduğu anda yerel bildirim kuruyordu (mevcut `scheduleReminderNotification`/`scheduleTaskNotification`/`scheduleVisitFollowUpNotification`), bu rozet bunu görünür kılıyor, yeni bir bildirim mekanizması eklemedi.
+
 ## [2.17.47] - 2026-08-10
 
 **Mobil "Haftalık Plan" eklendi (⚠️ Supabase şeması güncellenmeli) + Doktor Ziyaretleri artık detaylı not/numune gösteriyor.** Yeni `visit_plans` tablosu — admin'in "bu hafta hangi doktora kim gitmeli" atamasını yaptığı, sadece admin'in yazabildiği (RLS: `visit_plans_admin_write`), tüm personelin okuyabildiği bir tablo; "Daha Fazla > Haftalık Plan" ekranı admin için doktor+personel+tarih atama formu, personel için sadece kendisine atananları gösteriyor — geçmişe dönük "Haftalık Rapor"dan (ne yapıldı) farklı, ileriye dönük (ne yapılmalı) bir ekran. Sunucu taraflı push bildirimi altyapısı olmadığından "gönderme" personelin uygulamayı açtığında görmesi anlamında. Ayrıca "Doktor Ziyaretleri" listesindeki satırlar artık tıklanabiliyor — açılan detayda görüşme notu/konuşulan ürünler/planlanan sonraki takip düzenlenebiliyor (önceden sadece check-out formunda bir kere girilip bir daha hiç görüntülenemiyordu) ve o gün doktora verilen numuneler (stok hareketi) salt okunur listeleniyor.
