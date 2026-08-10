@@ -1,8 +1,6 @@
 import * as React from 'react'
-import { FlatList, Modal, Pressable, RefreshControl, Text, View } from 'react-native'
-import { format } from 'date-fns'
-import { tr as trLocale } from 'date-fns/locale/tr'
-import { Plus, Building2, Phone, Mail, X } from 'lucide-react-native'
+import { FlatList, Linking, Modal, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Building2, Phone, Mail, Plus, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
@@ -11,23 +9,55 @@ import { TextField } from '@/components/ui/TextField'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { ListItemCard } from '@/components/ui/ListItemCard'
+import { PendingSyncBadge } from '@/components/PendingSyncBadge'
 import { useTheme } from '@/lib/ThemeContext'
 import { useCustomers, useCreateCustomer } from '@/features/customers/hooks'
-import type { MoreStackParamList } from '@/navigation/types'
+import { usePayments } from '@/features/payments/hooks'
+import { useSales } from '@/features/sales/hooks'
+import { useInvoices } from '@/features/invoices/hooks'
+import { computeCariLedger } from '@shared/businessLogic/cariLedger'
+import type { CustomersStackParamList } from '@/navigation/types'
+import type { Customer } from '@shared/types/database'
 
-type Props = NativeStackScreenProps<MoreStackParamList, 'Customers'>
+type Props = NativeStackScreenProps<CustomersStackParamList, 'CustomersList'>
 
-export function CustomersScreen({ navigation }: Props) {
+function currency(n: number) {
+  return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
+}
+
+/** Müşteri listesi + cari bakiye tek ekranda (masaüstündeki CariHesapListPage.tsx
+ * mantığı, computeCariLedger shared/'dan). */
+export function CustomersListScreen({ navigation }: Props) {
   const theme = useTheme()
-  const queryClient = useQueryClient()
   const [search, setSearch] = React.useState('')
-  const [refreshing, setRefreshing] = React.useState(false)
   const [showAdd, setShowAdd] = React.useState(false)
+  const queryClient = useQueryClient()
+  const [refreshing, setRefreshing] = React.useState(false)
+
   const { data: customers = [], isLoading } = useCustomers(search)
+  const { data: allPayments = [] } = usePayments({})
+  const { data: allSales = [] } = useSales()
+  const { data: allInvoices = [] } = useInvoices()
+
+  const ledger = React.useMemo(
+    () => computeCariLedger(allPayments, allSales, allInvoices),
+    [allPayments, allSales, allInvoices],
+  )
+
+  const rows = React.useMemo(
+    () =>
+      customers
+        .map((c) => {
+          const entry = ledger.get(c.id) ?? { debit: 0, credit: 0 }
+          return { customer: c, balance: entry.debit - entry.credit }
+        })
+        .sort((a, b) => b.balance - a.balance),
+    [customers, ledger],
+  )
 
   async function onRefresh() {
     setRefreshing(true)
-    await queryClient.invalidateQueries({ queryKey: ['customers'] })
+    await queryClient.invalidateQueries()
     setRefreshing(false)
   }
 
@@ -35,44 +65,35 @@ export function CustomersScreen({ navigation }: Props) {
     <Screen style={{ gap: 10 }}>
       <ScreenHeader
         title="Müşteriler"
-        subtitle={`${customers.length} kayıt`}
+        subtitle={`${rows.length} doktor/cari`}
         actions={
           <Button size="sm" onPress={() => setShowAdd(true)}>
             <Plus size={16} color={theme.colors.primaryForeground} />
           </Button>
         }
       />
-      <TextField placeholder="Ara (ad, telefon)..." value={search} onChangeText={setSearch} />
-      {isLoading && customers.length === 0 ? (
+      <PendingSyncBadge />
+      <TextField
+        placeholder="Ara (ad, telefon)..."
+        value={search}
+        onChangeText={setSearch}
+        containerStyle={{ marginBottom: 2 }}
+      />
+      {isLoading && rows.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
       ) : (
         <FlatList
-          data={customers}
-          keyExtractor={(c) => c.id}
+          data={rows}
+          keyExtractor={(r) => r.customer.id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
           ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
-            <ListItemCard
-              icon={Building2}
-              title={item.full_name}
-              subtitle={[
-                item.hospital_name,
-                item.specialty,
-                item.province,
-              ].filter(Boolean).join(' · ') || undefined}
-              right={
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  {item.is_vip && <Badge variant="warning">VIP</Badge>}
-                  {item.doctor_type === 'hastane' && <Badge variant="secondary">Hastane</Badge>}
-                </View>
-              }
+            <CustomerRow
+              customer={item.customer}
+              balance={item.balance}
               onPress={() =>
-                // CariHesap tab'ındaki detay ekranına git — parent tab navigator üzerinden
-                navigation.getParent()?.navigate('CariHesapTab', {
-                  screen: 'CariHesapDetail',
-                  params: { customerId: item.id, customerName: item.full_name },
-                })
+                navigation.navigate('CustomerDetail', { customerId: item.customer.id, customerName: item.customer.full_name })
               }
             />
           )}
@@ -80,6 +101,52 @@ export function CustomersScreen({ navigation }: Props) {
       )}
       <AddCustomerModal visible={showAdd} onClose={() => setShowAdd(false)} />
     </Screen>
+  )
+}
+
+function QuickActionButton({ icon: Icon, onPress }: { icon: typeof Phone; onPress: () => void }) {
+  const theme = useTheme()
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => [
+        {
+          width: 28,
+          height: 28,
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        pressed && { opacity: 0.6 },
+      ]}
+    >
+      <Icon size={13} color={theme.colors.foreground} />
+    </Pressable>
+  )
+}
+
+function CustomerRow({ customer, balance, onPress }: { customer: Customer; balance: number; onPress: () => void }) {
+  const theme = useTheme()
+  return (
+    <ListItemCard
+      icon={Building2}
+      iconColor={balance > 0 ? theme.colors.destructive : theme.colors.primary}
+      title={customer.full_name}
+      subtitle={customer.hospital_name ?? undefined}
+      onPress={onPress}
+      right={
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <QuickActionButton icon={Phone} onPress={() => Linking.openURL(`tel:${customer.phone}`)} />
+          {customer.email && (
+            <QuickActionButton icon={Mail} onPress={() => Linking.openURL(`mailto:${customer.email}`)} />
+          )}
+          <Badge variant={balance > 0 ? 'destructive' : 'secondary'}>{currency(balance)}</Badge>
+        </View>
+      }
+    />
   )
 }
 

@@ -3,10 +3,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useTheme } from '@/lib/ThemeContext'
 import { MoreMenuScreen } from '@/screens/more/MoreMenuScreen'
 import { ComingSoonScreen } from '@/screens/ComingSoonScreen'
-import { CrmActivitiesScreen } from '@/screens/crm/CrmActivitiesScreen'
 import { BusinessCardScanScreen } from '@/screens/crm/BusinessCardScanScreen'
 import { MapScreen } from '@/screens/crm/MapScreen'
-import { CustomersScreen } from '@/screens/more/CustomersScreen'
 import { DoctorVisitsScreen } from '@/screens/more/DoctorVisitsScreen'
 import { AgendaScreen } from '@/screens/more/AgendaScreen'
 import { RemindersScreen } from '@/screens/more/RemindersScreen'
@@ -28,10 +26,8 @@ export function MoreStack() {
       }}
     >
       <Stack.Screen name="MoreMenu" component={MoreMenuScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="CrmActivities" component={CrmActivitiesScreen} options={{ title: 'Aktiviteler' }} />
       <Stack.Screen name="BusinessCardScan" component={BusinessCardScanScreen} options={{ title: 'Kartvizit Tara' }} />
       <Stack.Screen name="Map" component={MapScreen} options={{ title: 'Harita' }} />
-      <Stack.Screen name="Customers" component={CustomersScreen} options={{ title: 'Müşteriler' }} />
       <Stack.Screen name="DoctorVisits" component={DoctorVisitsScreen} options={{ title: 'Doktor Ziyaretleri' }} />
       <Stack.Screen name="Agenda" component={AgendaScreen} options={{ title: 'Ajanda' }} />
       <Stack.Screen name="Reminders" component={RemindersScreen} options={{ title: 'Hatırlatmalar' }} />

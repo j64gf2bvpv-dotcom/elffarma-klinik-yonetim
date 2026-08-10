@@ -1,18 +1,20 @@
 import * as React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { Gauge, Receipt, MoreHorizontal } from 'lucide-react-native'
+import { Gauge, Users, Activity, MoreHorizontal } from 'lucide-react-native'
 import { useTheme } from '@/lib/ThemeContext'
 import { DashboardStack } from './DashboardStack'
-import { CariHesapStack } from './CariHesapStack'
+import { CustomersStack } from './CustomersStack'
+import { ActivitiesStack } from './ActivitiesStack'
 import { MoreStack } from './MoreStack'
 import type { MainTabParamList } from './types'
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
 
 /**
- * gocust'un CRM özellik kapsamına indirgenmiş alt navigasyon — 3 sekme
- * (Anasayfa/Cari Hesap/Diğer). Stok ve Tahsilatlar gocust'un CRM
- * kapsamında olmadığı için kaldırıldı.
+ * gocust'un Live/Customers/Activities/Dashboard/More alt navigasyonundan
+ * ilham alınmış 4 sekme (Anasayfa/Müşteriler/Aktiviteler/Diğer) — "Live" ve
+ * "Dashboard" ayrımı bizde yok, ikisi zaten tek gerçek-veri Anasayfa
+ * ekranında birleşik olduğu için uydurma bir 5. sekme eklenmedi.
  */
 export function MainTabs() {
   const theme = useTheme()
@@ -31,9 +33,14 @@ export function MainTabs() {
         options={{ title: 'Anasayfa', tabBarIcon: ({ color, size }) => <Gauge color={color} size={size} /> }}
       />
       <Tab.Screen
-        name="CariHesapTab"
-        component={CariHesapStack}
-        options={{ title: 'Cari Hesap', tabBarIcon: ({ color, size }) => <Receipt color={color} size={size} /> }}
+        name="CustomersTab"
+        component={CustomersStack}
+        options={{ title: 'Müşteriler', tabBarIcon: ({ color, size }) => <Users color={color} size={size} /> }}
+      />
+      <Tab.Screen
+        name="ActivitiesTab"
+        component={ActivitiesStack}
+        options={{ title: 'Aktiviteler', tabBarIcon: ({ color, size }) => <Activity color={color} size={size} /> }}
       />
       <Tab.Screen
         name="DigerTab"

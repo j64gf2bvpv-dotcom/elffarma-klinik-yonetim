@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.23] - 2026-08-10
+
+**Mobil alt navigasyon gocust'un 5 sekmeli yapısına (Live/Customers/Activities/Dashboard/More) benzetildi:** "Cari Hesap" sekmesi kaldırılıp yerine kendi bağımsız sekmeleri olan **Müşteriler** (bakiye listesi + yeni müşteri ekleme, eski Cari Hesap + eski "Diğer > Müşteriler" ekranlarının birleşimi) ve **Aktiviteler** (eski "Diğer > CRM" ekranı, artık kendi sekmesi) eklendi. Alt navigasyon artık 4 sekme: Anasayfa, Müşteriler, Aktiviteler, Diğer — gocust'taki "Live" ve "Dashboard" ayrımı bizde tek gerçek-veri Anasayfa ekranında zaten birleşik olduğu için uydurma bir 5. sekme eklenmedi. "Diğer" menüsü daha da sadeleşti (Müşteriler ve CRM çıkarıldı, artık kendi sekmeleri var).
+
 ## [2.17.22] - 2026-08-10
 
 **Mobil navigasyon gocust'un CRM özellik kapsamına indirgendi:** Kullanıcı isteği üzerine mobil uygulamanın menü yapısı, gocust.com/mobile-crm'in fiyatlandırma sayfasındaki özellik listesinde karşılığı olmayan modüllerden arındırıldı. Alt navigasyon 5 sekmeden 3'e indi (Anasayfa/Cari Hesap/Diğer — Stok ve Tahsilatlar kaldırıldı). "Diğer" menüsünden Satışlar, Kongreler, Prim, Giderler, Bütçe Yılı, Instagram Doktor Listesi, Araçlar, Yakıt Kayıtları, Numune Talepleri, Taksit Planları, Rekabet Analizi kaldırıldı; bu ekranların feature (api/hooks) klasörleri de temizlendi. Kalanlar: Müşteriler, Doktor Ziyaretleri, Ajanda, Hatırlatmalar, CRM, Kartvizit Tara, Harita, AI Analiz, Ayarlar, Fırsat Yönetimi, Görevler. Not: bu değişiklik sadece `mobile/` klasörünü etkiler, masaüstü uygulaması (src/) dokunulmadı — tüm bu modüller masaüstünde aynen duruyor. Ayrıca web önizlemesi (`expo start --web`) artık çalışıyor: `react-native-maps` native-only bir modül olduğu için tüm bundle'ı çökertiyordu, `MapScreen.web.tsx` ile web'e özel bir yer tutucu eklendi.

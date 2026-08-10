@@ -2,11 +2,9 @@ import * as React from 'react'
 import { FlatList, Pressable, Text, View } from 'react-native'
 import { ChevronRight, type LucideIcon } from 'lucide-react-native'
 import {
-  UserRound,
   Stethoscope,
   CalendarDays,
   BellRing,
-  Handshake,
   Sparkles,
   SlidersHorizontal,
   ScanLine,
@@ -32,11 +30,9 @@ interface MenuItem {
 // gocust'un CRM özellik kapsamına indirgenmiş "Diğer" menüsü — stok/cari/
 // muhasebe/kongre gibi gocust'ta karşılığı olmayan modüller kaldırıldı.
 const items: MenuItem[] = [
-  { key: 'Müşteriler', label: 'Müşteriler', icon: UserRound },
   { key: 'Doktor Ziyaretleri', label: 'Doktor Ziyaretleri', icon: Stethoscope },
   { key: 'Ajanda', label: 'Ajanda', icon: CalendarDays },
   { key: 'Hatırlatmalar', label: 'Hatırlatmalar', icon: BellRing },
-  { key: 'CRM', label: 'CRM', icon: Handshake },
   { key: 'Kartvizit Tara', label: 'Kartvizit Tara', icon: ScanLine },
   { key: 'Harita', label: 'Harita', icon: MapPin },
   { key: 'AI Analiz', label: 'Yapay Zeka Analiz', icon: Sparkles },
@@ -64,11 +60,9 @@ export function MoreMenuScreen({ navigation }: Props) {
           <Pressable
             onPress={() => {
               const routeMap: Record<string, string> = {
-                'Müşteriler': 'Customers',
                 'Doktor Ziyaretleri': 'DoctorVisits',
                 'Ajanda': 'Agenda',
                 'Hatırlatmalar': 'Reminders',
-                'CRM': 'CrmActivities',
                 'Kartvizit Tara': 'BusinessCardScan',
                 'Harita': 'Map',
                 'AI Analiz': 'AIAnalysis',

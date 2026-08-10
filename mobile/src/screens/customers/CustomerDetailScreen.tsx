@@ -11,9 +11,9 @@ import { useCustomer } from '@/features/customers/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useSales } from '@/features/sales/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
-import type { CariHesapStackParamList } from '@/navigation/types'
+import type { CustomersStackParamList } from '@/navigation/types'
 
-type Props = NativeStackScreenProps<CariHesapStackParamList, 'CariHesapDetail'>
+type Props = NativeStackScreenProps<CustomersStackParamList, 'CustomerDetail'>
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -30,7 +30,7 @@ interface LedgerRow {
 
 /** Masaüstündeki CariHesapPage.tsx'in mobil karşılığı — aynı hareket
  * dökümü mantığı (tahsilat/satış/iade/fatura tek kronolojik listede). */
-export function CariHesapDetailScreen({ route, navigation }: Props) {
+export function CustomerDetailScreen({ route, navigation }: Props) {
   const { customerId, customerName } = route.params
   const theme = useTheme()
   React.useLayoutEffect(() => navigation.setOptions({ title: customerName }), [navigation, customerName])

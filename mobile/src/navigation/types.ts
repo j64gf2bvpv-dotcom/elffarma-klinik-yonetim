@@ -8,28 +8,20 @@ export type DashboardStackParamList = {
   Dashboard: undefined
 }
 
-export type CariHesapStackParamList = {
-  CariHesapList: undefined
-  CariHesapDetail: { customerId: string; customerName: string }
+export type CustomersStackParamList = {
+  CustomersList: undefined
+  CustomerDetail: { customerId: string; customerName: string }
 }
 
-export type StockStackParamList = {
-  StockList: undefined
-  RecordMovement: { productId: string; productName: string; currentQuantity: number; unit: string }
-}
-
-export type PaymentsStackParamList = {
-  PaymentsList: undefined
-  RecordPayment: undefined
+export type ActivitiesStackParamList = {
+  ActivitiesList: undefined
 }
 
 export type MoreStackParamList = {
   MoreMenu: undefined
   ComingSoon: { title: string }
-  CrmActivities: undefined
   BusinessCardScan: undefined
   Map: undefined
-  Customers: undefined
   DoctorVisits: undefined
   Agenda: undefined
   Reminders: undefined
@@ -41,6 +33,7 @@ export type MoreStackParamList = {
 
 export type MainTabParamList = {
   AnasayfaTab: undefined
-  CariHesapTab: undefined
+  CustomersTab: undefined
+  ActivitiesTab: undefined
   DigerTab: undefined
 }
