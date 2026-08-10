@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { FlatList, Linking, Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
-import { Building2, Phone, Plus, Star, X } from 'lucide-react-native'
+import { startOfMonth } from 'date-fns'
+import { Building2, Info, MessageCircle, Navigation, Phone, Plus, Star, TrendingUp, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
@@ -8,6 +9,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { TextField } from '@/components/ui/TextField'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
 import { ListItemCard } from '@/components/ui/ListItemCard'
 import { PendingSyncBadge } from '@/components/PendingSyncBadge'
 import { useTheme } from '@/lib/ThemeContext'
@@ -18,13 +20,16 @@ import { useSales } from '@/features/sales/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { useRegions, regionLabel } from '@/features/regions/hooks'
+import { useVisits } from '@/features/doctorVisits/hooks'
+import { useCustomerTarget } from '@/features/customerTargets/hooks'
 import { computeCariLedger } from '@shared/businessLogic/cariLedger'
 import type { DoctorsStackParamList } from '@/navigation/types'
 import type { Customer } from '@shared/types/database'
 
 type Props = NativeStackScreenProps<DoctorsStackParamList, 'DoctorsList'>
 
-type DoctorFilter = 'all' | 'mine' | 'active' | 'potential'
+type DoctorFilter = 'all' | 'mine' | 'vip' | 'active' | 'potential'
+type SortMode = 'name' | 'visitFrequency'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
@@ -44,6 +49,8 @@ export function DoctorsListScreen({ navigation }: Props) {
   const [filter, setFilter] = React.useState<DoctorFilter>('all')
   const [regionId, setRegionId] = React.useState<string | null>(null)
   const [showAdd, setShowAdd] = React.useState(false)
+  const [sortMode, setSortMode] = React.useState<SortMode>('name')
+  const [infoCustomer, setInfoCustomer] = React.useState<Customer | null>(null)
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = React.useState(false)
 
@@ -53,6 +60,19 @@ export function DoctorsListScreen({ navigation }: Props) {
   const { data: allInvoices = [] } = useInvoices()
   const { data: salesReps = [] } = useSalesReps()
   const { data: regions = [] } = useRegions()
+  const { data: allVisits = [] } = useVisits()
+
+  // gocust referansındaki "Visit Frequency" filtresinin karşılığı — uydurma
+  // bir eşik/kategori yerine bu ayki GERÇEK ziyaret sayısına göre sıralama.
+  const monthStart = React.useMemo(() => startOfMonth(new Date()), [])
+  const visitCountByCustomer = React.useMemo(() => {
+    const map = new Map<string, number>()
+    for (const v of allVisits) {
+      if (!v.customer_id || new Date(v.visit_date) < monthStart) continue
+      map.set(v.customer_id, (map.get(v.customer_id) ?? 0) + 1)
+    }
+    return map
+  }, [allVisits, monthStart])
 
   const ledger = React.useMemo(
     () => computeCariLedger(allPayments, allSales, allInvoices),
@@ -93,20 +113,31 @@ export function DoctorsListScreen({ navigation }: Props) {
       customers
         .map((c) => {
           const entry = ledger.get(c.id) ?? { debit: 0, credit: 0 }
-          return { customer: c, balance: entry.debit - entry.credit, isPotential: !hasActivity.has(c.id) }
+          return {
+            customer: c,
+            balance: entry.debit - entry.credit,
+            isPotential: !hasActivity.has(c.id),
+            visitsThisMonth: visitCountByCustomer.get(c.id) ?? 0,
+          }
         })
         .filter((r) => {
           if (regionId != null && r.customer.region_id !== regionId) return false
           if (filter === 'mine') return myRepId != null && r.customer.sales_rep_id === myRepId
+          if (filter === 'vip') return r.customer.is_vip
           if (filter === 'active') return r.customer.is_active && !r.isPotential
           if (filter === 'potential') return r.isPotential
           return true
         })
-        .sort((a, b) => a.customer.full_name.localeCompare(b.customer.full_name, 'tr')),
-    [customers, ledger, hasActivity, filter, myRepId, regionId],
+        .sort((a, b) =>
+          sortMode === 'visitFrequency'
+            ? b.visitsThisMonth - a.visitsThisMonth || a.customer.full_name.localeCompare(b.customer.full_name, 'tr')
+            : a.customer.full_name.localeCompare(b.customer.full_name, 'tr'),
+        ),
+    [customers, ledger, hasActivity, filter, myRepId, regionId, sortMode, visitCountByCustomer],
   )
 
   const myCount = myRepId != null ? customers.filter((c) => c.sales_rep_id === myRepId).length : 0
+  const vipCount = customers.filter((c) => c.is_vip).length
   const activeCount = customers.filter((c) => c.is_active && hasActivity.has(c.id)).length
   const potentialCount = customers.filter((c) => !hasActivity.has(c.id)).length
 
@@ -134,11 +165,12 @@ export function DoctorsListScreen({ navigation }: Props) {
         onChangeText={setSearch}
         containerStyle={{ marginBottom: 2 }}
       />
-      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         {(
           [
             ['all', `Tümü (${customers.length})`],
             ...(myRepId != null ? ([['mine', `Benim Doktorlarım (${myCount})`]] as [DoctorFilter, string][]) : []),
+            ['vip', `Favoriler (${vipCount})`],
             ['active', `Aktif (${activeCount})`],
             ['potential', `Potansiyel (${potentialCount})`],
           ] as [DoctorFilter, string][]
@@ -147,6 +179,22 @@ export function DoctorsListScreen({ navigation }: Props) {
             <Badge variant={filter === key ? 'default' : 'outline'}>{label}</Badge>
           </Pressable>
         ))}
+        <Pressable
+          onPress={() => setSortMode((m) => (m === 'visitFrequency' ? 'name' : 'visitFrequency'))}
+          hitSlop={4}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 'auto' }}
+        >
+          <TrendingUp size={13} color={sortMode === 'visitFrequency' ? theme.colors.primary : theme.colors.mutedForeground} />
+          <Text
+            style={{
+              color: sortMode === 'visitFrequency' ? theme.colors.primary : theme.colors.mutedForeground,
+              fontSize: theme.fontSizes.xs,
+              fontWeight: '600',
+            }}
+          >
+            Ziyaret Sıklığı
+          </Text>
+        </Pressable>
       </View>
       {usedRegions.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 8 }}>
@@ -174,14 +222,17 @@ export function DoctorsListScreen({ navigation }: Props) {
               customer={item.customer}
               balance={item.balance}
               isPotential={item.isPotential}
+              visitsThisMonth={item.visitsThisMonth}
               onPress={() =>
                 navigation.navigate('DoctorDetail', { customerId: item.customer.id, customerName: item.customer.full_name })
               }
+              onInfoPress={() => setInfoCustomer(item.customer)}
             />
           )}
         />
       )}
       <AddDoctorModal visible={showAdd} onClose={() => setShowAdd(false)} />
+      <QuickInfoSheet customer={infoCustomer} onClose={() => setInfoCustomer(null)} />
     </Screen>
   )
 }
@@ -214,12 +265,16 @@ function DoctorRow({
   customer,
   balance,
   isPotential,
+  visitsThisMonth,
   onPress,
+  onInfoPress,
 }: {
   customer: Customer
   balance: number
   isPotential: boolean
+  visitsThisMonth: number
   onPress: () => void
+  onInfoPress: () => void
 }) {
   const theme = useTheme()
   return (
@@ -227,17 +282,102 @@ function DoctorRow({
       icon={Building2}
       iconColor={!customer.is_active ? theme.colors.mutedForeground : isPotential ? theme.colors.warning : theme.colors.success}
       title={customer.full_name}
-      subtitle={[customer.specialty, customer.hospital_name, customer.province].filter(Boolean).join(' · ') || undefined}
+      subtitle={
+        [customer.specialty, customer.hospital_name, customer.province, visitsThisMonth > 0 ? `Bu ay ${visitsThisMonth} ziyaret` : null]
+          .filter(Boolean)
+          .join(' · ') || undefined
+      }
       onPress={onPress}
       right={
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           {customer.is_vip && <Star size={14} color={theme.colors.warning} fill={theme.colors.warning} />}
+          <QuickActionButton icon={Info} onPress={onInfoPress} />
           <QuickActionButton icon={Phone} onPress={() => Linking.openURL(`tel:${customer.phone}`)} />
           {!isPotential && <Badge variant={balance > 0 ? 'destructive' : 'secondary'}>{currency(balance)}</Badge>}
           {isPotential && <Badge variant="outline">Potansiyel</Badge>}
         </View>
       }
     />
+  )
+}
+
+/**
+ * gocust referansındaki "Featured Information" hızlı bakış kartının
+ * karşılığı — listeden çıkmadan doktorun idari/iletişim bilgilerini +
+ * bu ayki ciro hedefini görüp hızlı aksiyon alabilme. Tamamı gerçek,
+ * zaten var olan customers alanları (assistant_info/secretary_info/
+ * next_payment_due) + customer_revenue_targets — uydurma alan yok.
+ */
+function QuickInfoSheet({ customer, onClose }: { customer: Customer | null; onClose: () => void }) {
+  const theme = useTheme()
+  const now = new Date()
+  const { data: target } = useCustomerTarget(customer?.id, now.getFullYear(), now.getMonth() + 1)
+  const whatsappNumber = customer?.whatsapp_phone || customer?.phone
+  const directionsUrl =
+    customer?.latitude != null && customer?.longitude != null
+      ? `https://www.google.com/maps/dir/?api=1&destination=${customer.latitude},${customer.longitude}`
+      : null
+
+  return (
+    <Modal visible={!!customer} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
+        <View
+          style={{
+            backgroundColor: theme.colors.card,
+            borderTopLeftRadius: theme.radius.xl,
+            borderTopRightRadius: theme.radius.xl,
+            padding: theme.spacing(5),
+            gap: 12,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+              <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700', flex: 1 }} numberOfLines={1}>
+                {customer?.full_name}
+              </Text>
+              {customer?.is_vip && <Star size={16} color={theme.colors.warning} fill={theme.colors.warning} />}
+            </View>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <X size={22} color={theme.colors.foreground} />
+            </Pressable>
+          </View>
+
+          <Card style={{ gap: 8 }}>
+            {customer?.hospital_name && <InfoRow label="Klinik" value={customer.hospital_name} />}
+            {customer?.assistant_info && <InfoRow label="Asistan" value={customer.assistant_info} />}
+            {customer?.secretary_info && <InfoRow label="Sekreter" value={customer.secretary_info} />}
+            {customer?.next_payment_due && (
+              <InfoRow label="Sonraki Ödeme Vadesi" value={new Date(customer.next_payment_due).toLocaleDateString('tr-TR')} />
+            )}
+            <InfoRow
+              label={`${now.toLocaleDateString('tr-TR', { month: 'long' })} Hedefi`}
+              value={target?.target_revenue ? currency(target.target_revenue) : 'Belirlenmedi'}
+            />
+          </Card>
+
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <QuickActionButton icon={Phone} onPress={() => customer?.phone && Linking.openURL(`tel:${customer.phone}`)} />
+            <QuickActionButton
+              icon={MessageCircle}
+              onPress={() => whatsappNumber && Linking.openURL(`https://wa.me/${whatsappNumber.replace(/\D/g, '')}`)}
+            />
+            {directionsUrl && <QuickActionButton icon={Navigation} onPress={() => Linking.openURL(directionsUrl)} />}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  const theme = useTheme()
+  return (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+      <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.sm }}>{label}</Text>
+      <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.sm, fontWeight: '600' }} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
   )
 }
 

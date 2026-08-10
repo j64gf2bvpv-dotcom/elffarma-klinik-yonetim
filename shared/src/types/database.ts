@@ -706,3 +706,14 @@ export interface StaffMessage {
   attachment_name: string | null
   created_at: string
 }
+
+export interface CustomerRevenueTarget {
+  id: string
+  customer_id: string
+  year: number
+  month: number
+  target_revenue: number
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}

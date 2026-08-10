@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { format, isPast, isToday } from 'date-fns'
+import { format, isPast, isToday, startOfMonth } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import {
   Phone,
@@ -30,6 +30,7 @@ import Toast from 'react-native-toast-message'
 import { Screen } from '@/components/ui/Screen'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
 import { ListItemCard } from '@/components/ui/ListItemCard'
@@ -45,6 +46,7 @@ import { useVisits } from '@/features/doctorVisits/hooks'
 import { useParticipationsByDoctorName } from '@/features/congresses/hooks'
 import { useAttachments, useUploadAttachment, useAttachmentUrl, useDeleteAttachment } from '@/features/attachments/hooks'
 import { useRecordStockMovement } from '@/features/stock/hooks'
+import { useCustomerTarget, useUpsertCustomerTarget } from '@/features/customerTargets/hooks'
 import { computeCariLedger, cariBalance } from '@shared/businessLogic/cariLedger'
 import { summarizeDoctorForRep } from '@/features/ai/doctorSummary'
 import { AIServiceError } from '@/features/ai/types'
@@ -106,7 +108,13 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
   const [aiError, setAiError] = React.useState<string | null>(null)
   const [showAiModal, setShowAiModal] = React.useState(false)
   const [showGiveProduct, setShowGiveProduct] = React.useState(false)
+  const [showTargetModal, setShowTargetModal] = React.useState(false)
+  const [targetInput, setTargetInput] = React.useState('')
   React.useLayoutEffect(() => navigation.setOptions({ title: customerName }), [navigation, customerName])
+
+  const now = new Date()
+  const { data: target } = useCustomerTarget(customerId, now.getFullYear(), now.getMonth() + 1)
+  const upsertTarget = useUpsertCustomerTarget()
 
   const { data: customer } = useCustomer(customerId)
   const { data: allPayments = [] } = usePayments({})
@@ -127,6 +135,14 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
   const totalSales = React.useMemo(
     () => sales.filter((s) => s.type === 'sale').reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0),
     [sales],
+  )
+  const monthStart = startOfMonth(now)
+  const monthSales = React.useMemo(
+    () =>
+      sales
+        .filter((s) => s.type === 'sale' && new Date(s.sale_date) >= monthStart)
+        .reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0),
+    [sales, monthStart],
   )
   const lastActivity = activities[0]
   const lastSale = sales[0]
@@ -236,6 +252,28 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
           />
           <SummaryRow label="Son Sipariş" value={lastSale ? format(new Date(lastSale.sale_date), 'd MMMM yyyy', { locale: trLocale }) : '—'} />
           <SummaryRow label="Toplam Satış" value={currency(totalSales)} />
+          <Pressable
+            onPress={() => {
+              setTargetInput(target?.target_revenue != null ? String(target.target_revenue) : '')
+              setShowTargetModal(true)
+            }}
+            style={{ gap: 4 }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.sm }}>
+                {format(now, 'MMMM', { locale: trLocale })} Hedefi
+              </Text>
+              <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.sm, fontWeight: '600' }}>
+                {target?.target_revenue ? `${currency(monthSales)} / ${currency(target.target_revenue)}` : 'Hedef belirle'}
+              </Text>
+            </View>
+            {target?.target_revenue != null && target.target_revenue > 0 && (
+              <ProgressBar
+                ratio={monthSales / target.target_revenue}
+                color={monthSales >= target.target_revenue ? theme.colors.success : theme.colors.primary}
+              />
+            )}
+          </Pressable>
           <SummaryRow
             label="Bakiye"
             value={currency(balance)}
@@ -403,6 +441,34 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
         customerName={customer?.full_name ?? customerName}
         onClose={() => setShowGiveProduct(false)}
       />
+
+      <Modal visible={showTargetModal} animationType="slide" transparent onRequestClose={() => setShowTargetModal(false)}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
+          <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>
+                {format(now, 'MMMM yyyy', { locale: trLocale })} Ciro Hedefi
+              </Text>
+              <Pressable onPress={() => setShowTargetModal(false)} hitSlop={12}>
+                <X size={22} color={theme.colors.foreground} />
+              </Pressable>
+            </View>
+            <TextField label="Hedef Tutar (₺)" value={targetInput} onChangeText={setTargetInput} keyboardType="numeric" placeholder="0" />
+            <Button
+              onPress={async () => {
+                const value = Number(targetInput)
+                if (!value || value <= 0) return
+                await upsertTarget.mutateAsync({ customerId, year: now.getFullYear(), month: now.getMonth() + 1, targetRevenue: value })
+                setShowTargetModal(false)
+              }}
+              loading={upsertTarget.isPending}
+              disabled={!Number(targetInput)}
+            >
+              Kaydet
+            </Button>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   )
 }

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.50] - 2026-08-10
+
+**Mobil Doktorlar listesine gocust referansındaki "Customers" ekranının kavramları eklendi (kendi tasarım dilimizle, gocust'un logo/UI'ı kopyalanmadı):** Aylık ciro hedefi ilk kez mobilde kullanılıyor — masaüstünde zaten var olan `customer_revenue_targets` tablosu Doktor Detay'a bağlandı, "CRM Özeti"nde bu ayki gerçekleşen/hedef ilerleme çubuğu, dokununca hedef girilebiliyor. Doktorlar listesine "Favoriler" filtresi (mevcut `is_vip` alanı) ve gerçek veriden hesaplanan "Ziyaret Sıklığı" sıralaması (bu ay kaç kez ziyaret edildiği, uydurma kategori yok) eklendi. Her satıra, listeden çıkmadan doktorun idari bilgilerini (asistan/sekreter, ödeme vadesi, aylık hedef) ve hızlı Ara/WhatsApp/Yol Tarifi aksiyonlarını gösteren bir "Hızlı Bilgi" alt sayfası (gocust'un "Featured Information" kartının karşılığı) eklendi.
+
 ## [2.17.49] - 2026-08-10
 
 **Mobil "Ekip Sohbeti" eklendi (⚠️ Supabase şeması güncellenmeli): personel içi yazışma + belge gönderme.** Yeni `staff_messages` tablosu — tek paylaşımlı ekip kanalı (herkes herkesi görür/yazar, bire-bir DM yok — bilinçli MVP kapsamı), mesajlara görsel/taranmış belge ekinin eklenebildiği (mevcut `documents` bucket'ının `chat/` alt yolu, ayrı bucket açılmadı). "Daha Fazla > Ekip Sohbeti" — 5 saniyelik polling ile (gerçek zamanlı subscription yerine, daha basit/güvenilir) neredeyse anlık mesajlaşma, kendi mesajları sağda vurgulu, eklerin dokununca imzalı URL ile açılması. `expo-document-picker` kurulu olmadığından ek türü şimdilik sadece görsel (fotoğraf/taranmış belge) ile sınırlı.
