@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.45] - 2026-08-10
+
+**Mobil "Haftalık Rapor" eklendi:** "Daha Fazla > Haftalık Rapor" — bir satış temsilcisinin bir haftalık ziyaretlerini ve o ziyaretlerde hangi doktora hangi ürünün ne kadar verildiğini gün gün gösteriyor (ziyaret dışı/bağımsız numuneler ayrı bir bölümde). Personel sadece kendi raporunu görür, admin herhangi bir personeli seçebilir (yatay personel listesi). `doctor_visits.sales_rep_id` (sales_reps.id) ile `stock_movements.staff_id` (staff.id) farklı id uzayları olduğundan, seçilen personelin hem kendi staff.id'si (numuneler için) hem isim eşleşmesiyle bulunan sales_reps.id'si (ziyaretler için) birlikte kullanılıyor — Hedeflerim ekranındaki aynı bağlanma deseni. Şema değişikliği yok.
+
 ## [2.17.44] - 2026-08-10
 
 **Mobil: personel kendi profil fotoğrafını ve telefonunu düzenleyebiliyor (⚠️ Supabase'de schema.sql'in yeniden çalıştırılması gerekiyor).** `staff` tablosu önceden sadece admin tarafından yazılabiliyordu (shared-trust modelin bilinçli istisnası) — yeni `staff_update_self` RLS policy'si personelin KENDİ satırını güncellemesine izin veriyor, ama bir `BEFORE UPDATE` trigger'ı (`protect_staff_privileged_columns`) admin olmayan bir istekte `role`/`is_active`/`full_name` alanlarını sessizce eski değerine geri çevirerek kendi kendine yetki yükseltmeyi (self-privilege-escalation) engelliyor — sadece `avatar_url`/`phone` gerçekten değişebiliyor. Yeni `staff.avatar_url` kolonu + mevcut `profile-images` bucket'ı (public, zaten "sales-rep/..." fotoğrafları için ayrılmıştı) kullanılıyor. Ayarlar ekranına fotoğraf seç/yükle (expo-image-picker + yeni `base64-arraybuffer` bağımlılığı, `mobile/src/lib/uploadImage.ts`) ve telefon düzenleme eklendi. **Bu değişikliğin çalışması için güncellenmiş `supabase/schema.sql`'in Supabase SQL Editor'da yeniden çalıştırılması gerekiyor** (idempotent, mevcut veriyi etkilemez).

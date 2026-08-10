@@ -16,6 +16,7 @@ import { CongressDetailScreen } from '@/screens/more/CongressDetailScreen'
 import { TargetsScreen } from '@/screens/more/TargetsScreen'
 import { AuditLogsScreen } from '@/screens/more/AuditLogsScreen'
 import { StockScreen } from '@/screens/more/StockScreen'
+import { WeeklyReportScreen } from '@/screens/more/WeeklyReportScreen'
 import type { MoreStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<MoreStackParamList>()
@@ -41,6 +42,7 @@ export function MoreStack() {
       <Stack.Screen name="Targets" component={TargetsScreen} />
       <Stack.Screen name="AuditLogs" component={AuditLogsScreen} />
       <Stack.Screen name="Stock" component={StockScreen} />
+      <Stack.Screen name="WeeklyReport" component={WeeklyReportScreen} />
       <Stack.Screen name="ComingSoon" component={ComingSoonScreen} />
     </Stack.Navigator>
   )
