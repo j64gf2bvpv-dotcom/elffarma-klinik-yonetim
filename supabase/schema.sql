@@ -2227,6 +2227,49 @@ create trigger staff_protect_privileged_columns
   before update on public.staff
   for each row execute function public.protect_staff_privileged_columns();
 
+-- =========================================================
+-- 49. HAFTALIK ZİYARET PLANI (visit_plans) — admin doktor atar, personel görür
+-- =========================================================
+-- İleriye dönük planlama: "bu hafta hangi doktora kim gitmeli" — mobildeki
+-- (geçmişe dönük, Haftalık Rapor ekranı) doctor_visits/stock_movements
+-- özetinden FARKLI bir tablo. Admin bir doktoru bir personele bir tarihte
+-- atar; okuma diğer tablolardaki (customers, sales, doctor_visits vb.)
+-- gibi shared-trust — her aktif personel tüm planı görebilir (uygulama
+-- katmanında personel varsayılan olarak kendi atamalarını öne çıkarır,
+-- gizleme değil). "Gönderilmiş" sayılması personelin uygulamayı açtığında
+-- görebilmesi anlamında — sunucu taraflı push bildirimi bu sürümde yok
+-- (bkz. "45. PUSH BİLDİRİM TOKEN'I" notu). Yazma (oluşturma/düzenleme/
+-- silme) ise sadece admin — "kimin nereye gideceği" yönetimsel bir karar.
+create table if not exists public.visit_plans (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customers (id) on delete cascade,
+  assigned_staff_id uuid references public.staff (id) on delete set null,
+  planned_date date not null,
+  note text,
+  status text not null default 'bekliyor' check (status in ('bekliyor', 'tamamlandi', 'iptal')),
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists visit_plans_date_idx on public.visit_plans (planned_date);
+create index if not exists visit_plans_staff_idx on public.visit_plans (assigned_staff_id);
+
+drop trigger if exists set_updated_at on public.visit_plans;
+create trigger set_updated_at before update on public.visit_plans
+  for each row execute function public.set_updated_at();
+
+alter table public.visit_plans enable row level security;
+
+drop policy if exists "visit_plans_select" on public.visit_plans;
+create policy "visit_plans_select" on public.visit_plans for select
+  using (public.is_active_staff());
+
+drop policy if exists "visit_plans_admin_write" on public.visit_plans;
+create policy "visit_plans_admin_write" on public.visit_plans for all
+  using (public.is_admin()) with check (public.is_admin());
+
+comment on table public.visit_plans is 'Admin''in personele atadığı haftalık ziyaret planı — sadece admin yazabilir, atanan personel dahil tüm aktif personel okuyabilir';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

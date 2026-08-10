@@ -44,6 +44,7 @@ export type MoreStackParamList = {
   AuditLogs: undefined
   Stock: { onlyCritical?: boolean } | undefined
   WeeklyReport: undefined
+  WeeklyPlan: undefined
 }
 
 export type MainTabParamList = {

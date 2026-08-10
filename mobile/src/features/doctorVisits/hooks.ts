@@ -6,6 +6,7 @@ import {
   checkOutVisit,
   deleteVisit,
   startVisitForCustomer,
+  updateVisitDetails,
   type CreateVisitInput,
   type CompleteVisitInput,
 } from './api'
@@ -58,6 +59,18 @@ export function useCheckOutVisit() {
       Toast.show({ type: 'success', text1: 'Ziyaret tamamlandı' })
     },
     onError: () => Toast.show({ type: 'error', text1: 'Check-out başarısız' }),
+  })
+}
+
+export function useUpdateVisitDetails() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: CompleteVisitInput }) => updateVisitDetails(id, patch),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['doctor_visits'] })
+      Toast.show({ type: 'success', text1: 'Kaydedildi' })
+    },
+    onError: () => Toast.show({ type: 'error', text1: 'Kaydedilemedi' }),
   })
 }
 

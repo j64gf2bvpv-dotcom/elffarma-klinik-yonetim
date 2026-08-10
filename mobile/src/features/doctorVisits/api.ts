@@ -87,3 +87,12 @@ export async function startVisitForCustomer(customerId: string, doctorName: stri
 export async function deleteVisit(id: string): Promise<void> {
   return offlineDelete('doctor_visits', id, 'Doktor ziyareti silme')
 }
+
+/** Ziyaret Geçmişi listesinden bir kayda dokununca (Doktor Ziyaretleri
+ * ekranı) — check_out_at'e dokunmadan sadece not/konuşulan ürün/sonraki
+ * takip düzenlemesi için. checkOutVisit'ten farkı: bunu çağırmak ziyareti
+ * "tamamlandı" yapmaz, sadece zaten var olan bir kaydın metin alanlarını
+ * günceller. */
+export async function updateVisitDetails(id: string, patch: CompleteVisitInput): Promise<DoctorVisit> {
+  return offlineUpdate<DoctorVisit>('doctor_visits', id, { ...patch }, 'Ziyaret notu güncelleme')
+}

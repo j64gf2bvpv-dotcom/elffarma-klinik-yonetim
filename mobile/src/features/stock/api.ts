@@ -56,6 +56,33 @@ export interface StockMovementWithDetails {
   customer_name: string | null
 }
 
+function mapMovementRow(r: unknown): StockMovementWithDetails {
+  const row = r as {
+    id: string
+    product_id: string
+    movement_type: MovementType
+    quantity: number
+    customer_id: string | null
+    staff_id: string | null
+    note: string | null
+    created_at: string
+    products?: { name: string } | null
+    customers?: { full_name: string } | null
+  }
+  return {
+    id: row.id,
+    product_id: row.product_id,
+    movement_type: row.movement_type,
+    quantity: row.quantity,
+    customer_id: row.customer_id,
+    staff_id: row.staff_id,
+    note: row.note,
+    created_at: row.created_at,
+    product_name: row.products?.name ?? 'Bilinmeyen ürün',
+    customer_name: row.customers?.full_name ?? null,
+  }
+}
+
 /** Haftalık Rapor ekranı için — bir personelin bir tarih aralığında verdiği
  * numuneleri (veya istenen hareket tiplerini) ürün+doktor adıyla getirir. */
 export async function fetchStockMovements(filters: {
@@ -74,30 +101,24 @@ export async function fetchStockMovements(filters: {
   if (filters.movementTypes?.length) query = query.in('movement_type', filters.movementTypes)
   const { data, error } = await query
   if (error) throw error
-  return (data ?? []).map((r) => {
-    const row = r as unknown as {
-      id: string
-      product_id: string
-      movement_type: MovementType
-      quantity: number
-      customer_id: string | null
-      staff_id: string | null
-      note: string | null
-      created_at: string
-      products?: { name: string } | null
-      customers?: { full_name: string } | null
-    }
-    return {
-      id: row.id,
-      product_id: row.product_id,
-      movement_type: row.movement_type,
-      quantity: row.quantity,
-      customer_id: row.customer_id,
-      staff_id: row.staff_id,
-      note: row.note,
-      created_at: row.created_at,
-      product_name: row.products?.name ?? 'Bilinmeyen ürün',
-      customer_name: row.customers?.full_name ?? null,
-    }
-  })
+  return (data ?? []).map(mapMovementRow)
+}
+
+/** Doktor Ziyaretleri detay modalı için — bir doktora bir tarih aralığında
+ * (aynı gün) verilen numuneleri gösterir, personelden bağımsız. */
+export async function fetchStockMovementsForCustomer(
+  customerId: string,
+  from: string,
+  to: string,
+): Promise<StockMovementWithDetails[]> {
+  const { data, error } = await supabase
+    .from('stock_movements')
+    .select('*, products(name), customers(full_name)')
+    .eq('customer_id', customerId)
+    .eq('movement_type', 'sample')
+    .gte('created_at', from)
+    .lte('created_at', to)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map(mapMovementRow)
 }

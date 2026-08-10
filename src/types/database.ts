@@ -694,3 +694,17 @@ export interface AuditLog {
   payload: Record<string, unknown> | null
   created_at: string
 }
+
+export type VisitPlanStatus = 'bekliyor' | 'tamamlandi' | 'iptal'
+
+export interface VisitPlan {
+  id: string
+  customer_id: string
+  assigned_staff_id: string | null
+  planned_date: string
+  note: string | null
+  status: VisitPlanStatus
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
