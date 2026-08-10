@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
-import { format } from 'date-fns'
+import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native'
+import { format, isPast, isToday } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import {
   Phone,
@@ -15,6 +15,8 @@ import {
   TrendingUp,
   ShoppingCart,
   Calendar,
+  Sparkles,
+  X,
   type LucideIcon,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -32,6 +34,8 @@ import { useCrmActivities } from '@/features/crm/hooks'
 import { useOpportunities } from '@/features/opportunities/hooks'
 import { useVisits } from '@/features/doctorVisits/hooks'
 import { computeCariLedger, cariBalance } from '@shared/businessLogic/cariLedger'
+import { summarizeDoctorForRep } from '@/features/ai/doctorSummary'
+import { AIServiceError } from '@/features/ai/types'
 import { tr } from '@shared/i18n/tr'
 import type { DoctorsStackParamList } from '@/navigation/types'
 import type { CrmOpportunityStage } from '@shared/types/database'
@@ -83,6 +87,10 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
   const { customerId, customerName } = route.params
   const theme = useTheme()
   const [tab, setTab] = React.useState<TabKey>('genel')
+  const [aiSummary, setAiSummary] = React.useState<string | null>(null)
+  const [aiLoading, setAiLoading] = React.useState(false)
+  const [aiError, setAiError] = React.useState<string | null>(null)
+  const [showAiModal, setShowAiModal] = React.useState(false)
   React.useLayoutEffect(() => navigation.setOptions({ title: customerName }), [navigation, customerName])
 
   const { data: customer } = useCustomer(customerId)
@@ -116,6 +124,37 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
     customer?.latitude != null && customer?.longitude != null
       ? `https://www.google.com/maps/dir/?api=1&destination=${customer.latitude},${customer.longitude}`
       : null
+
+  const overdueVisitCount = visits.filter(
+    (v) => v.next_visit_date && isPast(new Date(v.next_visit_date)) && !isToday(new Date(v.next_visit_date)),
+  ).length
+
+  async function onAiSummarize() {
+    setShowAiModal(true)
+    setAiLoading(true)
+    setAiError(null)
+    try {
+      const result = await summarizeDoctorForRep({
+        doctorName: customer?.full_name ?? customerName,
+        specialty: customer?.specialty ?? null,
+        hospitalName: customer?.hospital_name ?? null,
+        lastActivityDate: lastActivity ? format(new Date(lastActivity.occurred_at), 'd MMMM yyyy', { locale: trLocale }) : null,
+        lastActivityType: lastActivity ? (tr.crmActivityType[lastActivity.activity_type] ?? lastActivity.activity_type) : null,
+        lastSaleDate: lastSale ? format(new Date(lastSale.sale_date), 'd MMMM yyyy', { locale: trLocale }) : null,
+        totalSales,
+        balance,
+        openOpportunityTitle: openOpportunity?.title ?? null,
+        nextFollowUpDate: nextFollowUp ? format(new Date(nextFollowUp), 'd MMMM yyyy', { locale: trLocale }) : null,
+        overdueVisitCount,
+      })
+      setAiSummary(result)
+    } catch (err) {
+      const message = err instanceof AIServiceError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata'
+      setAiError(message)
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   return (
     <Screen scroll style={{ gap: 14 }}>
@@ -164,9 +203,15 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
       </View>
 
       <View>
-        <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.sm, fontWeight: '600', marginBottom: 8 }}>
-          CRM Özeti
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.sm, fontWeight: '600' }}>
+            CRM Özeti
+          </Text>
+          <Pressable onPress={onAiSummarize} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Sparkles size={14} color={theme.colors.primary} />
+            <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.xs, fontWeight: '600' }}>AI Özet</Text>
+          </Pressable>
+        </View>
         <Card style={{ gap: 10 }}>
           <SummaryRow
             label="Son Görüşme"
@@ -282,6 +327,36 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
           ))}
         </View>
       )}
+
+      <Modal visible={showAiModal} animationType="slide" transparent onRequestClose={() => setShowAiModal(false)}>
+        <View style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 14, maxHeight: '70%' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={18} color={theme.colors.primary} />
+                <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>AI Özet</Text>
+              </View>
+              <Pressable onPress={() => setShowAiModal(false)} hitSlop={12}>
+                <X size={22} color={theme.colors.foreground} />
+              </Pressable>
+            </View>
+            {aiLoading && (
+              <View style={{ paddingVertical: 24, alignItems: 'center', gap: 8 }}>
+                <ActivityIndicator color={theme.colors.primary} />
+                <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.sm }}>Özet hazırlanıyor...</Text>
+              </View>
+            )}
+            {!aiLoading && aiError && (
+              <Text style={{ color: theme.colors.destructive, fontSize: theme.fontSizes.sm }}>{aiError}</Text>
+            )}
+            {!aiLoading && !aiError && aiSummary && (
+              <ScrollView>
+                <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.base, lineHeight: 22 }}>{aiSummary}</Text>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </Screen>
   )
 }

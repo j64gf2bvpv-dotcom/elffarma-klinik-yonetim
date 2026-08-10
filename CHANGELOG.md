@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.29] - 2026-08-10
+
+**Doktor Detay ekranına AI Özet eklendi (Faz E):** Master talimat §25'teki "Dr. X hakkında özet çıkar" AI CRM asistanının ilk sürümü — CRM Özeti kartındaki "AI Özet" butonuna basılınca mevcut AI altyapısı (`chatWithText`, provider-agnostic) doktorun gerçek verilerinden (son görüşme, son sipariş, toplam satış, bakiye, açık fırsat, sonraki takip, gecikmiş takip sayısı) yapılandırılmış bir prompt oluşturup 3-4 cümlelik Türkçe özet üretiyor; sonuç alttan açılan bir modalda gösteriliyor. Prompt'a sadece hesaplanmış gerçek değerler geçiliyor, AI hiçbir sayı/tarih uydurmuyor ve CRM kaydını değiştirmiyor (salt okunur). Yeni `doctorSummary.ts` yardımcı modülü eklendi.
+
 ## [2.17.28] - 2026-08-10
 
 **Mobil Sipariş oluşturma ekranı eklendi (Faz D):** Master talimat §17'deki sipariş akışı — Doktor Detay > Siparişler sekmesinden "Yeni Sipariş", çoklu ürün satırı (ürün seç modal + adet + birim fiyat), her satırda ara toplam ve genel toplam otomatik hesaplanıyor. Kaydedildiğinde her satır hem `sales` tablosuna satır olarak düşüyor hem de `record_stock_movement` RPC'siyle stok "out" hareketi tetikleniyor (CLAUDE.md kuralı: `products.current_quantity`'ye asla doğrudan yazılmıyor). Yeni `ProductPickerModal` bileşeni (`CustomerPickerModal` ile aynı desen) eklendi. Şema/iskonto/KDV alanı uydurulmadı — masaüstündeki `SaleForm.tsx` ile aynı düz adet×birim-fiyat modeli kullanıldı.
