@@ -11,6 +11,7 @@ import { AIAnalysisScreen } from '@/screens/more/AIAnalysisScreen'
 import { SettingsScreen } from '@/screens/more/SettingsScreen'
 import { OpportunitiesScreen } from '@/screens/more/OpportunitiesScreen'
 import { TasksScreen } from '@/screens/more/TasksScreen'
+import { QuotesScreen } from '@/screens/more/QuotesScreen'
 import type { MoreStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<MoreStackParamList>()
@@ -33,6 +34,7 @@ export function MoreStack() {
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ayarlar' }} />
       <Stack.Screen name="Opportunities" component={OpportunitiesScreen} options={{ title: 'Fırsat Yönetimi' }} />
       <Stack.Screen name="Tasks" component={TasksScreen} options={{ title: 'Görevler' }} />
+      <Stack.Screen name="Quotes" component={QuotesScreen} options={{ title: 'Teklifler' }} />
       <Stack.Screen
         name="ComingSoon"
         component={ComingSoonScreen}

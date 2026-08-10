@@ -641,3 +641,30 @@ export interface CompetitorReport {
   reported_by: string | null
   created_at: string
 }
+
+export type QuoteStatus = 'taslak' | 'gonderildi' | 'goruldu' | 'kabul_edildi' | 'reddedildi' | 'suresi_doldu'
+
+export interface Quote {
+  id: string
+  quote_number: string
+  customer_id: string
+  status: QuoteStatus
+  valid_until: string | null
+  note: string | null
+  discount_rate: number
+  vat_rate: number
+  sales_rep_id: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface QuoteItem {
+  id: string
+  quote_id: string
+  product_id: string | null
+  product_name: string
+  quantity: number
+  unit_price: number
+  created_at: string
+}

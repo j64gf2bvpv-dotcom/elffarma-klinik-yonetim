@@ -298,6 +298,13 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
 
       {tab === 'firsatlar' && (
         <View style={{ gap: 8 }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onPress={() => navigation.navigate('CreateQuote', { customerId, customerName: customer?.full_name ?? customerName })}
+          >
+            + Teklif Oluştur
+          </Button>
           {opportunities.length === 0 && <Text style={{ color: theme.colors.mutedForeground }}>Fırsat yok</Text>}
           {opportunities.map((o) => (
             <ListItemCard

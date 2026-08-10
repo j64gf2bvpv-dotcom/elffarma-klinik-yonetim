@@ -2093,6 +2093,62 @@ comment on table public.competitor_reports is 'Saha rekabet analizi — rakip ü
 alter table public.staff add column if not exists expo_push_token text;
 comment on column public.staff.expo_push_token is 'Expo push notification token — mobil uygulama girişte günceller, henüz sunucu taraflı push göndermek için kullanılmıyor';
 
+-- =========================================================
+-- 46. TEKLİFLER (quotes / quote_items)
+-- =========================================================
+-- Master talimat §20'deki Teklif modülü — doktor için ürün kalemli, KDV/
+-- iskonto hesaplı, PDF çıktısı alınabilen bir teklif. sales/crm_opportunities
+-- tablolarından bağımsız: bir teklif kabul edilirse kullanıcı ayrıca
+-- (mobil Sipariş ekranından) sipariş oluşturur — otomatik dönüşüm yok, çünkü
+-- kabul edilen her teklif gerçek bir siparişe dönüşmeyebilir.
+create table if not exists public.quotes (
+  id uuid primary key default gen_random_uuid(),
+  quote_number text not null,
+  customer_id uuid not null references public.customers (id) on delete cascade,
+  status text not null default 'taslak' check (
+    status in ('taslak', 'gonderildi', 'goruldu', 'kabul_edildi', 'reddedildi', 'suresi_doldu')
+  ),
+  valid_until date,
+  note text,
+  discount_rate numeric(5, 2) not null default 0,
+  vat_rate numeric(5, 2) not null default 20,
+  sales_rep_id uuid references public.sales_reps (id) on delete set null,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists quotes_customer_idx on public.quotes (customer_id);
+create index if not exists quotes_status_idx on public.quotes (status);
+
+drop trigger if exists set_updated_at on public.quotes;
+create trigger set_updated_at before update on public.quotes
+  for each row execute function public.set_updated_at();
+
+alter table public.quotes enable row level security;
+drop policy if exists "quotes_all_staff" on public.quotes;
+create policy "quotes_all_staff" on public.quotes for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.quotes is 'Doktora sunulan teklifler — kabul edilirse ayrıca sipariş (sales) olarak girilir, otomatik dönüşüm yoktur';
+
+create table if not exists public.quote_items (
+  id uuid primary key default gen_random_uuid(),
+  quote_id uuid not null references public.quotes (id) on delete cascade,
+  product_id uuid references public.products (id) on delete set null,
+  product_name text not null,
+  quantity integer not null default 1,
+  unit_price numeric(10, 2) not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists quote_items_quote_idx on public.quote_items (quote_id);
+
+alter table public.quote_items enable row level security;
+drop policy if exists "quote_items_all_staff" on public.quote_items;
+create policy "quote_items_all_staff" on public.quote_items for all
+  using (public.is_active_staff()) with check (public.is_active_staff());
+
+comment on table public.quote_items is 'Teklif kalemleri — ürün/adet/birim fiyat, toplam quotes.discount_rate ve vat_rate ile hesaplanır';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

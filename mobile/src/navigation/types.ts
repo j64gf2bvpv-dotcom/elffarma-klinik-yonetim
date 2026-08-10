@@ -13,6 +13,7 @@ export type DoctorsStackParamList = {
   DoctorDetail: { customerId: string; customerName: string }
   VisitFlow: { customerId: string; customerName: string }
   CreateOrder: { customerId: string; customerName: string }
+  CreateQuote: { customerId: string; customerName: string }
 }
 
 export type MapStackParamList = {
@@ -34,6 +35,7 @@ export type MoreStackParamList = {
   Settings: undefined
   Opportunities: undefined
   Tasks: undefined
+  Quotes: undefined
 }
 
 export type MainTabParamList = {

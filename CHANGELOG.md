@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.30] - 2026-08-10
+
+**Mobil Teklif (Quote) modülü + PDF çıktısı eklendi (Faz F):** Master talimat §20'deki teklif akışı — yeni `quotes`/`quote_items` tabloları (idempotent migration, `sales`/`crm_opportunities`'tan bağımsız: bir teklif kabul edilse bile otomatik siparişe dönüşmez, kullanıcı ayrıca Sipariş ekranından girer). Doktor Detay > Fırsatlar sekmesinden "Teklif Oluştur" ile çoklu ürün satırı + iskonto/KDV oranı girilip ara toplam/genel toplam otomatik hesaplanıyor. Yeni "Daha Fazla > Teklifler" ekranı durum filtreleri (Taslak/Gönderildi/Görüldü/Kabul Edildi/Reddedildi) ve her teklif için PDF paylaşım butonuyla (`expo-print` + `expo-sharing`, cihazın kendi render motoru Türkçe karakterleri sorunsuz basıyor) listeleniyor — PDF paylaşıldığında taslak teklif otomatik "Gönderildi" durumuna geçiyor. `Quote`/`QuoteItem` tipleri hem `shared/src/types/database.ts` hem masaüstü `src/types/database.ts`'e eklendi (CLAUDE.md senkron kuralı).
+
 ## [2.17.29] - 2026-08-10
 
 **Doktor Detay ekranına AI Özet eklendi (Faz E):** Master talimat §25'teki "Dr. X hakkında özet çıkar" AI CRM asistanının ilk sürümü — CRM Özeti kartındaki "AI Özet" butonuna basılınca mevcut AI altyapısı (`chatWithText`, provider-agnostic) doktorun gerçek verilerinden (son görüşme, son sipariş, toplam satış, bakiye, açık fırsat, sonraki takip, gecikmiş takip sayısı) yapılandırılmış bir prompt oluşturup 3-4 cümlelik Türkçe özet üretiyor; sonuç alttan açılan bir modalda gösteriliyor. Prompt'a sadece hesaplanmış gerçek değerler geçiliyor, AI hiçbir sayı/tarih uydurmuyor ve CRM kaydını değiştirmiyor (salt okunur). Yeni `doctorSummary.ts` yardımcı modülü eklendi.

@@ -54,6 +54,7 @@ module.exports = {
           icon: './assets/icon.png',
         },
       ],
+      'expo-sharing',
     ],
   },
 }
