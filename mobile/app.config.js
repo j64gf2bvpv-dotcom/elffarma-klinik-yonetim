@@ -30,7 +30,7 @@ module.exports = {
         monochromeImage: './assets/android-icon-monochrome.png',
       },
       predictiveBackGestureEnabled: false,
-      permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION'],
+      permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'POST_NOTIFICATIONS'],
       ...(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
         ? { config: { googleMaps: { apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY } } }
         : {}),
@@ -46,6 +46,12 @@ module.exports = {
         {
           locationWhenInUsePermission:
             'Doktor ziyaretlerinde check-in/check-out konumunu ve haritadaki yakınımdaki doktorlar özelliğini kullanabilmek için konumunuza ihtiyaç duyuyoruz.',
+        },
+      ],
+      [
+        'expo-notifications',
+        {
+          icon: './assets/icon.png',
         },
       ],
     ],

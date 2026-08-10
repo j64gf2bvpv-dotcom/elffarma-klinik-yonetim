@@ -15,6 +15,7 @@ import {
   useCheckInVisit,
   useCheckOutVisit,
 } from '@/features/doctorVisits/hooks'
+import { scheduleVisitFollowUpNotification } from '@/features/notifications/localNotifications'
 import type { DoctorsStackParamList } from '@/navigation/types'
 
 type Props = NativeStackScreenProps<DoctorsStackParamList, 'VisitFlow'>
@@ -80,6 +81,9 @@ export function VisitFlowScreen({ route, navigation }: Props) {
         next_visit_date: nextVisitDate || null,
       },
     })
+    if (nextVisitDate) {
+      scheduleVisitFollowUpNotification(activeVisit.id, customerName, nextVisitDate)
+    }
     navigation.goBack()
   }
 

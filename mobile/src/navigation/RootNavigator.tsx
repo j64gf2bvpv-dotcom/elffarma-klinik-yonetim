@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth'
 import { useTheme } from '@/lib/ThemeContext'
 import { supabase } from '@/lib/supabaseClient'
 import { useDeepLinkRecovery } from '@/lib/deepLink'
+import { registerForPushNotificationsAsync } from '@/features/notifications/pushToken'
 import { LoginScreen } from '@/screens/auth/LoginScreen'
 import { ResetPasswordScreen } from '@/screens/auth/ResetPasswordScreen'
 import { MainTabs } from './MainTabs'
@@ -34,6 +35,13 @@ function RootNavigatorContent() {
       navigationRef.navigate('ResetPassword')
     }
   })
+
+  // Push token kaydı — sadece oturum açıkken (kayıt staff.id'ye bağlı),
+  // arka planda sessizce dener; izin verilmezse veya fiziksel cihaz
+  // değilse (simülatör) registerForPushNotificationsAsync no-op döner.
+  React.useEffect(() => {
+    if (session) registerForPushNotificationsAsync().catch(() => undefined)
+  }, [session])
 
   if (loading) {
     return (

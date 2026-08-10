@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.27] - 2026-08-10
+
+**Görev/hatırlatma/doktor takibi için cihaz-üzerinde bildirim altyapısı eklendi (Faz C):** `expo-notifications` + `expo-device` kuruldu. Görev veya hatırlatma oluşturulduğunda/son tarihi güncellendiğinde otomatik olarak o tarihte (09:00) yerel bir bildirim zamanlanıyor; görev tamamlanınca/iptal olunca veya kayıt silinince zamanlama iptal ediliyor (`localNotifications.ts`, her kayıt için tekil bildirim kimliği — asla birikmiyor). Ziyaret tamamlandığında sonraki takip tarihi girilmişse aynı şekilde bildirim kuruluyor. Oturum açıldığında `staff.expo_push_token` sütununa (yeni migration, `supabase/schema.sql`) Expo push token'ı kaydediliyor — bu, ileride sunucu taraflı uzaktan push (Supabase Edge Function + Expo Push API) eklenmesi için temel; bu sürümde henüz uzaktan push göndermiyor, sadece token toplanıyor. iOS/Android bildirim izinleri `app.config.js`'e eklendi. Şema değişikliği idempotent (`add column if not exists`), mevcut veri etkilenmedi.
+
 ## [2.17.26] - 2026-08-10
 
 **Fırsat Yönetimi ekranı Kanban pipeline görünümüne çevrildi (Faz B):** Master talimat §14'teki 5 aşamalı satış hunisi (Yeni Lead→Teklif Verildi→Müzakere→Kazanıldı/Kaybedildi) yatay kaydırılabilir kolonlar olarak yeniden tasarlandı — önceki tek liste + filtre rozetleri yerine her aşama kendi kolonunda, kolon başlığında kayıt sayısı ve toplam tutar. Her fırsat kartında doktor adı, başlık, tutar, kapanış tarihi ve ‹ › butonlarıyla bir önceki/sonraki aşamaya taşıma (RN'de güvenilir sürükle-bırak ek kütüphane gerektirdiği için bu sürümde ok butonu tercih edildi, aynı `useUpdateOpportunity` mutasyonunu kullanıyor). Şema değişikliği yok.

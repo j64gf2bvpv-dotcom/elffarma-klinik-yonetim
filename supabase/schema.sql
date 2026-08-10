@@ -2082,6 +2082,17 @@ create policy "competitor_reports_all_staff" on public.competitor_reports for al
 
 comment on table public.competitor_reports is 'Saha rekabet analizi — rakip ürün stok/fiyat/görünürlük raporu';
 
+-- =========================================================
+-- 45. PUSH BİLDİRİM TOKEN'I (staff.expo_push_token)
+-- =========================================================
+-- Mobil uygulama girişte Expo push token'ını burada saklar. Uzaktan push
+-- (örn. bir supabase edge function veya trigger'ın Expo Push API'sine POST
+-- atması) bu sürümde henüz yok — şimdilik sadece token toplama altyapısı;
+-- görev/takip bildirimleri mobilde cihaz üzerinde zamanlanmış yerel
+-- bildirimlerle (expo-notifications scheduleNotificationAsync) çalışıyor.
+alter table public.staff add column if not exists expo_push_token text;
+comment on column public.staff.expo_push_token is 'Expo push notification token — mobil uygulama girişte günceller, henüz sunucu taraflı push göndermek için kullanılmıyor';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.
