@@ -2270,6 +2270,36 @@ create policy "visit_plans_admin_write" on public.visit_plans for all
 
 comment on table public.visit_plans is 'Admin''in personele atadığı haftalık ziyaret planı — sadece admin yazabilir, atanan personel dahil tüm aktif personel okuyabilir';
 
+-- =========================================================
+-- 50. EKİP SOHBETİ (staff_messages) — personel içi yazışma + belge gönderme
+-- =========================================================
+-- Tek, paylaşımlı bir ekip kanalı (herkes herkesi görür) — bire-bir özel
+-- mesajlaşma/okundu bilgisi/typing-indicator gibi genişletmeler bu sürümde
+-- yok, diğer her tabloyla aynı shared-trust deseni tercih edildi (basit ve
+-- tutarlı). Ekler mevcut `documents` bucket'ının (private, zaten var) bir
+-- alt yolunu ('chat/...') kullanır, ayrı bir bucket açılmadı.
+create table if not exists public.staff_messages (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid references public.staff (id) on delete set null,
+  body text,
+  attachment_path text,
+  attachment_name text,
+  created_at timestamptz not null default now()
+);
+create index if not exists staff_messages_created_idx on public.staff_messages (created_at desc);
+
+alter table public.staff_messages enable row level security;
+
+drop policy if exists "staff_messages_select" on public.staff_messages;
+create policy "staff_messages_select" on public.staff_messages for select
+  using (public.is_active_staff());
+
+drop policy if exists "staff_messages_insert" on public.staff_messages;
+create policy "staff_messages_insert" on public.staff_messages for insert
+  with check (public.is_active_staff() and sender_id = auth.uid());
+
+comment on table public.staff_messages is 'Ekip Sohbeti — tek paylaşımlı kanal, tüm aktif personel okur/yazar; düzenleme/silme yok (basit sohbet geçmişi)';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

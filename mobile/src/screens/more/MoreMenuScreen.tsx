@@ -16,6 +16,7 @@ import {
   Boxes,
   CalendarRange,
   Send,
+  MessageSquare,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
@@ -44,6 +45,7 @@ const items: MenuItem[] = [
   { key: 'Doktor Ziyaretleri', label: 'Ziyaret Geçmişi', icon: Stethoscope },
   { key: 'Haftalık Rapor', label: 'Haftalık Rapor', icon: CalendarRange },
   { key: 'Haftalık Plan', label: 'Haftalık Plan', icon: Send },
+  { key: 'Ekip Sohbeti', label: 'Ekip Sohbeti', icon: MessageSquare },
   { key: 'Ajanda', label: 'Ajanda', icon: CalendarDays },
   { key: 'Hatırlatmalar', label: 'Hatırlatmalar', icon: BellRing },
   { key: 'Kartvizit Tara', label: 'Kartvizit Tara', icon: ScanLine },
@@ -73,6 +75,7 @@ export function MoreMenuScreen({ navigation }: Props) {
                 'Doktor Ziyaretleri': 'DoctorVisits',
                 'Haftalık Rapor': 'WeeklyReport',
                 'Haftalık Plan': 'WeeklyPlan',
+                'Ekip Sohbeti': 'TeamChat',
                 'Ajanda': 'Agenda',
                 'Hatırlatmalar': 'Reminders',
                 'Kartvizit Tara': 'BusinessCardScan',

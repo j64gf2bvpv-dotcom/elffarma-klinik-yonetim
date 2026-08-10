@@ -45,6 +45,7 @@ export type MoreStackParamList = {
   Stock: { onlyCritical?: boolean } | undefined
   WeeklyReport: undefined
   WeeklyPlan: undefined
+  TeamChat: undefined
 }
 
 export type MainTabParamList = {

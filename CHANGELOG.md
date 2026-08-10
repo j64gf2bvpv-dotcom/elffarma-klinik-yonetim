@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.49] - 2026-08-10
+
+**Mobil "Ekip Sohbeti" eklendi (⚠️ Supabase şeması güncellenmeli): personel içi yazışma + belge gönderme.** Yeni `staff_messages` tablosu — tek paylaşımlı ekip kanalı (herkes herkesi görür/yazar, bire-bir DM yok — bilinçli MVP kapsamı), mesajlara görsel/taranmış belge ekinin eklenebildiği (mevcut `documents` bucket'ının `chat/` alt yolu, ayrı bucket açılmadı). "Daha Fazla > Ekip Sohbeti" — 5 saniyelik polling ile (gerçek zamanlı subscription yerine, daha basit/güvenilir) neredeyse anlık mesajlaşma, kendi mesajları sağda vurgulu, eklerin dokununca imzalı URL ile açılması. `expo-document-picker` kurulu olmadığından ek türü şimdilik sadece görsel (fotoğraf/taranmış belge) ile sınırlı.
+
 ## [2.17.48] - 2026-08-10
 
 **Mobil Ajanda gerçek ay görünümlü animasyonlu takvime dönüştürüldü:** Önceden düz kronolojik bir liste olan Ajanda'nın üstüne, ay ileri/geri gezinilebilen, gün hücrelerinde o günün etkinlik türlerini renkli noktalarla gösteren gerçek bir takvim ızgarası eklendi (ay değişince opacity fade animasyonu). Bir güne dokununca liste sadece o günün etkinliklerini gösteriyor, tekrar dokununca "Tümünü Göster"e dönüyor. Listedeki her satıra bir zil rozeti eklendi — Hatırlatmalar/Görevler/Ziyaret takibi zaten oluşturulduğu anda yerel bildirim kuruyordu (mevcut `scheduleReminderNotification`/`scheduleTaskNotification`/`scheduleVisitFollowUpNotification`), bu rozet bunu görünür kılıyor, yeni bir bildirim mekanizması eklemedi.

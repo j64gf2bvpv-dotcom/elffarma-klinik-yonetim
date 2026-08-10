@@ -708,3 +708,12 @@ export interface VisitPlan {
   created_at: string
   updated_at: string
 }
+
+export interface StaffMessage {
+  id: string
+  sender_id: string | null
+  body: string | null
+  attachment_path: string | null
+  attachment_name: string | null
+  created_at: string
+}
