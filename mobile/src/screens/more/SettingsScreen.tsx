@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
-import { UserRound, Bot, Info, Shield, LogOut, ChevronRight } from 'lucide-react-native'
+import { UserRound, Bot, Info, Shield, LogOut, ChevronRight, ClipboardList } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
@@ -20,7 +20,7 @@ const roleLabels: Record<string, string> = {
   staff: 'Personel',
 }
 
-export function SettingsScreen(_: Props) {
+export function SettingsScreen({ navigation }: Props) {
   const theme = useTheme()
   const { staff, signOut } = useAuth()
   const { data: staffList = [] } = useStaffList()
@@ -125,6 +125,22 @@ export function SettingsScreen(_: Props) {
             ))}
           </View>
         </Card>
+      )}
+
+      {/* Audit Log (admin) */}
+      {staff?.role === 'admin' && (
+        <Pressable
+          onPress={() => navigation.navigate('AuditLogs')}
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+        >
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <ClipboardList size={18} color={theme.colors.primary} />
+              <Text style={{ color: theme.colors.foreground, fontWeight: '600', flex: 1 }}>Audit Log</Text>
+              <ChevronRight size={18} color={theme.colors.mutedForeground} />
+            </View>
+          </Card>
+        </Pressable>
       )}
 
       {/* Uygulama Bilgisi */}

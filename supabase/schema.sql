@@ -2149,6 +2149,43 @@ create policy "quote_items_all_staff" on public.quote_items for all
 
 comment on table public.quote_items is 'Teklif kalemleri — ürün/adet/birim fiyat, toplam quotes.discount_rate ve vat_rate ile hesaplanır';
 
+-- =========================================================
+-- 47. AUDIT LOG (audit_logs) — master talimat §34
+-- =========================================================
+-- "Erkan tarafından Dr. X'in telefon numarası değiştirildi." tarzı işlem
+-- kaydı. staff_name burada BİLEREK denormalize edilmiş (staff_id'nin
+-- ayrıca FK'si var, ama personel silinir/yeniden adlandırılırsa geçmiş log
+-- satırı hâlâ o anki gerçek ismi göstersin diye). SADECE INSERT politikası
+-- var — update/delete için hiçbir policy tanımlı değil, yani RLS varsayılan
+-- olarak reddeder: audit_logs uygulama katmanından asla değiştirilemez veya
+-- silinemez (§34: "Audit log silinemez olmalı").
+create table if not exists public.audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  staff_id uuid references public.staff (id) on delete set null,
+  staff_name text not null,
+  action text not null check (action in ('insert', 'update', 'delete', 'rpc')),
+  table_name text not null,
+  record_id text,
+  description text not null,
+  payload jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists audit_logs_created_idx on public.audit_logs (created_at desc);
+create index if not exists audit_logs_table_idx on public.audit_logs (table_name);
+create index if not exists audit_logs_staff_idx on public.audit_logs (staff_id);
+
+alter table public.audit_logs enable row level security;
+
+drop policy if exists "audit_logs_insert_active_staff" on public.audit_logs;
+create policy "audit_logs_insert_active_staff" on public.audit_logs for insert
+  with check (public.is_active_staff());
+
+drop policy if exists "audit_logs_select_admin" on public.audit_logs;
+create policy "audit_logs_select_admin" on public.audit_logs for select
+  using (public.is_admin());
+
+comment on table public.audit_logs is 'Değiştirilemez/silinemez işlem kaydı — sadece INSERT policy''si var, admin okuyabilir';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

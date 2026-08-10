@@ -7,6 +7,7 @@ import { useTheme } from '@/lib/ThemeContext'
 import { supabase } from '@/lib/supabaseClient'
 import { useDeepLinkRecovery } from '@/lib/deepLink'
 import { registerForPushNotificationsAsync } from '@/features/notifications/pushToken'
+import { resetAuditStaffCache } from '@/lib/auditLog'
 import { LoginScreen } from '@/screens/auth/LoginScreen'
 import { ResetPasswordScreen } from '@/screens/auth/ResetPasswordScreen'
 import { MainTabs } from './MainTabs'
@@ -41,6 +42,13 @@ function RootNavigatorContent() {
   // değilse (simülatör) registerForPushNotificationsAsync no-op döner.
   React.useEffect(() => {
     if (session) registerForPushNotificationsAsync().catch(() => undefined)
+  }, [session])
+
+  // Audit log'un personel önbelleği oturum değiştiğinde (çıkış/farklı
+  // kullanıcı girişi) sıfırlanmalı, aksi halde önceki kullanıcının adı
+  // yeni kullanıcının işlemlerine yazılmaya devam eder.
+  React.useEffect(() => {
+    resetAuditStaffCache()
   }, [session])
 
   if (loading) {

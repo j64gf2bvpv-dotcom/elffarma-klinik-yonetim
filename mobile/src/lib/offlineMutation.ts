@@ -5,6 +5,7 @@ import * as Crypto from 'expo-crypto'
 import { supabase } from './supabaseClient'
 import { enqueueMutation } from './offlineQueue'
 import { isOnline } from './netInfoState'
+import { recordAuditLog } from './auditLog'
 
 export async function getCurrentUserId(): Promise<string | undefined> {
   const { data } = await supabase.auth.getSession()
@@ -36,6 +37,7 @@ export async function offlineInsert<T>(
   try {
     const { data, error } = await supabase.from(table).insert(withId).select().single()
     if (error) throw error
+    recordAuditLog({ action: 'insert', table, recordId: id, description, payload: withId })
     return data as T
   } catch (error) {
     if (!isNetworkError(error)) throw error
@@ -58,6 +60,7 @@ export async function offlineUpdate<T>(
   try {
     const { data, error } = await supabase.from(table).update(payload).eq('id', id).select().single()
     if (error) throw error
+    recordAuditLog({ action: 'update', table, recordId: id, description, payload })
     return data as T
   } catch (error) {
     if (!isNetworkError(error)) throw error
@@ -84,6 +87,7 @@ export async function offlineUpsert<T>(
       .select()
       .single()
     if (error) throw error
+    recordAuditLog({ action: 'update', table, recordId: (payload.id as string | undefined) ?? null, description, payload })
     return data as T
   } catch (error) {
     if (!isNetworkError(error)) throw error
@@ -101,6 +105,7 @@ export async function offlineDelete(table: string, id: string, description: stri
   try {
     const { error } = await supabase.from(table).delete().eq('id', id)
     if (error) throw error
+    recordAuditLog({ action: 'delete', table, recordId: id, description })
   } catch (error) {
     if (!isNetworkError(error)) throw error
     await enqueueMutation({ type: 'delete', table, match: { id }, description })
@@ -120,6 +125,7 @@ export async function offlineRpc(
   try {
     const { error } = await supabase.rpc(rpcName, args)
     if (error) throw error
+    recordAuditLog({ action: 'rpc', table: rpcName, description, payload: args })
   } catch (error) {
     if (!isNetworkError(error)) throw error
     await enqueueMutation({ type: 'rpc', rpcName, rpcArgs: args, description })

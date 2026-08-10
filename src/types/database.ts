@@ -679,3 +679,17 @@ export interface QuoteItem {
   unit_price: number
   created_at: string
 }
+
+export type AuditAction = 'insert' | 'update' | 'delete' | 'rpc'
+
+export interface AuditLog {
+  id: string
+  staff_id: string | null
+  staff_name: string
+  action: AuditAction
+  table_name: string
+  record_id: string | null
+  description: string
+  payload: Record<string, unknown> | null
+  created_at: string
+}

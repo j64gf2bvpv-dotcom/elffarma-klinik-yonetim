@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.33] - 2026-08-10
+
+**Mobil Audit Log altyapısı eklendi (Faz I):** Master talimat §34'teki "silinemez işlem kaydı" — yeni `audit_logs` tablosu (idempotent migration, sadece INSERT policy'si var: update/delete için hiçbir policy tanımlı değil, RLS varsayılan olarak reddeder, yani uygulama katmanından asla değiştirilemez/silinemez; SELECT sadece `is_admin()`). Kayıt merkezi katmanda (`offlineMutation.ts`'in dört fonksiyonu + `useOfflineSync.ts`'in kuyruk flush yolu) otomatik tetikleniyor — her mevcut ve gelecekteki `api.ts` dosyası tek tek değiştirilmeden otomatik loglanıyor. Kayıt yazma hatası ana işlemi asla bloklamıyor/başarısız kılmıyor (fire-and-forget, `auditLog.ts`). Yeni "Ayarlar > Audit Log" ekranı (sadece admin) son 200 işlemi personel adı + zaman damgasıyla listeliyor. `AuditLog`/`AuditAction` tipleri hem `shared/` hem masaüstü `src/types/database.ts`'e eklendi.
+
 ## [2.17.32] - 2026-08-10
 
 **Mobil kişisel Hedef sistemi eklendi (Faz H):** "Daha Fazla > Hedeflerim" ekranı — giriş yapan personelin adı `sales_reps.name` ile eşleştirilip (masaüstündeki aynı isim-bazlı bağlanma, FK yok) o ayki aylık ciro hedefi (`sales_reps.sales_target`) ile gerçekleşen tahsilat karşılaştırılıyor: ilerleme çubuğu, başarı yüzdesi, ve bu ay tahsilat/satış/ziyaret özet kartları. Eşleşen bir satış temsilcisi kaydı yoksa sessizce sıfır göstermek yerine bunu açıkça belirten bir mesaj çıkıyor. Yeniden kurulan `mobile/src/features/salesReps/` (api+hooks) mevcut `budget/hooks.ts`teki aylık bütçe hedefinden (kurumsal, Ana Sayfa'da zaten gösteriliyordu) ayrı — bu ekran kişiye özel hedefi gösteriyor. Şema değişikliği yok.

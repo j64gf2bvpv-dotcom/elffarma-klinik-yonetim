@@ -9,31 +9,37 @@ import {
   type QueuedMutation,
 } from '@/lib/offlineQueue'
 import { isOnline, subscribeOnlineStatus } from '@/lib/netInfoState'
+import { recordAuditLog } from '@/lib/auditLog'
 
 async function applyMutation(m: QueuedMutation) {
   if (m.type === 'insert') {
     const { error } = await supabase.from(m.table as string).insert(m.payload ?? {})
     if (error) throw error
+    recordAuditLog({ action: 'insert', table: m.table as string, recordId: (m.payload?.id as string) ?? null, description: m.description, payload: m.payload })
   } else if (m.type === 'update') {
     const { error } = await supabase
       .from(m.table as string)
       .update(m.payload ?? {})
       .eq('id', (m.match as { id: string }).id)
     if (error) throw error
+    recordAuditLog({ action: 'update', table: m.table as string, recordId: (m.match as { id: string }).id, description: m.description, payload: m.payload })
   } else if (m.type === 'delete') {
     const { error } = await supabase
       .from(m.table as string)
       .delete()
       .eq('id', (m.match as { id: string }).id)
     if (error) throw error
+    recordAuditLog({ action: 'delete', table: m.table as string, recordId: (m.match as { id: string }).id, description: m.description })
   } else if (m.type === 'upsert') {
     const { error } = await supabase
       .from(m.table as string)
       .upsert(m.payload ?? {}, m.onConflict ? { onConflict: m.onConflict } : undefined)
     if (error) throw error
+    recordAuditLog({ action: 'update', table: m.table as string, recordId: (m.payload?.id as string) ?? null, description: m.description, payload: m.payload })
   } else if (m.type === 'rpc') {
     const { error } = await supabase.rpc(m.rpcName as string, m.rpcArgs)
     if (error) throw error
+    recordAuditLog({ action: 'rpc', table: m.rpcName as string, description: m.description, payload: m.rpcArgs })
   }
 }
 
