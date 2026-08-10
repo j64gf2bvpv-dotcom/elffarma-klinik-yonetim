@@ -281,7 +281,7 @@ export function DashboardScreen({ navigation }: Props) {
           </Text>
         </View>
         <Pressable
-          onPress={() => navigation.navigate('DoktorlarTab')}
+          onPress={() => navigation.navigate('DoktorlarTab', { screen: 'DoctorsList' })}
           style={({ pressed }) => [
             {
               flexDirection: 'row',

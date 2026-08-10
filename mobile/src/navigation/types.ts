@@ -46,7 +46,7 @@ export type MoreStackParamList = {
 
 export type MainTabParamList = {
   AnaSayfaTab: undefined
-  DoktorlarTab: undefined
+  DoktorlarTab: NavigatorScreenParams<DoctorsStackParamList>
   HaritaTab: undefined
   AktivitelerTab: undefined
   DigerTab: NavigatorScreenParams<MoreStackParamList>
