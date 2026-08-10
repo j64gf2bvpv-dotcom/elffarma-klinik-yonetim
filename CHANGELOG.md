@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.32] - 2026-08-10
+
+**Mobil kişisel Hedef sistemi eklendi (Faz H):** "Daha Fazla > Hedeflerim" ekranı — giriş yapan personelin adı `sales_reps.name` ile eşleştirilip (masaüstündeki aynı isim-bazlı bağlanma, FK yok) o ayki aylık ciro hedefi (`sales_reps.sales_target`) ile gerçekleşen tahsilat karşılaştırılıyor: ilerleme çubuğu, başarı yüzdesi, ve bu ay tahsilat/satış/ziyaret özet kartları. Eşleşen bir satış temsilcisi kaydı yoksa sessizce sıfır göstermek yerine bunu açıkça belirten bir mesaj çıkıyor. Yeniden kurulan `mobile/src/features/salesReps/` (api+hooks) mevcut `budget/hooks.ts`teki aylık bütçe hedefinden (kurumsal, Ana Sayfa'da zaten gösteriliyordu) ayrı — bu ekran kişiye özel hedefi gösteriyor. Şema değişikliği yok.
+
 ## [2.17.31] - 2026-08-10
 
 **Mobil Kongre/Workshop entegrasyonu eklendi (Faz G):** Master talimat §21'deki kongre modülü mobile taşındı — "Daha Fazla > Kongreler" listesi (katılım durumu, şehir/mekan, tek/çift kişi fiyatı) ve dokununca açılan Kongre Detay ekranı: katılımcı listesi + yoklama durumu (Davetli/Katıldı/Gelmedi, rozete dokununca sırayla değişiyor) + yeni katılımcı ekleme. Doktor Detay ekranına **Etkinlikler** sekmesi eklendi — doktorun geçmiş/gelecek kongre katılımları `doctor_name` eşleştirmesiyle (masaüstündeki aynı yaklaşım, henüz FK'ye geçirilmedi) gösteriliyor. Yeni `mobile/src/features/congresses/` (api+hooks) eklendi. Şema değişikliği yok, mevcut `congresses`/`congress_participants` tabloları kullanıldı.

@@ -12,6 +12,7 @@ import {
   CheckSquare,
   FileText,
   Presentation,
+  Target,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
@@ -31,6 +32,7 @@ interface MenuItem {
 // Master talimat §6'daki "Daha Fazla" menüsü — Doktorlar/Harita/Aktiviteler
 // artık kendi alt sekmeleri olduğu için burada değil.
 const items: MenuItem[] = [
+  { key: 'Hedeflerim', label: 'Hedeflerim', icon: Target },
   { key: 'Fırsat Yönetimi', label: 'Fırsatlar', icon: TrendingUp },
   { key: 'Teklifler', label: 'Teklifler', icon: FileText },
   { key: 'Kongreler', label: 'Kongreler', icon: Presentation },
@@ -68,6 +70,7 @@ export function MoreMenuScreen({ navigation }: Props) {
                 'Kartvizit Tara': 'BusinessCardScan',
                 'AI Analiz': 'AIAnalysis',
                 'Ayarlar': 'Settings',
+                'Hedeflerim': 'Targets',
                 'Fırsat Yönetimi': 'Opportunities',
                 'Teklifler': 'Quotes',
                 'Kongreler': 'Congresses',

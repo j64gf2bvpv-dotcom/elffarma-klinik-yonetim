@@ -14,6 +14,7 @@ import { TasksScreen } from '@/screens/more/TasksScreen'
 import { QuotesScreen } from '@/screens/more/QuotesScreen'
 import { CongressesScreen } from '@/screens/more/CongressesScreen'
 import { CongressDetailScreen } from '@/screens/more/CongressDetailScreen'
+import { TargetsScreen } from '@/screens/more/TargetsScreen'
 import type { MoreStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<MoreStackParamList>()
@@ -39,6 +40,7 @@ export function MoreStack() {
       <Stack.Screen name="Quotes" component={QuotesScreen} options={{ title: 'Teklifler' }} />
       <Stack.Screen name="Congresses" component={CongressesScreen} options={{ title: 'Kongreler' }} />
       <Stack.Screen name="CongressDetail" component={CongressDetailScreen} options={{ title: '' }} />
+      <Stack.Screen name="Targets" component={TargetsScreen} options={{ title: 'Hedeflerim' }} />
       <Stack.Screen
         name="ComingSoon"
         component={ComingSoonScreen}
