@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.57] - 2026-08-12
+
+**Profilim'de fotoğraf yükleme "row-level security policy" hatası düzeltildi:** `profile-images` bucket'ının yazma kuralları `public.is_active_staff()` (bir SECURITY DEFINER fonksiyonu) kullanıyordu, bu bir storage.objects politikasında beklenmedik şekilde başarısız oluyordu. `invoices`/`documents` bucket'larındaki kanıtlanmış çalışan `auth.uid() is not null` desenine hizalandı — bucket zaten herkese açık (public) görseller için, hassas veri yok. **Şema değişikliği var** — `schema.sql`'i tekrar çalıştırmanız gerekiyor.
+
 ## [2.17.56] - 2026-08-12
 
 **Ayarlar'a "Profilim" eklendi — kişisel kartvizit:** Her personel (sadece admin değil) kendi fotoğrafını (her çözünürlük/format kabul edilir, sabit boyutlu daire içinde kırpılarak bozulmadan gösterilir), görevini (isim altında), telefon/WhatsApp/e-posta/adres ve sosyal medya linklerini artık Ayarlar > Profilim'den düzenleyebiliyor — sağda canlı bir kartvizit önizlemesiyle. Ad Soyad bilerek düzenlenemez (sadece admin, mevcut Personel tablosundan değiştirebilir). `staff` tablosuna `job_title`, `email`, `address`, `whatsapp_phone`, `social_media` kolonları eklendi; mevcut "kendi satırını düzenleme" RLS politikası zaten satır bazlı olduğu için ek bir izin değişikliği gerekmedi. **Şema değişikliği var** — `schema.sql`'i tekrar çalıştırmanız gerekiyor (bölüm 53).

@@ -965,24 +965,31 @@ create policy "documents_delete_staff" on storage.objects for delete
   using (bucket_id = 'documents' and auth.uid() is not null);
 
 -- profile-images storage bucket (PUBLIC — kongre/workshop tanıtım görselleri,
--- satış temsilcisi fotoğrafları gibi gizli olmayan görseller; invoices/
--- documents'ın aksine imzalı URL yerine kalıcı public URL üretmek için
--- public=true. Path prefix'leriyle ayrılır: congress/..., sales-rep/...
+-- satış temsilcisi fotoğrafları, personel kartvizit fotoğrafı gibi gizli
+-- olmayan görseller; invoices/documents'ın aksine imzalı URL yerine kalıcı
+-- public URL üretmek için public=true. Path prefix'leriyle ayrılır:
+-- congress/..., sales-rep/..., staff/...
 insert into storage.buckets (id, name, public)
 values ('profile-images', 'profile-images', true)
 on conflict (id) do nothing;
 
+-- `public.is_active_staff()` yerine invoices/documents bucket'larındaki
+-- KANITLANMIŞ ÇALIŞAN `auth.uid() is not null` desenine bilerek hizalandı —
+-- SECURITY DEFINER fonksiyonunu bir storage.objects policy'si içinde
+-- çağırmak "new row violates row-level security policy" ile başarısız
+-- oluyordu (Ayarlar > Profilim fotoğraf yükleme). Bu bucket zaten public
+-- (herkese açık görsel), hassas veri tutmuyor — giriş yapmış olmak yeterli.
 drop policy if exists "profile_images_insert_staff" on storage.objects;
 create policy "profile_images_insert_staff" on storage.objects for insert
-  with check (bucket_id = 'profile-images' and public.is_active_staff());
+  with check (bucket_id = 'profile-images' and auth.uid() is not null);
 
 drop policy if exists "profile_images_update_staff" on storage.objects;
 create policy "profile_images_update_staff" on storage.objects for update
-  using (bucket_id = 'profile-images' and public.is_active_staff());
+  using (bucket_id = 'profile-images' and auth.uid() is not null);
 
 drop policy if exists "profile_images_delete_staff" on storage.objects;
 create policy "profile_images_delete_staff" on storage.objects for delete
-  using (bucket_id = 'profile-images' and public.is_active_staff());
+  using (bucket_id = 'profile-images' and auth.uid() is not null);
 
 -- customers (doktorlar): klinik/bölge/temsilci bağlantısı + genişletilmiş iletişim/idari alanlar
 alter table public.customers add column if not exists specialty text;
