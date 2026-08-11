@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.52] - 2026-08-12
+
+**Yedekleme'ye Google Drive (ek hedef) eklendi:** Ayarlar > Yedekleme'de artık bir Google servis hesabı JSON'ı + klasör ID'si girilip etkinleştirilebiliyor — her yedek (elle "Şimdi Yedekle" veya otomatik) Supabase Storage'a ek olarak, aynı JSON dosyası, tabloları ikinci kez çekmeden Google Drive'daki paylaşılmış klasöre de yükleniyor ("Bağlantıyı Test Et" ile önceden doğrulanabilir). JWT imzalama tamamen tarayıcının Web Crypto API'siyle yapılıyor, yeni bir npm paketi eklenmedi. Servis hesabı JSON'ı (gerçek bir sır — Drive yazma yetkisi taşıyor) yeni `admin_secrets` tablosunda saklanıyor; `app_settings`'ten farklı olarak SELECT de sadece admin'e açık. **Şema değişikliği var** — Supabase SQL editor'e `schema.sql`'i yeniden yapıştırmanız gerekiyor (bölüm 52).
+
 ## [2.17.51] - 2026-08-10
 
 **Buluta Yedekleme eklendi (Ayarlar > Yedekleme):** Müşteri, ürün, stok, tahsilat, satış, kongre, gider, bütçe, CRM/teklif, görev gibi tüm iş verisi tabloları (bkz. `src/features/backup/tables.ts` — API anahtarları/denetim kaydı/personel sohbeti gibi hassas/ilgisiz tablolar bilerek dışarıda) tek bir JSON dosyası halinde yeni bir private Supabase Storage bucket'ına (`backups`) yükleniyor. Admin girişinde son yedekten 24 saatten fazla geçtiyse otomatik olarak sessizce alınıyor; Ayarlar sayfasındaki yeni "Yedekleme" bölümünden (admin'e özel) elle de "Şimdi Yedekle" denip geçmiş yedekler listelenip indirilebiliyor/silinebiliyor. **Şema değişikliği var** — Supabase SQL editor'e `schema.sql`'i yeniden yapıştırmanız gerekiyor (yeni `backups` bucket'ı + RLS politikaları, bölüm 51).

@@ -1,17 +1,141 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { CloudUpload, Download, Loader2, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { CloudUpload, Download, Loader2, Trash2, HardDrive, CheckCircle2 } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useAuth } from '@/lib/auth'
-import { useBackups, useBackupSettings, useCreateBackup, useDeleteBackup, openBackupFile } from './hooks'
+import {
+  useBackups,
+  useBackupSettings,
+  useCreateBackup,
+  useDeleteBackup,
+  openBackupFile,
+  useGoogleDriveConfig,
+  useSaveGoogleDriveConfig,
+  useTestGoogleDriveConnection,
+} from './hooks'
+import type { GoogleServiceAccount } from './googleDrive'
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+/**
+ * Google Drive'a EK yedekleme — bir servis hesabı (Google Cloud Console'da
+ * oluşturulan, insan girişi gerektirmeyen bir kimlik) kullanır. Kullanıcı bu
+ * servis hesabının e-postasını kendi Drive'ındaki bir klasörle "Düzenleyici"
+ * olarak paylaşmalı. Servis hesabı JSON'ı `admin_secrets` tablosunda (sadece
+ * admin okuyabilir/yazabilir, bkz. schema.sql böl. 52) saklanır — güvenlik
+ * gereği kaydedildikten sonra tekrar ekrana basılmaz, sadece "yapılandırılmış"
+ * durumu gösterilir; değiştirmek için yeni bir JSON yapıştırılması gerekir.
+ */
+function GoogleDriveSection() {
+  const { data: config } = useGoogleDriveConfig()
+  const saveConfig = useSaveGoogleDriveConfig()
+  const testConnection = useTestGoogleDriveConnection()
+  const [jsonDraft, setJsonDraft] = React.useState('')
+  const [folderId, setFolderId] = React.useState('')
+  const [enabled, setEnabled] = React.useState(false)
+  const [syncedFromServer, setSyncedFromServer] = React.useState(false)
+
+  React.useEffect(() => {
+    if (syncedFromServer) return
+    setFolderId(config.folderId)
+    setEnabled(config.enabled)
+    setSyncedFromServer(true)
+  }, [config, syncedFromServer])
+
+  function resolveServiceAccount(): GoogleServiceAccount | null {
+    if (!jsonDraft.trim()) return config.serviceAccount
+    try {
+      const parsed = JSON.parse(jsonDraft)
+      if (!parsed.client_email || !parsed.private_key) {
+        toast.error('Geçersiz servis hesabı JSON\'ı', {
+          description: '"client_email" ve "private_key" alanları bulunamadı.',
+        })
+        return null
+      }
+      return parsed as GoogleServiceAccount
+    } catch {
+      toast.error('JSON ayrıştırılamadı', { description: 'Google Cloud Console\'dan indirdiğiniz dosyanın tamamını yapıştırın.' })
+      return null
+    }
+  }
+
+  function handleSave() {
+    const serviceAccount = jsonDraft.trim() ? resolveServiceAccount() : config.serviceAccount
+    if (jsonDraft.trim() && !serviceAccount) return // resolveServiceAccount zaten hata gösterdi
+    saveConfig.mutate({ serviceAccount, folderId: folderId.trim(), enabled })
+    setJsonDraft('')
+  }
+
+  function handleTest() {
+    const serviceAccount = resolveServiceAccount()
+    if (jsonDraft.trim() && !serviceAccount) return
+    testConnection.mutate({ serviceAccount, folderId: folderId.trim(), enabled })
+  }
+
+  return (
+    <div className="grid gap-3 rounded-lg border p-3">
+      <div className="flex items-center gap-2">
+        <HardDrive className="text-muted-foreground size-4" />
+        <p className="text-sm font-medium">Google Drive (ek yedek)</p>
+        {config.serviceAccount && (
+          <span className="text-success flex items-center gap-1 text-xs">
+            <CheckCircle2 className="size-3.5" /> {config.serviceAccount.client_email}
+          </span>
+        )}
+      </div>
+      <p className="text-muted-foreground text-xs">
+        Google Cloud Console'da oluşturduğunuz bir servis hesabının JSON anahtarını yapıştırın ve o servis
+        hesabının e-postasını Drive'daki hedef klasörle "Düzenleyici" olarak paylaşın. Her yedek alındığında,
+        etkinse, aynı dosya bu klasöre de yüklenir.
+      </p>
+      <div className="grid gap-1.5">
+        <Label className="text-xs">Servis Hesabı JSON'ı {config.serviceAccount && '(değiştirmek için yeni yapıştırın)'}</Label>
+        <Textarea
+          rows={4}
+          placeholder='{ "client_email": "...", "private_key": "-----BEGIN PRIVATE KEY-----..." }'
+          value={jsonDraft}
+          onChange={(e) => setJsonDraft(e.target.value)}
+          className="font-mono text-xs"
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label className="text-xs">Drive Klasör ID'si</Label>
+        <Input
+          placeholder="Klasör linkindeki /folders/ sonrasındaki kısım"
+          value={folderId}
+          onChange={(e) => setFolderId(e.target.value)}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <Checkbox checked={enabled} onCheckedChange={(v) => setEnabled(v === true)} id="drive-enabled" />
+        <Label htmlFor="drive-enabled" className="!mt-0 text-sm font-normal">
+          Yedeklerde Google Drive'a da yükle
+        </Label>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" onClick={handleTest} disabled={testConnection.isPending}>
+          {testConnection.isPending && <Loader2 className="animate-spin" />}
+          Bağlantıyı Test Et
+        </Button>
+        <Button size="sm" onClick={handleSave} disabled={saveConfig.isPending}>
+          {saveConfig.isPending && <Loader2 className="animate-spin" />}
+          Kaydet
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 /**
@@ -106,6 +230,8 @@ export function BackupSettingsCard() {
             ))}
           </div>
         )}
+
+        <GoogleDriveSection />
       </CardContent>
     </Card>
   )

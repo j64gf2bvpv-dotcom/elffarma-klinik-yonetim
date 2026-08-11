@@ -2,9 +2,12 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { fetchAppSetting, saveAppSetting } from '@/features/appSettings/api'
 import { createBackup } from './api'
+import { fetchAdminSecret } from './adminSecrets'
+import { uploadBackupToGoogleDrive, type GoogleDriveBackupConfig } from './googleDrive'
 import type { BackupSettings } from './hooks'
 
 const BACKUP_SETTINGS_KEY = 'backup_settings'
+const GOOGLE_DRIVE_CONFIG_KEY = 'google_drive_backup'
 const THROTTLE_MS = 24 * 60 * 60 * 1000
 
 let hasCheckedThisSession = false
@@ -29,8 +32,18 @@ export function useAutoBackupOnLaunch(isAdmin: boolean) {
         const lastBackupAt = settings?.lastBackupAt ? new Date(settings.lastBackupAt).getTime() : 0
         if (Date.now() - lastBackupAt < THROTTLE_MS) return
 
-        await createBackup()
+        const result = await createBackup()
         await saveAppSetting<BackupSettings>(BACKUP_SETTINGS_KEY, { lastBackupAt: new Date().toISOString() })
+
+        const driveConfig = await fetchAdminSecret<GoogleDriveBackupConfig>(GOOGLE_DRIVE_CONFIG_KEY)
+        if (driveConfig?.enabled) {
+          try {
+            await uploadBackupToGoogleDrive(driveConfig, result.path, result.json)
+          } catch (err) {
+            console.error('Otomatik Google Drive yedeklemesi başarısız', err)
+          }
+        }
+
         toast.success('Otomatik buluta yedekleme tamamlandı', {
           description: 'Ayarlar > Yedekleme\'den geçmiş yedekleri görebilirsiniz.',
         })

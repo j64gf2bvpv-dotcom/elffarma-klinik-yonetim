@@ -2325,6 +2325,30 @@ drop policy if exists "backups_delete_admin" on storage.objects;
 create policy "backups_delete_admin" on storage.objects for delete
   using (bucket_id = 'backups' and public.is_admin());
 
+-- =========================================================
+-- 52. ADMIN_SECRETS — admin'e özel gizli anahtar deposu (ör. Google Drive
+-- yedekleme servis hesabı) — Ayarlar > Yedekleme
+-- =========================================================
+-- `app_settings` ile AYNI key/value şekli ama BİLEREK ayrı bir tablo:
+-- app_settings okuması tüm aktif personele açık (shared-trust), bu tablo
+-- ise gerçek sırlar (ör. bir Google servis hesabının private_key'i)
+-- tutabileceği için select de sadece admin'e kapalı — staff_ai_keys'in
+-- "bu tablo diğerlerinden farklı, shared-trust deseni kasıtlı olarak
+-- kullanılmıyor" mantığının admin-scope karşılığı.
+create table if not exists public.admin_secrets (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.admin_secrets enable row level security;
+
+drop policy if exists "admin_secrets_admin_all" on public.admin_secrets;
+create policy "admin_secrets_admin_all" on public.admin_secrets for all
+  using (public.is_admin()) with check (public.is_admin());
+
+comment on table public.admin_secrets is 'Sadece admin''in okuyup yazabildiği gizli anahtar deposu (ör. google_drive_backup key''i altında bir servis hesabı JSON''ı) — app_settings''ten farklı olarak SELECT de admin''e kapalı';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

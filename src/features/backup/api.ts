@@ -9,6 +9,7 @@ export interface BackupFile {
 
 export interface CreateBackupResult {
   path: string
+  json: string
   sizeBytes: number
   tableCounts: Record<string, number>
   /** Şema henüz o tabloyu içermiyorsa (migration çalıştırılmadan önce) ya da
@@ -35,6 +36,9 @@ async function dumpAllTables(): Promise<{ tables: Record<string, unknown[]>; fai
  * Tüm iş verisi tablolarını (bkz. BACKUP_TABLES) TEK bir JSON dosyasına
  * dökülüp `backups` Storage bucket'ına yüklenir — dosya adı zaman damgalı
  * olduğu için her yedek ayrı bir dosya olarak birikir (üzerine yazma yok).
+ * Dönen `json`, aynı dökümü Google Drive'a da (tabloları TEKRAR çekmeden,
+ * tutarlı tek bir anlık görüntüyle) yüklemek için useCreateBackup'ta
+ * kullanılıyor.
  */
 export async function createBackup(): Promise<CreateBackupResult> {
   const { tables, failedTables } = await dumpAllTables()
@@ -49,7 +53,7 @@ export async function createBackup(): Promise<CreateBackupResult> {
   if (uploadError) throw uploadError
 
   const tableCounts = Object.fromEntries(Object.entries(tables).map(([k, v]) => [k, v.length]))
-  return { path, sizeBytes: blob.size, tableCounts, failedTables }
+  return { path, json, sizeBytes: blob.size, tableCounts, failedTables }
 }
 
 export async function listBackups(): Promise<BackupFile[]> {
