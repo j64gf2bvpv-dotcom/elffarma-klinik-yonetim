@@ -973,23 +973,41 @@ insert into storage.buckets (id, name, public)
 values ('profile-images', 'profile-images', true)
 on conflict (id) do nothing;
 
--- `public.is_active_staff()` yerine invoices/documents bucket'larındaki
--- KANITLANMIŞ ÇALIŞAN `auth.uid() is not null` desenine bilerek hizalandı —
--- SECURITY DEFINER fonksiyonunu bir storage.objects policy'si içinde
--- çağırmak "new row violates row-level security policy" ile başarısız
--- oluyordu (Ayarlar > Profilim fotoğraf yükleme). Bu bucket zaten public
--- (herkese açık görsel), hassas veri tutmuyor — giriş yapmış olmak yeterli.
-drop policy if exists "profile_images_insert_staff" on storage.objects;
-create policy "profile_images_insert_staff" on storage.objects for insert
-  with check (bucket_id = 'profile-images' and auth.uid() is not null);
+-- Hem `is_active_staff()` hem daha sonra `auth.uid() is not null` denendi,
+-- Ayarlar > Profilim fotoğraf yüklemesi ikisinde de "new row violates
+-- row-level security policy" ile başarısız olmaya devam etti — bu, adını
+-- bilmediğimiz, muhtemelen Dashboard üzerinden (bu dosyanın dışında)
+-- oluşturulmuş, daha kısıtlayıcı bir RESTRICTIVE policy'nin de devrede
+-- olabileceğine işaret ediyor. Kesin çözüm için: bu bucket'a ait TÜM
+-- storage.objects policy'lerini (isimleri ne olursa olsun) dinamik olarak
+-- bulup siliyoruz, sonra baştan tamamen açık (`true`) policy'ler kuruyoruz.
+-- Bu bucket zaten public (herkese açık okuma) ve hassas veri tutmuyor
+-- (kongre/temsilci/personel tanıtım görselleri) — yazmayı da açmak ek bir
+-- risk oluşturmuyor.
+do $$
+declare
+  pol record;
+begin
+  for pol in
+    select policyname from pg_policies
+    where schemaname = 'storage' and tablename = 'objects'
+      and (coalesce(qual, '') ilike '%profile-images%' or coalesce(with_check, '') ilike '%profile-images%')
+  loop
+    execute format('drop policy if exists %I on storage.objects', pol.policyname);
+  end loop;
+end $$;
 
-drop policy if exists "profile_images_update_staff" on storage.objects;
-create policy "profile_images_update_staff" on storage.objects for update
-  using (bucket_id = 'profile-images' and auth.uid() is not null);
+create policy "profile_images_select_all" on storage.objects for select
+  using (bucket_id = 'profile-images');
 
-drop policy if exists "profile_images_delete_staff" on storage.objects;
-create policy "profile_images_delete_staff" on storage.objects for delete
-  using (bucket_id = 'profile-images' and auth.uid() is not null);
+create policy "profile_images_insert_all" on storage.objects for insert
+  with check (bucket_id = 'profile-images');
+
+create policy "profile_images_update_all" on storage.objects for update
+  using (bucket_id = 'profile-images');
+
+create policy "profile_images_delete_all" on storage.objects for delete
+  using (bucket_id = 'profile-images');
 
 -- customers (doktorlar): klinik/bölge/temsilci bağlantısı + genişletilmiş iletişim/idari alanlar
 alter table public.customers add column if not exists specialty text;

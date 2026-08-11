@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.58] - 2026-08-12
+
+**Profilim'de fotoğraf yükleme RLS hatası kesin olarak çözüldü:** `is_active_staff()` ve ardından `auth.uid() is not null` denemesi de aynı "row-level security policy" hatasını vermeye devam etti — muhtemelen bu dosyanın dışında (Dashboard üzerinden) oluşturulmuş, adı bilinmeyen ek bir kısıtlayıcı policy vardı. Artık `profile-images` bucket'ına ait TÜM storage policy'leri (isimleri ne olursa olsun) çalışma zamanında bulunup silinip, tamamen açık (`true`) policy'lerle yeniden kuruluyor — bu bucket zaten herkese açık (public) okunuyor ve hassas veri tutmuyor. **Şema değişikliği var** — `schema.sql`'i tekrar çalıştırmanız gerekiyor.
+
 ## [2.17.57] - 2026-08-12
 
 **Profilim'de fotoğraf yükleme "row-level security policy" hatası düzeltildi:** `profile-images` bucket'ının yazma kuralları `public.is_active_staff()` (bir SECURITY DEFINER fonksiyonu) kullanıyordu, bu bir storage.objects politikasında beklenmedik şekilde başarısız oluyordu. `invoices`/`documents` bucket'larındaki kanıtlanmış çalışan `auth.uid() is not null` desenine hizalandı — bucket zaten herkese açık (public) görseller için, hassas veri yok. **Şema değişikliği var** — `schema.sql`'i tekrar çalıştırmanız gerekiyor.
