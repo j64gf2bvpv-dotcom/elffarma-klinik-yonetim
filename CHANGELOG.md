@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.51] - 2026-08-10
+
+**Buluta Yedekleme eklendi (Ayarlar > Yedekleme):** Müşteri, ürün, stok, tahsilat, satış, kongre, gider, bütçe, CRM/teklif, görev gibi tüm iş verisi tabloları (bkz. `src/features/backup/tables.ts` — API anahtarları/denetim kaydı/personel sohbeti gibi hassas/ilgisiz tablolar bilerek dışarıda) tek bir JSON dosyası halinde yeni bir private Supabase Storage bucket'ına (`backups`) yükleniyor. Admin girişinde son yedekten 24 saatten fazla geçtiyse otomatik olarak sessizce alınıyor; Ayarlar sayfasındaki yeni "Yedekleme" bölümünden (admin'e özel) elle de "Şimdi Yedekle" denip geçmiş yedekler listelenip indirilebiliyor/silinebiliyor. **Şema değişikliği var** — Supabase SQL editor'e `schema.sql`'i yeniden yapıştırmanız gerekiyor (yeni `backups` bucket'ı + RLS politikaları, bölüm 51).
+
 ## [2.17.50] - 2026-08-10
 
 **Mobil Doktorlar listesine gocust referansındaki "Customers" ekranının kavramları eklendi (kendi tasarım dilimizle, gocust'un logo/UI'ı kopyalanmadı):** Aylık ciro hedefi ilk kez mobilde kullanılıyor — masaüstünde zaten var olan `customer_revenue_targets` tablosu Doktor Detay'a bağlandı, "CRM Özeti"nde bu ayki gerçekleşen/hedef ilerleme çubuğu, dokununca hedef girilebiliyor. Doktorlar listesine "Favoriler" filtresi (mevcut `is_vip` alanı) ve gerçek veriden hesaplanan "Ziyaret Sıklığı" sıralaması (bu ay kaç kez ziyaret edildiği, uydurma kategori yok) eklendi. Her satıra, listeden çıkmadan doktorun idari bilgilerini (asistan/sekreter, ödeme vadesi, aylık hedef) ve hızlı Ara/WhatsApp/Yol Tarifi aksiyonlarını gösteren bir "Hızlı Bilgi" alt sayfası (gocust'un "Featured Information" kartının karşılığı) eklendi.

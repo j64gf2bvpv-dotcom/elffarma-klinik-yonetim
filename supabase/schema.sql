@@ -2300,6 +2300,31 @@ create policy "staff_messages_insert" on public.staff_messages for insert
 
 comment on table public.staff_messages is 'Ekip Sohbeti — tek paylaşımlı kanal, tüm aktif personel okur/yazar; düzenleme/silme yok (basit sohbet geçmişi)';
 
+-- =========================================================
+-- 51. YEDEKLEME (backups) STORAGE BUCKET — Ayarlar > Yedekleme
+-- =========================================================
+-- Tüm iş verisi tablolarının (customers, products, payments, sales, ...)
+-- tek bir JSON dosyası halinde dökümü buraya yüklenir (bkz. src/features/
+-- backup/api.ts). Okuma tüm aktif personele açık (zaten her tablo ayrı ayrı
+-- shared-trust ile okunabiliyor, JSON dökümü ek bir hassasiyet getirmiyor —
+-- staff_ai_keys/audit_logs gibi tablolar dökümde YOK, bkz. BACKUP_TABLES),
+-- oluşturma/silme sadece admin (yedekleme bilinçli bir yönetim işlemi).
+insert into storage.buckets (id, name, public)
+values ('backups', 'backups', false)
+on conflict (id) do nothing;
+
+drop policy if exists "backups_select_staff" on storage.objects;
+create policy "backups_select_staff" on storage.objects for select
+  using (bucket_id = 'backups' and public.is_active_staff());
+
+drop policy if exists "backups_insert_admin" on storage.objects;
+create policy "backups_insert_admin" on storage.objects for insert
+  with check (bucket_id = 'backups' and public.is_admin());
+
+drop policy if exists "backups_delete_admin" on storage.objects;
+create policy "backups_delete_admin" on storage.objects for delete
+  using (bucket_id = 'backups' and public.is_admin());
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.
