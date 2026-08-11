@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.59] - 2026-08-12
+
+**Profilim fotoğrafına etkileşimli kırpma eklendi:** Bir fotoğraf seçildiğinde artık doğrudan yüklenmiyor — dairesel bir çerçeve içinde sürükleyerek konumlandırıp bir yakınlaştırma çubuğuyla boyutlandırabildiğiniz bir önizleme diyaloğu açılıyor, "Kaydet"e basınca daire içinde tam olarak ne görünüyorsa o (canvas ile dairesel maskeyle) PNG olarak kırpılıp yükleniyor. Üçüncü parti bir kırpma kütüphanesi eklenmedi. Şema değişikliği yok.
+
 ## [2.17.58] - 2026-08-12
 
 **Profilim'de fotoğraf yükleme RLS hatası kesin olarak çözüldü:** `is_active_staff()` ve ardından `auth.uid() is not null` denemesi de aynı "row-level security policy" hatasını vermeye devam etti — muhtemelen bu dosyanın dışında (Dashboard üzerinden) oluşturulmuş, adı bilinmeyen ek bir kısıtlayıcı policy vardı. Artık `profile-images` bucket'ına ait TÜM storage policy'leri (isimleri ne olursa olsun) çalışma zamanında bulunup silinip, tamamen açık (`true`) policy'lerle yeniden kuruluyor — bu bucket zaten herkese açık (public) okunuyor ve hassas veri tutmuyor. **Şema değişikliği var** — `schema.sql`'i tekrar çalıştırmanız gerekiyor.

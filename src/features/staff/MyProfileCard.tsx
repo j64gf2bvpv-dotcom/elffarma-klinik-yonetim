@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/lib/auth'
 import { useStaffList, useUpdateMyProfile, useUploadStaffAvatar } from './hooks'
 import { StaffBusinessCard } from './StaffBusinessCard'
+import { AvatarCropDialog } from './AvatarCropDialog'
 
 interface ProfileForm {
   phone: string
@@ -38,6 +39,8 @@ export function MyProfileCard() {
   const uploadAvatar = useUploadStaffAvatar()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [avatarUploading, setAvatarUploading] = React.useState(false)
+  const [pendingAvatarFile, setPendingAvatarFile] = React.useState<File | null>(null)
+  const [cropOpen, setCropOpen] = React.useState(false)
   const [form, setForm] = React.useState<ProfileForm>(emptyForm)
   const [synced, setSynced] = React.useState(false)
 
@@ -56,16 +59,27 @@ export function MyProfileCard() {
 
   if (!me) return null
 
-  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
-    if (!file || !me) return
+    if (!file) return
+    // Doğrudan yüklemek yerine önce daire içinde sürükle/yakınlaştır
+    // diyaloğunu açıyoruz — kullanıcı fotoğrafı kendi istediği kadranla
+    // dairenin içine yerleştirsin diye (bkz. AvatarCropDialog).
+    setPendingAvatarFile(file)
+    setCropOpen(true)
+  }
+
+  async function handleCropConfirm(blob: Blob) {
+    if (!me) return
     setAvatarUploading(true)
     try {
-      const url = await uploadAvatar.mutateAsync({ staffId: me.id, file })
+      const croppedFile = new File([blob], 'avatar.png', { type: 'image/png' })
+      const url = await uploadAvatar.mutateAsync({ staffId: me.id, file: croppedFile })
       await updateProfile.mutateAsync({ id: me.id, input: { avatar_url: url } })
     } finally {
       setAvatarUploading(false)
+      setPendingAvatarFile(null)
     }
   }
 
@@ -181,6 +195,16 @@ export function MyProfileCard() {
           <StaffBusinessCard staff={{ ...me, ...form }} />
         </div>
       </CardContent>
+
+      <AvatarCropDialog
+        open={cropOpen}
+        onOpenChange={(v) => {
+          setCropOpen(v)
+          if (!v) setPendingAvatarFile(null)
+        }}
+        file={pendingAvatarFile}
+        onConfirm={handleCropConfirm}
+      />
     </Card>
   )
 }
