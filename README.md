@@ -97,13 +97,17 @@ Yeni bir sürüm yayınlamak için:
    değiştirin).
 3. Bu tag push'u `.github/workflows/release.yml` iş akışını tetikler; bu iş
    akışı **gerçek bir Windows runner'ında** Setup.exe (NSIS) ve **gerçek bir
-   macOS runner'ında** .dmg üretip bir GitHub Release'e **taslak (draft)**
-   olarak yükler (geliştirme makinesi macOS olduğu ve `wine` kurulu olmadığı
-   için Windows kurulum paketi yerelde üretilemez — CI asıl dağıtım yoludur).
-4. GitHub → Releases sayfasından taslağı inceleyip **Publish release**
-   yapın. Yayınlandığı andan itibaren kurulu uygulamalar
-   (`electron-updater` üzerinden) yeni sürümü fark edip arka planda indirir
-   ve kullanıcıya "yeniden başlat" bildirimi gösterir.
+   macOS runner'ında** .dmg üretip **doğrudan yayınlanmış** bir GitHub
+   Release'e yükler (geliştirme makinesi macOS olduğu ve `wine` kurulu
+   olmadığı için Windows kurulum paketi yerelde üretilemez — CI asıl dağıtım
+   yoludur). Elle "Publish release" adımı YOK — tag push'ladığınız an, birkaç
+   dakika içinde (CI derlemesi bitince) kurulu tüm uygulamalar
+   (`electron-updater` üzerinden, internet bağlantısı olan her PC'de)
+   arka planda yeni sürümü indirip kullanıcıya "yeniden başlat" bildirimi
+   gösterir. Bu nedenle **sadece gerçekten dağıtmak istediğiniz, test edilmiş
+   bir sürüm için tag push'layın** — rutin küçük düzeltme commit'leri (tag'siz)
+   hiçbir kurulu uygulamayı etkilemez, sadece `package.json` sürüm numarasını
+   ilerletir.
 
 **Önemli — Supabase yapılandırması**: Vite, `VITE_SUPABASE_URL` /
 `VITE_SUPABASE_ANON_KEY` değerlerini **build anında** derlenmiş dosyanın içine

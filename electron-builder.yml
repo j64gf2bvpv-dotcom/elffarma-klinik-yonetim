@@ -21,16 +21,17 @@ protocols:
   schemes:
     - elffarmapaket
 # Otomatik güncelleme (electron-updater) bu depodaki GitHub Releases'i kaynak olarak
-# kullanır. `releaseType` belirtilmediği için electron-builder varsayılanı olan
-# "draft" geçerlidir: CI bir sürümü derleyip GitHub'a taslak (draft) olarak yükler,
-# gerçekten yayınlanıp istemcilerin auto-update ile görmesi için taslağın GitHub'da
-# elle "Publish release" ile yayınlanması gerekir — bu, yanlışlıkla erken/bozuk bir
-# sürümün otomatik olarak tüm kurulu uygulamalara dağıtılmasını engelleyen bilinçli
-# bir güvenlik adımıdır.
+# kullanır. Kullanıcı isteği üzerine `releaseType: release` ile TASLAK ADIMSIZ,
+# doğrudan yayınlanıyor — CI bir `vX.Y.Z` etiketi (tag) push'landığında Windows/macOS
+# installer'larını derleyip GitHub Release'e yükler yüklemez kurulu tüm uygulamalar
+# bir sonraki açılışta otomatik güncellenir, elle "Publish release" adımı gerekmez.
+# (Önceki "draft" varsayılanı yanlışlıkla erken/bozuk bir sürümün otomatik dağıtılmasını
+# engelliyordu — bu güvenlik adımı bilerek kaldırıldı, artık dikkat tag push etmekte.)
 publish:
   provider: github
   owner: j64gf2bvpv-dotcom
   repo: elffarma-klinik-yonetim
+  releaseType: release
 mac:
   category: public.app-category.medical
   icon: build/icons/icon.icns

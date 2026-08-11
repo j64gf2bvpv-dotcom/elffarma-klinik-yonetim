@@ -3,9 +3,12 @@ name: Kurulum Paketi Üret ve Yayınla
 # Bu iş akışı, elffarma-klinik-yonetim'in Windows Setup.exe (NSIS) ve macOS .dmg
 # kurulum paketlerini gerçek Windows/macOS runner'larında derler — Windows tarafı
 # geliştirme makinesinde (macOS, wine kurulu değil) yerel olarak üretilemediği için
-# bu iş akışı asıl dağıtım yolu budur. Üretilen paketler bir GitHub Release'e
-# TASLAK (draft) olarak yüklenir; auto-update ile istemcilere ulaşması için
-# taslağın GitHub'da elle "Publish release" ile yayınlanması gerekir.
+# bu iş akışı asıl dağıtım yolu budur. Üretilen paketler doğrudan YAYINLANMIŞ bir
+# GitHub Release'e yüklenir (electron-builder.yml: publish.releaseType: release —
+# taslak/draft adımı yok) — CI bitince internet bağlantısı olan her kurulu uygulama
+# electron-updater ile birkaç dakika içinde otomatik günceller. Bu yüzden SADECE
+# gerçekten dağıtmak istediğiniz bir sürüm için `git tag vX.Y.Z && git push origin
+# vX.Y.Z` yapın; rutin commit'ler (tag'siz) hiçbir kurulu uygulamayı tetiklemez.
 #
 # Gerekli repository secrets (Settings → Secrets and variables → Actions):
 #   VITE_SUPABASE_URL       — Supabase Project URL

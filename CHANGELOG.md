@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.55] - 2026-08-12
+
+**Otomatik güncelleme dağıtımındaki taslak (draft) engeli kaldırıldı:** `electron-builder.yml`'de `publish.releaseType: release` ile CI'ın Windows/macOS kurulum paketlerini yüklediği GitHub Release artık doğrudan yayınlanıyor — daha önce GitHub'da elle "Publish release" tıklanması gerekiyordu, artık bir `vX.Y.Z` tag'i push'landığı an (CI derlemesi bitince) internet bağlantısı olan tüm kurulu uygulamalar birkaç dakika içinde otomatik güncelleniyor. Bilinçli olarak rutin commit'lerden AYRI tutuldu — gerçek bir kurulum paketi sadece tag push'landığında üretilip dağıtılıyor, her küçük düzeltmede değil (bkz. README "Yayınlama" ve CLAUDE.md). Şema değişikliği yok.
+
 ## [2.17.54] - 2026-08-12
 
 **Google Drive yedeklemesinde "Klasör bulunamadı ya da servis hesabıyla paylaşılmamış" hatası düzeltildi:** İstenen yetki kapsamı (`drive.file`) sadece servis hesabının KENDİ oluşturduğu/açtığı dosyalara erişime izin veriyordu — kullanıcının normal "Paylaş" menüsüyle servis hesabına paylaştığı mevcut bir klasöre bu kapsamla erişilemiyor, paylaşım doğru yapılsa bile 404 dönüyordu. Kapsam `https://www.googleapis.com/auth/drive` (tam Drive erişimi) olarak güncellendi. Şema değişikliği yok.
