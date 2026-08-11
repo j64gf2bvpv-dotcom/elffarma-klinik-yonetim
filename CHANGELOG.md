@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.53] - 2026-08-12
+
+**Google Drive yedeklemesindeki "Bağlantı başarısız / Failed to fetch" hatası düzeltildi:** Google'ın servis hesabı kimlik doğrulama akışı ve Drive API'si tarayıcıdan (CORS) çağrılmak üzere tasarlanmamış — bu yüzden Ayarlar > Yedekleme'deki istek doğrudan uygulama penceresinden atılınca sessizce reddediliyordu. JWT imzalama, token alma ve dosya yükleme artık Electron'un ana sürecine taşındı (Node'un `crypto`'su, CORS'a tabi değil) — renderer sadece IPC üzerinden bu yeni köprüyü çağırıyor (`window.electronAPI.googleDriveUpload`/`googleDriveTestConnection`, bkz. `electron/googleDrive.ts`). Ayrıca Drive Klasör ID'si alanına tam klasör linki yapıştırılırsa (ör. `https://drive.google.com/drive/folders/...`) artık otomatik olarak ID'si ayıklanıyor. Şema değişikliği yok.
+
 ## [2.17.52] - 2026-08-12
 
 **Yedekleme'ye Google Drive (ek hedef) eklendi:** Ayarlar > Yedekleme'de artık bir Google servis hesabı JSON'ı + klasör ID'si girilip etkinleştirilebiliyor — her yedek (elle "Şimdi Yedekle" veya otomatik) Supabase Storage'a ek olarak, aynı JSON dosyası, tabloları ikinci kez çekmeden Google Drive'daki paylaşılmış klasöre de yükleniyor ("Bağlantıyı Test Et" ile önceden doğrulanabilir). JWT imzalama tamamen tarayıcının Web Crypto API'siyle yapılıyor, yeni bir npm paketi eklenmedi. Servis hesabı JSON'ı (gerçek bir sır — Drive yazma yetkisi taşıyor) yeni `admin_secrets` tablosunda saklanıyor; `app_settings`'ten farklı olarak SELECT de sadece admin'e açık. **Şema değişikliği var** — Supabase SQL editor'e `schema.sql`'i yeniden yapıştırmanız gerekiyor (bölüm 52).

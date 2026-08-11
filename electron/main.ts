@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, shell, Notification, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import path from 'node:path'
+import { uploadBackupToGoogleDrive, testGoogleDriveConnection, type GoogleServiceAccount } from './googleDrive.js'
 
 process.env.APP_ROOT = path.join(__dirname, '..')
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
@@ -136,6 +137,20 @@ ipcMain.handle('app:notify', (_event, title: string, body: string) => {
     new Notification({ title, body }).show()
   }
 })
+
+// Google'ın servis hesabı JWT-Bearer akışı tarayıcıdan (CORS) çağrılamadığı
+// için buradan (Node, CORS'a tabi değil) yürütülüyor — bkz. googleDrive.ts.
+ipcMain.handle(
+  'backup:google-drive-upload',
+  (_event, serviceAccount: GoogleServiceAccount, folderId: string, filename: string, jsonContent: string) =>
+    uploadBackupToGoogleDrive(serviceAccount, folderId, filename, jsonContent),
+)
+
+ipcMain.handle(
+  'backup:google-drive-test',
+  (_event, serviceAccount: GoogleServiceAccount, folderId: string) =>
+    testGoogleDriveConnection(serviceAccount, folderId),
+)
 
 app.on('window-all-closed', () => {
   win = null

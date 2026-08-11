@@ -6,6 +6,11 @@ interface RecoveryPayload {
   type: string | null
 }
 
+interface GoogleServiceAccount {
+  client_email: string
+  private_key: string
+}
+
 // Whitelisted, narrow API exposed to the renderer. The renderer never gets
 // direct Node/Electron access (contextIsolation: true, nodeIntegration: false).
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -18,4 +23,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('deep-link-recovery', listener)
     return () => ipcRenderer.removeListener('deep-link-recovery', listener)
   },
+  // Google'ın servis hesabı JWT-Bearer akışı tarayıcıdan (CORS) çağrılamadığı
+  // için ana süreçte (Node, CORS'a tabi değil) yürütülüyor — bkz. electron/googleDrive.ts.
+  googleDriveUpload: (
+    serviceAccount: GoogleServiceAccount,
+    folderId: string,
+    filename: string,
+    jsonContent: string,
+  ): Promise<{ id: string }> =>
+    ipcRenderer.invoke('backup:google-drive-upload', serviceAccount, folderId, filename, jsonContent),
+  googleDriveTestConnection: (
+    serviceAccount: GoogleServiceAccount,
+    folderId: string,
+  ): Promise<{ ok: boolean; message: string }> =>
+    ipcRenderer.invoke('backup:google-drive-test', serviceAccount, folderId),
 })
