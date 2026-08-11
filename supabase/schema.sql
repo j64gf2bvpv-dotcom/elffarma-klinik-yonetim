@@ -2349,6 +2349,26 @@ create policy "admin_secrets_admin_all" on public.admin_secrets for all
 
 comment on table public.admin_secrets is 'Sadece admin''in okuyup yazabildiği gizli anahtar deposu (ör. google_drive_backup key''i altında bir servis hesabı JSON''ı) — app_settings''ten farklı olarak SELECT de admin''e kapalı';
 
+-- =========================================================
+-- 53. PERSONEL KARTVİZİT ALANLARI (Ayarlar > Profilim) — görev/iletişim/sosyal medya
+-- =========================================================
+-- "48. PERSONEL KENDİ PROFİLİNİ DÜZENLEYEBİLİR" bölümündeki staff_update_self
+-- politikası SATIR bazlıdır (belirli kolonlara özel değil) — protect_staff_
+-- privileged_columns trigger'ı sadece role/is_active/full_name'i admin
+-- olmayan güncellemelerde eski değerine geri çeviriyor. Yani buraya eklenen
+-- YENİ kolonlar otomatik olarak "herkes kendi satırında düzenleyebilir"
+-- kapsamına giriyor, ayrıca bir RLS/trigger değişikliği gerekmiyor.
+alter table public.staff add column if not exists job_title text;
+alter table public.staff add column if not exists email text;
+alter table public.staff add column if not exists address text;
+alter table public.staff add column if not exists whatsapp_phone text;
+alter table public.staff add column if not exists social_media text;
+
+comment on column public.staff.job_title is 'Görev/ünvan (ör. "Genel Müdür") — role (admin/staff yetki seviyesi) ile KARIŞTIRILMAMALI, sadece kartvizitte isim altında gösterilen serbest metin';
+comment on column public.staff.email is 'Kartvizitte gösterilecek iletişim e-postası (auth.users''taki giriş e-postasından bağımsız, serbest metin)';
+comment on column public.staff.whatsapp_phone is 'phone''dan farklı bir WhatsApp numarası kullanılıyorsa; boşsa kartvizit phone''u WhatsApp linki olarak kullanır';
+comment on column public.staff.social_media is 'Serbest metin, çok satırlı — her satır bir sosyal medya/site linki (Instagram, LinkedIn, web sitesi vb.), platform başına ayrı kolon açılmadı';
+
 -- Bitti. Şimdi Authentication > Users'tan ilk kullanıcınızı (kendi
 -- e-postanız/şifreniz) oluşturun — otomatik olarak admin rolüyle
 -- public.staff tablosuna eklenecektir.

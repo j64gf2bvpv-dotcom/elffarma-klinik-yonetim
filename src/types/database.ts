@@ -11,6 +11,11 @@ export interface Staff {
   phone: string | null
   is_active: boolean
   avatar_url: string | null
+  job_title: string | null
+  email: string | null
+  address: string | null
+  whatsapp_phone: string | null
+  social_media: string | null
   created_at: string
 }
 

@@ -36,6 +36,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useStaffList, useUpdateStaff } from '@/features/staff/hooks'
+import { MyProfileCard } from '@/features/staff/MyProfileCard'
 import {
   useWhatsAppTemplates,
   useSaveWhatsAppTemplate,
@@ -493,6 +494,8 @@ export function SettingsPage() {
       <PageHeader title="Ayarlar" description="Personel yönetimi ve WhatsApp mesaj şablonları" />
 
       <div className="grid gap-6">
+        <MyProfileCard />
+
         <Card>
           <CardHeader className="flex-row items-center gap-3">
             <PremiumIcon icon={Palette} />

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.56] - 2026-08-12
+
+**Ayarlar'a "Profilim" eklendi — kişisel kartvizit:** Her personel (sadece admin değil) kendi fotoğrafını (her çözünürlük/format kabul edilir, sabit boyutlu daire içinde kırpılarak bozulmadan gösterilir), görevini (isim altında), telefon/WhatsApp/e-posta/adres ve sosyal medya linklerini artık Ayarlar > Profilim'den düzenleyebiliyor — sağda canlı bir kartvizit önizlemesiyle. Ad Soyad bilerek düzenlenemez (sadece admin, mevcut Personel tablosundan değiştirebilir). `staff` tablosuna `job_title`, `email`, `address`, `whatsapp_phone`, `social_media` kolonları eklendi; mevcut "kendi satırını düzenleme" RLS politikası zaten satır bazlı olduğu için ek bir izin değişikliği gerekmedi. **Şema değişikliği var** — `schema.sql`'i tekrar çalıştırmanız gerekiyor (bölüm 53).
+
 ## [2.17.55] - 2026-08-12
 
 **Otomatik güncelleme dağıtımındaki taslak (draft) engeli kaldırıldı:** `electron-builder.yml`'de `publish.releaseType: release` ile CI'ın Windows/macOS kurulum paketlerini yüklediği GitHub Release artık doğrudan yayınlanıyor — daha önce GitHub'da elle "Publish release" tıklanması gerekiyordu, artık bir `vX.Y.Z` tag'i push'landığı an (CI derlemesi bitince) internet bağlantısı olan tüm kurulu uygulamalar birkaç dakika içinde otomatik güncelleniyor. Bilinçli olarak rutin commit'lerden AYRI tutuldu — gerçek bir kurulum paketi sadece tag push'landığında üretilip dağıtılıyor, her küçük düzeltmede değil (bkz. README "Yayınlama" ve CLAUDE.md). Şema değişikliği yok.
