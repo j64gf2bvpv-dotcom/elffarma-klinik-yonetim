@@ -23,6 +23,7 @@ import {
   Sun,
   Moon,
   FlaskConical,
+  Pencil,
 } from 'lucide-react'
 import { companyInfo } from '@/lib/companyInfo'
 
@@ -455,6 +456,8 @@ export function SettingsPage() {
   const { data: templates = [] } = useWhatsAppTemplates()
   const updateStaffMutation = useUpdateStaff()
   const queryClient = useQueryClient()
+  const [editingNameId, setEditingNameId] = React.useState<string | null>(null)
+  const [nameDraft, setNameDraft] = React.useState('')
   const [seeding, setSeeding] = React.useState(false)
   const [clearing, setClearing] = React.useState(false)
 
@@ -487,6 +490,17 @@ export function SettingsPage() {
     } finally {
       setClearing(false)
     }
+  }
+
+  function startEditName(memberId: string, currentName: string) {
+    setEditingNameId(memberId)
+    setNameDraft(currentName)
+  }
+
+  function saveEditedName(memberId: string) {
+    const trimmed = nameDraft.trim()
+    if (trimmed) updateStaffMutation.mutate({ id: memberId, input: { full_name: trimmed } })
+    setEditingNameId(null)
   }
 
   return (
@@ -556,7 +570,41 @@ export function SettingsPage() {
                 {staffList.map((member) => (
                   <TableRow key={member.id}>
                     <TableCell className="font-medium">
-                      {member.full_name}
+                      {currentStaff?.role === 'admin' && editingNameId === member.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <Input
+                            autoFocus
+                            value={nameDraft}
+                            onChange={(e) => setNameDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveEditedName(member.id)
+                              if (e.key === 'Escape') setEditingNameId(null)
+                            }}
+                            className="h-7 w-44 text-sm"
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-6"
+                            onClick={() => saveEditedName(member.id)}
+                            title="Kaydet"
+                          >
+                            <Check className="size-3.5" />
+                          </Button>
+                        </div>
+                      ) : currentStaff?.role === 'admin' ? (
+                        <button
+                          type="button"
+                          className="hover:text-primary group inline-flex items-center gap-1.5"
+                          onClick={() => startEditName(member.id, member.full_name)}
+                          title="Adı düzenle"
+                        >
+                          {member.full_name}
+                          <Pencil className="text-muted-foreground size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                        </button>
+                      ) : (
+                        member.full_name
+                      )}
                       {member.id === currentStaff?.id && (
                         <Badge variant="secondary" className="ml-2">
                           Siz

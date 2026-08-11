@@ -134,7 +134,11 @@ export function MyProfileCard() {
           <div className="grid gap-1.5">
             <Label className="text-xs">Ad Soyad</Label>
             <Input value={me.full_name} disabled />
-            <p className="text-muted-foreground text-xs">Adınızı değiştirmek için admin'e başvurun (Ayarlar &gt; Personel).</p>
+            <p className="text-muted-foreground text-xs">
+              {me.role === 'admin'
+                ? 'Adınızı aşağıdaki "Personel" tablosunda isminizin üzerine tıklayıp değiştirebilirsiniz.'
+                : "Adınızı değiştirmek için admin'e başvurun (Ayarlar > Personel)."}
+            </p>
           </div>
 
           <div className="grid gap-1.5">

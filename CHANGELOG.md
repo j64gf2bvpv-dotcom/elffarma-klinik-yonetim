@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.60] - 2026-08-12
+
+**Ayarlar > Personel'de isim artık düzenlenebiliyor:** Personel tablosunda "Ad Soyad" sütunu daha önce salt metindi — admin kendi ya da başka bir personelin adını (ör. "admin" gibi bir kullanıcı adını gerçek ad soyadıyla) değiştiremiyordu. Artık admin isme tıklayınca yerinde (inline) düzenleyip Enter'la kaydedebiliyor. Profilim'deki ipucu metni de admin için doğru yeri gösterecek şekilde güncellendi. Şema değişikliği yok.
+
 ## [2.17.59] - 2026-08-12
 
 **Profilim fotoğrafına etkileşimli kırpma eklendi:** Bir fotoğraf seçildiğinde artık doğrudan yüklenmiyor — dairesel bir çerçeve içinde sürükleyerek konumlandırıp bir yakınlaştırma çubuğuyla boyutlandırabildiğiniz bir önizleme diyaloğu açılıyor, "Kaydet"e basınca daire içinde tam olarak ne görünüyorsa o (canvas ile dairesel maskeyle) PNG olarak kırpılıp yükleniyor. Üçüncü parti bir kırpma kütüphanesi eklenmedi. Şema değişikliği yok.
