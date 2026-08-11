@@ -32,7 +32,12 @@ async function getAccessToken(serviceAccount: GoogleServiceAccount): Promise<str
   const header = { alg: 'RS256', typ: 'JWT' }
   const claims = {
     iss: serviceAccount.client_email,
-    scope: 'https://www.googleapis.com/auth/drive.file',
+    // `drive.file` scope'u sadece uygulamanın KENDİ oluşturduğu/açtığı
+    // dosyalara erişime izin verir — kullanıcının normal Paylaş menüsüyle
+    // servis hesabına paylaştığı MEVCUT bir klasöre erişmek için daha geniş
+    // `drive` kapsamı gerekiyor (aksi halde paylaşım doğru yapılsa bile
+    // "klasör bulunamadı" 404'ü alınıyor).
+    scope: 'https://www.googleapis.com/auth/drive',
     aud: 'https://oauth2.googleapis.com/token',
     exp: now + 3600,
     iat: now,

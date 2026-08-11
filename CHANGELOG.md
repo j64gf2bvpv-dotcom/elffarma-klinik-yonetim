@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.54] - 2026-08-12
+
+**Google Drive yedeklemesinde "Klasör bulunamadı ya da servis hesabıyla paylaşılmamış" hatası düzeltildi:** İstenen yetki kapsamı (`drive.file`) sadece servis hesabının KENDİ oluşturduğu/açtığı dosyalara erişime izin veriyordu — kullanıcının normal "Paylaş" menüsüyle servis hesabına paylaştığı mevcut bir klasöre bu kapsamla erişilemiyor, paylaşım doğru yapılsa bile 404 dönüyordu. Kapsam `https://www.googleapis.com/auth/drive` (tam Drive erişimi) olarak güncellendi. Şema değişikliği yok.
+
 ## [2.17.53] - 2026-08-12
 
 **Google Drive yedeklemesindeki "Bağlantı başarısız / Failed to fetch" hatası düzeltildi:** Google'ın servis hesabı kimlik doğrulama akışı ve Drive API'si tarayıcıdan (CORS) çağrılmak üzere tasarlanmamış — bu yüzden Ayarlar > Yedekleme'deki istek doğrudan uygulama penceresinden atılınca sessizce reddediliyordu. JWT imzalama, token alma ve dosya yükleme artık Electron'un ana sürecine taşındı (Node'un `crypto`'su, CORS'a tabi değil) — renderer sadece IPC üzerinden bu yeni köprüyü çağırıyor (`window.electronAPI.googleDriveUpload`/`googleDriveTestConnection`, bkz. `electron/googleDrive.ts`). Ayrıca Drive Klasör ID'si alanına tam klasör linki yapıştırılırsa (ör. `https://drive.google.com/drive/folders/...`) artık otomatik olarak ID'si ayıklanıyor. Şema değişikliği yok.
