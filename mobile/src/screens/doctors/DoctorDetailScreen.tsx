@@ -23,6 +23,9 @@ import {
   Camera,
   Trash2,
   Package,
+  HandCoins,
+  Receipt,
+  CalendarClock,
   type LucideIcon,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -37,7 +40,17 @@ import { ListItemCard } from '@/components/ui/ListItemCard'
 import { ProductPickerModal } from '@/components/ProductPickerModal'
 import { useTheme } from '@/lib/ThemeContext'
 import { useCustomer, useUpdateCustomerNotes } from '@/features/customers/hooks'
-import { usePayments } from '@/features/payments/hooks'
+import {
+  usePayments,
+  useCreatePayment,
+  useSaveInvoice,
+  useInvoiceFileUrl,
+  useInstallmentPlans,
+  useAllInstallments,
+  useCreateInstallmentPlan,
+  useMarkInstallmentPaid,
+} from '@/features/payments/hooks'
+import { createPayment } from '@/features/payments/api'
 import { useSales } from '@/features/sales/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
 import { useCrmActivities } from '@/features/crm/hooks'
@@ -52,16 +65,18 @@ import { summarizeDoctorForRep } from '@/features/ai/doctorSummary'
 import { AIServiceError } from '@/features/ai/types'
 import { tr } from '@shared/i18n/tr'
 import type { DoctorsStackParamList } from '@/navigation/types'
-import type { CrmOpportunityStage, Product } from '@shared/types/database'
+import type { CrmOpportunityStage, PaymentMethod, Product } from '@shared/types/database'
+import type { InstallmentWithPlan, PaymentWithCustomer } from '@/features/payments/api'
 
 type Props = NativeStackScreenProps<DoctorsStackParamList, 'DoctorDetail'>
 
-type TabKey = 'genel' | 'aktiviteler' | 'siparisler' | 'firsatlar' | 'ziyaretler' | 'etkinlikler' | 'belgeler'
+type TabKey = 'genel' | 'aktiviteler' | 'siparisler' | 'tahsilat' | 'firsatlar' | 'ziyaretler' | 'etkinlikler' | 'belgeler'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'genel', label: 'Genel' },
   { key: 'aktiviteler', label: 'Aktiviteler' },
   { key: 'siparisler', label: 'Siparişler' },
+  { key: 'tahsilat', label: 'Tahsilat' },
   { key: 'firsatlar', label: 'Fırsatlar' },
   { key: 'ziyaretler', label: 'Ziyaretler' },
   { key: 'etkinlikler', label: 'Etkinlikler' },
@@ -126,6 +141,10 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
   const { data: participations = [] } = useParticipationsByDoctorName(customer?.full_name)
 
   const sales = React.useMemo(() => allSales.filter((s) => s.customer_id === customerId), [allSales, customerId])
+  const payments = React.useMemo(
+    () => [...allPayments].filter((p) => p.customer_id === customerId).sort((a, b) => b.paid_at.localeCompare(a.paid_at)),
+    [allPayments, customerId],
+  )
   const activities = React.useMemo(() => allActivities.filter((a) => a.customer_id === customerId), [allActivities, customerId])
   const opportunities = React.useMemo(() => allOpportunities.filter((o) => o.customer_id === customerId), [allOpportunities, customerId])
   const visits = React.useMemo(() => allVisits.filter((v) => v.customer_id === customerId), [allVisits, customerId])
@@ -342,6 +361,10 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
             />
           ))}
         </View>
+      )}
+
+      {tab === 'tahsilat' && (
+        <PaymentsSection customerId={customerId} customerName={customer?.full_name ?? customerName} payments={payments} />
       )}
 
       {tab === 'firsatlar' && (
@@ -635,6 +658,434 @@ function GiveProductModal({
         }}
       />
     </>
+  )
+}
+
+function currencyCompact(n: number) {
+  return Number(n).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
+}
+
+const PAYMENT_METHODS: PaymentMethod[] = ['nakit', 'kredi_karti', 'havale', 'pos']
+
+/**
+ * "Tahsilat" sekmesi — masaüstündeki PaymentsPage/InvoiceDialog/
+ * InstallmentPlanForm/CollectInstallmentDialog'un bu doktora özel mobil
+ * karşılığı: tahsilat kaydı ekleme, her tahsilata fatura no/dosyası
+ * (invoices private bucket, aynı payments.invoice_number/invoice_file_path
+ * kolonları) ekleme/görüntüleme, taksitli plan oluşturma ve taksit tahsil
+ * etme. Aynı payment_installment_plans/payment_installments tabloları ve
+ * aynı taksit tutarı hesaplama mantığı (küsurat son taksite yazılır).
+ */
+function PaymentsSection({
+  customerId,
+  customerName,
+  payments,
+}: {
+  customerId: string
+  customerName: string
+  payments: PaymentWithCustomer[]
+}) {
+  const theme = useTheme()
+  const [showAddPayment, setShowAddPayment] = React.useState(false)
+  const [showInstallmentPlan, setShowInstallmentPlan] = React.useState(false)
+  const [invoicePayment, setInvoicePayment] = React.useState<PaymentWithCustomer | null>(null)
+  const [collectInstallment, setCollectInstallment] = React.useState<InstallmentWithPlan | null>(null)
+
+  const { data: installmentPlans = [] } = useInstallmentPlans(customerId)
+  const { data: allInstallments = [] } = useAllInstallments()
+
+  return (
+    <View style={{ gap: 10 }}>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Button variant="outline" size="sm" style={{ flex: 1 }} onPress={() => setShowAddPayment(true)}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <HandCoins size={15} color={theme.colors.foreground} />
+            <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }}>+ Yeni Tahsilat</Text>
+          </View>
+        </Button>
+        <Button variant="outline" size="sm" style={{ flex: 1 }} onPress={() => setShowInstallmentPlan(true)}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <CalendarClock size={15} color={theme.colors.foreground} />
+            <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }}>Taksitli Plan</Text>
+          </View>
+        </Button>
+      </View>
+
+      {payments.length === 0 && <Text style={{ color: theme.colors.mutedForeground }}>Tahsilat yok</Text>}
+      {payments.map((p) => (
+        <ListItemCard
+          key={p.id}
+          icon={HandCoins}
+          iconColor={theme.colors.success}
+          title={currencyCompact(Number(p.amount))}
+          subtitle={[tr.paymentMethod[p.payment_method] ?? p.payment_method, format(new Date(p.paid_at), 'd MMM yyyy', { locale: trLocale })].join(' · ')}
+          onPress={() => setInvoicePayment(p)}
+          right={
+            <Pressable onPress={() => setInvoicePayment(p)} hitSlop={8}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Receipt size={11} color={theme.colors.mutedForeground} />
+                <Badge variant={p.invoice_number || p.invoice_file_path ? 'secondary' : 'outline'}>
+                  {p.invoice_number || (p.invoice_file_path ? 'Fatura' : 'Fatura Ekle')}
+                </Badge>
+              </View>
+            </Pressable>
+          }
+        />
+      ))}
+
+      {installmentPlans.length > 0 && (
+        <View style={{ gap: 8, marginTop: 6 }}>
+          <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.base, fontWeight: '700' }}>Taksitli Planlar</Text>
+          {installmentPlans.map((plan) => {
+            const planInstallments = allInstallments.filter((i) => i.plan_id === plan.id)
+            return (
+              <Card key={plan.id} style={{ gap: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ color: theme.colors.foreground, fontWeight: '700' }}>
+                    {currencyCompact(Number(plan.total_amount))} / {plan.installment_count} taksit
+                  </Text>
+                </View>
+                {planInstallments.map((installment) => (
+                  <View key={installment.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.sm }}>
+                      Taksit {installment.installment_no} — {format(new Date(installment.due_date), 'd MMM yyyy', { locale: trLocale })}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }}>
+                        {currencyCompact(Number(installment.amount))}
+                      </Text>
+                      {installment.paid_payment_id ? (
+                        <Badge variant="success">Tahsil Edildi</Badge>
+                      ) : (
+                        <Pressable onPress={() => setCollectInstallment(installment)} hitSlop={6}>
+                          <Badge variant="outline">Tahsil Et</Badge>
+                        </Pressable>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </Card>
+            )
+          })}
+        </View>
+      )}
+
+      <AddPaymentModal visible={showAddPayment} customerId={customerId} onClose={() => setShowAddPayment(false)} />
+      <InstallmentPlanModal
+        visible={showInstallmentPlan}
+        customerId={customerId}
+        customerName={customerName}
+        onClose={() => setShowInstallmentPlan(false)}
+      />
+      <InvoiceModal payment={invoicePayment} onClose={() => setInvoicePayment(null)} />
+      <CollectInstallmentModal installment={collectInstallment} onClose={() => setCollectInstallment(null)} />
+    </View>
+  )
+}
+
+function AddPaymentModal({ visible, customerId, onClose }: { visible: boolean; customerId: string; onClose: () => void }) {
+  const theme = useTheme()
+  const createMutation = useCreatePayment()
+  const [amount, setAmount] = React.useState('')
+  const [method, setMethod] = React.useState<PaymentMethod>('nakit')
+  const [description, setDescription] = React.useState('')
+
+  React.useEffect(() => {
+    if (visible) {
+      setAmount('')
+      setMethod('nakit')
+      setDescription('')
+    }
+  }, [visible])
+
+  async function onSave() {
+    const value = Number(amount)
+    if (!value || value <= 0) return
+    await createMutation.mutateAsync({
+      customer_id: customerId,
+      amount: value,
+      payment_method: method,
+      description: description.trim() || null,
+      paid_at: new Date().toISOString(),
+    })
+    onClose()
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
+        <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>Yeni Tahsilat</Text>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <X size={22} color={theme.colors.foreground} />
+            </Pressable>
+          </View>
+          <TextField label="Tutar (₺) *" value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="0" />
+          <View style={{ gap: 6 }}>
+            <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.sm, fontWeight: '600' }}>Ödeme Yöntemi</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {PAYMENT_METHODS.map((m) => (
+                <Pressable key={m} onPress={() => setMethod(m)} hitSlop={4}>
+                  <Badge variant={method === m ? 'default' : 'outline'}>{tr.paymentMethod[m] ?? m}</Badge>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+          <TextField label="Açıklama (opsiyonel)" value={description} onChangeText={setDescription} />
+          <Button onPress={onSave} loading={createMutation.isPending} disabled={!Number(amount)}>
+            Kaydet
+          </Button>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
+/** Masaüstündeki InvoiceDialog'un mobil karşılığı — fatura numarası +
+ * dosyası (invoices private bucket, imzalı URL ile görüntüleme). RN'de
+ * tarayıcı file input yok; AttachmentsSection'daki aynı kamera/galeri
+ * (base64) deseni kullanılıyor. */
+function InvoiceModal({ payment, onClose }: { payment: PaymentWithCustomer | null; onClose: () => void }) {
+  const theme = useTheme()
+  const saveMutation = useSaveInvoice()
+  const urlMutation = useInvoiceFileUrl()
+  const [invoiceNumber, setInvoiceNumber] = React.useState('')
+  const [pickedBase64, setPickedBase64] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (payment) {
+      setInvoiceNumber(payment.invoice_number ?? '')
+      setPickedBase64(null)
+    }
+  }, [payment])
+
+  async function pick(source: 'camera' | 'library') {
+    const permission =
+      source === 'camera' ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      Toast.show({ type: 'error', text1: 'İzin gerekli', text2: 'Kamera/galeri izni verilmedi' })
+      return
+    }
+    const result =
+      source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ base64: true, quality: 0.7 })
+        : await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.7 })
+    if (result.canceled || !result.assets[0]?.base64) return
+    setPickedBase64(result.assets[0].base64)
+  }
+
+  async function onView() {
+    if (!payment?.invoice_file_path) return
+    const url = await urlMutation.mutateAsync(payment.invoice_file_path)
+    Linking.openURL(url)
+  }
+
+  async function onSave() {
+    if (!payment) return
+    await saveMutation.mutateAsync({
+      paymentId: payment.id,
+      invoiceNumber: invoiceNumber || null,
+      base64: pickedBase64,
+      ext: 'jpg',
+      contentType: 'image/jpeg',
+    })
+    onClose()
+  }
+
+  return (
+    <Modal visible={!!payment} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
+        <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>Fatura Bilgisi</Text>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <X size={22} color={theme.colors.foreground} />
+            </Pressable>
+          </View>
+          <TextField label="Fatura Numarası" value={invoiceNumber} onChangeText={setInvoiceNumber} placeholder="ABC2026000000123" />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Button variant="outline" size="sm" style={{ flex: 1 }} onPress={() => pick('camera')}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Camera size={15} color={theme.colors.foreground} />
+                <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }}>Tara</Text>
+              </View>
+            </Button>
+            <Button variant="outline" size="sm" style={{ flex: 1 }} onPress={() => pick('library')}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <FileText size={15} color={theme.colors.foreground} />
+                <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }}>Galeriden Ekle</Text>
+              </View>
+            </Button>
+          </View>
+          {pickedBase64 && <Text style={{ color: theme.colors.success, fontSize: theme.fontSizes.sm }}>Yeni fatura görseli seçildi, kaydedince yüklenecek.</Text>}
+          {payment?.invoice_file_path && !pickedBase64 && (
+            <Button variant="outline" size="sm" onPress={onView} loading={urlMutation.isPending}>
+              Yüklü Faturayı Görüntüle
+            </Button>
+          )}
+          <Button onPress={onSave} loading={saveMutation.isPending}>
+            Kaydet
+          </Button>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
+/** Masaüstündeki InstallmentPlanForm'un mobil karşılığı — bu doktor
+ * bağlamında açıldığı için customer_id sabit, doktor seçici yok. */
+function InstallmentPlanModal({
+  visible,
+  customerId,
+  customerName,
+  onClose,
+}: {
+  visible: boolean
+  customerId: string
+  customerName: string
+  onClose: () => void
+}) {
+  const theme = useTheme()
+  const createMutation = useCreateInstallmentPlan()
+  const [totalAmount, setTotalAmount] = React.useState('')
+  const [installmentCount, setInstallmentCount] = React.useState('3')
+  const [intervalDays, setIntervalDays] = React.useState('30')
+  const [firstDueDate, setFirstDueDate] = React.useState(new Date().toISOString().slice(0, 10))
+  const [lateFeeRate, setLateFeeRate] = React.useState('')
+  const [description, setDescription] = React.useState('')
+
+  React.useEffect(() => {
+    if (visible) {
+      setTotalAmount('')
+      setInstallmentCount('3')
+      setIntervalDays('30')
+      setFirstDueDate(new Date().toISOString().slice(0, 10))
+      setLateFeeRate('')
+      setDescription('')
+    }
+  }, [visible])
+
+  async function onSave() {
+    const total = Number(totalAmount)
+    const count = Number(installmentCount)
+    const interval = Number(intervalDays)
+    if (!total || total <= 0 || !count || count < 2 || !interval || interval <= 0 || !firstDueDate) return
+    await createMutation.mutateAsync({
+      customer_id: customerId,
+      total_amount: total,
+      installment_count: count,
+      interval_days: interval,
+      first_due_date: firstDueDate,
+      late_fee_rate: Number(lateFeeRate) || 0,
+      description: description.trim() || null,
+    })
+    onClose()
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
+        <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12, maxHeight: '88%' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700', flex: 1 }} numberOfLines={1}>
+              Taksitli Plan — {customerName}
+            </Text>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <X size={22} color={theme.colors.foreground} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
+            <TextField label="Toplam Tutar (₺) *" value={totalAmount} onChangeText={setTotalAmount} keyboardType="numeric" placeholder="0" />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TextField
+                label="Taksit Sayısı *"
+                value={installmentCount}
+                onChangeText={setInstallmentCount}
+                keyboardType="numeric"
+                containerStyle={{ flex: 1 }}
+              />
+              <TextField
+                label="Aralık (gün)"
+                value={intervalDays}
+                onChangeText={setIntervalDays}
+                keyboardType="numeric"
+                containerStyle={{ flex: 1 }}
+              />
+            </View>
+            <TextField label="İlk Vade Tarihi *" value={firstDueDate} onChangeText={setFirstDueDate} placeholder="YYYY-MM-DD" />
+            <TextField label="Gecikme Faizi (%, opsiyonel)" value={lateFeeRate} onChangeText={setLateFeeRate} keyboardType="numeric" />
+            <TextField label="Açıklama (opsiyonel)" value={description} onChangeText={setDescription} />
+            <Button onPress={onSave} loading={createMutation.isPending} disabled={!Number(totalAmount) || Number(installmentCount) < 2}>
+              Planı Oluştur
+            </Button>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
+/** Masaüstündeki CollectInstallmentDialog'un mobil karşılığı — taksit
+ * tutarında yeni bir payments kaydı oluşturup taksidi paid_payment_id ile
+ * ona bağlar. */
+function CollectInstallmentModal({ installment, onClose }: { installment: InstallmentWithPlan | null; onClose: () => void }) {
+  const theme = useTheme()
+  const [method, setMethod] = React.useState<PaymentMethod>('nakit')
+  const [submitting, setSubmitting] = React.useState(false)
+  const markPaidMutation = useMarkInstallmentPaid()
+  const plan = installment?.payment_installment_plans
+
+  React.useEffect(() => {
+    if (installment) setMethod('nakit')
+  }, [installment])
+
+  async function onCollect() {
+    if (!installment || !plan) return
+    setSubmitting(true)
+    try {
+      const payment = await createPayment({
+        customer_id: plan.customer_id,
+        amount: Number(installment.amount),
+        payment_method: method,
+        description: `Taksit ${installment.installment_no} tahsilatı`,
+        paid_at: new Date().toISOString(),
+      })
+      await markPaidMutation.mutateAsync({ installmentId: installment.id, paymentId: payment.id })
+      onClose()
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal visible={!!installment} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
+        <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>
+              Taksit {installment?.installment_no} Tahsilatı
+            </Text>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <X size={22} color={theme.colors.foreground} />
+            </Pressable>
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.sm, fontWeight: '600' }}>Ödeme Yöntemi</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {PAYMENT_METHODS.map((m) => (
+                <Pressable key={m} onPress={() => setMethod(m)} hitSlop={4}>
+                  <Badge variant={method === m ? 'default' : 'outline'}>{tr.paymentMethod[m] ?? m}</Badge>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+          <Button onPress={onCollect} loading={submitting}>
+            Tahsil Et
+          </Button>
+        </View>
+      </View>
+    </Modal>
   )
 }
 

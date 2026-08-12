@@ -1,7 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Toast from 'react-native-toast-message'
-import { fetchProducts, fetchStockMovements, fetchStockMovementsForCustomer, recordStockMovement, type RecordMovementInput } from './api'
-import type { BrandLine, MovementType, Product } from '@shared/types/database'
+import {
+  createProductLot,
+  fetchAllProductLots,
+  fetchProductLots,
+  fetchProducts,
+  fetchStockMovements,
+  fetchStockMovementsForCustomer,
+  recordStockMovement,
+  type ProductLotInput,
+  type RecordMovementInput,
+} from './api'
+import type { BrandLine, MovementType, Product, ProductLot } from '@shared/types/database'
 
 export function useProducts(search: string, brandLine?: BrandLine) {
   return useQuery({
@@ -50,8 +60,39 @@ export function useRecordStockMovement() {
         )
       }
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      if (variables.lot_id) {
+        queryClient.invalidateQueries({ queryKey: ['product_lots', variables.product_id] })
+        queryClient.invalidateQueries({ queryKey: ['product_lots', 'all'] })
+      }
       Toast.show({ type: 'success', text1: 'Stok hareketi kaydedildi' })
     },
     onError: (error: Error) => Toast.show({ type: 'error', text1: 'Kaydedilemedi', text2: error.message }),
+  })
+}
+
+// Masaüstündeki useProductLots/useAllProductLots/useCreateProductLot'un
+// birebir mobil karşılığı.
+export function useProductLots(productId: string | undefined) {
+  return useQuery({
+    queryKey: ['product_lots', productId],
+    queryFn: () => fetchProductLots(productId as string),
+    enabled: !!productId,
+  })
+}
+
+export function useAllProductLots() {
+  return useQuery({ queryKey: ['product_lots', 'all'], queryFn: fetchAllProductLots })
+}
+
+export function useCreateProductLot() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ProductLotInput) => createProductLot(input),
+    onSuccess: (created) => {
+      queryClient.setQueryData<ProductLot[]>(['product_lots', created.product_id], (old) => (old ? [...old, created] : old))
+      queryClient.invalidateQueries({ queryKey: ['product_lots'] })
+      Toast.show({ type: 'success', text1: 'Lot eklendi' })
+    },
+    onError: (error: Error) => Toast.show({ type: 'error', text1: 'Lot eklenemedi', text2: error.message }),
   })
 }

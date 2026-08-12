@@ -1,10 +1,11 @@
 // Masaüstündeki src/features/stock/api.ts'in Faz 1 alt kümesi — ürün listesi
 // (okuma) + record_stock_movement RPC'si (CLAUDE.md kuralı: current_quantity'ye
 // ASLA doğrudan yazılmaz, her zaman bu RPC üzerinden). Ürün oluşturma/
-// düzenleme, lot/barkod yönetimi Faz 2+'ya bırakıldı.
+// düzenleme Faz 2+'ya bırakıldı; lot/SKT takibi (product_lots) masaüstüyle
+// aynı tablo ve fonksiyonlarla burada eklendi.
 import { supabase } from '@/lib/supabaseClient'
-import { offlineRpc } from '@/lib/offlineMutation'
-import type { BrandLine, MovementType, Product } from '@shared/types/database'
+import { offlineInsert, offlineRpc } from '@/lib/offlineMutation'
+import type { BrandLine, MovementType, Product, ProductLot } from '@shared/types/database'
 
 export async function fetchProducts(search: string, brandLine?: BrandLine): Promise<Product[]> {
   let query = supabase.from('products').select('*').eq('is_active', true).order('name')
@@ -121,4 +122,46 @@ export async function fetchStockMovementsForCustomer(
     .order('created_at', { ascending: true })
   if (error) throw error
   return (data ?? []).map(mapMovementRow)
+}
+
+// Masaüstündeki fetchProductLots/fetchAllProductLots/createProductLot'un
+// birebir mobil karşılığı — aynı product_lots tablosu, aynı sıralama
+// (SKT'ye göre, null'lar sona). Lot'un kendi quantity'si sadece
+// record_stock_movement RPC'si (p_lot_id verilirse) üzerinden değişir —
+// buradan doğrudan update edilmez.
+export async function fetchProductLots(productId: string): Promise<ProductLot[]> {
+  const { data, error } = await supabase
+    .from('product_lots')
+    .select('*')
+    .eq('product_id', productId)
+    .order('expiry_date', { ascending: true, nullsFirst: false })
+  if (error) throw error
+  return data as ProductLot[]
+}
+
+export interface ProductLotInput {
+  product_id: string
+  lot_no?: string | null
+  barcode?: string | null
+  qr_code?: string | null
+  production_date?: string | null
+  expiry_date?: string | null
+  warehouse?: string | null
+  shelf?: string | null
+  supplier?: string | null
+}
+
+export async function createProductLot(input: ProductLotInput): Promise<ProductLot> {
+  return offlineInsert<ProductLot>('product_lots', { ...input, quantity: 0 }, `Lot: ${input.lot_no ?? input.product_id}`)
+}
+
+export type ProductLotWithProduct = ProductLot & { products: { name: string } | null }
+
+export async function fetchAllProductLots(): Promise<ProductLotWithProduct[]> {
+  const { data, error } = await supabase
+    .from('product_lots')
+    .select('*, products(name)')
+    .order('expiry_date', { ascending: true, nullsFirst: false })
+  if (error) throw error
+  return data as unknown as ProductLotWithProduct[]
 }
