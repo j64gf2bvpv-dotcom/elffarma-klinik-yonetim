@@ -199,10 +199,9 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
               <TableHead className="w-12"></TableHead>
               <TableHead>Ürün</TableHead>
               <TableHead>Kategori</TableHead>
-              <TableHead>Stok</TableHead>
-              <TableHead>Flakon</TableHead>
               <TableHead>Satış Fiyatı</TableHead>
               <TableHead>Kampanya</TableHead>
+              <TableHead>Stok</TableHead>
               <TableHead>Ürün Hattı</TableHead>
               <TableHead>SKT</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
@@ -211,7 +210,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
           <TableBody>
             {products.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
                   Ürün bulunamadı
                 </TableCell>
               </TableRow>
@@ -246,12 +245,6 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     />
                   </TableCell>
                   <TableCell className="text-muted-foreground">{product.category ?? '—'}</TableCell>
-                  <TableCell>
-                    <QuantityCell product={product} />
-                  </TableCell>
-                  <TableCell>
-                    <FlakonQuantityCell product={product} />
-                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {product.unit_price ? (
                       <>
@@ -276,6 +269,12 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col items-start gap-1">
+                      <QuantityCell product={product} />
+                      {product.flakon_per_package != null && <FlakonQuantityCell product={product} />}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {product.brand_line ? (
@@ -403,10 +402,10 @@ export function StockPage() {
               columns={[
                 { header: 'Ürün', value: (p) => p.name },
                 { header: 'Kategori', value: (p) => p.category ?? '' },
-                { header: 'Stok', value: (p) => `${p.current_quantity} ${p.unit}` },
-                { header: 'Flakon', value: (p) => (p.flakon_per_package != null ? p.flakon_quantity : '') },
                 { header: 'Satış Fiyatı', value: (p) => (p.unit_price ? Number(p.unit_price) : '') },
                 { header: 'Kampanya', value: (p) => p.campaign ?? '' },
+                { header: 'Stok', value: (p) => `${p.current_quantity} ${p.unit}` },
+                { header: 'Flakon', value: (p) => (p.flakon_per_package != null ? p.flakon_quantity : '') },
                 { header: 'Barkod', value: (p) => p.barcode ?? '' },
                 { header: 'Ürün Hattı', value: (p) => (p.brand_line === 'dermakor' ? 'Dermakor' : p.brand_line === 'swiss' ? 'Swiss' : '') },
                 { header: 'Son Kullanım Tarihi', value: (p) => p.expiry_date ?? '' },
