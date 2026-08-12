@@ -1,7 +1,19 @@
 -- Klinik Yönetim — Supabase şema betiği
--- Bu dosyanın TAMAMINI Supabase Dashboard > SQL Editor içine yapıştırıp
--- tek seferde çalıştırın. Tüm tabloları, güvenlik kurallarını (RLS),
--- yardımcı fonksiyonları ve örnek WhatsApp şablonlarını oluşturur.
+--
+-- ARTIK CANLI DÜZENLEME HEDEFİ DEĞİL (12 Ağustos 2026'dan itibaren).
+-- Şema değişikliği yönetimi `supabase/migrations/` altındaki CLI migration
+-- dosyalarına taşındı — bundan sonra hiçbir değişiklik bu dosyaya elle
+-- eklenip SQL Editor'a yapıştırılmayacak. Yeni bir değişiklik için:
+--   npm run db:migration:new -- <kisa_isim>
+-- ile `supabase/migrations/`'a yeni, tarihli bir dosya ekleyin, SQL'i o
+-- dosyaya yazın, `npm run db:push:dry` ile önizleyin, onaylanınca
+-- `npm run db:push` ile uygulayın. Bu dosya (schema.sql) sadece o ana kadarki
+-- birikmiş şemanın OKUNABİLİR bir referansı olarak kalıyor — güncelliğini
+-- yitirmemesi için periyodik olarak `supabase db dump` ile yenilenmesi
+-- önerilir, ama artık hiçbir zaman doğrudan çalıştırılmamalı.
+--
+-- Eski talimat (artık geçerli değil): "Bu dosyanın TAMAMINI Supabase
+-- Dashboard > SQL Editor içine yapıştırıp tek seferde çalıştırın."
 
 create extension if not exists pgcrypto;
 
@@ -264,10 +276,12 @@ alter table public.payments enable row level security;
 alter table public.appointments enable row level security;
 alter table public.whatsapp_templates enable row level security;
 
--- staff: herkes (giriş yapmış personel) okuyabilir; sadece admin yazabilir
+-- staff: sadece aktif personel okuyabilir (pasife alınmış bir hesabın auth
+-- oturumu hâlâ geçerliyse bile personel listesini görememesi için —
+-- önceden sadece auth.uid() is not null kontrol ediyordu); sadece admin yazabilir
 drop policy if exists "staff_select" on public.staff;
 create policy "staff_select" on public.staff for select
-  using (auth.uid() is not null);
+  using (public.is_active_staff());
 
 drop policy if exists "staff_update_admin" on public.staff;
 create policy "staff_update_admin" on public.staff for update

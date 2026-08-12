@@ -88,7 +88,7 @@ alarak bu uyarıları tamamen kaldırabilirsiniz.
 
 ## Yayınlama (Release) ve otomatik güncelleme
 
-Sürüm numarası `package.json` → `version` alanından gelir (şu an `1.5.0`).
+Sürüm numarası `package.json` → `version` alanından gelir (şu an `2.17.60`).
 Yeni bir sürüm yayınlamak için:
 
 1. `package.json`'daki `version`'ı artırın (`1.5.1`, `1.6.0` vb.) ve

@@ -14,7 +14,11 @@
     "prepackage": "node scripts/check-release-env.mjs",
     "package": "cross-env ELECTRON_RUN_AS_NODE= npm run build && cross-env ELECTRON_RUN_AS_NODE= electron-builder",
     "predist": "node scripts/check-release-env.mjs",
-    "dist": "npm run package"
+    "dist": "npm run package",
+    "db:status": "supabase migration list --linked",
+    "db:migration:new": "supabase migration new",
+    "db:push:dry": "supabase db push --linked --dry-run",
+    "db:push": "supabase db push --linked"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.21",
@@ -78,6 +82,7 @@
     "oxlint": "^1.71.0",
     "png-to-ico": "^3.0.2",
     "postcss": "^8.5.23",
+    "supabase": "^2.113.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
