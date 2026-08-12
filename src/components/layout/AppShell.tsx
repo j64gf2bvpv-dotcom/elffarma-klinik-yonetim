@@ -11,6 +11,7 @@ import {
   Settings as SettingsIcon,
   AlertTriangle,
   ArrowLeft,
+  ArrowRight,
   CalendarClock,
   Presentation,
   BellRing,
@@ -812,20 +813,22 @@ export function PageHeader({
     else navigate('/')
   }
 
+  function handleForward() {
+    navigate(1)
+  }
+
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
       <div className="flex min-w-0 items-start gap-2">
         {showBack && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={handleBack}
-            title="Geri"
-            className="mt-0.5 size-8 shrink-0"
-          >
-            <ArrowLeft className="size-4" />
-          </Button>
+          <div className="mt-0.5 flex shrink-0 items-center gap-0.5">
+            <Button type="button" variant="ghost" size="icon" onClick={handleBack} title="Geri" className="size-8">
+              <ArrowLeft className="size-4" />
+            </Button>
+            <Button type="button" variant="ghost" size="icon" onClick={handleForward} title="İleri" className="size-8">
+              <ArrowRight className="size-4" />
+            </Button>
+          </div>
         )}
         <div className="min-w-0">
           <h1 className="flex flex-wrap items-center text-2xl font-semibold tracking-tight">{title}</h1>
