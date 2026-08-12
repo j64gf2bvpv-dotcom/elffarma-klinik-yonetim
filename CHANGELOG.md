@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.63] - 2026-08-12
+
+**Kongre/workshop'ta doktora ürün eklerken artık çoklu seçim var:** "Ürün Ekle" diyaloğu tek tek ürün seçip her seferinde yeniden açma zorunluluğunu kaldırdı — tik kutulu listeden istediğiniz kadar ürünü aynı anda seçip her biri için ayrı adet/birim fiyat girip tek "Kaydet" ile hepsini birden ekleyebiliyorsunuz. Her ürün eskisi gibi tek tek stoktan düşülüyor (`record_stock_movement`), sadece arayüz artık toplu. Şema değişikliği yok.
+
 ## [2.17.62] - 2026-08-12
 
 **Günlük Sayım'da "girdiğim stok sistemde görünmüyor" yanılgısı düzeltildi:** Sayım ekranında "Sayılan" kutusuna adet girmek gerçek stoğu hemen değiştirmiyor (bilerek böyle — önce sayılır, fark gözden geçirilir, sonra onaylanır), ama bu ekranda yeterince belli değildi. Artık onaylanmamış sayım varken tablonun üstünde net bir uyarı ve "Sayımı Tamamla" butonunda bekleyen ürün sayısını gösteren bir rozet var. Şema değişikliği yok.
