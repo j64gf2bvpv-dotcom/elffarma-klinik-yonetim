@@ -15,6 +15,7 @@ import {
   Printer,
   Plus,
   ImageDown,
+  AlertTriangle,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -306,6 +307,10 @@ export function DailyCountPanel() {
   const countDateLabel = format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })
   const countDayLabel = format(new Date(todayCount.count_date), 'EEEE', { locale: trLocale })
 
+  const pendingChangeCount = items.filter(
+    (i) => i.counted_quantity !== null && i.counted_quantity !== i.expected_quantity,
+  ).length
+
   function productLine(i: StockCountItemWithProduct): { metrik: string; deger: string | number } {
     return { metrik: i.products.name, deger: `${i.expected_quantity} ${i.products.unit}` }
   }
@@ -399,10 +404,25 @@ export function DailyCountPanel() {
               >
                 {completeMutation.isPending && <Loader2 className="animate-spin" />}
                 Sayımı Tamamla ve Stoğu Güncelle
+                {pendingChangeCount > 0 && (
+                  <Badge variant="warning" className="ml-1">
+                    {pendingChangeCount}
+                  </Badge>
+                )}
               </Button>
             )}
           </div>
         </CardHeader>
+        {!isCompleted && pendingChangeCount > 0 && (
+          <div className="mx-4 mb-3 flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning-foreground">
+            <AlertTriangle className="size-4 shrink-0 animate-alert-glow-red" />
+            <p>
+              <strong>{pendingChangeCount} üründe</strong> sayım girdiniz ama gerçek stok henüz güncellenmedi.
+              Değişikliklerin sisteme yansıması için yukarıdaki <strong>"Sayımı Tamamla ve Stoğu Güncelle"</strong>{' '}
+              butonuna basmanız gerekiyor.
+            </p>
+          </div>
+        )}
         <CardContent className="p-0">
           <Table>
             <TableHeader>

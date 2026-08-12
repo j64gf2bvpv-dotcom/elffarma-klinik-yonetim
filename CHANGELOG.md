@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.62] - 2026-08-12
+
+**Günlük Sayım'da "girdiğim stok sistemde görünmüyor" yanılgısı düzeltildi:** Sayım ekranında "Sayılan" kutusuna adet girmek gerçek stoğu hemen değiştirmiyor (bilerek böyle — önce sayılır, fark gözden geçirilir, sonra onaylanır), ama bu ekranda yeterince belli değildi. Artık onaylanmamış sayım varken tablonun üstünde net bir uyarı ve "Sayımı Tamamla" butonunda bekleyen ürün sayısını gösteren bir rozet var. Şema değişikliği yok.
+
 ## [2.17.61] - 2026-08-12
 
 **Otomatik güncelleme macOS'ta neden hiç çalışmıyordu, kesin olarak bulundu ve düzeltildi:** GitHub deposu gizli (private) olduğu için önce güncelleme kontrolü tamamen başarısız oluyordu (depo artık herkese açık, düzeltildi). Bu düzeltmeden sonra bile macOS'ta güncelleme hâlâ inmiyordu — eklenen kalıcı tanılama logu (`~/Library/Logs/klinik-yonetim/auto-updater.log`) sayesinde gerçek neden görüldü: macOS'un otomatik güncelleme motoru (Squirrel.Mac) kuruluma `.dmg` değil bir `.zip` paketi uyguluyor, ama paketleme sadece `.dmg` üretiyordu — `latest-mac.yml` zip'e referans veriyor ama zip hiç yoktu, bu yüzden autoUpdater "ZIP file not provided" hatasıyla sessizce başarısız oluyordu. `electron-builder.yml`'e macOS hedefine `zip` eklendi, CI iş akışı da güncellendi. Şema değişikliği yok.
