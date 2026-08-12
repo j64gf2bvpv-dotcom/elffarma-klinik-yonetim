@@ -16,6 +16,11 @@ files:
   - package.json
 extraMetadata:
   main: dist-electron/main.cjs
+# electron-builder kendi imzalama adımını atlasa da (mac.identity: null), paketlenen
+# .app hâlâ Electron'un önceden imzalanmış şablonundan geldiği için üzerine dosya
+# kopyalanınca tutarsız/"hayalet" bir imza kalıyor ve macOS uygulamayı "hasar
+# görmüş" diyerek TAMAMEN reddediyor (sadece uyarı değil) — bkz. scripts/afterSignMac.cjs.
+afterSign: scripts/afterSignMac.cjs
 protocols:
   name: Elffarma Paket Programı Şifre Sıfırlama
   schemes:

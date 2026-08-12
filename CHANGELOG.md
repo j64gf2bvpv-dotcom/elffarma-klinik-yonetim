@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.73] - 2026-08-12
+
+**macOS'ta "hasar görmüş, çöp sepetine taşı" hatası kesin olarak düzeltildi:** Bugün gerçek bir kurulumda teşhis edildi — indirilen/güncellenen .app paketi, `identity: null` ile imzalama atlansa da Electron'un kendi önceden imzalanmış şablonundan kalan tutarsız bir imza taşıyordu (`codesign`: "code has no resources but signature indicates they must be present"), bu da macOS'un uygulamayı sadece "tanımadığım geliştirici" uyarısıyla değil, tamamen "hasar görmüş" diyerek reddetmesine ve hem elle kurulumun hem otomatik güncellemenin son adımının sessizce başarısız olmasına yol açıyordu. `scripts/afterSignMac.cjs` artık her macOS derlemesinden sonra eski imzayı temizleyip yerel (ad-hoc) bir imzayla değiştiriyor — ilk açılışta hâlâ "tanımadığım geliştirici, yine de aç" uyarısı çıkacak (gerçek Apple imzası olmadığı için, bkz. README) ama uygulama artık gerçekten açılıyor. Şema değişikliği yok.
+
 ## [2.17.72] - 2026-08-12
 
 **Güncelleme sonrası "neler yeni" bildirimi eklendi:** Uygulama bir önceki açılıştan farklı bir sürümle başlatıldığında (otomatik güncelleme sonrası yeniden başlatma dahil) o sürümün değişiklik günlüğü özetini kısa bir bildirimle gösteriyor — artık her bilgisayarda güncelleme geldiğinde programı açan kişi neyin değiştiğini görebiliyor. İlk kurulumda bildirim gösterilmiyor, sadece mevcut sürüm sessizce kaydediliyor. Şema değişikliği yok.
