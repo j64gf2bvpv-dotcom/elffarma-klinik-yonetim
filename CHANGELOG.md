@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.77] - 2026-08-12
+
+**Paket ve flakon stoğu artık tamamen bağımsız:** Önceki tasarımda paket birimli bir stok hareketi, ürünün flakon oranı tanımlıysa flakon sayısını da otomatik olarak orantılı güncelliyordu. Kullanıcı kararı üzerine bu kaldırıldı — artık paket hareketleri sadece paket adedini, flakon hareketleri sadece flakon sayısını etkiliyor, aralarında hiçbir otomatik bağlantı yok. Bir ürüne oran ilk kez girildiğinde yapılan tek seferlik başlangıç hesaplaması (mevcut paket adedine göre) etkilenmedi. Şema değişikliği var, migration veritabanına uygulandı.
+
 ## [2.17.76] - 2026-08-12
 
 **Kritik düzeltme: güncellenmemiş uygulamalarda stok hareketleri (kongre dağıtımı dahil) çalışmıyordu:** Flakon özelliği eklenirken, aktif olarak kullanılan eski (8 parametreli) stok hareketi fonksiyonu yanlışlıkla tamamen kaldırılmıştı — henüz güncel bir derlemeye geçmemiş her uygulama (otomatik güncelleme şu an ayrı bir imza sorunu yüzünden çalışmadığı için birçok bilgisayar bu durumdaydı) veritabanına artık tanınmayan bir çağrı yapıyor, stok hiç değişmiyordu. Eski imza, yeni sisteme devreden bir uyumluluk katmanı olarak geri eklendi — artık hem eski hem yeni uygulamalar sorunsuz çalışıyor. Ayrıca, otomatik flakon hesaplama tetikleyicisi eklenmeden önce oranı girilmiş ürünlerde flakon sayısı kalıcı olarak sıfırda takılı kalıyordu — tek seferlik bir düzeltmeyle bu ürünlerde de flakon sayısı artık doğru hesaplandı. Şema değişikliği var, migration veritabanına uygulandı (frontend kodu değişmedi, bu düzeltme her sürümdeki uygulamayı hemen etkiliyor).

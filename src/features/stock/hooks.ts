@@ -88,10 +88,9 @@ export function useRecordStockMovement() {
           : variables.movement_type === 'in' || variables.movement_type === 'return' || variables.movement_type === 'adjustment'
             ? variables.quantity
             : 0
-      // RPC'nin kendi dallanmasını yansıtır (bkz. record_stock_movement migration'ı):
-      // flakon birimli hareket sadece flakon_quantity'i değiştirir; paket birimli
-      // hareket current_quantity'i değiştirir ve oran tanımlıysa flakon_quantity'i
-      // orantılı olarak da günceller.
+      // RPC'nin kendi dallanmasını yansıtır (bkz. decouple_flakon_from_paket_movements
+      // migration'ı): paket ve flakon tamamen bağımsız — paket hareketi sadece
+      // current_quantity'i, flakon hareketi sadece flakon_quantity'i değiştirir.
       if (delta !== 0) {
         queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) =>
           old?.map((p) => {
@@ -99,14 +98,7 @@ export function useRecordStockMovement() {
             if (variables.unit_kind === 'flakon') {
               return { ...p, flakon_quantity: Math.max(0, p.flakon_quantity + delta) }
             }
-            return {
-              ...p,
-              current_quantity: Math.max(0, p.current_quantity + delta),
-              flakon_quantity:
-                p.flakon_per_package != null
-                  ? Math.max(0, p.flakon_quantity + delta * p.flakon_per_package)
-                  : p.flakon_quantity,
-            }
+            return { ...p, current_quantity: Math.max(0, p.current_quantity + delta) }
           }),
         )
       }
