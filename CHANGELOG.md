@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.64] - 2026-08-12
+
+**Her sayfada geri butonu:** Ortak `PageHeader` bileşenine yerleşik bir "geri" oku eklendi — artık her sayfa başlığının yanında bir önceki ekrana dönen bir buton var (yalnızca ana sayfada gösterilmiyor). Doktor/Kongre/Cari Hesap detay sayfalarındaki eski, tek tek elle yazılmış "...'e Dön" butonları kaldırılıp bu ortak butonla birleştirildi. Şema değişikliği yok.
+
 ## [2.17.63] - 2026-08-12
 
 **Kongre/workshop'ta doktora ürün eklerken artık çoklu seçim var:** "Ürün Ekle" diyaloğu tek tek ürün seçip her seferinde yeniden açma zorunluluğunu kaldırdı — tik kutulu listeden istediğiniz kadar ürünü aynı anda seçip her biri için ayrı adet/birim fiyat girip tek "Kaydet" ile hepsini birden ekleyebiliyorsunuz. Her ürün eskisi gibi tek tek stoktan düşülüyor (`record_stock_movement`), sadece arayüz artık toplu. Şema değişikliği yok.

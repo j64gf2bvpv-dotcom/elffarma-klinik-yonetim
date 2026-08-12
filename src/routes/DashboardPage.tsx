@@ -1534,6 +1534,7 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
+        showBack={false}
         title={
           <span className="flex min-w-0 flex-wrap items-center gap-2.5">
             <span className="break-words">{`${welcomeText}${staff?.full_name ? ', ' + staff.full_name : ''}`}</span>

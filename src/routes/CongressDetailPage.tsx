@@ -2,7 +2,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale'
 import {
-  ArrowLeft,
   Loader2,
   Plane,
   BadgeCheck,
@@ -129,10 +128,6 @@ export function CongressDetailPage() {
 
   return (
     <div>
-      <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate('/kongreler')}>
-        <ArrowLeft /> Kongrelere Dön
-      </Button>
-
       <PageHeader
         title={congress.name}
         description={

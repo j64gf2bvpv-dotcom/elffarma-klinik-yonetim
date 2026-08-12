@@ -1,8 +1,8 @@
 import * as React from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ArrowLeft, Loader2, Wallet, ShoppingCart, Undo2, Pencil } from 'lucide-react'
+import { Loader2, Wallet, ShoppingCart, Undo2, Pencil } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
@@ -30,7 +30,6 @@ interface LedgerRow {
 
 export function CariHesapPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const { data: customer, isLoading: loadingCustomer } = useCustomer(id)
   const { data: payments = [] } = usePayments({ customerId: id })
   const { data: allSales = [] } = useSales()
@@ -91,10 +90,6 @@ export function CariHesapPage() {
 
   return (
     <div>
-      <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate('/cari-hesap')}>
-        <ArrowLeft /> Cari Hesap Listesine Dön
-      </Button>
-
       <PageHeader
         title={`Cari Hesap — ${customer.full_name}`}
         description="Satış (borç) ve tahsilat/iade (alacak) hareketlerinin dökümü"

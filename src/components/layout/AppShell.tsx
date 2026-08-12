@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { NavLink, Outlet, Link } from 'react-router-dom'
+import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import {
   Wifi,
   WifiOff,
@@ -10,6 +10,7 @@ import {
   Bell,
   Settings as SettingsIcon,
   AlertTriangle,
+  ArrowLeft,
   CalendarClock,
   Presentation,
   BellRing,
@@ -52,6 +53,7 @@ import { getPaymentDueStatus } from '@/lib/paymentDue'
 import { WEBMAIL_URL } from '@/lib/companyInfo'
 import { tr } from '@/i18n/tr'
 import { ElffarmaLogo } from '@/components/brand/ElffarmaLogo'
+import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -794,16 +796,41 @@ export function PageHeader({
   title,
   description,
   actions,
+  showBack = true,
 }: {
   title: React.ReactNode
   description?: React.ReactNode
   actions?: React.ReactNode
+  /** Ana sayfa gibi "geri"nin anlamlı olmadığı sayfalarda false verin. */
+  showBack?: boolean
 }) {
+  const navigate = useNavigate()
+
+  function handleBack() {
+    const idx = (window.history.state as { idx?: number } | null)?.idx
+    if (typeof idx === 'number' && idx > 0) navigate(-1)
+    else navigate('/')
+  }
+
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-      <div className="min-w-0">
-        <h1 className="flex flex-wrap items-center text-2xl font-semibold tracking-tight">{title}</h1>
-        {description && <div className="text-muted-foreground mt-1 text-sm">{description}</div>}
+      <div className="flex min-w-0 items-start gap-2">
+        {showBack && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            title="Geri"
+            className="mt-0.5 size-8 shrink-0"
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
+        )}
+        <div className="min-w-0">
+          <h1 className="flex flex-wrap items-center text-2xl font-semibold tracking-tight">{title}</h1>
+          {description && <div className="text-muted-foreground mt-1 text-sm">{description}</div>}
+        </div>
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </div>
