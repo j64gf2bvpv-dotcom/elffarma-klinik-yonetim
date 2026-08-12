@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, shell, Notification, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import path from 'node:path'
+import fs from 'node:fs'
 import { uploadBackupToGoogleDrive, testGoogleDriveConnection, type GoogleServiceAccount } from './googleDrive.js'
 
 process.env.APP_ROOT = path.join(__dirname, '..')
@@ -109,16 +110,38 @@ function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
+// Pencereli (GUI) bir uygulamada console.log/error hiçbir yere yazılmıyor —
+// terminal olmadığı için kayboluyor. Güncelleme sorunlarını (özellikle
+// macOS'ta imzasız paketleme nedeniyle Squirrel.Mac'in doğrulama hatası
+// vermesi gibi sessiz başarısızlıkları) sonradan teşhis edebilmek için
+// autoUpdater'ın TÜM olaylarını kalıcı bir dosyaya yazıyoruz.
+const updaterLogPath = path.join(app.getPath('logs'), 'auto-updater.log')
+function logUpdater(line: string) {
+  try {
+    fs.appendFileSync(updaterLogPath, `[${new Date().toISOString()}] ${line}\n`)
+  } catch {
+    // Log dosyasına yazılamaması güncellemeyi engellememeli.
+  }
+}
+
 // GitHub Releases'teki en son sürümü kontrol eder, arka planda indirir ve indirme
 // bitince "şimdi yeniden başlat" bildirimi gösterir (checkForUpdatesAndNotify'ın
 // varsayılan davranışı). Sadece paketlenmiş (kurulmuş) uygulamada anlamlı olduğu
 // için `npm run dev` sırasında hiç çağrılmaz — orada kontrol edilecek bir update
 // feed'i yoktur ve autoUpdater sessizce hata loglar.
 function setupAutoUpdater() {
+  logUpdater(`Başlatıldı — mevcut sürüm: ${app.getVersion()}`)
+  autoUpdater.on('checking-for-update', () => logUpdater('Güncelleme kontrol ediliyor...'))
+  autoUpdater.on('update-available', (info) => logUpdater(`Güncelleme bulundu: ${info.version}`))
+  autoUpdater.on('update-not-available', (info) => logUpdater(`Güncelleme yok, güncel: ${info.version}`))
+  autoUpdater.on('download-progress', (p) => logUpdater(`İndiriliyor: %${p.percent.toFixed(1)}`))
+  autoUpdater.on('update-downloaded', (info) => logUpdater(`İndirildi, yeniden başlatma bekleniyor: ${info.version}`))
   autoUpdater.on('error', (error) => {
+    logUpdater(`HATA: ${error.message}\n${error.stack ?? ''}`)
     console.error('[AutoUpdater] Güncelleme kontrolü başarısız:', error)
   })
   autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+    logUpdater(`checkForUpdatesAndNotify HATA: ${error.message}`)
     console.error('[AutoUpdater] checkForUpdatesAndNotify başarısız:', error)
   })
 }

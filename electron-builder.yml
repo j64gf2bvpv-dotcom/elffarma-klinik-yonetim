@@ -41,8 +41,16 @@ mac:
   # o zamana kadar macOS'ta auto-update de güvenilir çalışmayabilir (Squirrel.Mac
   # imzasız uygulamalarda güncellemeyi doğrulayamaz) — Windows tarafı bundan etkilenmez.
   identity: null
+  # DMG kurulum içindir; ZIP ise Squirrel.Mac'in otomatik güncelleme sırasında
+  # indirip uyguladığı asıl paket — sadece dmg üretilirse autoUpdater
+  # "ZIP file not provided" hatasıyla güncellemeyi sessizce başarısız kılıyordu
+  # (2026-08-12'de gerçek cihazda teşhis edildi, latest-mac.yml zip'e referans
+  # veriyor ama zip hiç üretilmiyordu).
   target:
     - target: dmg
+      arch:
+        - arm64
+    - target: zip
       arch:
         - arm64
 dmg:

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.61] - 2026-08-12
+
+**Otomatik güncelleme macOS'ta neden hiç çalışmıyordu, kesin olarak bulundu ve düzeltildi:** GitHub deposu gizli (private) olduğu için önce güncelleme kontrolü tamamen başarısız oluyordu (depo artık herkese açık, düzeltildi). Bu düzeltmeden sonra bile macOS'ta güncelleme hâlâ inmiyordu — eklenen kalıcı tanılama logu (`~/Library/Logs/klinik-yonetim/auto-updater.log`) sayesinde gerçek neden görüldü: macOS'un otomatik güncelleme motoru (Squirrel.Mac) kuruluma `.dmg` değil bir `.zip` paketi uyguluyor, ama paketleme sadece `.dmg` üretiyordu — `latest-mac.yml` zip'e referans veriyor ama zip hiç yoktu, bu yüzden autoUpdater "ZIP file not provided" hatasıyla sessizce başarısız oluyordu. `electron-builder.yml`'e macOS hedefine `zip` eklendi, CI iş akışı da güncellendi. Şema değişikliği yok.
+
 ## [2.17.60] - 2026-08-12
 
 **Ayarlar > Personel'de isim artık düzenlenebiliyor:** Personel tablosunda "Ad Soyad" sütunu daha önce salt metindi — admin kendi ya da başka bir personelin adını (ör. "admin" gibi bir kullanıcı adını gerçek ad soyadıyla) değiştiremiyordu. Artık admin isme tıklayınca yerinde (inline) düzenleyip Enter'la kaydedebiliyor. Profilim'deki ipucu metni de admin için doğru yeri gösterecek şekilde güncellendi. Şema değişikliği yok.
