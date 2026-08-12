@@ -32,7 +32,7 @@ jobs:
           - os: windows-latest
             build_args: --win nsis --x64
           - os: macos-latest
-            build_args: --mac dmg --arm64
+            build_args: --mac dmg zip --arm64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
