@@ -27,8 +27,25 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-export function ReminderForm({ reminder }: { reminder?: Reminder }) {
-  const [open, setOpen] = React.useState(false)
+export function ReminderForm({
+  reminder,
+  defaultDate,
+  open: openProp,
+  onOpenChange,
+  hideTrigger,
+}: {
+  reminder?: Reminder
+  /** Yeni hatırlatmada tarihi önceden doldurmak için (ör. takvimde bir güne tıklanınca). */
+  defaultDate?: string
+  /** Verilirse dialog dışarıdan kontrol edilir (ör. takvimde etkinliğe tıklayınca açmak için). */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Dışarıdan kontrol edilirken varsayılan "+ Hatırlatma Ekle" tetikleyici butonunu gizler. */
+  hideTrigger?: boolean
+}) {
+  const [openState, setOpenState] = React.useState(false)
+  const open = openProp ?? openState
+  const setOpen = onOpenChange ?? setOpenState
   const createMutation = useCreateReminder()
   const updateMutation = useUpdateReminder()
 
@@ -36,7 +53,7 @@ export function ReminderForm({ reminder }: { reminder?: Reminder }) {
     resolver: zodResolver(schema),
     defaultValues: {
       title: reminder?.title ?? '',
-      due_date: reminder?.due_date ?? '',
+      due_date: reminder?.due_date ?? defaultDate ?? '',
       note: reminder?.note ?? '',
     },
   })
@@ -45,7 +62,7 @@ export function ReminderForm({ reminder }: { reminder?: Reminder }) {
     if (open) {
       form.reset({
         title: reminder?.title ?? '',
-        due_date: reminder?.due_date ?? '',
+        due_date: reminder?.due_date ?? defaultDate ?? '',
         note: reminder?.note ?? '',
       })
     }
@@ -66,17 +83,19 @@ export function ReminderForm({ reminder }: { reminder?: Reminder }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {reminder ? (
-          <Button variant="ghost" size="icon">
-            <Pencil className="size-4" />
-          </Button>
-        ) : (
-          <Button>
-            <Plus /> Hatırlatma Ekle
-          </Button>
-        )}
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          {reminder ? (
+            <Button variant="ghost" size="icon">
+              <Pencil className="size-4" />
+            </Button>
+          ) : (
+            <Button>
+              <Plus /> Hatırlatma Ekle
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{reminder ? 'Hatırlatmayı Düzenle' : 'Yeni Hatırlatma'}</DialogTitle>

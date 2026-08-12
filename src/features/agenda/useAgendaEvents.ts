@@ -71,7 +71,7 @@ export function useAgendaEvents() {
 
     for (const r of reminders) {
       if (r.is_done) continue
-      list.push({ id: `reminder-${r.id}`, title: r.title, start: r.due_date, type: 'reminder', linkId: null })
+      list.push({ id: `reminder-${r.id}`, title: r.title, start: r.due_date, type: 'reminder', linkId: r.id })
     }
 
     for (const c of congresses) {

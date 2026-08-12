@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.66] - 2026-08-12
+
+**Ajanda'da takvimden doğrudan not/hatırlatma eklenip düzenlenebiliyor:** Takvimde boş bir güne tıklayınca o tarih önceden dolu şekilde "Yeni Hatırlatma" diyaloğu açılıyor; mevcut bir hatırlatma etkinliğine tıklayınca (eskiden sadece Hatırlatmalar listesine yönlendiriyordu) artık doğrudan o hatırlatmanın düzenleme diyaloğu açılıyor (başlık/tarih/not). Sayfa başlığında da her zaman görünen bir "Hatırlatma Ekle" butonu var. Kongre etkinlikleri tıklanınca hâlâ kongre detay sayfasına gidiyor — tarih değişikliği oradaki mevcut düzenleme formundan yapılıyor. Şema değişikliği yok.
+
 ## [2.17.65] - 2026-08-12
 
 **Kaydırma çubukları artık her yerde görünür:** macOS'un otomatik gizlenen (overlay) kaydırma çubukları, geniş ürün/stok tablolarında yana doğru daha fazla sütun olduğunu belli etmiyordu. Artık tüm kaydırılabilir alanlarda (geniş tablolar dahil) ince ama her zaman görünen bir kaydırma çubuğu var. Şema değişikliği yok.

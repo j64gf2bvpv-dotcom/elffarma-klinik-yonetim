@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
-import interactionPlugin from '@fullcalendar/interaction'
+import interactionPlugin, { type DateClickArg } from '@fullcalendar/interaction'
 import trLocale from '@fullcalendar/core/locales/tr'
 import type { EventClickArg, EventContentArg, EventInput, EventMountArg } from '@fullcalendar/core'
 import { addDays, isToday, isSameMonth } from 'date-fns'
@@ -14,6 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { useCountUp } from '@/hooks/useCountUp'
 import { MiniCalendar } from '@/components/calendar/MiniCalendar'
+import { useReminders } from '@/features/reminders/hooks'
+import { ReminderForm } from '@/features/reminders/ReminderForm'
+import type { Reminder } from '@/types/database'
 import {
   agendaGradient,
   agendaTypeMeta,
@@ -27,7 +30,13 @@ import {
 export function AgendaPage() {
   const navigate = useNavigate()
   const { events: allEvents, overdueReminders } = useAgendaEvents()
+  const { data: reminders = [] } = useReminders()
   const calendarRef = React.useRef<FullCalendar>(null)
+
+  const [editingReminder, setEditingReminder] = React.useState<Reminder | null>(null)
+  const [editReminderOpen, setEditReminderOpen] = React.useState(false)
+  const [quickAddDate, setQuickAddDate] = React.useState<string>()
+  const [quickAddOpen, setQuickAddOpen] = React.useState(false)
 
   const [miniMonth, setMiniMonth] = React.useState(() => new Date())
   const [selectedDate, setSelectedDate] = React.useState<Date>()
@@ -106,7 +115,18 @@ export function AgendaPage() {
     if (!type) return
     if (type === 'congress' && linkId) navigate(`/kongreler/${linkId}`)
     if (type === 'payment_due' && linkId) navigate(`/musteriler/${linkId}`)
-    if (type === 'reminder') navigate('/hatirlatmalar')
+    if (type === 'reminder' && linkId) {
+      const reminder = reminders.find((r) => r.id === linkId)
+      if (reminder) {
+        setEditingReminder(reminder)
+        setEditReminderOpen(true)
+      }
+    }
+  }
+
+  function handleDateClick(arg: DateClickArg) {
+    setQuickAddDate(arg.dateStr)
+    setQuickAddOpen(true)
   }
 
   function eventClassNames(arg: { event: { extendedProps: Record<string, unknown> } }) {
@@ -162,7 +182,32 @@ export function AgendaPage() {
 
   return (
     <div>
-      <PageHeader title="Ajanda" description="Kongreler, ödeme vadeleri ve hatırlatmaların takvim görünümü" />
+      <PageHeader
+        title="Ajanda"
+        description="Kongreler, ödeme vadeleri ve hatırlatmaların takvim görünümü — bir güne tıklayarak not/hatırlatma ekleyebilirsiniz"
+        actions={<ReminderForm />}
+      />
+
+      <ReminderForm
+        hideTrigger
+        defaultDate={quickAddDate}
+        open={quickAddOpen}
+        onOpenChange={(next) => {
+          setQuickAddOpen(next)
+          if (!next) setQuickAddDate(undefined)
+        }}
+      />
+      {editingReminder && (
+        <ReminderForm
+          hideTrigger
+          reminder={editingReminder}
+          open={editReminderOpen}
+          onOpenChange={(next) => {
+            setEditReminderOpen(next)
+            if (!next) setEditingReminder(null)
+          }}
+        />
+      )}
 
       <div className="mb-4 grid grid-cols-3 gap-3 sm:max-w-lg">
         {stats.map((s, i) => (
@@ -263,6 +308,7 @@ export function AgendaPage() {
               height="auto"
               events={calendarEvents}
               eventClick={handleEventClick}
+              dateClick={handleDateClick}
               eventContent={renderEventContent}
               eventClassNames={eventClassNames}
               eventDidMount={handleEventDidMount}
