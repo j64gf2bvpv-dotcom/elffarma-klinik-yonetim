@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.71] - 2026-08-12
+
+**Üst bardan tek tıkla güncelleme + sol altta sürüm numarası:** Ayarlar sayfasındaki güncelleme kartıyla aynı mekanizmayı kullanan bir güncelleme simgesi artık TopBar'da (tema düğmesinin yanında) her sayfada görünüyor — tıklanınca güncelleme kontrolü başlatıyor, güncelleme indiyse tıklamak uygulamayı yeniden başlatıp kuruyor; durum (kontrol ediliyor/indiriliyor/indirildi) ikon üstünde canlı gösteriliyor. Sol menünün alt kısmına, telif hakkı yazısının altına "Sürüm vX.Y.Z" satırı eklendi. Şema değişikliği yok.
+
 ## [2.17.70] - 2026-08-12
 
 **Profil menüsünden düzenlemeye hızlı erişim + WiFi ayarları kısayolu:** Sağ üstteki isim/avatar menüsüne "Profili Düzenle" eklendi — Ayarlar > Profilim'e tek tıkla götürüyor. TopBar'daki bağlantı (WiFi) ikonu artık tıklanabilir: işletim sisteminin kendi WiFi ayarları penceresini açıyor (program içinde gerçek bir ağ tarama/bağlanma aracı değil — Electron'un buna yetkisi yok, sadece kısayol). Şema değişikliği yok.
