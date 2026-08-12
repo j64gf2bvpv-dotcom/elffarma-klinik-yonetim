@@ -11,6 +11,20 @@ interface GoogleServiceAccount {
   private_key: string
 }
 
+type UpdaterEvent =
+  | { type: 'checking' }
+  | { type: 'available'; version: string }
+  | { type: 'not-available'; version: string }
+  | { type: 'progress'; percent: number }
+  | { type: 'downloaded'; version: string }
+  | { type: 'error'; message: string }
+
+interface UpdaterCheckResult {
+  ok: boolean
+  reason?: 'not-packaged' | 'error'
+  message?: string
+}
+
 // Whitelisted, narrow API exposed to the renderer. The renderer never gets
 // direct Node/Electron access (contextIsolation: true, nodeIntegration: false).
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -37,4 +51,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     folderId: string,
   ): Promise<{ ok: boolean; message: string }> =>
     ipcRenderer.invoke('backup:google-drive-test', serviceAccount, folderId),
+  checkForUpdates: (): Promise<UpdaterCheckResult> => ipcRenderer.invoke('updater:check'),
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('updater:install'),
+  onUpdaterEvent: (callback: (event: UpdaterEvent) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: UpdaterEvent) => callback(payload)
+    ipcRenderer.on('updater:event', listener)
+    return () => ipcRenderer.removeListener('updater:event', listener)
+  },
 })

@@ -124,25 +124,51 @@ function logUpdater(line: string) {
   }
 }
 
-// GitHub Releases'teki en son sürümü kontrol eder, arka planda indirir ve indirme
-// bitince "şimdi yeniden başlat" bildirimi gösterir (checkForUpdatesAndNotify'ın
-// varsayılan davranışı). Sadece paketlenmiş (kurulmuş) uygulamada anlamlı olduğu
-// için `npm run dev` sırasında hiç çağrılmaz — orada kontrol edilecek bir update
-// feed'i yoktur ve autoUpdater sessizce hata loglar.
+// Ayarlar > Güncellemeler kartının canlı durum gösterebilmesi için autoUpdater
+// olaylarını renderer'a da iletiyoruz (log dosyasına yazmanın yanında).
+type UpdaterEvent =
+  | { type: 'checking' }
+  | { type: 'available'; version: string }
+  | { type: 'not-available'; version: string }
+  | { type: 'progress'; percent: number }
+  | { type: 'downloaded'; version: string }
+  | { type: 'error'; message: string }
+
+function sendUpdaterEvent(event: UpdaterEvent) {
+  win?.webContents.send('updater:event', event)
+}
+
+// Olay dinleyicileri her zaman kayıtlı (bedelsiz) — asıl ağ isteğini tetikleyen
+// checkForUpdates çağrısı ise sadece paketlenmiş (kurulmuş) uygulamada anlamlı
+// olduğu için hem başlangıç otomatik kontrolünde hem manuel IPC'de
+// `app.isPackaged` ile korunuyor; `npm run dev`'de update feed'i olmadığından
+// autoUpdater sessizce hata verir.
 function setupAutoUpdater() {
   logUpdater(`Başlatıldı — mevcut sürüm: ${app.getVersion()}`)
-  autoUpdater.on('checking-for-update', () => logUpdater('Güncelleme kontrol ediliyor...'))
-  autoUpdater.on('update-available', (info) => logUpdater(`Güncelleme bulundu: ${info.version}`))
-  autoUpdater.on('update-not-available', (info) => logUpdater(`Güncelleme yok, güncel: ${info.version}`))
-  autoUpdater.on('download-progress', (p) => logUpdater(`İndiriliyor: %${p.percent.toFixed(1)}`))
-  autoUpdater.on('update-downloaded', (info) => logUpdater(`İndirildi, yeniden başlatma bekleniyor: ${info.version}`))
+  autoUpdater.on('checking-for-update', () => {
+    logUpdater('Güncelleme kontrol ediliyor...')
+    sendUpdaterEvent({ type: 'checking' })
+  })
+  autoUpdater.on('update-available', (info) => {
+    logUpdater(`Güncelleme bulundu: ${info.version}`)
+    sendUpdaterEvent({ type: 'available', version: info.version })
+  })
+  autoUpdater.on('update-not-available', (info) => {
+    logUpdater(`Güncelleme yok, güncel: ${info.version}`)
+    sendUpdaterEvent({ type: 'not-available', version: info.version })
+  })
+  autoUpdater.on('download-progress', (p) => {
+    logUpdater(`İndiriliyor: %${p.percent.toFixed(1)}`)
+    sendUpdaterEvent({ type: 'progress', percent: p.percent })
+  })
+  autoUpdater.on('update-downloaded', (info) => {
+    logUpdater(`İndirildi, yeniden başlatma bekleniyor: ${info.version}`)
+    sendUpdaterEvent({ type: 'downloaded', version: info.version })
+  })
   autoUpdater.on('error', (error) => {
     logUpdater(`HATA: ${error.message}\n${error.stack ?? ''}`)
     console.error('[AutoUpdater] Güncelleme kontrolü başarısız:', error)
-  })
-  autoUpdater.checkForUpdatesAndNotify().catch((error) => {
-    logUpdater(`checkForUpdatesAndNotify HATA: ${error.message}`)
-    console.error('[AutoUpdater] checkForUpdatesAndNotify başarısız:', error)
+    sendUpdaterEvent({ type: 'error', message: error.message })
   })
 }
 
@@ -159,6 +185,27 @@ ipcMain.handle('app:notify', (_event, title: string, body: string) => {
   if (Notification.isSupported()) {
     new Notification({ title, body }).show()
   }
+})
+
+// Ayarlar > Güncellemeler kartındaki "Güncellemeyi Kontrol Et" butonu buraya bağlanır.
+// Geliştirme modunda (npm run dev, paketlenmemiş) kontrol edilecek bir update feed'i
+// olmadığından gerçek bir kontrol denemek yerine bunu doğrudan renderer'a bildiriyoruz.
+ipcMain.handle('updater:check', async () => {
+  if (!app.isPackaged) {
+    return { ok: false, reason: 'not-packaged' as const }
+  }
+  try {
+    await autoUpdater.checkForUpdates()
+    return { ok: true as const }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logUpdater(`Manuel kontrol HATA: ${message}`)
+    return { ok: false as const, reason: 'error' as const, message }
+  }
+})
+
+ipcMain.handle('updater:install', () => {
+  autoUpdater.quitAndInstall()
 })
 
 // Google'ın servis hesabı JWT-Bearer akışı tarayıcıdan (CORS) çağrılamadığı
@@ -214,8 +261,12 @@ if (!gotSingleInstanceLock) {
   app.whenReady().then(() => {
     buildMenu()
     createWindow()
+    setupAutoUpdater()
     if (app.isPackaged) {
-      setupAutoUpdater()
+      autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+        logUpdater(`checkForUpdatesAndNotify HATA: ${error.message}`)
+        console.error('[AutoUpdater] checkForUpdatesAndNotify başarısız:', error)
+      })
     }
     // Windows: uygulama elffarmapaket:// bağlantısıyla ilk kez açılıyorsa argv'de gelir.
     const initialDeepLink = process.argv.find((arg) => arg.startsWith(`${DEEP_LINK_PROTOCOL}://`))

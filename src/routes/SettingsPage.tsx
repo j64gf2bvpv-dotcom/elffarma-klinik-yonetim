@@ -46,6 +46,7 @@ import {
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
 import { AIProviderSettings } from '@/features/ai/AIProviderSettings'
 import { BackupSettingsCard } from '@/features/backup/BackupSettingsCard'
+import { UpdateSettingsCard } from '@/features/appUpdate/UpdateSettingsCard'
 import { brandThemes } from '@/features/appSettings/brandThemes'
 import { iconSets, defaultIconSetId } from '@/features/appSettings/iconSets'
 import { useColorMode } from '@/features/appSettings/useColorMode'
@@ -509,6 +510,7 @@ export function SettingsPage() {
 
       <div className="grid gap-6">
         <MyProfileCard />
+        <UpdateSettingsCard />
 
         <Card>
           <CardHeader className="flex-row items-center gap-3">

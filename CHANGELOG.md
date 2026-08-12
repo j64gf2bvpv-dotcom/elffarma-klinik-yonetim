@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.67] - 2026-08-12
+
+**Ayarlar'a "Güncellemeler" kartı eklendi:** Uygulama hâlâ her açılışta arka planda otomatik güncelleme kontrolü yapıyor (bu zaten vardı), ama artık Ayarlar sayfasında görünen sürüm numarası, elle "Güncellemeyi Kontrol Et" butonu ve indirme tamamlandığında "Şimdi Yeniden Başlat ve Kur" butonuyla canlı durum takibi var — önceden bu sadece sessiz bir arka plan işlemiydi, staff'ın güncel olup olmadığını görecek hiçbir yeri yoktu. GitHub'daki en son yayın (v2.17.61) kontrol edildi, macOS ve Windows güncelleme dosyaları sağlam görünüyor — diğer bilgisayarların güncellemeyi henüz almamış olması muhtemelen bugünkü düzeltmeden (zip hedefi) sonra hiç yeniden başlatılmamış olmalarından; bu yeni kart bunu elle doğrulamayı mümkün kılıyor. Şema değişikliği yok.
+
 ## [2.17.66] - 2026-08-12
 
 **Ajanda'da takvimden doğrudan not/hatırlatma eklenip düzenlenebiliyor:** Takvimde boş bir güne tıklayınca o tarih önceden dolu şekilde "Yeni Hatırlatma" diyaloğu açılıyor; mevcut bir hatırlatma etkinliğine tıklayınca (eskiden sadece Hatırlatmalar listesine yönlendiriyordu) artık doğrudan o hatırlatmanın düzenleme diyaloğu açılıyor (başlık/tarih/not). Sayfa başlığında da her zaman görünen bir "Hatırlatma Ekle" butonu var. Kongre etkinlikleri tıklanınca hâlâ kongre detay sayfasına gidiyor — tarih değişikliği oradaki mevcut düzenleme formundan yapılıyor. Şema değişikliği yok.
