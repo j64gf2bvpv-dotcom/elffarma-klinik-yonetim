@@ -20,6 +20,7 @@ declare global {
   interface Window {
     electronAPI?: {
       openWhatsApp: (waMeUrl: string) => Promise<boolean>
+      openNetworkSettings: () => Promise<void>
       notify: (title: string, body: string) => Promise<void>
       onDeepLinkRecovery?: (
         callback: (payload: { access_token: string; refresh_token: string; type: string | null }) => void,

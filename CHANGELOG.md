@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.70] - 2026-08-12
+
+**Profil menüsünden düzenlemeye hızlı erişim + WiFi ayarları kısayolu:** Sağ üstteki isim/avatar menüsüne "Profili Düzenle" eklendi — Ayarlar > Profilim'e tek tıkla götürüyor. TopBar'daki bağlantı (WiFi) ikonu artık tıklanabilir: işletim sisteminin kendi WiFi ayarları penceresini açıyor (program içinde gerçek bir ağ tarama/bağlanma aracı değil — Electron'un buna yetkisi yok, sadece kısayol). Şema değişikliği yok.
+
 ## [2.17.69] - 2026-08-12
 
 **Stok Kartı'na paket/flakon ayrımı eklendi:** Bir ürünün kartında artık opsiyonel "Paket İçinde Kaç Flakon Var" alanı dolduruabiliyor. Doldurulursa, "Stok Hareketi Ekle" diyaloğunda Miktar alanının yanına bir Paket/Flakon birim seçici çıkıyor: Paket birimiyle girilen hareketler eskisi gibi ana stok sayacını (current_quantity) değiştirip flakon sayacını da orana göre otomatik günceller; Flakon birimiyle girilen hareketler SADECE flakon sayacını değiştirir, paket adedi ve parti (lot) miktarı etkilenmez. Ürün listesinde ve Stok Kartı hareket dökümünde flakon bilgisi ayrıca gösteriliyor. Şema değişikliği: `products.flakon_per_package`/`flakon_quantity`, `stock_movements.unit_kind`, `record_stock_movement`/`update_stock_movement`/`delete_stock_movement` RPC'lerine `p_unit_kind` parametresi (migration'lar bu sürümle birlikte veritabanına ilk kez uygulandı).

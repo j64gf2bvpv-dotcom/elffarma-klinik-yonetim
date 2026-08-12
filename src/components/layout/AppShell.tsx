@@ -50,6 +50,7 @@ import { useDismissedAlerts } from '@/features/alerts/useDismissedAlerts'
 import { useSnoozedAlerts } from '@/features/alerts/useSnoozedAlerts'
 import { useDeleteReminder } from '@/features/reminders/hooks'
 import { useOfflineSync } from '@/features/offline/useOfflineSync'
+import { UpdateTopBarButton } from '@/features/appUpdate/UpdateTopBarButton'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 import { WEBMAIL_URL } from '@/lib/companyInfo'
 import { tr } from '@/i18n/tr'
@@ -343,8 +344,17 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
             {pendingCount} bekleyen kayıt
           </button>
         )}
-        <TopBarIconTooltip label={isOnline ? 'Bağlantı var' : 'Bağlantı yok — kayıtlar yerelde bekletiliyor'}>
-          <button type="button" className="flex size-9 items-center justify-center rounded-lg text-muted-foreground">
+        <TopBarIconTooltip
+          label={
+            (isOnline ? 'Bağlantı var' : 'Bağlantı yok — kayıtlar yerelde bekletiliyor') +
+            ' · WiFi ayarlarını açmak için tıklayın'
+          }
+        >
+          <button
+            type="button"
+            onClick={() => window.electronAPI?.openNetworkSettings()}
+            className="hover:bg-accent flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors"
+          >
             {isOnline ? <Wifi className="size-4 text-success" /> : <WifiOff className="size-4 text-destructive" />}
           </button>
         </TopBarIconTooltip>
@@ -550,6 +560,8 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
           </DropdownMenu>
         </TopBarIconTooltip>
 
+        <UpdateTopBarButton />
+
         <TopBarIconTooltip label={mode === 'dark' ? 'Açık temaya geç' : 'Koyu temaya geç'}>
           <button
             type="button"
@@ -608,6 +620,12 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
               <p className="truncate font-medium">{staff?.full_name}</p>
               <p className="text-muted-foreground text-xs font-normal">{staff ? tr.staffRole[staff.role] : ''}</p>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/ayarlar">
+                <Pencil /> Profili Düzenle
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => signOut()}>
               <LogOut /> Çıkış Yap
@@ -776,6 +794,8 @@ export function AppShell() {
           © {new Date().getFullYear()} {CLINIC_NAME}
           <br />
           Tüm hakları saklıdır.
+          <br />
+          Sürüm v{__APP_VERSION__}
         </p>
       </aside>
 

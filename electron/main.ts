@@ -181,6 +181,18 @@ ipcMain.handle('shell:open-external', (_event, url: string) => {
   return false
 })
 
+// TopBar'daki bağlantı göstergesine tıklayınca işletim sisteminin kendi WiFi/ağ
+// ayarları penceresini açar — Electron'un (ve web'in) bir web sayfasından ağ
+// listeleyip bağlanma yetkisi yok, bu yüzden gerçek bir "içeride WiFi seç"
+// aracı yerine sadece OS'un kendi ayar ekranına kısayol sunuluyor.
+ipcMain.handle('shell:open-network-settings', () => {
+  if (process.platform === 'darwin') {
+    shell.openExternal('x-apple.systempreferences:com.apple.wifi-settings-extension')
+  } else if (process.platform === 'win32') {
+    shell.openExternal('ms-settings:network-wifi')
+  }
+})
+
 ipcMain.handle('app:notify', (_event, title: string, body: string) => {
   if (Notification.isSupported()) {
     new Notification({ title, body }).show()

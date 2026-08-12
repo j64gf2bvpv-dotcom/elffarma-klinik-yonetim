@@ -30,6 +30,7 @@ interface UpdaterCheckResult {
 contextBridge.exposeInMainWorld('electronAPI', {
   openWhatsApp: (waMeUrl: string): Promise<boolean> =>
     ipcRenderer.invoke('shell:open-external', waMeUrl),
+  openNetworkSettings: (): Promise<void> => ipcRenderer.invoke('shell:open-network-settings'),
   notify: (title: string, body: string): Promise<void> =>
     ipcRenderer.invoke('app:notify', title, body),
   onDeepLinkRecovery: (callback: (payload: RecoveryPayload) => void) => {
