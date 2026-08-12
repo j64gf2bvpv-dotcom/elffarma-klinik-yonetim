@@ -198,8 +198,9 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
                   </FormControl>
                   {product && product.flakon_per_package == null && (
                     <p className="text-muted-foreground text-xs">
-                      Bunu ilk kez doldurduğunuzda mevcut flakon stoğu otomatik hesaplanmaz (hangi kutuların
-                      açık olduğu bilinemez) — gerekirse "Stok Hareketi Ekle"den flakon birimiyle düzeltin.
+                      Kaydedince flakon sayısı mevcut paket adedine göre otomatik hesaplanır (ör. 5 paket × 10
+                      flakon = 50 flakon) — bazı kutular zaten açıksa "Stok Hareketi Ekle"den flakon birimiyle
+                      düzeltebilirsiniz.
                     </p>
                   )}
                   <FormMessage />

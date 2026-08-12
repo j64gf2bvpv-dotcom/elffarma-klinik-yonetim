@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.75] - 2026-08-12
+
+**Flakon oranı girilince sayı artık hemen görünüyor:** Bir ürüne "paket içinde kaç flakon var" ilk kez girildiğinde, flakon sayısı önceden bilerek sıfırda bırakılıyordu (hangi kutuların açık olduğu bilinemez diye) — ama bu, kullanıcıya "girdiğim rakam yansımıyor" gibi göründüğü için kafa karıştırıcıydı. Artık kaydedilince flakon sayısı mevcut paket adedine göre otomatik hesaplanıyor (ör. 5 paket × 10 flakon = 50 flakon); bazı kutular zaten açıksa Stok Hareketi Ekle'den flakon birimiyle elle düzeltilebilir. Şema değişikliği: `products` tablosuna bir tetikleyici (trigger) eklendi, migration veritabanına uygulandı.
+
 ## [2.17.74] - 2026-08-12
 
 **Geniş tablolarda sayfa bitmeden yatay kaydırma çubuğu:** Bir tablo aşağı doğru uzayıp kendi (en alttaki) kaydırma çubuğu ekranın dışına çıktığında, artık viewport'un en altına sabitlenen, gerçek tabloyla senkronize ince bir kopya çubuk beliriyor — sayfanın sonuna kadar inmeden de sağa/sola kaydırılabiliyor. Tüm tablolarda (ortak `Table` bileşeni üzerinden) otomatik çalışıyor. Şema değişikliği yok.
