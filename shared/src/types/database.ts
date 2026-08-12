@@ -65,6 +65,8 @@ export interface Customer {
   updated_at: string
 }
 
+export type StockUnitKind = 'paket' | 'flakon'
+
 export interface Product {
   id: string
   name: string
@@ -73,6 +75,10 @@ export interface Product {
   unit: string
   critical_stock_threshold: number
   current_quantity: number
+  /** Paket içinde kaç flakon var — null ise bu üründe flakon takibi kullanılmıyor. */
+  flakon_per_package: number | null
+  /** Bağımsız ikinci stok sayacı (flakon) — current_quantity (paket) ile aynı yönetişim: sadece RPC üzerinden değişir. */
+  flakon_quantity: number
   unit_cost: number | null
   unit_price: number | null
   campaign: string | null
@@ -96,6 +102,7 @@ export interface StockMovement {
   note: string | null
   lot_id: string | null
   unit_price: number | null
+  unit_kind: StockUnitKind
   created_at: string
 }
 

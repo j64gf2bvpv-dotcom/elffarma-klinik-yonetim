@@ -24,7 +24,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { tr } from '@/i18n/tr'
 import { ProductCombobox } from './ProductCombobox'
 import { useCreateProductLot, useProductLots, useRecordStockMovement, useUpdateStockMovement } from './hooks'
-import type { MovementType, Product } from '@/types/database'
+import type { MovementType, Product, StockUnitKind } from '@/types/database'
 
 const NO_LOT = '__none__'
 const NEW_LOT = '__new__'
@@ -34,6 +34,7 @@ const MANUAL_MOVEMENT_TYPES = ['in', 'out', 'adjustment', 'return', 'disposal'] 
 const schema = z.object({
   movement_type: z.enum(['in', 'out', 'adjustment', 'return', 'disposal', 'sample']),
   quantity: z.coerce.number().int().positive('Miktar 0’dan büyük olmalı'),
+  unit_kind: z.enum(['paket', 'flakon']),
   unit_price: z.coerce.number().min(0).optional(),
   reason: z.string().optional(),
   note: z.string().optional(),
@@ -51,6 +52,7 @@ export interface EditableStockMovement {
   reason: string | null
   note: string | null
   lot_id: string | null
+  unit_kind: StockUnitKind
 }
 
 /**
@@ -85,6 +87,7 @@ export function StockMovementDialog({
     ? {
         movement_type: movement.movement_type,
         quantity: movement.quantity,
+        unit_kind: movement.unit_kind,
         unit_price: movement.unit_price ?? undefined,
         reason: movement.reason ?? '',
         note: movement.note ?? '',
@@ -93,6 +96,7 @@ export function StockMovementDialog({
     : {
         movement_type: 'in',
         quantity: 1,
+        unit_kind: 'paket',
         unit_price: product?.unit_price ?? undefined,
         reason: '',
         note: '',
@@ -105,11 +109,21 @@ export function StockMovementDialog({
   })
 
   const selectedLotId = form.watch('lot_id')
+  const selectedUnitKind = form.watch('unit_kind')
+  const hasFlakonTracking = activeProduct?.flakon_per_package != null
 
   React.useEffect(() => {
     if (activeProduct && !movement) form.setValue('unit_price', activeProduct.unit_price ?? undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProduct?.id])
+
+  // Paket fiyatı flakon hareketinde yanlışlıkla kullanılmasın diye, birim
+  // flakon'a çevrilince fiyat alanı temizlenir; paket'e dönülünce geri gelir.
+  React.useEffect(() => {
+    if (movement) return
+    form.setValue('unit_price', selectedUnitKind === 'paket' ? (activeProduct?.unit_price ?? undefined) : undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUnitKind])
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -137,12 +151,21 @@ export function StockMovementDialog({
       note: values.note || null,
       lot_id: lotId,
       unit_price: values.unit_price ?? null,
+      unit_kind: values.unit_kind,
     }
     if (movement) {
       await updateMutation.mutateAsync({ id: movement.id, ...payload })
     } else {
       await recordMutation.mutateAsync(payload)
-      form.reset({ movement_type: 'in', quantity: 1, unit_price: activeProduct.unit_price ?? undefined, reason: '', note: '', lot_id: NO_LOT })
+      form.reset({
+        movement_type: 'in',
+        quantity: 1,
+        unit_kind: 'paket',
+        unit_price: activeProduct.unit_price ?? undefined,
+        reason: '',
+        note: '',
+        lot_id: NO_LOT,
+      })
     }
     setNewLot({ lot_no: '', expiry_date: '', warehouse: '', shelf: '' })
     handleOpenChange(false)
@@ -187,6 +210,12 @@ export function StockMovementDialog({
             <span className="font-medium text-foreground">
               {activeProduct.current_quantity} {activeProduct.unit}
             </span>
+            {hasFlakonTracking && (
+              <>
+                {' · '}
+                <span className="font-medium text-foreground">{activeProduct.flakon_quantity} flakon</span>
+              </>
+            )}
           </p>
         )}
         {movement && (
@@ -224,19 +253,48 @@ export function StockMovementDialog({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="quantity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Miktar</FormLabel>
-                  <FormControl>
-                    <Input type="number" min="1" {...field} value={field.value as number | string} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            <div className={hasFlakonTracking ? 'grid grid-cols-[1fr_auto] gap-3' : undefined}>
+              <FormField
+                control={form.control}
+                name="quantity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Miktar</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="1" {...field} value={field.value as number | string} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {hasFlakonTracking && (
+                <FormField
+                  control={form.control}
+                  name="unit_kind"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Birim</FormLabel>
+                      <div className="flex gap-1 rounded-lg border p-1">
+                        {(['paket', 'flakon'] as const).map((unit) => (
+                          <button
+                            key={unit}
+                            type="button"
+                            onClick={() => field.onChange(unit)}
+                            className={
+                              field.value === unit
+                                ? 'rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground'
+                                : 'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent'
+                            }
+                          >
+                            {unit === 'paket' ? 'Paket' : 'Flakon'}
+                          </button>
+                        ))}
+                      </div>
+                    </FormItem>
+                  )}
+                />
               )}
-            />
+            </div>
             <FormField
               control={form.control}
               name="unit_price"

@@ -164,6 +164,7 @@ export function StockCardPanel() {
       note: row.note,
       lot_id: row.lotId,
       unit_price: row.unitPrice,
+      unit_kind: row.unitKind,
     })
   }
 
@@ -378,7 +379,14 @@ export function StockCardPanel() {
                       {mode === 'all' && <TableCell className="text-muted-foreground">{row.productName}</TableCell>}
                       <TableCell className="font-medium">{row.doctorName ?? '—'}</TableCell>
                       <TableCell>
-                        <Badge variant={KIND_BADGE_VARIANT[row.kind]}>{tr.movementType[row.kind]}</Badge>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <Badge variant={KIND_BADGE_VARIANT[row.kind]}>{tr.movementType[row.kind]}</Badge>
+                          {row.unitKind === 'flakon' && (
+                            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
+                              Flakon
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{row.unitPrice != null ? currency(row.unitPrice) : '—'}</TableCell>
                       <TableCell className="text-muted-foreground max-w-56">{row.reason ?? row.note ?? '—'}</TableCell>
@@ -396,11 +404,12 @@ export function StockCardPanel() {
                             movement={{
                               id: row.id,
                               movement_type: row.kind,
-                              quantity: row.inQty || row.outQty,
+                              quantity: row.quantity,
                               unit_price: row.unitPrice,
                               reason: row.reason,
                               note: row.note,
                               lot_id: row.lotId,
+                              unit_kind: row.unitKind,
                             }}
                             trigger={
                               <Button variant="ghost" size="icon" title="Hareketi düzenle">

@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineRpc } from '@/lib/offlineMutation'
-import type { BrandLine, MovementType, Product, ProductLot, StockMovement } from '@/types/database'
+import type { BrandLine, MovementType, Product, ProductLot, StockMovement, StockUnitKind } from '@/types/database'
 
 export interface ProductInput {
   name: string
@@ -8,6 +8,8 @@ export interface ProductInput {
   category?: string | null
   unit: string
   critical_stock_threshold: number
+  /** Paket içinde kaç flakon var (opsiyonel) — boş bırakılırsa bu üründe flakon takibi kullanılmaz. */
+  flakon_per_package?: number | null
   unit_cost?: number | null
   unit_price?: number | null
   campaign?: string | null
@@ -27,7 +29,11 @@ export async function fetchProducts(search: string, brandLine?: BrandLine): Prom
 }
 
 export async function createProduct(input: ProductInput): Promise<Product> {
-  return offlineInsert<Product>('products', { ...input, current_quantity: 0 }, `Ürün: ${input.name}`)
+  return offlineInsert<Product>(
+    'products',
+    { ...input, current_quantity: 0, flakon_quantity: 0 },
+    `Ürün: ${input.name}`,
+  )
 }
 
 export async function updateProduct(id: string, input: ProductInput): Promise<Product> {
@@ -80,6 +86,8 @@ export interface RecordMovementInput {
   note?: string | null
   lot_id?: string | null
   unit_price?: number | null
+  /** Varsayılan 'paket' — flakon oranı tanımlı bir üründe otomatik orantılı senkron. 'flakon' verilirse sadece flakon sayacı değişir, paket ve parti etkilenmez. */
+  unit_kind?: StockUnitKind
 }
 
 export async function recordStockMovement(input: RecordMovementInput): Promise<void> {
@@ -94,6 +102,7 @@ export async function recordStockMovement(input: RecordMovementInput): Promise<v
       p_note: input.note ?? null,
       p_lot_id: input.lot_id ?? null,
       p_unit_price: input.unit_price ?? null,
+      p_unit_kind: input.unit_kind ?? 'paket',
     },
     `Stok hareketi: ${input.movement_type} × ${input.quantity}`,
   )
@@ -121,6 +130,7 @@ export async function updateStockMovement(input: UpdateMovementInput): Promise<v
       p_note: input.note ?? null,
       p_lot_id: input.lot_id ?? null,
       p_unit_price: input.unit_price ?? null,
+      p_unit_kind: input.unit_kind ?? 'paket',
     },
     `Stok hareketi güncelleme: ${input.movement_type} × ${input.quantity}`,
   )

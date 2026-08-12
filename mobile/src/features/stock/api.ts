@@ -5,7 +5,7 @@
 // aynı tablo ve fonksiyonlarla burada eklendi.
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineRpc } from '@/lib/offlineMutation'
-import type { BrandLine, MovementType, Product, ProductLot } from '@shared/types/database'
+import type { BrandLine, MovementType, Product, ProductLot, StockUnitKind } from '@shared/types/database'
 
 export async function fetchProducts(search: string, brandLine?: BrandLine): Promise<Product[]> {
   let query = supabase.from('products').select('*').eq('is_active', true).order('name')
@@ -25,6 +25,8 @@ export interface RecordMovementInput {
   note?: string | null
   lot_id?: string | null
   unit_price?: number | null
+  /** Masaüstündeki paket/flakon ayrımıyla tip uyumu için — mobil ekranda henüz kullanılmıyor, gönderilmezse RPC 'paket' varsayar. */
+  unit_kind?: StockUnitKind
 }
 
 export async function recordStockMovement(input: RecordMovementInput): Promise<void> {
@@ -39,6 +41,7 @@ export async function recordStockMovement(input: RecordMovementInput): Promise<v
       p_note: input.note ?? null,
       p_lot_id: input.lot_id ?? null,
       p_unit_price: input.unit_price ?? null,
+      p_unit_kind: input.unit_kind ?? 'paket',
     },
     `Stok hareketi: ${input.movement_type} × ${input.quantity}`,
   )

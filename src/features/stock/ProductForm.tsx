@@ -28,6 +28,7 @@ const schema = z.object({
   category: z.string().optional(),
   unit: z.string().min(1, 'Birim gerekli'),
   critical_stock_threshold: z.coerce.number().int().min(0),
+  flakon_per_package: z.coerce.number().int().positive('0’dan büyük olmalı').optional(),
   unit_cost: z.coerce.number().min(0).optional(),
   unit_price: z.coerce.number().min(0).optional(),
   campaign: z.string().optional(),
@@ -53,6 +54,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
       category: product?.category ?? '',
       unit: product?.unit ?? 'adet',
       critical_stock_threshold: product?.critical_stock_threshold ?? 5,
+      flakon_per_package: product?.flakon_per_package ?? undefined,
       unit_cost: product?.unit_cost ?? undefined,
       unit_price: product?.unit_price ?? undefined,
       campaign: product?.campaign ?? '',
@@ -70,6 +72,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
       category: values.category || null,
       unit: values.unit,
       critical_stock_threshold: values.critical_stock_threshold,
+      flakon_per_package: values.flakon_per_package ?? null,
       unit_cost: values.unit_cost ?? null,
       unit_price: values.unit_price ?? null,
       campaign: values.campaign || null,
@@ -178,6 +181,31 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="flakon_per_package"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Paket İçinde Kaç Flakon Var (opsiyonel)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="Boş bırakılırsa flakon takibi kullanılmaz"
+                      {...field}
+                      value={field.value as number | string | undefined}
+                    />
+                  </FormControl>
+                  {product && product.flakon_per_package == null && (
+                    <p className="text-muted-foreground text-xs">
+                      Bunu ilk kez doldurduğunuzda mevcut flakon stoğu otomatik hesaplanmaz (hangi kutuların
+                      açık olduğu bilinemez) — gerekirse "Stok Hareketi Ekle"den flakon birimiyle düzeltin.
+                    </p>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

@@ -126,6 +126,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
               <TableHead>Ürün</TableHead>
               <TableHead>Kategori</TableHead>
               <TableHead>Stok</TableHead>
+              <TableHead>Flakon</TableHead>
               <TableHead>Satış Fiyatı</TableHead>
               <TableHead>Kampanya</TableHead>
               <TableHead>Ürün Hattı</TableHead>
@@ -136,7 +137,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
           <TableBody>
             {products.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                   Ürün bulunamadı
                 </TableCell>
               </TableRow>
@@ -173,6 +174,9 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                   <TableCell className="text-muted-foreground">{product.category ?? '—'}</TableCell>
                   <TableCell>
                     <QuantityCell product={product} />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {product.flakon_per_package != null ? `${product.flakon_quantity} flakon` : '—'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {product.unit_price ? (
@@ -326,6 +330,7 @@ export function StockPage() {
                 { header: 'Ürün', value: (p) => p.name },
                 { header: 'Kategori', value: (p) => p.category ?? '' },
                 { header: 'Stok', value: (p) => `${p.current_quantity} ${p.unit}` },
+                { header: 'Flakon', value: (p) => (p.flakon_per_package != null ? p.flakon_quantity : '') },
                 { header: 'Satış Fiyatı', value: (p) => (p.unit_price ? Number(p.unit_price) : '') },
                 { header: 'Kampanya', value: (p) => p.campaign ?? '' },
                 { header: 'Barkod', value: (p) => p.barcode ?? '' },

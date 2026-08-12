@@ -1,5 +1,5 @@
 import type { StockMovementWithProduct } from './api'
-import type { MovementType } from '@/types/database'
+import type { MovementType, StockUnitKind } from '@/types/database'
 
 export interface StockCardRow {
   id: string
@@ -14,6 +14,9 @@ export interface StockCardRow {
   note: string | null
   unitPrice: number | null
   lotId: string | null
+  unitKind: StockUnitKind
+  /** Hareketin gerçek miktarı (paket ya da flakon birimiyle, birime bakılmaksızın) — düzenleme diyaloğu bunu kullanır. */
+  quantity: number
   inQty: number
   outQty: number
   balance: number
@@ -46,8 +49,12 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
     const sorted = [...list].sort((a, b) => a.created_at.localeCompare(b.created_at))
     let balance = 0
     for (const m of sorted) {
+      // Bakiye (current_quantity/paket) yalnızca paket birimli hareketlerle ilerler —
+      // flakon birimli hareketler ayrı bir sayacı (flakon_quantity) etkiler, bu
+      // deftere karışırsa paket bakiyesi yanlış hesaplanır.
+      const isFlakon = m.unit_kind === 'flakon'
       const isIn = INCREASES_STOCK.has(m.movement_type)
-      balance += isIn ? m.quantity : -m.quantity
+      if (!isFlakon) balance += isIn ? m.quantity : -m.quantity
       rows.push({
         id: m.id,
         date: m.created_at,
@@ -61,8 +68,10 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
         note: m.note,
         unitPrice: m.unit_price != null ? Number(m.unit_price) : null,
         lotId: m.lot_id,
-        inQty: isIn ? m.quantity : 0,
-        outQty: isIn ? 0 : m.quantity,
+        unitKind: m.unit_kind,
+        quantity: m.quantity,
+        inQty: !isFlakon && isIn ? m.quantity : 0,
+        outQty: !isFlakon && !isIn ? m.quantity : 0,
         balance,
       })
     }
