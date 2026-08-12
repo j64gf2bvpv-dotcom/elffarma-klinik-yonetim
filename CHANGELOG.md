@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.78] - 2026-08-12
+
+**Stok sayfasında Flakon sütunu da artık düzenlenebiliyor:** Paket adedi gibi, Flakon sayısına da tıklayınca yerinde düzenlenebiliyor — girilen fark, paket adedini hiç etkilemeden sadece flakon sayacına stok hareketi olarak işleniyor. Şema değişikliği yok.
+
 ## [2.17.77] - 2026-08-12
 
 **Paket ve flakon stoğu artık tamamen bağımsız:** Önceki tasarımda paket birimli bir stok hareketi, ürünün flakon oranı tanımlıysa flakon sayısını da otomatik olarak orantılı güncelliyordu. Kullanıcı kararı üzerine bu kaldırıldı — artık paket hareketleri sadece paket adedini, flakon hareketleri sadece flakon sayısını etkiliyor, aralarında hiçbir otomatik bağlantı yok. Bir ürüne oran ilk kez girildiğinde yapılan tek seferlik başlangıç hesaplaması (mevcut paket adedine göre) etkilenmedi. Şema değişikliği var, migration veritabanına uygulandı.

@@ -115,6 +115,80 @@ function QuantityCell({ product }: { product: Product }) {
   )
 }
 
+/**
+ * Flakon adedine tıklayınca yerinde düzenlenebilir hale gelir — QuantityCell'in
+ * aynısı ama flakon_quantity için, record_stock_movement RPC'sine unit_kind:
+ * 'flakon' ile çağrı yapar (paket adedini hiç etkilemez, bkz.
+ * decouple_flakon_from_paket_movements migration'ı). Ürünün flakon takibi
+ * (flakon_per_package) tanımlı değilse hiç gösterilmez.
+ */
+function FlakonQuantityCell({ product }: { product: Product }) {
+  const [editing, setEditing] = React.useState(false)
+  const [value, setValue] = React.useState(String(product.flakon_quantity))
+  const mutation = useRecordStockMovement()
+
+  React.useEffect(() => {
+    if (!editing) setValue(String(product.flakon_quantity))
+  }, [product.flakon_quantity, editing])
+
+  async function commit() {
+    const next = Number(value)
+    setEditing(false)
+    if (!Number.isFinite(next) || next < 0 || Math.round(next) !== next) {
+      setValue(String(product.flakon_quantity))
+      return
+    }
+    const diff = next - product.flakon_quantity
+    if (diff === 0) return
+    await mutation.mutateAsync({
+      product_id: product.id,
+      movement_type: diff > 0 ? 'adjustment' : 'out',
+      quantity: Math.abs(diff),
+      reason: 'Hızlı flakon düzenleme',
+      unit_kind: 'flakon',
+    })
+  }
+
+  if (product.flakon_per_package == null) return <span className="text-muted-foreground">—</span>
+
+  if (editing) {
+    return (
+      <Input
+        type="number"
+        min="0"
+        step="1"
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit()
+          }
+          if (e.key === 'Escape') {
+            setValue(String(product.flakon_quantity))
+            setEditing(false)
+          }
+        }}
+        className="h-8 w-20"
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      title="Flakon adedini düzenlemek için tıklayın"
+      className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent"
+    >
+      <Badge variant="secondary">{product.flakon_quantity} flakon</Badge>
+    </button>
+  )
+}
+
 function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: (product: Product) => void }) {
   return (
     <Card>
@@ -175,8 +249,8 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                   <TableCell>
                     <QuantityCell product={product} />
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {product.flakon_per_package != null ? `${product.flakon_quantity} flakon` : '—'}
+                  <TableCell>
+                    <FlakonQuantityCell product={product} />
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {product.unit_price ? (
