@@ -2,14 +2,100 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
-function Table({ className, ...props }: React.ComponentProps<'table'>) {
+function findScrollableAncestor(el: HTMLElement | null): HTMLElement | Window {
+  let node = el?.parentElement ?? null
+  while (node) {
+    const style = getComputedStyle(node)
+    if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) return node
+    node = node.parentElement
+  }
+  return window
+}
+
+/**
+ * Geniş tablolar sayfada aşağı doğru uzadığında tablonun kendi (en alttaki)
+ * yatay kaydırma çubuğu ekranın dışına çıkabiliyor — kullanıcı sayfanın
+ * sonuna kadar inmeden sağa/sola kaydıramıyordu. Tablo hâlâ görünürdeyken
+ * ama kendi çubuğu ekran dışındayken, viewport'un altına sabitlenen ve
+ * gerçek scrollLeft ile iki yönlü senkronize ince bir "yüzen" kopya çubuk
+ * gösterir.
+ */
+function FloatingScrollbar({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) {
+  const floatingRef = React.useRef<HTMLDivElement>(null)
+  const [rect, setRect] = React.useState<{ left: number; width: number } | null>(null)
+  const [contentWidth, setContentWidth] = React.useState(0)
+  const syncingRef = React.useRef(false)
+
+  React.useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    function update() {
+      const box = container!.getBoundingClientRect()
+      const overflows = container!.scrollWidth > container!.clientWidth + 1
+      const nativeScrollbarOffscreen = box.bottom > window.innerHeight
+      const show = overflows && box.top < window.innerHeight && box.bottom > 0 && nativeScrollbarOffscreen
+      setContentWidth(container!.scrollWidth)
+      setRect(show ? { left: Math.max(box.left, 0), width: box.width } : null)
+    }
+
+    update()
+
+    const scrollParent = findScrollableAncestor(container)
+    const resizeObserver = new ResizeObserver(update)
+    resizeObserver.observe(container)
+    scrollParent.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, { passive: true })
+
+    function onContainerScroll() {
+      if (syncingRef.current || !floatingRef.current) return
+      syncingRef.current = true
+      floatingRef.current.scrollLeft = container!.scrollLeft
+      syncingRef.current = false
+    }
+    container.addEventListener('scroll', onContainerScroll, { passive: true })
+
+    return () => {
+      resizeObserver.disconnect()
+      scrollParent.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update)
+      container.removeEventListener('scroll', onContainerScroll)
+    }
+  }, [containerRef])
+
+  function onFloatingScroll() {
+    if (syncingRef.current || !containerRef.current || !floatingRef.current) return
+    syncingRef.current = true
+    containerRef.current.scrollLeft = floatingRef.current.scrollLeft
+    syncingRef.current = false
+  }
+
+  if (!rect) return null
+
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    <div
+      ref={floatingRef}
+      onScroll={onFloatingScroll}
+      style={{ position: 'fixed', left: rect.left, width: rect.width, bottom: 0 }}
+      className="bg-background/90 border-border/60 supports-[backdrop-filter]:backdrop-blur-sm z-40 h-3 overflow-x-auto overflow-y-hidden border-t"
+    >
+      <div style={{ width: contentWidth, height: 1 }} />
+    </div>
+  )
+}
+
+function Table({ className, ...props }: React.ComponentProps<'table'>) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  return (
+    <div ref={containerRef} data-slot="table-container" className="relative w-full overflow-x-auto">
       <table
         data-slot="table"
         className={cn('w-full caption-bottom text-sm', className)}
         {...props}
       />
+      <FloatingScrollbar containerRef={containerRef} />
     </div>
   )
 }

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.74] - 2026-08-12
+
+**Geniş tablolarda sayfa bitmeden yatay kaydırma çubuğu:** Bir tablo aşağı doğru uzayıp kendi (en alttaki) kaydırma çubuğu ekranın dışına çıktığında, artık viewport'un en altına sabitlenen, gerçek tabloyla senkronize ince bir kopya çubuk beliriyor — sayfanın sonuna kadar inmeden de sağa/sola kaydırılabiliyor. Tüm tablolarda (ortak `Table` bileşeni üzerinden) otomatik çalışıyor. Şema değişikliği yok.
+
 ## [2.17.73] - 2026-08-12
 
 **macOS'ta "hasar görmüş, çöp sepetine taşı" hatası kesin olarak düzeltildi:** Bugün gerçek bir kurulumda teşhis edildi — indirilen/güncellenen .app paketi, `identity: null` ile imzalama atlansa da Electron'un kendi önceden imzalanmış şablonundan kalan tutarsız bir imza taşıyordu (`codesign`: "code has no resources but signature indicates they must be present"), bu da macOS'un uygulamayı sadece "tanımadığım geliştirici" uyarısıyla değil, tamamen "hasar görmüş" diyerek reddetmesine ve hem elle kurulumun hem otomatik güncellemenin son adımının sessizce başarısız olmasına yol açıyordu. `scripts/afterSignMac.cjs` artık her macOS derlemesinden sonra eski imzayı temizleyip yerel (ad-hoc) bir imzayla değiştiriyor — ilk açılışta hâlâ "tanımadığım geliştirici, yine de aç" uyarısı çıkacak (gerçek Apple imzası olmadığı için, bkz. README) ama uygulama artık gerçekten açılıyor. Şema değişikliği yok.
