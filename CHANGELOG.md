@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.65] - 2026-08-12
+
+**Kaydırma çubukları artık her yerde görünür:** macOS'un otomatik gizlenen (overlay) kaydırma çubukları, geniş ürün/stok tablolarında yana doğru daha fazla sütun olduğunu belli etmiyordu. Artık tüm kaydırılabilir alanlarda (geniş tablolar dahil) ince ama her zaman görünen bir kaydırma çubuğu var. Şema değişikliği yok.
+
 ## [2.17.64] - 2026-08-12
 
 **Her sayfada geri butonu:** Ortak `PageHeader` bileşenine yerleşik bir "geri" oku eklendi — artık her sayfa başlığının yanında bir önceki ekrana dönen bir buton var (yalnızca ana sayfada gösterilmiyor). Doktor/Kongre/Cari Hesap detay sayfalarındaki eski, tek tek elle yazılmış "...'e Dön" butonları kaldırılıp bu ortak butonla birleştirildi. Şema değişikliği yok.

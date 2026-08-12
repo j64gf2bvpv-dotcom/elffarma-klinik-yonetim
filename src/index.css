@@ -123,6 +123,33 @@
   }
 }
 
+/* Kaydırma çubukları her zaman görünür olsun — macOS'un otomatik gizlenen
+   overlay çubukları, geniş tablolarda yana doğru daha fazla sütun olduğunu
+   belli etmiyordu. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-muted-foreground);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @layer utilities {
   @keyframes alert-glow-red {
     0%,
