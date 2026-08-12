@@ -40,6 +40,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useApplyBrandTheme } from '@/features/appSettings/useApplyBrandTheme'
 import { useAIStartupCheck } from '@/features/ai/useAIStartupCheck'
 import { useAutoBackupOnLaunch } from '@/features/backup/useAutoBackupOnLaunch'
+import { useWhatsNewNotification } from '@/features/appUpdate/useWhatsNewNotification'
 import { AIChatWidget } from '@/features/ai/AIChatWidget'
 import { useAIChatOpen } from '@/features/ai/useAIChatOpen'
 import { useColorMode } from '@/features/appSettings/useColorMode'
@@ -642,6 +643,7 @@ export function AppShell() {
   useApplyBrandTheme()
   useAIStartupCheck()
   useAutoBackupOnLaunch(staff?.role === 'admin')
+  useWhatsNewNotification()
   const { mode, toggle: toggleColorMode } = useColorMode()
   const { data: iconSetId } = useAppSetting<string>('sidebar_icon_set')
   const iconSet = getIconSet(iconSetId)
