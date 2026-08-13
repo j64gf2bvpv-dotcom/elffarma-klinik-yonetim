@@ -164,6 +164,17 @@ function setupAutoUpdater() {
   autoUpdater.on('update-downloaded', (info) => {
     logUpdater(`İndirildi, yeniden başlatma bekleniyor: ${info.version}`)
     sendUpdaterEvent({ type: 'downloaded', version: info.version })
+    // Kullanıcı isteği: güncellemeler hiçbir tıklama gerektirmeden, sistem
+    // bildirimi olarak haber versin. `autoInstallOnAppQuit` electron-updater'da
+    // varsayılan olarak açık — uygulama normal şekilde kapatılıp açıldığında
+    // (kimseyi ortasından kesmeden) güncelleme zaten otomatik kuruluyor; burada
+    // sadece bunun gerçekleştiğini bildiren bir OS bildirimi ekliyoruz.
+    if (Notification.isSupported()) {
+      new Notification({
+        title: 'Güncelleme hazır',
+        body: `v${info.version} indirildi. Uygulamayı bir sonraki kapatıp açışınızda otomatik kurulacak.`,
+      }).show()
+    }
   })
   autoUpdater.on('error', (error) => {
     logUpdater(`HATA: ${error.message}\n${error.stack ?? ''}`)

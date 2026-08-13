@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.90] - 2026-08-13
+
+**Güncellemeler artık hiçbir tıklama gerektirmeden sistem bildirimi olarak haber veriyor:** Bir güncelleme arka planda indirildiğinde, hangi bilgisayarda olursa olsun, o bilgisayarda gerçek bir işletim sistemi bildirimi çıkıyor ("v.X.Y.Z indirildi, bir sonraki kapatıp açışınızda otomatik kurulacak"). Kurulum hâlâ kimseyi ortasından kesmeden, uygulama normal şekilde kapatılıp yeniden açıldığında kendiliğinden gerçekleşiyor — elle "güncelle" butonuna basmaya gerek yok. Şema değişikliği yok.
+
 ## [2.17.89] - 2026-08-13
 
 **Kaydırma çubuğu bu sefer ekran görüntüsüyle doğrulanarak kesinleştirildi, Swiss ürün resimleri Dermakor gibi kare kutuyu tam dolduruyor:** Bir önceki sürümde çubuğun mekanizması doğruydu ama rengi (yarı saydam, arka planla neredeyse aynı) fark edilmeyecek kadar soluktu — artık daha kalın, dolgun renkli ve gölgeli, kaçırılması imkansız. Bu sefer varsayımla değil, uygulamanın gerçek derlenmiş halini headless tarayıcıda ekran görüntüsü alarak bizzat doğrulandı: hem taşma olan yerde çubuğun ekranın en altında göründüğü hem de çubuğu kaydırınca tablonun gerçekten kaydığı teyit edildi. Ayrıca Swiss ürün resimleri artık (Dermakor'daki gibi) kare kutuyu kırpılarak tam dolduruyor, önceki "resmin tamamı gösterilsin" yaklaşımı küçük/boşluklu görünmesine sebep oluyordu. Şema değişikliği yok.
