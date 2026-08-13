@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.88] - 2026-08-13
+
+**Kaydırma çubuğunun asıl gizli nedeni bulundu ve düzeltildi:** Önceki iki deneme neden hiç görünmüyordu diye bakınca gerçek sebep ortaya çıktı — her tablo bir kart (Card) içinde, ve kartlarda bulanıklaştırma (backdrop-blur) efekti var; CSS kuralı gereği bu, ekrana sabitlenmesi gereken elemanları aslında kartın kendi sınırlarına sabitliyordu, gerçek ekrana değil. Çözüm: kaydırma çubuğu artık sayfanın en dışına (doğrudan body'ye) render ediliyor, bu sorunu tamamen atlıyor. Artık ekranın en altında gerçekten sabit duruyor, sayfada nerede olursanız olun görünür ve sadece o tablonun sütunlarını kaydırır. Şema değişikliği yok.
+
 ## [2.17.87] - 2026-08-13
 
 **Geniş tablolardaki kaydırma çubuğu sorunu kökten çözüldü, Swiss ürün resimleri artık kare görünüyor:** Özel/hesaplı kaydırma çubuğu yaklaşımı defalarca güvenilmez çıktı — onun yerine tablo kutusu sınırlı bir yüksekliğe sabitlendi, içeride hem yatay hem dikey kaydırma tarayıcının zaten görünür yaptığı native çubukla yapılıyor; başlık satırı da kaydırırken üstte sabit kalıyor. Ayrıca Stok listesindeki ürün resimleri (özellikle dikey/uzun kaynak fotoğrafları olan Swiss ürünleri) kırpılıp yamuk görünmek yerine artık orantısı bozulmadan kare kutuya tam sığdırılıyor. Şema değişikliği yok.
