@@ -3,12 +3,15 @@ name: Kurulum Paketi Üret ve Yayınla
 # Bu iş akışı, elffarma-klinik-yonetim'in Windows Setup.exe (NSIS) ve macOS .dmg
 # kurulum paketlerini gerçek Windows/macOS runner'larında derler — Windows tarafı
 # geliştirme makinesinde (macOS, wine kurulu değil) yerel olarak üretilemediği için
-# bu iş akışı asıl dağıtım yolu budur. Üretilen paketler doğrudan YAYINLANMIŞ bir
-# GitHub Release'e yüklenir (electron-builder.yml: publish.releaseType: release —
-# taslak/draft adımı yok) — CI bitince internet bağlantısı olan her kurulu uygulama
-# electron-updater ile birkaç dakika içinde otomatik günceller. Bu yüzden SADECE
-# gerçekten dağıtmak istediğiniz bir sürüm için `git tag vX.Y.Z && git push origin
-# vX.Y.Z` yapın; rutin commit'ler (tag'siz) hiçbir kurulu uygulamayı tetiklemez.
+# bu iş akışı asıl dağıtım yolu budur. Release, `create-release` job'unda TASLAK
+# (draft) olarak önceden oluşturulur (electron-builder'ın asset-yükleme yarışını
+# önlemek için — bkz. o job'un yorumu), Windows/macOS derlemeleri asset'lerini
+# yükler, ikisi de başarıyla biterse `publish-release` job'u taslağı kaldırıp
+# GERÇEK yayına alır — hiçbir elle "Publish release" adımı yok. CI bitip release
+# yayına alınınca internet bağlantısı olan her kurulu uygulama electron-updater ile
+# birkaç dakika içinde otomatik günceller. Bu yüzden SADECE gerçekten dağıtmak
+# istediğiniz bir sürüm için `git tag vX.Y.Z && git push origin vX.Y.Z` yapın;
+# rutin commit'ler (tag'siz) hiçbir kurulu uygulamayı tetiklemez.
 #
 # Gerekli repository secrets (Settings → Secrets and variables → Actions):
 #   VITE_SUPABASE_URL            — Supabase Project URL
@@ -45,7 +48,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: GitHub Release'i önceden oluştur
+      # Taslak (draft) olarak oluşturuluyor — electron-updater draft release'leri
+      # "en son sürüm" olarak görmez, bu yüzden derleme süren birkaç dakika boyunca
+      # kurulu uygulamalar boş/eksik bir release'e karşı "güncelleme kontrol
+      # edilemedi" hatası almaz (v2.17.84'te gerçekleşti: release asset'siz
+      # yayınlanmış haldeyken her açılışta 404 hatası veriyordu). Aşağıdaki
+      # publish-release job'u, HER İKİ platform derlemesi de asset'lerini
+      # yükleyip başarıyla bitince taslağı kaldırıp gerçek yayına alıyor.
+      - name: GitHub Release'i taslak olarak önceden oluştur
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -53,7 +63,7 @@ jobs:
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release $TAG zaten var, atlanıyor."
           else
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" --generate-notes
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" --draft --generate-notes
           fi
 
   build:
@@ -89,3 +99,21 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npm run package -- ${{ matrix.build_args }} --publish always
+
+  # Sadece create-release gerçekten çalışıp taslak oluşturduysa (tag push'unda) VE
+  # iki platformun derlemesi de başarıyla bitip asset'lerini yüklediyse taslağı
+  # kaldırıp gerçek yayına alır. Bir platform başarısız olursa release taslakta
+  # kalır — hiçbir kurulu uygulama eksik/bozuk bir sürümü asla görmez.
+  publish-release:
+    needs: [create-release, build]
+    if: always() && needs.create-release.result == 'success' && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Release'i yayına al
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false

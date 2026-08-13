@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.85] - 2026-08-13
+
+**Yeni sürüm derlenirken "güncelleme kontrol edilemedi" hatası giderildi:** Bir önceki düzeltme, release'i derleme başlamadan önce oluşturarak asset-yükleme yarışını çözmüştü, ama bu sefer derleme süren birkaç dakika boyunca dosyasız/boş bir release herkese görünür kalıyordu — o pencerede güncelleme kontrol eden her bilgisayar hata alıyordu (v2.17.84'te yaşandı). Artık release önce taslak (draft, görünmez) olarak oluşturuluyor, Windows ve macOS derlemeleri asset'lerini yükleyip ikisi de başarıyla bitince otomatik olarak gerçek yayına alınıyor. Bir platform başarısız olursa release taslakta kalır, hiçbir kurulu uygulama eksik bir sürümü görmez. Şema değişikliği yok.
+
 ## [2.17.84] - 2026-08-13
 
 **Stok sayfasında Kampanya sütunu artık düzenlenebiliyor:** Paket/Flakon sütunlarındaki gibi, Kampanya alanına tıklayınca yerinde düzenlenip Enter/blur ile kaydediliyor, Escape ile vazgeçilebiliyor. Şema değişikliği yok. Ayrıca yayın (release) iş akışındaki bir yarış durumu kalıcı olarak giderildi: electron-builder, henüz var olmayan bir GitHub Release'e Windows/macOS derlemeleri aynı anda birden fazla dosya yüklerken her dosya için ayrı ayrı "release var mı" kontrolü yapıyordu — bazen iki kontrol de "yok" görüp ikisi de oluşturmayı deniyor, biri başarısız olup tüm derlemeyi düşürüyordu (v2.17.82'de gerçekleşti, .exe dosyası hiç yüklenemedi). Artık release, derlemeler başlamadan önce ayrı bir adımda tek seferde oluşturuluyor.
