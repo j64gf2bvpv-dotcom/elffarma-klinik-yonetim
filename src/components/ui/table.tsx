@@ -90,9 +90,10 @@ function FloatingScrollbar({
   return createPortal(
     <div
       ref={floatingRef}
+      data-testid="floating-scrollbar"
       onScroll={onFloatingScroll}
       style={{ position: 'fixed', left: rect.left, width: rect.width, bottom: 0 }}
-      className="bg-background/95 border-border/60 supports-[backdrop-filter]:backdrop-blur-sm z-40 h-3 overflow-x-auto overflow-y-hidden border-t"
+      className="bg-card border-primary/50 z-40 h-4 overflow-x-auto overflow-y-hidden border-t-2 shadow-[0_-4px_12px_rgba(0,0,0,0.12)]"
     >
       <div style={{ width: contentWidth, height: 1 }} />
     </div>,
