@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.82] - 2026-08-13
+
+**Geniş tablolarda alt kaydırma çubuğu artık her zaman görünür:** Önceden sadece tablonun kendi (en alttaki) çubuğu ekran dışına çıktığında beliriyordu — artık tablo taştığı sürece, sayfanın neresinde olursanız olun, viewport altındaki kaydırma çubuğu her zaman gösteriliyor. Şema değişikliği yok.
+
 ## [2.17.81] - 2026-08-13
 
 **macOS'ta gerçek Apple imzalama ve notarization kuruldu:** Kullanıcı Apple Developer Program'a kayıt olup bir "Developer ID Application" sertifikası oluşturdu. Artık `.dmg`/`.zip` paketleri ad-hoc değil, gerçek bir Apple sertifikasıyla imzalanıp otomatik olarak Apple'a gönderilip onaylatılıyor (notarize ediliyor) — ilk açılışta artık "hasar görmüş" veya "tanımadığım geliştirici" gibi bloklayıcı uyarılar çıkmıyor, sadece macOS'un standart "internetten indirildi" onayı kalıyor. Eski ad-hoc imza geçici çözümü (`scripts/afterSignMac.cjs`) kaldırıldı. Sertifika ve Apple kimlik bilgileri GitHub repository secrets olarak saklanıyor, koda hiçbir gizli bilgi yazılmadı. Şema değişikliği yok.

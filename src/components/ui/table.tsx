@@ -13,12 +13,11 @@ function findScrollableAncestor(el: HTMLElement | null): HTMLElement | Window {
 }
 
 /**
- * Geniş tablolar sayfada aşağı doğru uzadığında tablonun kendi (en alttaki)
- * yatay kaydırma çubuğu ekranın dışına çıkabiliyor — kullanıcı sayfanın
- * sonuna kadar inmeden sağa/sola kaydıramıyordu. Tablo hâlâ görünürdeyken
- * ama kendi çubuğu ekran dışındayken, viewport'un altına sabitlenen ve
- * gerçek scrollLeft ile iki yönlü senkronize ince bir "yüzen" kopya çubuk
- * gösterir.
+ * Tablo pencereden (yatayda) taştığında, viewport'un en altına sabitlenen ve
+ * gerçek scrollLeft ile iki yönlü senkronize ince bir kaydırma çubuğu
+ * gösterir — tablo görünür olduğu sürece HER ZAMAN, sadece tablonun kendi
+ * (en alttaki) native çubuğu ekran dışındayken değil (kullanıcı geri
+ * bildirimi: her zaman görünür olmalı, sayfanın neresinde olursa olsun).
  */
 function FloatingScrollbar({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) {
   const floatingRef = React.useRef<HTMLDivElement>(null)
@@ -33,8 +32,7 @@ function FloatingScrollbar({ containerRef }: { containerRef: React.RefObject<HTM
     function update() {
       const box = container!.getBoundingClientRect()
       const overflows = container!.scrollWidth > container!.clientWidth + 1
-      const nativeScrollbarOffscreen = box.bottom > window.innerHeight
-      const show = overflows && box.top < window.innerHeight && box.bottom > 0 && nativeScrollbarOffscreen
+      const show = overflows && box.top < window.innerHeight && box.bottom > 0
       setContentWidth(container!.scrollWidth)
       setRect(show ? { left: Math.max(box.left, 0), width: box.width } : null)
     }
