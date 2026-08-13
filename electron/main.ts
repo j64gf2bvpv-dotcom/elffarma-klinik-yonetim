@@ -298,6 +298,19 @@ if (!gotSingleInstanceLock) {
         logUpdater(`checkForUpdatesAndNotify HATA: ${error.message}`)
         console.error('[AutoUpdater] checkForUpdatesAndNotify başarısız:', error)
       })
+      // Bu bir ERP yazılımı — uygulama günlerce hiç kapatılmadan açık kalabilir.
+      // Sadece başlangıçtaki tek seferlik kontrol yeterli değil, yoksa uygulama
+      // zaten açıkken yayınlanan bir güncelleme hiç fark edilmez (kullanıcı
+      // raporu: "program açık, bildirim gelmedi"). Açık kaldığı sürece saatte
+      // bir arka planda tekrar kontrol ediyoruz.
+      setInterval(
+        () => {
+          autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+            logUpdater(`Periyodik güncelleme kontrolü HATA: ${error.message}`)
+          })
+        },
+        60 * 60 * 1000,
+      )
     }
     // Windows: uygulama elffarmapaket:// bağlantısıyla ilk kez açılıyorsa argv'de gelir.
     const initialDeepLink = process.argv.find((arg) => arg.startsWith(`${DEEP_LINK_PROTOCOL}://`))

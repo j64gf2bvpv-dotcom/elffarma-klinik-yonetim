@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.92] - 2026-08-13
+
+**Uygulama açık kalırken de saatte bir arka planda güncelleme kontrolü:** Önceden güncelleme kontrolü sadece uygulama İLK AÇILDIĞINDA yapılıyordu — bir ERP yazılımı günlerce kapatılmadan açık kalabildiği için, uygulama zaten açıkken yayınlanan bir güncelleme hiç fark edilmiyordu (kullanıcı raporu: "program açık, bildirim gelmedi"). Artık açık kaldığı sürece saatte bir arka planda tekrar kontrol ediyor. Şema değişikliği yok.
+
 ## [2.17.91] - 2026-08-13
 
 **Güncelleme bulunur bulunmaz (indirme bitmeden) de bildirim çıkıyor:** Önceki sürümde bildirim sadece indirme tamamlandığında geliyordu — bağlantı yavaşsa bu biraz sürebiliyordu. Artık yeni bir sürüm tespit edilir edilmez ("v.X.Y.Z indiriliyor, hazır olunca ayrıca haber verilecek") ayrı bir bildirim daha çıkıyor, indirme bitince ikinci bildirim geliyor. Şema değişikliği yok.
