@@ -102,13 +102,23 @@ function FloatingScrollbar({
 }
 
 function Table({ className, ...props }: React.ComponentProps<'table'>) {
+  // Yatay kaydırma TEK bir kutuda ve kendi native çubuğu bilerek gizli
+  // (`scrollbar-hide`) — aşağıya sabitlenen kayan çubuk (FloatingScrollbar)
+  // zaten bu işi görüyor; ikisi aynı anda görününce tablonun altında üst
+  // üste binmiş iki çubuk gibi görünüyordu. Dikey yönde bilerek bir
+  // yükseklik sınırı YOK — tablo sayfayla birlikte doğal akışında büyüyor
+  // (sayfanın kendisi `<main>` üzerinden kaydırılıyor); bir eksende overflow
+  // 'auto', diğeri 'visible' olduğunda CSS otomatik olarak ikisini de 'auto'
+  // yapıyor (browser'ın "overflow computed value" kuralı) — bu kutuya bir
+  // yükseklik sınırı verilseydi bu kural yüzünden kendi (istenmeyen) dikey
+  // çubuğu da çıkardı; sınır vermeyerek bunu zararsız kılıyoruz.
   const containerRef = React.useRef<HTMLDivElement>(null)
   const tableRef = React.useRef<HTMLTableElement>(null)
   return (
     <div
       ref={containerRef}
       data-slot="table-container"
-      className="relative w-full max-h-[65vh] overflow-auto rounded-md"
+      className="scrollbar-hide relative w-full overflow-x-auto rounded-md"
     >
       <table
         ref={tableRef}
@@ -125,10 +135,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
   return (
     <thead
       data-slot="table-header"
-      className={cn(
-        'bg-card supports-[backdrop-filter]:backdrop-blur-sm sticky top-0 z-10 [&_tr]:border-b',
-        className,
-      )}
+      className={cn('bg-muted/40 supports-[backdrop-filter]:backdrop-blur-sm [&_tr]:border-b', className)}
       {...props}
     />
   )

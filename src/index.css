@@ -154,6 +154,19 @@
   background: transparent;
 }
 
+/* Tablo gövdesinin kendi YATAY native çubuğunu gizler — geniş tablolarda
+   ekranın en altına sabitlenmiş kayan çubuk (bkz. table.tsx) zaten yatay
+   kaydırmayı sağlıyor; ikisi aynı anda görününce tablonun hemen altında
+   iki üst üste binmiş çubuk gibi görünüyordu. Dikey native çubuk (satır
+   sayısı fazla tablolarda) ayrı bir sarmalayıcıda olduğu için etkilenmiyor. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 @layer utilities {
   @keyframes alert-glow-red {
     0%,
