@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.86] - 2026-08-13
+
+**Geniş tablolarda alt kaydırma çubuğu bir kez daha düzeltildi:** Çubuk, verinin (sunucudan gelen ürün/sayım listesi gibi) yüklenmesiyle tablo genişleyip taştığı anı bazen kaçırıyordu — çünkü yalnızca tablonun ETRAFINDAKİ kutunun boyutu değişince kontrol ediliyordu, tablonun kendi İÇERİK genişliği (sütun sayısı/veri) değişince değil. Artık hem dış kutu hem tablonun kendisi ayrı ayrı izleniyor, veri geldiğinde çubuk doğru şekilde beliriyor. Şema değişikliği yok.
+
 ## [2.17.85] - 2026-08-13
 
 **Yeni sürüm derlenirken "güncelleme kontrol edilemedi" hatası giderildi:** Bir önceki düzeltme, release'i derleme başlamadan önce oluşturarak asset-yükleme yarışını çözmüştü, ama bu sefer derleme süren birkaç dakika boyunca dosyasız/boş bir release herkese görünür kalıyordu — o pencerede güncelleme kontrol eden her bilgisayar hata alıyordu (v2.17.84'te yaşandı). Artık release önce taslak (draft, görünmez) olarak oluşturuluyor, Windows ve macOS derlemeleri asset'lerini yükleyip ikisi de başarıyla bitince otomatik olarak gerçek yayına alınıyor. Bir platform başarısız olursa release taslakta kalır, hiçbir kurulu uygulama eksik bir sürümü görmez. Şema değişikliği yok.

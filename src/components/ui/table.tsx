@@ -19,7 +19,13 @@ function findScrollableAncestor(el: HTMLElement | null): HTMLElement | Window {
  * (en alttaki) native çubuğu ekran dışındayken değil (kullanıcı geri
  * bildirimi: her zaman görünür olmalı, sayfanın neresinde olursa olsun).
  */
-function FloatingScrollbar({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) {
+function FloatingScrollbar({
+  containerRef,
+  contentRef,
+}: {
+  containerRef: React.RefObject<HTMLDivElement | null>
+  contentRef: React.RefObject<HTMLTableElement | null>
+}) {
   const floatingRef = React.useRef<HTMLDivElement>(null)
   const [rect, setRect] = React.useState<{ left: number; width: number } | null>(null)
   const [contentWidth, setContentWidth] = React.useState(0)
@@ -40,8 +46,16 @@ function FloatingScrollbar({ containerRef }: { containerRef: React.RefObject<HTM
     update()
 
     const scrollParent = findScrollableAncestor(container)
+    // Container'ın kendi kutusu `w-full` olduğu için dıştan boyutu sabit kalır;
+    // tablo içeriği (sütun/veri) genişleyince SADECE tablonun kendi genişliği
+    // değişir, container'ın değil. Container'ı gözlemlemek bu yüzden yetersiz —
+    // veriler async yüklenip tablo genişleyince (`ResizeObserver` container'ın
+    // kutu boyutunda değişiklik görmediği için) çubuk hiç belirmiyordu. Hem
+    // container'ı (mevcut alan değişince) hem gerçek `<table>` elemanını
+    // (içerik genişliği değişince) ayrı ayrı gözlemliyoruz.
     const resizeObserver = new ResizeObserver(update)
     resizeObserver.observe(container)
+    if (contentRef.current) resizeObserver.observe(contentRef.current)
     scrollParent.addEventListener('scroll', update, { passive: true })
     window.addEventListener('resize', update)
     window.addEventListener('scroll', update, { passive: true })
@@ -61,7 +75,7 @@ function FloatingScrollbar({ containerRef }: { containerRef: React.RefObject<HTM
       window.removeEventListener('scroll', update)
       container.removeEventListener('scroll', onContainerScroll)
     }
-  }, [containerRef])
+  }, [containerRef, contentRef])
 
   function onFloatingScroll() {
     if (syncingRef.current || !containerRef.current || !floatingRef.current) return
@@ -86,14 +100,16 @@ function FloatingScrollbar({ containerRef }: { containerRef: React.RefObject<HTM
 
 function Table({ className, ...props }: React.ComponentProps<'table'>) {
   const containerRef = React.useRef<HTMLDivElement>(null)
+  const tableRef = React.useRef<HTMLTableElement>(null)
   return (
     <div ref={containerRef} data-slot="table-container" className="relative w-full overflow-x-auto">
       <table
+        ref={tableRef}
         data-slot="table"
         className={cn('w-full caption-bottom text-sm', className)}
         {...props}
       />
-      <FloatingScrollbar containerRef={containerRef} />
+      <FloatingScrollbar containerRef={containerRef} contentRef={tableRef} />
     </div>
   )
 }
