@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.83] - 2026-08-13
+
+**Yatay kaydırma çubuğu artık görünür:** Geniş tablolarda (ör. Stok listesi) kaydırma çubuğunun rengi kenarlık rengiyle aynıydı ve açık temada kart arka planına neredeyse görünmez oluyordu — dar ekranda tabloyu sağa kaydırmak için bir çubuk bulmak neredeyse imkansızdı. Çubuk artık her zaman belirgin bir renkle çiziliyor, üzerine gelince daha da koyulaşıyor. Şema değişikliği yok.
+
 ## [2.17.82] - 2026-08-13
 
 **Geniş tablolarda alt kaydırma çubuğu artık her zaman görünür:** Önceden sadece tablonun kendi (en alttaki) çubuğu ekran dışına çıktığında beliriyordu — artık tablo taştığı sürece, sayfanın neresinde olursanız olun, viewport altındaki kaydırma çubuğu her zaman gösteriliyor. Şema değişikliği yok.

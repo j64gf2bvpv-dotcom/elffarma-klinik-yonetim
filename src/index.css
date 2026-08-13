@@ -125,26 +125,30 @@
 
 /* Kaydırma çubukları her zaman görünür olsun — macOS'un otomatik gizlenen
    overlay çubukları, geniş tablolarda yana doğru daha fazla sütun olduğunu
-   belli etmiyordu. */
+   belli etmiyordu. Çubuk rengi bilerek --color-border DEĞİL: o token ince
+   kenarlıklar için özellikle düşük kontrastlı seçilmiş, açık temada kart
+   arka planına neredeyse görünmez kalıyordu (kullanıcı raporu: "hiç
+   görünmüyor"). --color-muted-foreground her temada arka plana karşı
+   yeterli kontrast garantisi veriyor. */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
+  scrollbar-width: auto;
+  scrollbar-color: var(--color-muted-foreground) transparent;
 }
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: var(--color-border);
+  background-color: var(--color-muted-foreground);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-muted-foreground);
+  background-color: var(--color-foreground);
 }
 *::-webkit-scrollbar-corner {
   background: transparent;
