@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.91] - 2026-08-13
+
+**Güncelleme bulunur bulunmaz (indirme bitmeden) de bildirim çıkıyor:** Önceki sürümde bildirim sadece indirme tamamlandığında geliyordu — bağlantı yavaşsa bu biraz sürebiliyordu. Artık yeni bir sürüm tespit edilir edilmez ("v.X.Y.Z indiriliyor, hazır olunca ayrıca haber verilecek") ayrı bir bildirim daha çıkıyor, indirme bitince ikinci bildirim geliyor. Şema değişikliği yok.
+
 ## [2.17.90] - 2026-08-13
 
 **Güncellemeler artık hiçbir tıklama gerektirmeden sistem bildirimi olarak haber veriyor:** Bir güncelleme arka planda indirildiğinde, hangi bilgisayarda olursa olsun, o bilgisayarda gerçek bir işletim sistemi bildirimi çıkıyor ("v.X.Y.Z indirildi, bir sonraki kapatıp açışınızda otomatik kurulacak"). Kurulum hâlâ kimseyi ortasından kesmeden, uygulama normal şekilde kapatılıp yeniden açıldığında kendiliğinden gerçekleşiyor — elle "güncelle" butonuna basmaya gerek yok. Şema değişikliği yok.

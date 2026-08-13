@@ -152,6 +152,14 @@ function setupAutoUpdater() {
   autoUpdater.on('update-available', (info) => {
     logUpdater(`Güncelleme bulundu: ${info.version}`)
     sendUpdaterEvent({ type: 'available', version: info.version })
+    // İndirme (bağlantı hızına göre biraz sürebilir) bitmesini beklemeden,
+    // yeni sürüm fark edilir edilmez de bildirim gösteriliyor.
+    if (Notification.isSupported()) {
+      new Notification({
+        title: 'Yeni güncelleme bulundu',
+        body: `v${info.version} indiriliyor, hazır olunca ayrıca haber verilecek.`,
+      }).show()
+    }
   })
   autoUpdater.on('update-not-available', (info) => {
     logUpdater(`Güncelleme yok, güncel: ${info.version}`)
