@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.87] - 2026-08-13
+
+**Geniş tablolardaki kaydırma çubuğu sorunu kökten çözüldü, Swiss ürün resimleri artık kare görünüyor:** Özel/hesaplı kaydırma çubuğu yaklaşımı defalarca güvenilmez çıktı — onun yerine tablo kutusu sınırlı bir yüksekliğe sabitlendi, içeride hem yatay hem dikey kaydırma tarayıcının zaten görünür yaptığı native çubukla yapılıyor; başlık satırı da kaydırırken üstte sabit kalıyor. Ayrıca Stok listesindeki ürün resimleri (özellikle dikey/uzun kaynak fotoğrafları olan Swiss ürünleri) kırpılıp yamuk görünmek yerine artık orantısı bozulmadan kare kutuya tam sığdırılıyor. Şema değişikliği yok.
+
 ## [2.17.86] - 2026-08-13
 
 **Geniş tablolarda alt kaydırma çubuğu bir kez daha düzeltildi:** Çubuk, verinin (sunucudan gelen ürün/sayım listesi gibi) yüklenmesiyle tablo genişleyip taştığı anı bazen kaçırıyordu — çünkü yalnızca tablonun ETRAFINDAKİ kutunun boyutu değişince kontrol ediliyordu, tablonun kendi İÇERİK genişliği (sütun sayısı/veri) değişince değil. Artık hem dış kutu hem tablonun kendisi ayrı ayrı izleniyor, veri geldiğinde çubuk doğru şekilde beliriyor. Şema değişikliği yok.
