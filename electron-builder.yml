@@ -16,11 +16,6 @@ files:
   - package.json
 extraMetadata:
   main: dist-electron/main.cjs
-# electron-builder kendi imzalama adımını atlasa da (mac.identity: null), paketlenen
-# .app hâlâ Electron'un önceden imzalanmış şablonundan geldiği için üzerine dosya
-# kopyalanınca tutarsız/"hayalet" bir imza kalıyor ve macOS uygulamayı "hasar
-# görmüş" diyerek TAMAMEN reddediyor (sadece uyarı değil) — bkz. scripts/afterSignMac.cjs.
-afterSign: scripts/afterSignMac.cjs
 protocols:
   name: Elffarma Paket Programı Şifre Sıfırlama
   schemes:
@@ -40,12 +35,17 @@ publish:
 mac:
   category: public.app-category.medical
   icon: build/icons/icon.icns
-  # Dijital imza / notarization henüz kurulmadı (Apple Developer hesabı gerektirir).
-  # identity: null bunu bilinçli olarak atlar — Gatekeeper ilk açılışta uyarı verir
-  # (bkz. README "Bilinen sınırlamalar"). İmza eklendiğinde bu satır kaldırılmalı;
-  # o zamana kadar macOS'ta auto-update de güvenilir çalışmayabilir (Squirrel.Mac
-  # imzasız uygulamalarda güncellemeyi doğrulayamaz) — Windows tarafı bundan etkilenmez.
-  identity: null
+  # 2026-08-13'ten itibaren gerçek bir Apple Developer ID Application sertifikasıyla
+  # imzalanıyor (identity artık null değil — CI ortamındaki CSC_LINK/CSC_KEY_PASSWORD
+  # secret'larından electron-builder otomatik keşfediyor). hardenedRuntime + entitlements,
+  # Apple'ın notarization için zorunlu tuttuğu ayarlar. notarize: true ile electron-builder
+  # APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD/APPLE_TEAM_ID ortam değişkenlerini kullanıp
+  # paketi otomatik Apple'a gönderip onaylatıyor (afterSign adımı olarak, elle bir
+  # afterSign hook'una gerek kalmadı — eski ad-hoc imza geçici çözümü kaldırıldı).
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: true
   # DMG kurulum içindir; ZIP ise Squirrel.Mac'in otomatik güncelleme sırasında
   # indirip uyguladığı asıl paket — sadece dmg üretilirse autoUpdater
   # "ZIP file not provided" hatasıyla güncellemeyi sessizce başarısız kılıyordu

@@ -62,16 +62,17 @@ Bu komut önce `vite build` ile renderer + Electron main/preload dosyalarını
 derler, ardından `electron-builder` ile `release/` klasörüne kurulabilir bir
 `.dmg` (Mac) veya NSIS `.exe` (Windows) üretir — çalıştırıldığı platforma göre.
 
-**Önemli:** Uygulama şu an **imzasız (unsigned)** olarak paketleniyor:
+**macOS imzalama (2026-08-13'ten itibaren):** Uygulama artık gerçek bir Apple
+Developer ID Application sertifikasıyla imzalanıp notarize ediliyor (bkz.
+`electron-builder.yml`: `mac.hardenedRuntime`/`entitlements`/`notarize`, ve
+`.github/workflows/release.yml`'deki `CSC_LINK`/`APPLE_ID`/... secret'ları).
+İlk açılışta hâlâ macOS'un standart "İnternetten indirildi, açmak istediğinize
+emin misiniz?" onayı çıkar (bu normal, kötü amaçlı yazılım kontrolü) ama artık
+"geliştirici doğrulanamadı"/"hasar görmüş" gibi bloklayıcı bir uyarı yok.
 
-- macOS'ta ilk açılışta Gatekeeper "geliştirici doğrulanamadı" uyarısı verir;
-  kullanıcı dosyaya sağ tıklayıp **Aç**'ı seçerek bir kereliğine bunu aşabilir.
-- Windows'ta SmartScreen benzer bir uyarı gösterir; **Diğer Bilgiler → Yine de
-  Çalıştır** ile devam edilebilir.
-
-Bu, günlük kullanım için engel değildir. İleride isterseniz bir Apple Developer
-hesabı (yıllık ~$99) ve/veya Windows kod imzalama sertifikası (~$100-400/yıl)
-alarak bu uyarıları tamamen kaldırabilirsiniz.
+**Windows** tarafı hâlâ imzasız — SmartScreen benzer bir uyarı gösterir;
+**Diğer Bilgiler → Yine de Çalıştır** ile devam edilebilir. İsterseniz bir
+Windows kod imzalama sertifikası (~$100-400/yıl) alarak bunu da kaldırabilirsiniz.
 
 ## Kurulum sonrası: kısayollar ve tek tıkla açılış
 
@@ -121,12 +122,10 @@ paketlemeyi durdurur. CI'da bu değerler repository secrets olarak
 (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) tanımlanmalıdır — bkz.
 `.github/workflows/release.yml` üstündeki yorum.
 
-**macOS'ta auto-update ile ilgili bilinen sınırlama**: `mac.identity: null`
-(imzasız paketleme) hâlâ geçerli olduğu için macOS'ta otomatik güncelleme
-motoru (Squirrel.Mac) indirilen güncellemeyi doğrulayamayabilir — bu, yukarıda
-bahsedilen Apple Developer imzası/notarization eklenene kadar sürecek bilinen
-bir sınırlamadır. Windows tarafında (NSIS + electron-updater) bu kısıtlama
-yoktur.
+**macOS'ta auto-update artık güvenilir çalışıyor** (2026-08-13'ten itibaren):
+gerçek Developer ID imzası + notarization sayesinde Squirrel.Mac indirilen
+güncellemeyi doğrulayabiliyor. Daha önce burada belgelenen "imzasız paket
+güncellemeyi doğrulayamıyor" sınırlaması artık geçerli değil.
 
 ## Mimari özeti
 

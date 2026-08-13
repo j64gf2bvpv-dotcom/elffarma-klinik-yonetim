@@ -11,8 +11,13 @@ name: Kurulum Paketi Üret ve Yayınla
 # vX.Y.Z` yapın; rutin commit'ler (tag'siz) hiçbir kurulu uygulamayı tetiklemez.
 #
 # Gerekli repository secrets (Settings → Secrets and variables → Actions):
-#   VITE_SUPABASE_URL       — Supabase Project URL
-#   VITE_SUPABASE_ANON_KEY  — Supabase anon public key
+#   VITE_SUPABASE_URL            — Supabase Project URL
+#   VITE_SUPABASE_ANON_KEY       — Supabase anon public key
+#   CSC_LINK                     — Developer ID Application sertifikası + özel anahtarı, base64 .p12
+#   CSC_KEY_PASSWORD             — o .p12 dosyasının şifresi
+#   APPLE_ID                     — notarization için Apple ID e-postası
+#   APPLE_APP_SPECIFIC_PASSWORD  — appleid.apple.com'dan alınan uygulamaya özgü şifre (normal hesap şifresi DEĞİL)
+#   APPLE_TEAM_ID                — Apple Developer Team ID (2026-08-13'te eklendi: Q5D5482ZFC)
 # (GITHUB_TOKEN, publish için GitHub Actions tarafından otomatik sağlanır.)
 
 on:
@@ -44,10 +49,15 @@ jobs:
 
       - run: npm ci
 
-      - name: Kurulum paketini derle ve GitHub Release'e (taslak) yükle
+      - name: Kurulum paketini derle, imzala/notarize et ve GitHub Release'e yükle
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_CLINIC_NAME: Elffarma
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npm run package -- ${{ matrix.build_args }} --publish always
