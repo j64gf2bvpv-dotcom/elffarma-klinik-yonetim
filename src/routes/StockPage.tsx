@@ -119,8 +119,8 @@ function QuantityCell({ product }: { product: Product }) {
  * Flakon adedine tıklayınca yerinde düzenlenebilir hale gelir — QuantityCell'in
  * aynısı ama flakon_quantity için, record_stock_movement RPC'sine unit_kind:
  * 'flakon' ile çağrı yapar (paket adedini hiç etkilemez, bkz.
- * decouple_flakon_from_paket_movements migration'ı). Ürünün flakon takibi
- * (flakon_per_package) tanımlı değilse hiç gösterilmez.
+ * decouple_flakon_from_paket_movements migration'ı). Ürünün flakon_per_package
+ * oranı tanımlı olsun olmasın her ürün için elle düzenlenebilir.
  */
 function FlakonQuantityCell({ product }: { product: Product }) {
   const [editing, setEditing] = React.useState(false)
@@ -148,8 +148,6 @@ function FlakonQuantityCell({ product }: { product: Product }) {
       unit_kind: 'flakon',
     })
   }
-
-  if (product.flakon_per_package == null) return <span className="text-muted-foreground">—</span>
 
   if (editing) {
     return (
@@ -261,7 +259,6 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
               <TableHead>Güncel Stok Durumu</TableHead>
               <TableHead>Satış Fiyatı</TableHead>
               <TableHead>Kampanya</TableHead>
-              <TableHead>Ürün Hattı</TableHead>
               <TableHead>SKT</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
             </TableRow>
@@ -269,7 +266,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
           <TableBody>
             {products.length === 0 && (
               <TableRow>
-                <TableCell colSpan={11} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                   Ürün bulunamadı
                 </TableCell>
               </TableRow>
@@ -314,8 +311,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     <div className="flex items-center gap-1.5 text-sm">
                       {isCritical && <AlertTriangle className="size-3.5 text-destructive animate-alert-glow-red" />}
                       <span className={cn(isCritical && 'font-medium text-destructive')}>
-                        {product.current_quantity} paket
-                        {product.flakon_per_package != null && `, ${product.flakon_quantity} flakon`}
+                        {product.current_quantity} paket, {product.flakon_quantity} flakon
                       </span>
                     </div>
                   </TableCell>
@@ -339,13 +335,6 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                   </TableCell>
                   <TableCell>
                     <CampaignCell product={product} />
-                  </TableCell>
-                  <TableCell>
-                    {product.brand_line ? (
-                      <Badge variant="outline">{product.brand_line === 'dermakor' ? 'Dermakor' : 'Swiss'}</Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
                   </TableCell>
                   <TableCell>
                     {product.expiry_date ? (
@@ -467,18 +456,14 @@ export function StockPage() {
                 { header: 'Ürün', value: (p) => p.name },
                 { header: 'Kategori', value: (p) => p.category ?? '' },
                 { header: 'Paket', value: (p) => `${p.current_quantity} ${p.unit}` },
-                { header: 'Flakon', value: (p) => (p.flakon_per_package != null ? p.flakon_quantity : '') },
+                { header: 'Flakon', value: (p) => p.flakon_quantity },
                 {
                   header: 'Güncel Stok Durumu',
-                  value: (p) =>
-                    p.flakon_per_package != null
-                      ? `${p.current_quantity} paket, ${p.flakon_quantity} flakon`
-                      : `${p.current_quantity} paket`,
+                  value: (p) => `${p.current_quantity} paket, ${p.flakon_quantity} flakon`,
                 },
                 { header: 'Satış Fiyatı', value: (p) => (p.unit_price ? Number(p.unit_price) : '') },
                 { header: 'Kampanya', value: (p) => p.campaign ?? '' },
                 { header: 'Barkod', value: (p) => p.barcode ?? '' },
-                { header: 'Ürün Hattı', value: (p) => (p.brand_line === 'dermakor' ? 'Dermakor' : p.brand_line === 'swiss' ? 'Swiss' : '') },
                 { header: 'Son Kullanım Tarihi', value: (p) => p.expiry_date ?? '' },
               ]}
             />

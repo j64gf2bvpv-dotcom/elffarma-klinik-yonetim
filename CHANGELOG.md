@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.95] - 2026-08-13
+
+**Flakon adedi artık her üründe elle girilebiliyor, Ürün Hattı sütunu kaldırıldı:** Önceden Flakon hücresi sadece "paket içinde kaç flakon var" oranı tanımlı ürünlerde düzenlenebiliyordu, diğerlerinde "—" gösterip tıklanamıyordu — artık oran tanımlı olsun olmasın her üründe tıklanıp elle girilebiliyor. Stok listesindeki "Ürün Hattı" (Dermakor/Swiss rozeti) sütunu tamamen kaldırıldı. Şema değişikliği yok.
+
 ## [2.17.94] - 2026-08-13
 
 **Tablonun altında görünen çift kaydırma çubuğu tek çubuğa indirildi, Swiss ürün resimleri tekrar güvenli (contain) modda:** Kaydırma çubuğu düzeltmesi çalışmaya başlayınca (v2.17.93) ilk kez hem tablonun kendi native alt çubuğu hem yeni sabit çubuk aynı anda görünür oldu — ikisi üst üste binmiş gibi duruyordu. Artık tablonun kendi native yatay çubuğu bilerek gizli, yatay kaydırma sadece ekranın en altındaki sabit çubukla yapılıyor. Ayrıca Swiss ürün resimleri, kırpma denemeleri (üstten/ortadan) bazı fotoğraflarda resmin boş/beyaz kısmına denk gelme riski taşıdığı için, resmin tamamını her zaman güvenle gösteren moda geri alındı. Şema değişikliği yok.
