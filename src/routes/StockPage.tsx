@@ -14,7 +14,7 @@ import { ProductForm } from '@/features/stock/ProductForm'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
 import { ProductLotsDialog } from '@/features/stock/ProductLotsDialog'
-import { useDeactivateProduct, useProducts, useRecordStockMovement } from '@/features/stock/hooks'
+import { useDeactivateProduct, useProducts, useRecordStockMovement, useUpdateProductCampaign } from '@/features/stock/hooks'
 import { recordStockMovement } from '@/features/stock/api'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
@@ -189,6 +189,63 @@ function FlakonQuantityCell({ product }: { product: Product }) {
   )
 }
 
+/** Kampanya metnine tıklayınca yerinde düzenlenebilir hale gelir — sadece campaign alanını günceller. */
+function CampaignCell({ product }: { product: Product }) {
+  const [editing, setEditing] = React.useState(false)
+  const [value, setValue] = React.useState(product.campaign ?? '')
+  const mutation = useUpdateProductCampaign()
+
+  React.useEffect(() => {
+    if (!editing) setValue(product.campaign ?? '')
+  }, [product.campaign, editing])
+
+  function commit() {
+    setEditing(false)
+    const trimmed = value.trim()
+    if (trimmed === (product.campaign ?? '')) return
+    mutation.mutate({ id: product.id, campaign: trimmed || null })
+  }
+
+  if (editing) {
+    return (
+      <Input
+        autoFocus
+        placeholder="Örn. 5+1"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit()
+          }
+          if (e.key === 'Escape') {
+            setValue(product.campaign ?? '')
+            setEditing(false)
+          }
+        }}
+        className="h-8 w-28"
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      title="Kampanyayı düzenlemek için tıklayın"
+      className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent"
+    >
+      {product.campaign ? (
+        <Badge variant="success">{product.campaign}</Badge>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      )}
+    </button>
+  )
+}
+
 function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: (product: Product) => void }) {
   return (
     <Card>
@@ -281,11 +338,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     )}
                   </TableCell>
                   <TableCell>
-                    {product.campaign ? (
-                      <Badge variant="success">{product.campaign}</Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                    <CampaignCell product={product} />
                   </TableCell>
                   <TableCell>
                     {product.brand_line ? (

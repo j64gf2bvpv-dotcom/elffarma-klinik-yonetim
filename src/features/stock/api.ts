@@ -40,6 +40,10 @@ export async function updateProduct(id: string, input: ProductInput): Promise<Pr
   return offlineUpdate<Product>('products', id, { ...input }, `Ürün güncelleme: ${input.name}`)
 }
 
+export async function updateProductCampaign(id: string, campaign: string | null): Promise<Product> {
+  return offlineUpdate<Product>('products', id, { campaign }, `Kampanya güncelleme`)
+}
+
 export async function deactivateProduct(id: string): Promise<void> {
   await offlineUpdate('products', id, { is_active: false }, 'Ürün kaldırma')
 }
