@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.93] - 2026-08-13
+
+**Stok sayfasında "Tümü" görünümündeki kaydırma çubuğu sorunu asıl nedeniyle çözüldü:** Önceki üç deneme neden işe yaramadı diye kök nedenine inildi — "Tümü" sekmesinde Dermakor ve Swiss tabloları bir CSS grid içinde alt alta duruyor, ve grid'in bir varsayılan davranışı (`min-width: auto`) tablo genişliğinin taşma hesabını yanıltıyordu: taşma tablonun kendi kutusunda değil sayfanın tamamında oluşuyordu ve sessizce kesiliyordu, hiçbir çubuk tetiklenmiyordu. Bu, gerçek bir tarayıcıda ekran görüntüsü ve DOM incelemesiyle bizzat teşhis edilip doğrulandı. Tek tablolu sayfalarda (Dermakor veya Swiss sekmesi tek başına seçiliyken) zaten sorun yoktu. Ayrıca Swiss ürün resimlerinin kırpma noktası üstten ortaya alındı — gerçek fotoğraflarda ürün kutunun ortasında, üstte sadece marka logosu var; üstten kırpma logoyu gösterip ürünü kesiyordu. Şema değişikliği yok.
+
 ## [2.17.92] - 2026-08-13
 
 **Uygulama açık kalırken de saatte bir arka planda güncelleme kontrolü:** Önceden güncelleme kontrolü sadece uygulama İLK AÇILDIĞINDA yapılıyordu — bir ERP yazılımı günlerce kapatılmadan açık kalabildiği için, uygulama zaten açıkken yayınlanan bir güncelleme hiç fark edilmiyordu (kullanıcı raporu: "program açık, bildirim gelmedi"). Artık açık kaldığı sürece saatte bir arka planda tekrar kontrol ediyor. Şema değişikliği yok.

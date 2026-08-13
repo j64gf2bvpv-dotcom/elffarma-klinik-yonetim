@@ -286,7 +286,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     <SafeThumbnail
                       src={product.image_url}
                       alt={product.name}
-                      className="size-9 rounded-md border bg-muted object-cover object-top"
+                      className="size-9 rounded-md border bg-muted object-cover"
                       fallback={<div className="size-9 rounded-md border bg-muted" />}
                     />
                   </TableCell>
@@ -581,16 +581,16 @@ export function StockPage() {
 
           {!isLoading && brandFilter === ALL_BRANDS && (
             <div className="grid gap-6">
-              <div>
+              <div className="min-w-0">
                 <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Dermakor</h3>
                 <ProductsTable products={products.filter((p) => p.brand_line === 'dermakor')} onRemove={handleRemove} />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Swiss</h3>
                 <ProductsTable products={products.filter((p) => p.brand_line === 'swiss')} onRemove={handleRemove} />
               </div>
               {products.some((p) => !p.brand_line) && (
-                <div>
+                <div className="min-w-0">
                   <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Diğer</h3>
                   <ProductsTable products={products.filter((p) => !p.brand_line)} onRemove={handleRemove} />
                 </div>
