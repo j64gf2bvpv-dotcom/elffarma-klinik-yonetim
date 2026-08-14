@@ -116,6 +116,10 @@ export interface StockMovement {
   lot_id: string | null
   unit_price: number | null
   unit_kind: StockUnitKind
+  sales_rep_id: string | null
+  source_type: 'manual' | 'sale' | 'sample' | 'count' | 'import' | 'reset'
+  source_id: string | null
+  occurred_at: string
   created_at: string
 }
 

@@ -116,6 +116,13 @@ export interface StockMovement {
   lot_id: string | null
   unit_price: number | null
   unit_kind: StockUnitKind
+  sales_rep_id: string | null
+  /** manual|sale|sample|count|import|reset — bu hareketin hangi iş akışından geldiği. */
+  source_type: 'manual' | 'sale' | 'sample' | 'count' | 'import' | 'reset'
+  /** source_type'a göre değişen kaynak kaydın id'si (polimorfik, FK yok). */
+  source_id: string | null
+  /** Hareketin gerçekleştiği tarih — created_at'ten (kayıt anı) ayrı. */
+  occurred_at: string
   created_at: string
 }
 
