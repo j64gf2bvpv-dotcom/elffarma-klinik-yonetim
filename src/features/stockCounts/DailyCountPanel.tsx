@@ -13,7 +13,6 @@ import {
   FileText,
   FileType,
   Printer,
-  Plus,
   ImageDown,
   AlertTriangle,
 } from 'lucide-react'
@@ -34,7 +33,6 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { useSales } from '@/features/sales/hooks'
 import { SaleForm } from '@/features/sales/SaleForm'
 import {
-  useAddStockToCountItem,
   useCompleteCount,
   useCountItems,
   usePastCounts,
@@ -152,105 +150,39 @@ function TodaySalesActivity({ countDate }: { countDate: string }) {
 
 /**
  * Paket ve Flakon panelleri aynı satır bileşenini paylaşır — hangi alanların
- * (expected/counted_quantity ya da _flakon karşılıkları) okunup yazılacağı ve
- * hangi birim etiketinin gösterileceği (ürünün kendi birimi vs. sabit
- * "flakon") dışarıdan parametreyle veriliyor.
+ * (counted_quantity ya da _flakon karşılığı) okunup yazılacağı ve hangi birim
+ * etiketinin gösterileceği (ürünün kendi birimi vs. sabit "flakon") dışarıdan
+ * parametreyle veriliyor. "Sistemdeki Miktar" artık HER ZAMAN canlı
+ * products.current_quantity/flakon_quantity — elle düzenlenemez, sadece
+ * referans için gösterilir (bkz. api.ts'teki completeCount açıklaması).
  */
 function CountItemRow({
   item,
   readOnly,
-  expectedQuantity,
+  liveQuantity,
   countedQuantity,
   unitLabel,
   onSave,
-  onAddStock,
 }: {
   item: StockCountItemWithProduct
   readOnly: boolean
-  expectedQuantity: number
+  liveQuantity: number
   countedQuantity: number | null
   unitLabel: string
   onSave: (id: string, value: number | null) => void
-  onAddStock: (item: StockCountItemWithProduct, diff: number) => void
 }) {
   const [value, setValue] = React.useState(countedQuantity?.toString() ?? '')
-  const diff = value === '' ? null : Number(value) - expectedQuantity
-
-  const [addingStock, setAddingStock] = React.useState(false)
-  const [addValue, setAddValue] = React.useState('')
+  const diff = value === '' ? null : Number(value) - liveQuantity
 
   React.useEffect(() => {
     setValue(countedQuantity?.toString() ?? '')
   }, [countedQuantity])
 
-  function commitAddStock() {
-    const parsed = Number(addValue)
-    setAddingStock(false)
-    if (!addValue || !Number.isFinite(parsed) || parsed === 0) {
-      setAddValue('')
-      return
-    }
-    onAddStock(item, parsed)
-    setAddValue('')
-  }
-
   return (
     <TableRow>
       <TableCell className="font-medium">{item.products.name}</TableCell>
       <TableCell className="text-muted-foreground">
-        {readOnly ? (
-          <span>
-            {expectedQuantity} {unitLabel}
-          </span>
-        ) : addingStock ? (
-          <div className="flex items-center gap-1">
-            <Input
-              type="number"
-              autoFocus
-              placeholder="Eklenecek/düşülecek adet"
-              className="h-8 w-28"
-              value={addValue}
-              onChange={(e) => setAddValue(e.target.value)}
-              onFocus={(e) => e.currentTarget.select()}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  commitAddStock()
-                }
-                if (e.key === 'Escape') {
-                  setAddValue('')
-                  setAddingStock(false)
-                }
-              }}
-            />
-            <Button type="button" size="sm" className="h-8" onMouseDown={(e) => e.preventDefault()} onClick={commitAddStock}>
-              Ekle
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                setAddValue('')
-                setAddingStock(false)
-              }}
-            >
-              Vazgeç
-            </Button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setAddingStock(true)}
-            title="Stok eklemek/düşmek için tıklayın"
-            className="hover:bg-accent -mx-1 inline-flex items-center gap-1 rounded-md px-1 py-0.5"
-          >
-            {expectedQuantity} {unitLabel}
-            <Plus className="text-muted-foreground size-3" />
-          </button>
-        )}
+        {liveQuantity} {unitLabel}
       </TableCell>
       <TableCell>
         {readOnly ? (
@@ -288,7 +220,6 @@ export function DailyCountPanel() {
   const { data: items = [] } = useCountItems(todayCount?.id)
   const updateItemMutation = useUpdateCountItem(todayCount?.id ?? '')
   const updateItemFlakonMutation = useUpdateCountItemFlakon(todayCount?.id ?? '')
-  const addStockMutation = useAddStockToCountItem(todayCount?.id ?? '')
   const { data: allSales = [] } = useSales()
 
   if (loadingToday) {
@@ -327,14 +258,14 @@ export function DailyCountPanel() {
 
   const pendingChangeCount = items.filter(
     (i) =>
-      (i.counted_quantity !== null && i.counted_quantity !== i.expected_quantity) ||
-      (i.counted_quantity_flakon !== null && i.counted_quantity_flakon !== i.expected_quantity_flakon),
+      (i.counted_quantity !== null && i.counted_quantity !== i.products.current_quantity) ||
+      (i.counted_quantity_flakon !== null && i.counted_quantity_flakon !== i.products.flakon_quantity),
   ).length
 
   function productLine(i: StockCountItemWithProduct): { metrik: string; deger: string | number } {
     return {
       metrik: i.products.name,
-      deger: `${i.expected_quantity} ${i.products.unit}, ${i.expected_quantity_flakon} flakon`,
+      deger: `${i.products.current_quantity} ${i.products.unit}, ${i.products.flakon_quantity} flakon`,
     }
   }
   const dermakorItems = items.filter((i) => i.products.brand_line === 'dermakor')
@@ -448,69 +379,69 @@ export function DailyCountPanel() {
         )}
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Paket Sayımı</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ürün</TableHead>
-                <TableHead>Sistemdeki Miktar</TableHead>
-                <TableHead>Sayılan</TableHead>
-                <TableHead>Fark</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => (
-                <CountItemRow
-                  key={item.id}
-                  item={item}
-                  readOnly={isCompleted}
-                  expectedQuantity={item.expected_quantity}
-                  countedQuantity={item.counted_quantity}
-                  unitLabel={item.products.unit}
-                  onSave={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
-                  onAddStock={(countItem, diff) => addStockMutation.mutate({ item: countItem, diff, unitKind: 'paket' })}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Paket Sayımı</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ürün</TableHead>
+                  <TableHead>Sistemdeki Miktar</TableHead>
+                  <TableHead>Sayılan</TableHead>
+                  <TableHead>Fark</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <CountItemRow
+                    key={item.id}
+                    item={item}
+                    readOnly={isCompleted}
+                    liveQuantity={item.products.current_quantity}
+                    countedQuantity={item.counted_quantity}
+                    unitLabel={item.products.unit}
+                    onSave={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Flakon Sayımı</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ürün</TableHead>
-                <TableHead>Sistemdeki Miktar</TableHead>
-                <TableHead>Sayılan</TableHead>
-                <TableHead>Fark</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => (
-                <CountItemRow
-                  key={item.id}
-                  item={item}
-                  readOnly={isCompleted}
-                  expectedQuantity={item.expected_quantity_flakon}
-                  countedQuantity={item.counted_quantity_flakon}
-                  unitLabel="flakon"
-                  onSave={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
-                  onAddStock={(countItem, diff) => addStockMutation.mutate({ item: countItem, diff, unitKind: 'flakon' })}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Flakon Sayımı</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ürün</TableHead>
+                  <TableHead>Sistemdeki Miktar</TableHead>
+                  <TableHead>Sayılan</TableHead>
+                  <TableHead>Fark</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <CountItemRow
+                    key={item.id}
+                    item={item}
+                    readOnly={isCompleted}
+                    liveQuantity={item.products.flakon_quantity}
+                    countedQuantity={item.counted_quantity_flakon}
+                    unitLabel="flakon"
+                    onSave={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">

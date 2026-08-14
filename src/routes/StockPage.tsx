@@ -14,7 +14,13 @@ import { ProductForm } from '@/features/stock/ProductForm'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
 import { ProductLotsDialog } from '@/features/stock/ProductLotsDialog'
-import { useDeactivateProduct, useProducts, useRecordStockMovement, useUpdateProductCampaign } from '@/features/stock/hooks'
+import {
+  useDeactivateProduct,
+  useProducts,
+  useRecordStockMovement,
+  useUpdateProductCampaign,
+  useUpdateProductPrice,
+} from '@/features/stock/hooks'
 import { recordStockMovement } from '@/features/stock/api'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
@@ -244,6 +250,81 @@ function CampaignCell({ product }: { product: Product }) {
   )
 }
 
+/** Satış fiyatına tıklayınca yerinde düzenlenebilir hale gelir — sadece unit_price alanını günceller. */
+function PriceCell({ product }: { product: Product }) {
+  const [editing, setEditing] = React.useState(false)
+  const [value, setValue] = React.useState(product.unit_price != null ? String(product.unit_price) : '')
+  const mutation = useUpdateProductPrice()
+
+  React.useEffect(() => {
+    if (!editing) setValue(product.unit_price != null ? String(product.unit_price) : '')
+  }, [product.unit_price, editing])
+
+  function commit() {
+    setEditing(false)
+    const trimmed = value.trim()
+    const current = product.unit_price != null ? String(product.unit_price) : ''
+    if (trimmed === current) return
+    const parsed = trimmed === '' ? null : Number(trimmed)
+    if (parsed !== null && (!Number.isFinite(parsed) || parsed < 0)) {
+      setValue(current)
+      return
+    }
+    mutation.mutate({ id: product.id, unit_price: parsed })
+  }
+
+  if (editing) {
+    return (
+      <Input
+        type="number"
+        min="0"
+        step="0.01"
+        autoFocus
+        placeholder="Örn. 1500"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit()
+          }
+          if (e.key === 'Escape') {
+            setValue(product.unit_price != null ? String(product.unit_price) : '')
+            setEditing(false)
+          }
+        }}
+        className="h-8 w-28"
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      title="Satış fiyatını düzenlemek için tıklayın"
+      className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 text-muted-foreground hover:bg-accent"
+    >
+      {product.unit_price ? (
+        <>
+          {Number(product.unit_price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+          {product.unit_cost != null && Number(product.unit_price) > 0 && (
+            <span className="text-xs text-success">
+              (%
+              {Math.round(((Number(product.unit_price) - Number(product.unit_cost)) / Number(product.unit_price)) * 100)}{' '}
+              marj)
+            </span>
+          )}
+        </>
+      ) : (
+        <span>—</span>
+      )}
+    </button>
+  )
+}
+
 function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: (product: Product) => void }) {
   return (
     <Card>
@@ -315,23 +396,8 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {product.unit_price ? (
-                      <>
-                        {Number(product.unit_price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                        {product.unit_cost != null && Number(product.unit_price) > 0 && (
-                          <span className="ml-1.5 text-xs text-success">
-                            (%
-                            {Math.round(
-                              ((Number(product.unit_price) - Number(product.unit_cost)) / Number(product.unit_price)) * 100,
-                            )}{' '}
-                            marj)
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      '—'
-                    )}
+                  <TableCell>
+                    <PriceCell product={product} />
                   </TableCell>
                   <TableCell>
                     <CampaignCell product={product} />
@@ -389,19 +455,23 @@ export function StockPage() {
   const [resettingStock, setResettingStock] = React.useState(false)
 
   /**
-   * Tüm ürünlerin stok miktarını 0'a çeker — doğrudan products.current_quantity
-   * güncellemesi DEĞİL, her ürün için record_stock_movement RPC'sini 'out'
-   * hareketiyle çağırıp denetim kaydına işleyerek yapılır (CLAUDE.md kuralı).
+   * Tüm ürünlerin hem paket hem flakon stok miktarını 0'a çeker — doğrudan
+   * products.current_quantity/flakon_quantity güncellemesi DEĞİL, her ürün
+   * için record_stock_movement RPC'sini 'out' hareketiyle (uygun unit_kind
+   * ile) çağırıp denetim kaydına işleyerek yapılır (CLAUDE.md kuralı).
+   * Günlük Sayım paneli canlı current_quantity/flakon_quantity'ye bağlı
+   * çalıştığı için bu sıfırlama oraya da otomatik yansır.
    */
   async function handleResetAllStock() {
-    const nonZero = allProducts.filter((p) => p.current_quantity > 0)
-    if (nonZero.length === 0) {
+    const nonZeroPaket = allProducts.filter((p) => p.current_quantity > 0)
+    const nonZeroFlakon = allProducts.filter((p) => p.flakon_quantity > 0)
+    if (nonZeroPaket.length === 0 && nonZeroFlakon.length === 0) {
       toast.info('Zaten tüm ürünlerin stoğu 0')
       return
     }
     if (
       !confirm(
-        `${nonZero.length} ürünün stoğu SIFIRLANACAK. Bu işlem her ürün için bir "çıkış" hareketi olarak kaydedilir, geri alınamaz. Emin misiniz?`,
+        `${nonZeroPaket.length} üründe paket, ${nonZeroFlakon.length} üründe flakon stoğu SIFIRLANACAK. Bu işlem her ürün için bir "çıkış" hareketi olarak kaydedilir, geri alınamaz. Emin misiniz?`,
       )
     ) {
       return
@@ -409,13 +479,28 @@ export function StockPage() {
     setResettingStock(true)
     let done = 0
     let failed = 0
-    for (const p of nonZero) {
+    for (const p of nonZeroPaket) {
       try {
         await recordStockMovement({
           product_id: p.id,
           movement_type: 'out',
           quantity: p.current_quantity,
           reason: 'Toplu stok sıfırlama',
+          unit_kind: 'paket',
+        })
+        done++
+      } catch {
+        failed++
+      }
+    }
+    for (const p of nonZeroFlakon) {
+      try {
+        await recordStockMovement({
+          product_id: p.id,
+          movement_type: 'out',
+          quantity: p.flakon_quantity,
+          reason: 'Toplu stok sıfırlama',
+          unit_kind: 'flakon',
         })
         done++
       } catch {
@@ -425,9 +510,9 @@ export function StockPage() {
     setResettingStock(false)
     await queryClient.invalidateQueries({ queryKey: ['products'] })
     if (failed === 0) {
-      toast.success(`${done} ürünün stoğu sıfırlandı`)
+      toast.success(`${done} stok hareketi sıfırlandı (paket + flakon)`)
     } else {
-      toast.error(`${done} ürün sıfırlandı, ${failed} ürün başarısız oldu`)
+      toast.error(`${done} hareket sıfırlandı, ${failed} hareket başarısız oldu`)
     }
   }
 

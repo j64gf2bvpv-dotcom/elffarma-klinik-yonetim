@@ -13,6 +13,7 @@ import {
   recordStockMovement,
   updateProduct,
   updateProductCampaign,
+  updateProductPrice,
   updateStockMovement,
   type ProductInput,
   type ProductLotInput,
@@ -75,6 +76,21 @@ export function useUpdateProductCampaign() {
       )
       queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success('Kampanya güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateProductPrice() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, unit_price }: { id: string; unit_price: number | null }) => updateProductPrice(id, unit_price),
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) =>
+        old?.map((p) => (p.id === id ? { ...p, ...updated } : p)),
+      )
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Satış fiyatı güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
   })

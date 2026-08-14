@@ -44,6 +44,10 @@ export async function updateProductCampaign(id: string, campaign: string | null)
   return offlineUpdate<Product>('products', id, { campaign }, `Kampanya güncelleme`)
 }
 
+export async function updateProductPrice(id: string, unit_price: number | null): Promise<Product> {
+  return offlineUpdate<Product>('products', id, { unit_price }, `Satış fiyatı güncelleme`)
+}
+
 export async function deactivateProduct(id: string): Promise<void> {
   await offlineUpdate('products', id, { is_active: false }, 'Ürün kaldırma')
 }

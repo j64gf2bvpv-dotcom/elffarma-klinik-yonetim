@@ -1,10 +1,10 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, getCurrentUserId } from '@/lib/offlineMutation'
 import { recordStockMovement } from '@/features/stock/api'
-import type { Product, StockCount, StockCountItem, StockUnitKind } from '@/types/database'
+import type { Product, StockCount, StockCountItem } from '@/types/database'
 
 export type StockCountItemWithProduct = StockCountItem & {
-  products: Pick<Product, 'name' | 'unit' | 'brand_line'>
+  products: Pick<Product, 'name' | 'unit' | 'brand_line' | 'current_quantity' | 'flakon_quantity'>
 }
 
 function todayDate() {
@@ -36,7 +36,7 @@ export async function fetchPastCounts(): Promise<StockCount[]> {
 export async function fetchCountItems(stockCountId: string): Promise<StockCountItemWithProduct[]> {
   const { data, error } = await supabase
     .from('stock_count_items')
-    .select('*, products(name, unit, brand_line)')
+    .select('*, products(name, unit, brand_line, current_quantity, flakon_quantity)')
     .eq('stock_count_id', stockCountId)
     .order('created_at', { ascending: true })
   if (error) throw error
@@ -88,73 +88,45 @@ export async function updateCountItemFlakon(id: string, counted_quantity_flakon:
 }
 
 /**
- * Günlük Sayım'da "Sistemdeki Miktar" üzerine tıklayıp doğrudan stok ekleme/
- * düşme için — record_stock_movement RPC'siyle ürünün gerçek stoğu güncellenir
- * (CLAUDE.md kuralı: current_quantity'ye asla doğrudan yazılmaz), ardından bu
- * sayım kaleminin expected_quantity'si (o günkü referans miktar) aynı farkla
- * güncellenir ki "Fark" hesaplaması gün sonuna kadar doğru kalsın. `unitKind`
- * ile hem Paket hem Flakon panelinde kullanılır.
+ * "Sistemdeki Miktar" artık salt okunur — sayım başladığındaki donmuş bir
+ * anlık görüntü değil, HER ZAMAN products.current_quantity/flakon_quantity'nin
+ * canlı halini gösterir (bkz. fetchCountItems'ın products join'i). Sayımı
+ * Tamamla da bu yüzden karşılaştırmayı expected_quantity yerine sayım anında
+ * TEKRAR çekilen (fetchCountItems) canlı ürün stoğuna göre yapıyor — kullanıcı
+ * amacı basit: canlı stoğu gör, yanına say, farkı depoya uygula.
+ *
+ * 'adjustment' hareket tipiyle imzalı (negatif olabilen) diff göndermek,
+ * record_stock_movement RPC'sinin stock_movements.quantity'ye HER ZAMAN abs()
+ * uygulaması yüzünden Stok Kartı defterinde işareti kaybediyordu — negatif
+ * farklar (sayımda eksik çıkan stok) ledger'da artış gibi görünüyordu. Bunun
+ * yerine in/out + mutlak değer kullanmak işareti hem gerçek stokta hem
+ * denetim kaydında doğru tutar.
  */
-export async function addStockToCountItem(
-  item: StockCountItemWithProduct,
-  diff: number,
-  unitKind: StockUnitKind = 'paket',
-): Promise<void> {
-  await recordStockMovement({
-    product_id: item.product_id,
-    movement_type: diff > 0 ? 'in' : 'out',
-    quantity: Math.abs(diff),
-    reason: 'Günlük sayım — stok ekleme',
-    unit_kind: unitKind,
-  })
-  if (unitKind === 'flakon') {
-    await offlineUpdate(
-      'stock_count_items',
-      item.id,
-      { expected_quantity_flakon: item.expected_quantity_flakon + diff },
-      'Sayım kalemi stok ekleme (flakon)',
-    )
-  } else {
-    await offlineUpdate(
-      'stock_count_items',
-      item.id,
-      { expected_quantity: item.expected_quantity + diff },
-      'Sayım kalemi stok ekleme (paket)',
-    )
-  }
-}
-
 export async function completeCount(stockCountId: string): Promise<void> {
   const items = await fetchCountItems(stockCountId)
   for (const item of items) {
-    // 'adjustment' hareket tipiyle imzalı (negatif olabilen) diff göndermek,
-    // record_stock_movement RPC'sinin stock_movements.quantity'ye HER ZAMAN
-    // abs() uygulaması yüzünden Stok Kartı defterinde işareti kaybediyordu —
-    // negatif farklar (sayımda eksik çıkan stok) ledger'da artış gibi
-    // görünüyordu. addStockToCountItem'daki gibi in/out + mutlak değer
-    // kullanmak işareti hem gerçek stokta hem denetim kaydında doğru tutar.
     if (item.counted_quantity != null) {
-      const diff = item.counted_quantity - item.expected_quantity
+      const diff = item.counted_quantity - item.products.current_quantity
       if (diff !== 0) {
         await recordStockMovement({
           product_id: item.product_id,
           movement_type: diff > 0 ? 'in' : 'out',
           quantity: Math.abs(diff),
           reason: 'Günlük sayım',
-          note: `Paket — Beklenen: ${item.expected_quantity}, Sayılan: ${item.counted_quantity}`,
+          note: `Paket — Sistemdeki: ${item.products.current_quantity}, Sayılan: ${item.counted_quantity}`,
           unit_kind: 'paket',
         })
       }
     }
     if (item.counted_quantity_flakon != null) {
-      const diffFlakon = item.counted_quantity_flakon - item.expected_quantity_flakon
+      const diffFlakon = item.counted_quantity_flakon - item.products.flakon_quantity
       if (diffFlakon !== 0) {
         await recordStockMovement({
           product_id: item.product_id,
           movement_type: diffFlakon > 0 ? 'in' : 'out',
           quantity: Math.abs(diffFlakon),
           reason: 'Günlük sayım',
-          note: `Flakon — Beklenen: ${item.expected_quantity_flakon}, Sayılan: ${item.counted_quantity_flakon}`,
+          note: `Flakon — Sistemdeki: ${item.products.flakon_quantity}, Sayılan: ${item.counted_quantity_flakon}`,
           unit_kind: 'flakon',
         })
       }
@@ -168,8 +140,6 @@ export async function completeCount(stockCountId: string): Promise<void> {
   )
 }
 
-/** Tamamlanmış bir sayımı düzenlemeye açmak için — "Sistemdeki Miktar" üzerinden
- * stok eklemek gibi işlemler sadece 'open' durumundaki sayımlarda çalışır. */
 export async function reopenCount(stockCountId: string): Promise<void> {
   await offlineUpdate('stock_counts', stockCountId, { status: 'open', completed_at: null }, 'Sayımı yeniden açma')
 }
