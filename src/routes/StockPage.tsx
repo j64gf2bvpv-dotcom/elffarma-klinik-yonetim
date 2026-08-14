@@ -530,7 +530,13 @@ function ProductsTable({
                   onDrop={() => handleDrop(index)}
                   onClick={() => onSelect(product.id)}
                   selected={product.id === selectedId}
-                  className={cn((isCritical || expiryStatus === 'expired') && 'bg-destructive/5')}
+                  className={cn(
+                    // Kritik/süresi geçmiş rengi (bg-destructive/5) seçiliyken
+                    // ATLANIYOR — aksi halde TableRow'un seçili-satır
+                    // koyulaştırması twMerge birleştirmesinde bu renk
+                    // tarafından ezilip görünmez oluyordu.
+                    (isCritical || expiryStatus === 'expired') && product.id !== selectedId && 'bg-destructive/5',
+                  )}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()} className="cursor-grab text-muted-foreground">
                     <GripVertical className="size-4" />
