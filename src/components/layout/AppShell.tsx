@@ -724,38 +724,6 @@ export function AppShell() {
     })
   }
 
-  // Yukarı/aşağı ok tuşlarıyla sol menüdeki bir önceki/sonraki modüle geçer
-  // (Giderler, Satışlar, Cari Hesap vb.) — arama kutusu gibi bir metin
-  // alanına yazarken devreye girmiyor. Bir sayfa (ör. Stok) kendi ok-tuşu
-  // gezinmesini capture aşamasında durdurursa bu dinleyici hiç çalışmaz,
-  // yani sayfa içi liste gezinmesi her zaman önceliklidir.
-  React.useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
-      const target = e.target as HTMLElement | null
-      if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)) return
-      if (navEditMode || visibleNavLayout.length === 0) return
-
-      const currentIndex = visibleNavLayout.findIndex((item) => {
-        const meta = navItemsByKey.get(item.key)
-        if (!meta) return false
-        return meta.end ? location.pathname === meta.to : location.pathname.startsWith(meta.to)
-      })
-      const nextIndex =
-        currentIndex < 0
-          ? 0
-          : e.key === 'ArrowDown'
-            ? Math.min(currentIndex + 1, visibleNavLayout.length - 1)
-            : Math.max(currentIndex - 1, 0)
-      const nextMeta = navItemsByKey.get(visibleNavLayout[nextIndex].key)
-      if (!nextMeta) return
-      e.preventDefault()
-      navigate(nextMeta.to)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [visibleNavLayout, location.pathname, navEditMode, navigate])
-
   return (
     <PresenceProvider>
     <div className="flex h-screen w-screen overflow-hidden bg-background">
