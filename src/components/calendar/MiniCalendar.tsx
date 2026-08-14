@@ -72,6 +72,12 @@ export function MiniCalendar({
           const inMonth = isSameMonth(day, month)
           const today = isToday(day)
           const isSelected = selected && isSameDay(day, selected)
+          // Pazartesi=0 ... Pazar=6. Takvimin en soldaki/sağdaki iki
+          // sütunundaki tarihlerde tooltip ortalanırsa (left-1/2) kartın
+          // dışına taşıp yandaki panelin altında kalıyordu — kenar
+          // sütunlarda kenara yaslanacak şekilde hizalama değişiyor.
+          const columnIndex = (day.getDay() + 6) % 7
+          const tooltipAlign = columnIndex <= 1 ? 'left' : columnIndex >= 5 ? 'right' : 'center'
           return (
             <div key={key} className="group relative mx-auto">
               <button
@@ -101,12 +107,17 @@ export function MiniCalendar({
               {dots && dots.length > 0 && (
                 <div
                   role="tooltip"
-                  className="pointer-events-none absolute top-full left-1/2 z-50 mt-1 grid w-max max-w-48 -translate-x-1/2 gap-0.5 rounded-md bg-foreground px-2.5 py-1.5 text-left text-xs font-medium text-background opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100"
+                  className={cn(
+                    'pointer-events-none absolute top-full z-[100] mt-1 grid w-max max-w-48 gap-0.5 rounded-md bg-foreground px-2.5 py-1.5 text-left text-xs font-medium text-background opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100',
+                    tooltipAlign === 'center' && 'left-1/2 -translate-x-1/2',
+                    tooltipAlign === 'left' && 'left-0',
+                    tooltipAlign === 'right' && 'right-0',
+                  )}
                 >
                   {dots.slice(0, 4).map((entry, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
+                    <div key={i} className="flex min-w-0 items-center gap-1.5">
                       <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
-                      <span className="truncate">{entry.title}</span>
+                      <span className="min-w-0 truncate">{entry.title}</span>
                     </div>
                   ))}
                   {dots.length > 4 && <div className="text-background/70">+{dots.length - 4} daha</div>}
