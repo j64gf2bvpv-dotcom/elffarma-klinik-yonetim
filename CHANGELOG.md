@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.110] - 2026-08-14
+
+**Ana Panel'e ve Ayarlar'a açılıp kapanabilir Ses Ayarları eklendi:** Klavye Sesleri (her tuşa basışta kısa bir tık), Bildirim Sesleri (yeni bir uyarı/hatırlatma belirdiğinde kısa bir ses) ve Arka Plan Müziği anahtarları — hepsi cihaza özel kişisel bir tercih olarak kaydedilir. Klavye/bildirim sesleri gerçek bir ses dosyası gerektirmeden anında üretiliyor. Arka plan müziği için ise gerçek bir mp3 dosyası gerekiyor — `public/audio/background.mp3` konumuna (telif sorunu olmayan) bir müzik dosyası eklenene kadar bu anahtar açılmaya çalışıldığında bir uyarı gösterip kendini kapatıyor; dosya eklenince otomatik çalışır. Şema değişikliği yok.
+
 ## [2.17.109] - 2026-08-14
 
 **Stok Yönetimi'ne yeni bir Kargo bölümü eklendi:** Yeni "Kargo" sekmesinden doktor/müşteri (opsiyonel), alıcı adı/telefon/adres, gönderilecek ürün ve miktar, gönderim tarihi ve not girilerek kargo kaydı oluşturulabiliyor. Her kayıt canlı stok durumunu ("Stokta Var"/"Stokta Yok") gösteriyor, "Bekletiliyor / Gönderilecek / Gönderildi" durumları arasında geçebiliyor — "Gönderildi" işaretlemek bağlı ürün varsa gerçek bir stok çıkışı yapıyor. Gönderim tarihi girilen kargolar otomatik olarak Hatırlatmalar'da (dolayısıyla Ajanda'da) da beliriyor. Şema değişikliği var (yeni cargo_shipments tablosu).

@@ -8,6 +8,7 @@ import { TopProductsListCard } from './TopProductsListCard'
 import { SalesRepReportCard } from './SalesRepReportCard'
 import { NotificationsCard } from './NotificationsCard'
 import { OnlineStaffCard } from './OnlineStaffCard'
+import { SoundSettingsCard } from '@/features/soundSettings/SoundSettingsCard'
 import { QuickActionsRow } from './QuickActionsRow'
 import { useDashboardData } from './useDashboardData'
 
@@ -82,6 +83,7 @@ export function PixelDashboard() {
         <SalesRepReportCard items={data.repMonthlyReport} />
         <NotificationsCard items={data.notifications} />
         <OnlineStaffCard />
+        <SoundSettingsCard />
       </div>
 
       <QuickActionsRow />

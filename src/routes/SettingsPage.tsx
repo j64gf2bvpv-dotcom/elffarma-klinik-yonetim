@@ -50,6 +50,7 @@ import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
 import { AIProviderSettings } from '@/features/ai/AIProviderSettings'
 import { BackupSettingsCard } from '@/features/backup/BackupSettingsCard'
 import { UpdateSettingsCard } from '@/features/appUpdate/UpdateSettingsCard'
+import { SoundSettingsCard } from '@/features/soundSettings/SoundSettingsCard'
 import { brandThemes } from '@/features/appSettings/brandThemes'
 import { iconSets, defaultIconSetId } from '@/features/appSettings/iconSets'
 import { useColorMode } from '@/features/appSettings/useColorMode'
@@ -887,6 +888,7 @@ export function SettingsPage() {
 
         <AIProviderSettings />
         <BackupSettingsCard />
+        <SoundSettingsCard />
         <MyProfileCard />
       </div>
     </div>

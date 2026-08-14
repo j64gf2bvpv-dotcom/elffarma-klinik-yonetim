@@ -45,6 +45,9 @@ import { useWhatsNewNotification } from '@/features/appUpdate/useWhatsNewNotific
 import { AIChatWidget } from '@/features/ai/AIChatWidget'
 import { PresenceProvider, useOnlineStaff } from '@/features/presence/PresenceProvider'
 import { useUpdateStaff } from '@/features/staff/hooks'
+import { useKeyboardSound } from '@/features/soundSettings/useKeyboardSound'
+import { useNotificationSound } from '@/features/soundSettings/useNotificationSound'
+import { useBackgroundMusic } from '@/features/soundSettings/useBackgroundMusic'
 import { useAIChatOpen } from '@/features/ai/useAIChatOpen'
 import { useColorMode } from '@/features/appSettings/useColorMode'
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
@@ -641,6 +644,9 @@ export function AppShell() {
   useApplyBrandTheme()
   useAutoBackupOnLaunch(staff?.role === 'admin')
   useWhatsNewNotification()
+  useKeyboardSound()
+  useNotificationSound()
+  useBackgroundMusic()
   const { mode, toggle: toggleColorMode } = useColorMode()
   const { data: iconSetId } = useAppSetting<string>('sidebar_icon_set')
   const iconSet = getIconSet(iconSetId)
