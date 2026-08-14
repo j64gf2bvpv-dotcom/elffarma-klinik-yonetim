@@ -416,6 +416,17 @@ function CategoryCell({ product }: { product: Product }) {
   )
 }
 
+/**
+ * `max-w-none` üründe resim kare gözükmeme ("ince çubuk" görünme) hatasının
+ * gerçek kök nedeni için gerekli: Tailwind'in `img{max-width:100%;height:auto}`
+ * global sıfırlaması, `size-9`'un genişliğini geçersiz KILMIYOR (ayrı bir CSS
+ * özelliği) — tablo bu sütunu `table-layout:auto` yüzünden (Dermakor ve Swiss
+ * tabloları birbirinden bağımsız, aynı kodla bile FARKLI genişliğe
+ * yerleşebiliyor) 60px altına sıkıştırdığında resim de genişlikte küçülüyor,
+ * ama `size-9`'un yüksekliği (daha spesifik class) sabit 36px kalıyor — sonuç
+ * dar-ama-uzun bir "çubuk". Gerçek 1400/1024/800/600/400px pencere
+ * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
+ */
 function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: (product: Product) => void }) {
   return (
     <Card>
@@ -455,8 +466,8 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     <SafeThumbnail
                       src={product.image_url}
                       alt={product.name}
-                      className="size-9 rounded-md border-2 border-muted-foreground/30 bg-muted object-cover"
-                      fallback={<div className="size-9 rounded-md border-2 border-muted-foreground/30 bg-muted" />}
+                      className="size-9 max-w-none shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted object-cover"
+                      fallback={<div className="size-9 shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted" />}
                     />
                   </TableCell>
                   <TableCell className="font-medium">
