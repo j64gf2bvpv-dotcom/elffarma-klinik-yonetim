@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.116] - 2026-08-14
+
+**Sol menüde seçili panelin koyuluğu artırıldı:** Bir önceki düzeltmedeki koyulaştırma (bg-black/25) yeterince belirgin değildi — kullanıcı geri bildirimiyle daha güçlü bir katmana (bg-black/55) çıkarıldı, artık seçili panel net biçimde ayrışıyor. Şema değişikliği yok.
+
 ## [2.17.115] - 2026-08-14
 
 **Sol menüde tıklanan panel artık her zaman koyu kalıyor:** Kullanıcı geri bildirimiyle netleşti — bahsedilen "panel" sekme çubuğu değil, sol kenar çubuğundaki modül bağlantılarıydı (Stok Yönetimi, Satışlar vb.). Seçili modülün arka planı `--sidebar-accent` tokenine bağlıydı — bu bazı marka temalarında kenar çubuğunun kendi renginden daha AÇIK çıkabiliyordu (Tabs'ta yaşanan sorunla aynı kök neden). Artık temadan bağımsız sabit bir koyulaştırma katmanı kullanılıyor, seçili panel her temada belirgin şekilde koyu kalıyor. Şema değişikliği yok.
