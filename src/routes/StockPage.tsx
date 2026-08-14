@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, AlertTriangle, Trash2, CalendarClock, Wallet, TrendingUp, PackageSearch, RotateCcw, Loader2 } from 'lucide-react'
+import { Search, AlertTriangle, Trash2, CalendarClock, TrendingUp, PackageSearch, RotateCcw, Loader2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Input } from '@/components/ui/input'
@@ -496,18 +496,7 @@ export function StockPage() {
         }
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Wallet className="size-5" />
-            </span>
-            <div>
-              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Stok Değeri (Maliyet)</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(totalCostValue)}</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.98] - 2026-08-14
+
+**"Tüm Ürünleri Sıfırla" hatası için veritabanı şema kayması düzeltildi, "Stok Değeri (Maliyet)" kartı kaldırıldı:** Paralel çalışan başka bir oturum, `stock_movements` tablosuna ve stok hareketi fonksiyonlarına (satış temsilcisi bağlama, hareket kaynağı izleme gibi) migration sistemi dışından doğrudan değişiklik yapmıştı — bu hem şemanın izlenebilirliğini bozuyordu hem de sunucunun (PostgREST) bu değişiklikleri önbelleğe alma şeklini etkilemiş olabilirdi. Canlı şema artık migration geçmişine düzgünce kaydedildi ve sunucu önbelleği zorla yenilendi. Ayrıca Stok sayfasındaki "Stok Değeri (Maliyet)" kartı kaldırıldı. Şema değişikliği var (şema kayması giderildi, işlevsel bir değişiklik yok).
+
 ## [2.17.97] - 2026-08-14
 
 **Ürün resmi kutusunun gerçek boyut hatası bulundu ve düzeltildi:** Gerçek tarayıcıda ölçüm yapılarak (36x36 olması gereken resim kutusunun aslında 24x36 render olduğu) kanıtlandı — sütun başlığındaki sabit genişlik (48px), her hücrenin kendi iç boşluğunu (24px) çıkardıktan sonra resme sadece 24px bırakıyordu. Kare fotoğraflarda (Dermakor) neredeyse fark edilmiyordu, dikey fotoğraflarda (Swiss) belirgin şekilde yassı/çizgi gibi görünüyordu. Sütun genişliği düzeltildi, artık her ürün resmi gerçekten kare. Şema değişikliği yok.
