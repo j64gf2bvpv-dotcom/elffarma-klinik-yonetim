@@ -11,6 +11,7 @@ import {
   fetchProducts,
   fetchStockMovements,
   recordStockMovement,
+  reorderProducts,
   updateProduct,
   updateProductCampaign,
   updateProductCategory,
@@ -109,6 +110,21 @@ export function useUpdateProductPrice() {
       toast.success('Satış fiyatı güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useReorderProducts() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (updates: { id: string; sort_order: number }[]) => reorderProducts(updates),
+    onSuccess: (_data, updates) => {
+      const orderById = new Map(updates.map((u) => [u.id, u.sort_order]))
+      queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) =>
+        old?.map((p) => (orderById.has(p.id) ? { ...p, sort_order: orderById.get(p.id)! } : p)),
+      )
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+    onError: (error: Error) => toast.error('Sıra kaydedilemedi', { description: error.message }),
   })
 }
 

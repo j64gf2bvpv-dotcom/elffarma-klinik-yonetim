@@ -8,6 +8,11 @@ import { cn } from '@/lib/utils'
 
 const WEEKDAY_LETTERS = ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pz']
 
+export interface MiniCalendarDayEntry {
+  color: string
+  title: string
+}
+
 /** Her günün altına o gün düşen etkinlik türlerinin rengiyle küçük noktalar basan, ay gezinmeli mini takvim. */
 export function MiniCalendar({
   month,
@@ -20,7 +25,7 @@ export function MiniCalendar({
   onMonthChange: (month: Date) => void
   selected: Date | undefined
   onSelectDate: (date: Date) => void
-  dotsByDay: Map<string, string[]>
+  dotsByDay: Map<string, MiniCalendarDayEntry[]>
 }) {
   const days = React.useMemo(() => {
     const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 })
@@ -68,31 +73,46 @@ export function MiniCalendar({
           const today = isToday(day)
           const isSelected = selected && isSameDay(day, selected)
           return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onSelectDate(day)}
-              className={cn(
-                'mx-auto flex size-9 flex-col items-center justify-center gap-0.5 rounded-full text-[13px] font-medium transition-all duration-200 active:scale-90',
-                !inMonth && 'text-muted-foreground/35',
-                inMonth && !today && !isSelected && 'text-foreground hover:scale-105 hover:bg-accent',
-                today && !isSelected && 'bg-destructive font-bold text-white',
-                isSelected && 'scale-110 bg-primary font-bold text-primary-foreground shadow-md',
-              )}
-            >
-              <span>{format(day, 'd')}</span>
-              <span className="flex h-1 gap-0.5">
-                {dots &&
-                  dots.length > 0 &&
-                  dots.slice(0, 3).map((color, i) => (
-                    <span
-                      key={i}
-                      className="size-1 rounded-full"
-                      style={{ backgroundColor: isSelected || today ? 'currentColor' : color }}
-                    />
+            <div key={key} className="group relative mx-auto">
+              <button
+                type="button"
+                onClick={() => onSelectDate(day)}
+                className={cn(
+                  'mx-auto flex size-9 flex-col items-center justify-center gap-0.5 rounded-full text-[13px] font-medium transition-all duration-200 active:scale-90',
+                  !inMonth && 'text-muted-foreground/35',
+                  inMonth && !today && !isSelected && 'text-foreground hover:scale-105 hover:bg-accent',
+                  today && !isSelected && 'bg-destructive font-bold text-white',
+                  isSelected && 'scale-110 bg-primary font-bold text-primary-foreground shadow-md',
+                )}
+              >
+                <span>{format(day, 'd')}</span>
+                <span className="flex h-1 gap-0.5">
+                  {dots &&
+                    dots.length > 0 &&
+                    dots.slice(0, 3).map((entry, i) => (
+                      <span
+                        key={i}
+                        className="size-1 rounded-full"
+                        style={{ backgroundColor: isSelected || today ? 'currentColor' : entry.color }}
+                      />
+                    ))}
+                </span>
+              </button>
+              {dots && dots.length > 0 && (
+                <div
+                  role="tooltip"
+                  className="pointer-events-none absolute top-full left-1/2 z-50 mt-1 grid w-max max-w-48 -translate-x-1/2 gap-0.5 rounded-md bg-foreground px-2.5 py-1.5 text-left text-xs font-medium text-background opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100"
+                >
+                  {dots.slice(0, 4).map((entry, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
+                      <span className="truncate">{entry.title}</span>
+                    </div>
                   ))}
-              </span>
-            </button>
+                  {dots.length > 4 && <div className="text-background/70">+{dots.length - 4} daha</div>}
+                </div>
+              )}
+            </div>
           )
         })}
       </div>

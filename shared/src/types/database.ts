@@ -98,6 +98,8 @@ export interface Product {
   barcode: string | null
   brand_line: BrandLine | null
   is_active: boolean
+  /** Elle sürükle-bırak sıralaması — null ise listenin sonunda görünür (bkz. fetchProducts). */
+  sort_order: number | null
   created_at: string
   updated_at: string
 }

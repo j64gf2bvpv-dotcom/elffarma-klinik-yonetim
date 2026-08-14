@@ -20,12 +20,30 @@ export interface ProductInput {
 }
 
 export async function fetchProducts(search: string, brandLine?: BrandLine): Promise<Product[]> {
-  let query = supabase.from('products').select('*').eq('is_active', true).order('name')
+  let query = supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true, nullsFirst: false })
+    .order('name')
   if (search.trim()) query = query.ilike('name', `%${search.trim()}%`)
   if (brandLine) query = query.eq('brand_line', brandLine)
   const { data, error } = await query
   if (error) throw error
   return data as Product[]
+}
+
+/**
+ * Ürünler tablosunda sürükle-bırak sıralama — her satır için yeni sort_order
+ * değerini tek tek yazıyor (Supabase'te tek istekte "farklı satıra farklı
+ * değer" upsert'i product'ın DİĞER tüm alanlarını da göndermeyi gerektirirdi,
+ * bu yüzden CLAUDE.md'deki offline-yazma desenine uyan basit bir döngü tercih
+ * edildi — tipik bir marka listesindeki ürün sayısı için maliyeti önemsiz).
+ */
+export async function reorderProducts(updates: { id: string; sort_order: number }[]): Promise<void> {
+  for (const u of updates) {
+    await offlineUpdate('products', u.id, { sort_order: u.sort_order }, 'Ürün sırası güncelleme')
+  }
 }
 
 export async function createProduct(input: ProductInput): Promise<Product> {

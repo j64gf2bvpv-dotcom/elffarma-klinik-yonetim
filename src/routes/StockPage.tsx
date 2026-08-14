@@ -1,13 +1,25 @@
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, AlertTriangle, Trash2, CalendarClock, TrendingUp, PackageSearch, RotateCcw, Loader2, Check } from 'lucide-react'
+import {
+  Search,
+  AlertTriangle,
+  Trash2,
+  CalendarClock,
+  TrendingUp,
+  PackageSearch,
+  RotateCcw,
+  Loader2,
+  Check,
+  GripVertical,
+} from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ProductForm } from '@/features/stock/ProductForm'
@@ -18,6 +30,7 @@ import {
   useDeactivateProduct,
   useProducts,
   useRecordStockMovement,
+  useReorderProducts,
   useUpdateProductCampaign,
   useUpdateProductCategory,
   useUpdateProductPrice,
@@ -432,18 +445,47 @@ function ProductsTable({
   onRemove,
   selectedId,
   onSelect,
+  checkedIds,
+  onToggleChecked,
+  onToggleAll,
+  onReorder,
 }: {
   products: Product[]
   onRemove: (product: Product) => void
   selectedId: string | null
   onSelect: (id: string) => void
+  checkedIds: Set<string>
+  onToggleChecked: (id: string) => void
+  onToggleAll: (products: Product[], checkAll: boolean) => void
+  onReorder: (products: Product[]) => void
 }) {
+  const dragIndexRef = React.useRef<number | null>(null)
+  const allChecked = products.length > 0 && products.every((p) => checkedIds.has(p.id))
+
+  function handleDrop(targetIndex: number) {
+    const from = dragIndexRef.current
+    dragIndexRef.current = null
+    if (from === null || from === targetIndex) return
+    const reordered = [...products]
+    const [moved] = reordered.splice(from, 1)
+    reordered.splice(targetIndex, 0, moved)
+    onReorder(reordered)
+  }
+
   return (
     <Card>
       <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-8"></TableHead>
+              <TableHead className="w-8">
+                <Checkbox
+                  checked={allChecked}
+                  onCheckedChange={(v) => onToggleAll(products, v === true)}
+                  aria-label="Tümünü seç"
+                />
+              </TableHead>
               <TableHead className="w-[60px]"></TableHead>
               <TableHead>Ürün</TableHead>
               <TableHead>Kategori</TableHead>
@@ -459,21 +501,35 @@ function ProductsTable({
           <TableBody>
             {products.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={12} className="py-8 text-center text-muted-foreground">
                   Ürün bulunamadı
                 </TableCell>
               </TableRow>
             )}
-            {products.map((product) => {
+            {products.map((product, index) => {
               const isCritical = product.current_quantity <= product.critical_stock_threshold
               const expiryStatus = getExpiryStatus(product.expiry_date)
               return (
                 <TableRow
                   key={product.id}
+                  draggable
+                  onDragStart={() => (dragIndexRef.current = index)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(index)}
                   onClick={() => onSelect(product.id)}
                   selected={product.id === selectedId}
                   className={cn((isCritical || expiryStatus === 'expired') && 'bg-destructive/5')}
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()} className="cursor-grab text-muted-foreground">
+                    <GripVertical className="size-4" />
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={checkedIds.has(product.id)}
+                      onCheckedChange={() => onToggleChecked(product.id)}
+                      aria-label={`${product.name} seç`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <SafeThumbnail
                       src={product.image_url}
@@ -563,14 +619,52 @@ export function StockPage() {
   // Kaydırırken hangi satırla ilgilendiğini kaybetmemek için tıklanan satır
   // vurgulanıp öyle kalıyor — hover gibi fare pozisyonuna bağlı değil.
   const [selectedProductId, setSelectedProductId] = React.useState<string | null>(null)
+  const [checkedIds, setCheckedIds] = React.useState<Set<string>>(new Set())
   const { data: products = [], isLoading } = useProducts(search, brandFilter === ALL_BRANDS ? undefined : brandFilter)
   const { data: allProducts = [] } = useProducts('')
   const deactivateMutation = useDeactivateProduct()
+  const reorderMutation = useReorderProducts()
   const queryClient = useQueryClient()
 
   function handleRemove(product: Product) {
     if (!confirm(`${product.name} kaldırılsın mı? Ürün stok listesinden kaldırılır, geçmiş hareketler saklanır.`)) return
     deactivateMutation.mutate(product.id)
+  }
+
+  function toggleChecked(id: string) {
+    setCheckedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAllChecked(rows: Product[], checkAll: boolean) {
+    setCheckedIds((prev) => {
+      const next = new Set(prev)
+      for (const p of rows) {
+        if (checkAll) next.add(p.id)
+        else next.delete(p.id)
+      }
+      return next
+    })
+  }
+
+  /** Sürükle-bırakla bırakılan satırın ait olduğu (Dermakor/Swiss) filtrelenmiş
+   * listeye göre 10, 20, 30... yeni sort_order değerleri yazılır. */
+  function handleReorder(reordered: Product[]) {
+    reorderMutation.mutate(reordered.map((p, i) => ({ id: p.id, sort_order: (i + 1) * 10 })))
+  }
+
+  async function handleBulkRemove() {
+    const selected = allProducts.filter((p) => checkedIds.has(p.id))
+    if (selected.length === 0) return
+    if (!confirm(`${selected.length} ürün kaldırılsın mı? Ürünler stok listesinden kaldırılır, geçmiş hareketler saklanır.`)) return
+    for (const p of selected) {
+      await deactivateMutation.mutateAsync(p.id)
+    }
+    setCheckedIds(new Set())
   }
 
   const [resettingStock, setResettingStock] = React.useState(false)
@@ -757,6 +851,23 @@ export function StockPage() {
             </Tabs>
           </div>
 
+          {checkedIds.size > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+              <span className="text-sm font-medium">{checkedIds.size} ürün seçili</span>
+              <Button variant="outline" size="sm" onClick={() => setCheckedIds(new Set())}>
+                Seçimi Temizle
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={handleBulkRemove}
+              >
+                <Trash2 className="size-3.5" /> Seçilenleri Kaldır
+              </Button>
+            </div>
+          )}
+
           {isLoading && <p className="text-muted-foreground py-8 text-center">Yükleniyor...</p>}
 
           {!isLoading && brandFilter === ALL_BRANDS && (
@@ -768,6 +879,10 @@ export function StockPage() {
                   onRemove={handleRemove}
                   selectedId={selectedProductId}
                   onSelect={setSelectedProductId}
+                  checkedIds={checkedIds}
+                  onToggleChecked={toggleChecked}
+                  onToggleAll={toggleAllChecked}
+                  onReorder={handleReorder}
                 />
               </div>
               <div className="min-w-0">
@@ -777,19 +892,12 @@ export function StockPage() {
                   onRemove={handleRemove}
                   selectedId={selectedProductId}
                   onSelect={setSelectedProductId}
+                  checkedIds={checkedIds}
+                  onToggleChecked={toggleChecked}
+                  onToggleAll={toggleAllChecked}
+                  onReorder={handleReorder}
                 />
               </div>
-              {products.some((p) => !p.brand_line) && (
-                <div className="min-w-0">
-                  <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Diğer</h3>
-                  <ProductsTable
-                    products={products.filter((p) => !p.brand_line)}
-                    onRemove={handleRemove}
-                    selectedId={selectedProductId}
-                    onSelect={setSelectedProductId}
-                  />
-                </div>
-              )}
             </div>
           )}
 
@@ -799,6 +907,10 @@ export function StockPage() {
               onRemove={handleRemove}
               selectedId={selectedProductId}
               onSelect={setSelectedProductId}
+              checkedIds={checkedIds}
+              onToggleChecked={toggleChecked}
+              onToggleAll={toggleAllChecked}
+              onReorder={handleReorder}
             />
           )}
         </TabsContent>

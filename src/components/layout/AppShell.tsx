@@ -31,6 +31,8 @@ import {
   ChevronDown,
   Calculator as CalculatorIcon,
   Mail,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -41,7 +43,8 @@ import { useApplyBrandTheme } from '@/features/appSettings/useApplyBrandTheme'
 import { useAutoBackupOnLaunch } from '@/features/backup/useAutoBackupOnLaunch'
 import { useWhatsNewNotification } from '@/features/appUpdate/useWhatsNewNotification'
 import { AIChatWidget } from '@/features/ai/AIChatWidget'
-import { PresenceProvider } from '@/features/presence/PresenceProvider'
+import { PresenceProvider, useOnlineStaff } from '@/features/presence/PresenceProvider'
+import { useUpdateStaff } from '@/features/staff/hooks'
 import { useAIChatOpen } from '@/features/ai/useAIChatOpen'
 import { useColorMode } from '@/features/appSettings/useColorMode'
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
@@ -210,6 +213,34 @@ function initials(name: string) {
     .join('')
 }
 
+/** Kenar çubuğundaki profil kartının altında, o an uygulamayı açık tutan DİĞER personeli listeler. */
+function SidebarOnlineList() {
+  const { staff } = useAuth()
+  const online = useOnlineStaff()
+  const others = online.filter((o) => o.staff_id !== staff?.id)
+
+  if (others.length === 0) return null
+
+  return (
+    <div className="relative z-10 mx-3 mb-2 grid gap-1">
+      {others.map((o) => (
+        <div key={o.staff_id} className="flex items-center gap-2 rounded-lg px-2 py-1 text-xs text-sidebar-foreground/70">
+          <span className="relative shrink-0">
+            <Avatar className="size-6">
+              {o.avatar_url && <AvatarImage src={o.avatar_url} alt={o.full_name} />}
+              <AvatarFallback className="bg-white/10 text-[9px] text-sidebar-foreground">
+                {initials(o.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="absolute -right-0.5 -bottom-0.5 size-1.5 rounded-full border border-sidebar bg-[oklch(0.72_0.16_150)]" />
+          </span>
+          <span className="truncate">{o.full_name}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function NotifIcon({ icon: Icon, tone = 'destructive' }: { icon: React.ElementType; tone?: 'destructive' | 'primary' }) {
   return (
     <span
@@ -241,7 +272,7 @@ function TopBarIconTooltip({ label, children }: { label: string; children: React
 }
 
 function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColorMode: () => void }) {
-  const { staff, signOut } = useAuth()
+  const { staff } = useAuth()
   const isOnline = useOnlineStatus()
   const alerts = useAlertsSummary()
   const { dismissed, dismiss } = useDismissedAlerts()
@@ -598,49 +629,13 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
           </span>
         )}
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button type="button" className="ml-1 flex items-center gap-2 rounded-lg py-1 pr-1 pl-1.5 hover:bg-accent">
-              <span className="relative">
-                <Avatar className="size-8">
-                  {staff?.avatar_url && <AvatarImage src={staff.avatar_url} alt={staff.full_name} />}
-                  <AvatarFallback className="bg-primary/20 text-primary-foreground text-xs">
-                    {initials(staff?.full_name || '?')}
-                  </AvatarFallback>
-                </Avatar>
-                <span
-                  className={cn(
-                    'absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full ring-2 ring-background',
-                    isOnline ? 'bg-success' : 'bg-destructive',
-                  )}
-                />
-              </span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel>
-              <p className="truncate font-medium">{staff?.full_name}</p>
-              <p className="text-muted-foreground text-xs font-normal">{staff ? tr.staffRole[staff.role] : ''}</p>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/ayarlar">
-                <Pencil /> Profili Düzenle
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={() => signOut()}>
-              <LogOut /> Çıkış Yap
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </header>
   )
 }
 
 export function AppShell() {
-  const { staff } = useAuth()
+  const { staff, signOut } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   useApplyBrandTheme()
@@ -653,17 +648,21 @@ export function AppShell() {
 
   const { data: savedNavLayout } = useAppSetting<NavLayoutItem[]>('sidebar_nav_layout')
   const saveNavLayoutMutation = useSaveAppSetting<NavLayoutItem[]>('sidebar_nav_layout')
+  const updateStaffMutation = useUpdateStaff()
   const [navEditMode, setNavEditMode] = React.useState(false)
   const [draftNavLayout, setDraftNavLayout] = React.useState<NavLayoutItem[] | null>(null)
+  const [draftHidden, setDraftHidden] = React.useState<string[] | null>(null)
   const navDragIndexRef = React.useRef<number | null>(null)
 
   const navLayout = sanitizeNavLayout(draftNavLayout ?? savedNavLayout ?? defaultNavLayout)
   // Admin, Ayarlar > Kullanıcı Panel İzinleri'nden her kullanıcı için hangi
   // sekmelerin gizleneceğini belirleyebiliyor (bkz. staff.hidden_nav_items) —
-  // düzenleme modunda (navEditMode) admin sırayı/etiketleri HERKES için
-  // yönettiği için tam listeyi görmeye devam ediyor, sadece normal menü
-  // görünümü kullanıcının kendi gizli listesine göre filtreleniyor.
-  const hiddenForMe = new Set(staff?.hidden_nav_items ?? [])
+  // ayrıca "Menüyü düzenle" ile admin KENDİ menüsünde de aynı listeyi göz
+  // ikonuyla açıp kapatabiliyor (staff_update_self RLS'i kendi satırını
+  // güncellemesine izin veriyor). Düzenleme modunda tam liste (gizliler de
+  // soluk) gösterilir ki kapatılan bir öğe tekrar açılabilsin; normal menü
+  // görünümü sadece kullanıcının kendi gizli listesine göre filtrelenir.
+  const hiddenForMe = new Set(draftHidden ?? staff?.hidden_nav_items ?? [])
   const visibleNavLayout = navLayout.filter((item) => !hiddenForMe.has(item.key))
 
   // Sadece menüden gizlemek yetmez — sekmeye doğrudan URL ile gidilirse de
@@ -680,17 +679,27 @@ export function AppShell() {
 
   function startNavEditing() {
     setDraftNavLayout(navLayout)
+    setDraftHidden(staff?.hidden_nav_items ?? [])
     setNavEditMode(true)
   }
 
   function cancelNavEditing() {
     setDraftNavLayout(null)
+    setDraftHidden(null)
     setNavEditMode(false)
   }
 
   async function saveNavLayout() {
     if (draftNavLayout) await saveNavLayoutMutation.mutateAsync(draftNavLayout)
+    if (staff && draftHidden) await updateStaffMutation.mutateAsync({ id: staff.id, input: { hidden_nav_items: draftHidden } })
     setNavEditMode(false)
+  }
+
+  function toggleNavItemHidden(key: NavKey) {
+    setDraftHidden((prev) => {
+      const current = prev ?? staff?.hidden_nav_items ?? []
+      return current.includes(key) ? current.filter((k) => k !== key) : [...current, key]
+    })
   }
 
   function renameNavItem(key: NavKey, label: string) {
@@ -771,23 +780,34 @@ export function AppShell() {
                   />
                 )
               })
-            : navLayout.map((item, index) => (
-                <div
-                  key={item.key}
-                  draggable
-                  onDragStart={() => (navDragIndexRef.current = index)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => handleNavDrop(index)}
-                  className="flex items-center gap-2 rounded-lg bg-white/5 px-2 py-1.5"
-                >
-                  <GripVertical className="text-sidebar-foreground/40 size-3.5 shrink-0 cursor-grab" />
-                  <Input
-                    value={item.label}
-                    onChange={(e) => renameNavItem(item.key, e.target.value)}
-                    className="h-7 border-white/15 bg-white/10 px-2 text-xs text-sidebar-foreground placeholder:text-sidebar-foreground/40"
-                  />
-                </div>
-              ))}
+            : navLayout.map((item, index) => {
+                const isHidden = hiddenForMe.has(item.key)
+                return (
+                  <div
+                    key={item.key}
+                    draggable
+                    onDragStart={() => (navDragIndexRef.current = index)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => handleNavDrop(index)}
+                    className={cn('flex items-center gap-2 rounded-lg bg-white/5 px-2 py-1.5', isHidden && 'opacity-45')}
+                  >
+                    <GripVertical className="text-sidebar-foreground/40 size-3.5 shrink-0 cursor-grab" />
+                    <Input
+                      value={item.label}
+                      onChange={(e) => renameNavItem(item.key, e.target.value)}
+                      className="h-7 border-white/15 bg-white/10 px-2 text-xs text-sidebar-foreground placeholder:text-sidebar-foreground/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleNavItemHidden(item.key)}
+                      title={isHidden ? 'Menümde göster' : 'Menümde gizle'}
+                      className="flex size-6 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/50 transition-colors hover:bg-white/10 hover:text-sidebar-foreground"
+                    >
+                      {isHidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                    </button>
+                  </div>
+                )
+              })}
           <SidebarNavLink
             to="/ayarlar"
             icon={iconSet.icons.settings}
@@ -797,21 +817,41 @@ export function AppShell() {
           />
         </nav>
 
-        <div className="relative z-10 mx-3 mb-2 flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5">
-          <Avatar className="size-10 shrink-0">
-            {staff?.avatar_url && <AvatarImage src={staff.avatar_url} alt={staff.full_name} />}
-            <AvatarFallback className="bg-white/15 text-sidebar-foreground text-xs font-semibold">
-              {initials(staff?.full_name || '?')}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-sidebar-foreground">{staff?.full_name}</p>
-            <p className="truncate text-xs text-sidebar-foreground/55">{staff ? tr.staffRole[staff.role] : ''}</p>
-            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-[oklch(0.72_0.16_150)]">
-              <span className="size-1.5 shrink-0 rounded-full bg-[oklch(0.72_0.16_150)]" /> Çevrimiçi
-            </p>
-          </div>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="relative z-10 mx-3 mb-2 flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5 text-left transition-colors hover:bg-white/10"
+            >
+              <Avatar className="size-10 shrink-0">
+                {staff?.avatar_url && <AvatarImage src={staff.avatar_url} alt={staff.full_name} />}
+                <AvatarFallback className="bg-white/15 text-sidebar-foreground text-xs font-semibold">
+                  {initials(staff?.full_name || '?')}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-sidebar-foreground">{staff?.full_name}</p>
+                <p className="truncate text-xs text-sidebar-foreground/55">{staff ? tr.staffRole[staff.role] : ''}</p>
+                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-[oklch(0.72_0.16_150)]">
+                  <span className="size-1.5 shrink-0 rounded-full bg-[oklch(0.72_0.16_150)]" /> Çevrimiçi
+                </p>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="top" className="w-52">
+            <DropdownMenuItem asChild>
+              <Link to="/ayarlar">
+                <Pencil /> Profili Düzenle
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onSelect={() => signOut()}>
+              <LogOut /> Çıkış Yap
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <SidebarOnlineList />
 
         <p className="relative z-10 mx-3 mb-3 text-center text-[10px] text-sidebar-foreground/40">
           © {new Date().getFullYear()} {CLINIC_NAME}
