@@ -180,7 +180,10 @@ function TableRow({ className, selected, ...props }: React.ComponentProps<'tr'> 
       className={cn(
         'hover:bg-accent/40 border-b border-border/60 transition-colors duration-150',
         props.onClick && 'cursor-pointer',
-        selected && 'bg-primary/25 shadow-[inset_6px_0_0_0_var(--primary)] font-medium',
+        // bg-primary/25 bazı marka temalarında (primary açık/doygun az ise)
+        // yeterince belirgin koyulaşmıyordu — sabit, temadan bağımsız güçlü
+        // bir siyah katman kullanılıyor ki seçili satır her zaman net görülsün.
+        selected && 'bg-black/15 shadow-[inset_6px_0_0_0_var(--primary)] font-medium',
         className,
       )}
       {...props}

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.118] - 2026-08-14
+
+**Asıl istenen bulundu — Stok tablosunda tıklanan ürün satırı artık belirgin koyu:** Önceki üç düzeltme (sekme çubuğu, sol menü) yanlış hedefteydi; kullanıcı aslında Stok Yönetimi'ndeki ürün tablosunun bir SATIRINA (ürün resmine) tıklayınca o satırın koyu kalmasını istiyordu. Bu özellik zaten vardı (`TableRow`'un `selected` prop'u, satır tıklanınca kalıcı vurgulanıp yatay kaydırmada da kaybolmuyor) ama rengi (`bg-primary/25`) çok soluktu. Artık sabit, temadan bağımsız güçlü bir koyulaştırma (`bg-black/15`) kullanıyor — bu değişiklik `table.tsx`'te olduğu için Stok dahil, satır seçimi olan her tabloya uygulanıyor. Şema değişikliği yok.
+
 ## [2.17.117] - 2026-08-14
 
 **Doğru hedefe geri dönüldü — sol menü değil, Ürünler sekmesi:** Sol menüdeki "Stok Yönetimi" için yapılan koyulaştırma geri alındı (kullanıcı onu istememişti). Asıl istenen: Stok sayfasındaki Ürünler/Günlük Sayım/Stok Kartı/Kargo sekme çubuğunda seçili sekmenin (ör. Ürünler) koyu görünmesi — bu, `--foreground`/`--background` tabanlı koyu-seçili-sekme + yatay kaydırmada aktif sekmeyi görünüme kaydırma haliyle geri getirildi (tüm çubuğu koyu yapan ara adım değil, sadece seçili sekmenin koyu olduğu hal). Şema değişikliği yok.
