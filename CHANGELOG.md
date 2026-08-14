@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.103] - 2026-08-14
+
+**Günlük Sayım'da Paket ve Flakon tek tabloda birleştirildi, dışa aktarımda flakon yoksa yazılmıyor, Ürünler tablosunda satır seçimi eklendi:** Günlük Sayım artık ürün adı ve sistemdeki miktarı iki ayrı panelde tekrarlamıyor — tek tabloda Ürün, Sistemdeki Miktar (paket + flakon birlikte), Paket Sayımı, Paket Fark, Flakon Sayımı, Flakon Fark sütunları var. Günlük Özet'in Excel/Word/PDF/Görsel (PNG) çıktılarında bir ürünün flakon stoğu yoksa artık ", 0 flakon" yazmıyor, sadece paket miktarı gösteriliyor. Stok > Ürünler tablosunda bir satıra tıklanınca o satır belirgin şekilde vurgulanıp öyle kalıyor (fare ile hover'a bağlı değil) — kaydırırken hangi ürünle ilgilendiğinizi kaybetmiyorsunuz. Şema değişikliği yok.
+
 ## [2.17.102] - 2026-08-14
 
 **Swiss ürün resimlerinin "ince çubuk" gibi görünme hatası gerçek kök nedeniyle bulunup düzeltildi:** Önceki iki deneme (kırpma modu değişikliği, kutu genişliği düzeltmesi) sorunu tam çözmemişti. Bu kez gerçek ürün verisiyle ve gerçek pencere genişliklerinde (1400, 1024, 800, 600, 400px) tarayıcıda ölçüm yapılarak kanıtlandı: Dermakor ve Swiss tabloları aynı kodu kullansa da tarayıcının otomatik tablo genişliği hesaplaması ikisini FARKLI genişliklere yerleştirebiliyordu — pencere dar olduğunda Swiss tablosundaki resim sütunu 60px yerine 28px'e kadar sıkışıyordu. Tailwind'in tüm resimlere uyguladığı global bir kural (`max-width: 100%`) da bu sıkışan alana resmi GENİŞLİKTE küçültüyordu, ama YÜKSEKLİĞİ sabit 36px kalıyordu — sonuç, dar-ama-uzun bir çubuk görünümüydü. Resmin hem genişliği hem yüksekliği artık pencere/sütun ne kadar daralırsa daralsın sabit kalıyor; 400px'e kadar test edilip doğrulandı. Şema değişikliği yok.

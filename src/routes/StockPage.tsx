@@ -427,7 +427,17 @@ function CategoryCell({ product }: { product: Product }) {
  * dar-ama-uzun bir "çubuk". Gerçek 1400/1024/800/600/400px pencere
  * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
  */
-function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: (product: Product) => void }) {
+function ProductsTable({
+  products,
+  onRemove,
+  selectedId,
+  onSelect,
+}: {
+  products: Product[]
+  onRemove: (product: Product) => void
+  selectedId: string | null
+  onSelect: (id: string) => void
+}) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -460,7 +470,12 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
               return (
                 <TableRow
                   key={product.id}
-                  className={cn((isCritical || expiryStatus === 'expired') && 'bg-destructive/5')}
+                  onClick={() => onSelect(product.id)}
+                  className={cn(
+                    'cursor-pointer',
+                    (isCritical || expiryStatus === 'expired') && 'bg-destructive/5',
+                    product.id === selectedId && 'bg-primary/10 border-l-4 border-l-primary',
+                  )}
                 >
                   <TableCell>
                     <SafeThumbnail
@@ -546,6 +561,9 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
 export function StockPage() {
   const [search, setSearch] = React.useState('')
   const [brandFilter, setBrandFilter] = React.useState<typeof ALL_BRANDS | BrandLine>(ALL_BRANDS)
+  // Kaydırırken hangi satırla ilgilendiğini kaybetmemek için tıklanan satır
+  // vurgulanıp öyle kalıyor — hover gibi fare pozisyonuna bağlı değil.
+  const [selectedProductId, setSelectedProductId] = React.useState<string | null>(null)
   const { data: products = [], isLoading } = useProducts(search, brandFilter === ALL_BRANDS ? undefined : brandFilter)
   const { data: allProducts = [] } = useProducts('')
   const deactivateMutation = useDeactivateProduct()
@@ -746,22 +764,44 @@ export function StockPage() {
             <div className="grid gap-6">
               <div className="min-w-0">
                 <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Dermakor</h3>
-                <ProductsTable products={products.filter((p) => p.brand_line === 'dermakor')} onRemove={handleRemove} />
+                <ProductsTable
+                  products={products.filter((p) => p.brand_line === 'dermakor')}
+                  onRemove={handleRemove}
+                  selectedId={selectedProductId}
+                  onSelect={setSelectedProductId}
+                />
               </div>
               <div className="min-w-0">
                 <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Swiss</h3>
-                <ProductsTable products={products.filter((p) => p.brand_line === 'swiss')} onRemove={handleRemove} />
+                <ProductsTable
+                  products={products.filter((p) => p.brand_line === 'swiss')}
+                  onRemove={handleRemove}
+                  selectedId={selectedProductId}
+                  onSelect={setSelectedProductId}
+                />
               </div>
               {products.some((p) => !p.brand_line) && (
                 <div className="min-w-0">
                   <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Diğer</h3>
-                  <ProductsTable products={products.filter((p) => !p.brand_line)} onRemove={handleRemove} />
+                  <ProductsTable
+                    products={products.filter((p) => !p.brand_line)}
+                    onRemove={handleRemove}
+                    selectedId={selectedProductId}
+                    onSelect={setSelectedProductId}
+                  />
                 </div>
               )}
             </div>
           )}
 
-          {!isLoading && brandFilter !== ALL_BRANDS && <ProductsTable products={products} onRemove={handleRemove} />}
+          {!isLoading && brandFilter !== ALL_BRANDS && (
+            <ProductsTable
+              products={products}
+              onRemove={handleRemove}
+              selectedId={selectedProductId}
+              onSelect={setSelectedProductId}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="count">
