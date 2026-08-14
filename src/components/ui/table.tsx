@@ -165,7 +165,12 @@ function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
  * `selected` — satıra tıklayınca kalıcı olarak vurgulanmasını sağlar (hover'ın
  * aksine fare pozisyonuna bağlı değil, kaydırırken de kaybolmaz). Sayfa, hangi
  * satırın seçili olduğunu kendi state'inde tutup buraya geçiyor; bu bileşen
- * sadece görsel vurgulamayı standartlaştırıyor.
+ * sadece görsel vurgulamayı standartlaştırıyor. Sol çubuk BİLEREK `border-l`
+ * değil `box-shadow: inset` — CSS tablo spesifikasyonu, `border-collapse:
+ * separate` (varsayılan) modda `<tr>` üzerindeki sol/sağ border'ları
+ * YOKSAYAR (üst/alt border'lar etkilenmiyor, bu yüzden fark edilmesi zor) —
+ * gerçek tarayıcıda ölçülüp doğrulandı: `border-l-[6px]` computed genişliği
+ * sessizce 0 kalıyordu, box-shadow ise bu kısıtlamaya tabi değil.
  */
 function TableRow({ className, selected, ...props }: React.ComponentProps<'tr'> & { selected?: boolean }) {
   return (
@@ -175,7 +180,7 @@ function TableRow({ className, selected, ...props }: React.ComponentProps<'tr'> 
       className={cn(
         'hover:bg-accent/40 border-b border-border/60 transition-colors duration-150',
         props.onClick && 'cursor-pointer',
-        selected && 'border-l-primary bg-primary/10 border-l-4',
+        selected && 'bg-primary/25 shadow-[inset_6px_0_0_0_var(--primary)] font-medium',
         className,
       )}
       {...props}

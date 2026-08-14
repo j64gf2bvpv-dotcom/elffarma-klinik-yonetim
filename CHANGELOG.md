@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.106] - 2026-08-14
+
+**Seçili satırdaki sol çubuğun gerçekten hiç görünmediği bulundu ve düzeltildi:** Tablolarda bir satıra tıklayınca gösterilen "seçili" vurgusu (arka plan rengi + sol kenarda bir çubuk) tarayıcıya bizzat ölçtürülerek incelendiğinde, çubuğun (`border-left`) sessizce hiç render olmadığı ortaya çıktı — CSS'in tablo kuralları, varsayılan tablo modunda satır (`<tr>`) üzerindeki sol/sağ kenarlıkları tamamen yok sayıyor (üst/alt kenarlıklar bundan etkilenmiyor, o yüzden fark edilmesi zordu). Çubuk artık kenarlık yerine gölge efektiyle çiziliyor ve rengi de daha koyu/belirgin — gerçek ekran görüntüsüyle doğrulandı. Şema değişikliği yok.
+
 ## [2.17.105] - 2026-08-14
 
 **Ana Panel'de admin artık diğer personelin çevrimiçi olduğunu görebiliyor, yedeklemeler artık 2 günde bir alınıyor ve Google Drive kopyası birikmeden üzerine yazılıyor:** Yeni "Çevrimiçi Personel" kartı, uygulamayı o an açık tutan diğer personeli canlı olarak (yeşil nokta + fotoğraf + isim) listeliyor. Otomatik buluta yedekleme aralığı 24 saatten 2 güne çıkarıldı; Google Drive'a yüklenen kopya artık her seferinde yeni bir dosya olarak birikmiyor, aynı dosyanın üzerine yazılıyor — Ayarlar'daki geçmiş yedek listesi (Supabase Storage, indir/sil) bundan etkilenmedi, o taraf hâlâ birden çok geçmiş yedeği saklıyor. Şema değişikliği yok.
