@@ -53,6 +53,7 @@ export function PrimPage() {
   const [from, setFrom] = React.useState(firstDayOfMonth())
   const [to, setTo] = React.useState(today())
   const [expandedRepId, setExpandedRepId] = React.useState<string | null>(null)
+  const [selectedRuleId, setSelectedRuleId] = React.useState<string | null>(null)
 
   const { data: rules = [] } = useCommissionRules()
   const deleteRuleMutation = useDeleteCommissionRule()
@@ -111,7 +112,7 @@ export function PrimPage() {
                   </TableRow>
                 )}
                 {rules.map((rule) => (
-                  <TableRow key={rule.id}>
+                  <TableRow key={rule.id} onClick={() => setSelectedRuleId(rule.id)} selected={rule.id === selectedRuleId}>
                     <TableCell className="font-medium">{rule.name}</TableCell>
                     <TableCell>{rule.basis === 'satis' ? 'Satış' : 'Tahsilat'}</TableCell>
                     <TableCell className="text-muted-foreground">{scopeLabels[rule.scope_type]}</TableCell>

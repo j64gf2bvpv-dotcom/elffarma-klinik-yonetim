@@ -39,6 +39,7 @@ function TargetCell({ month, initialValue, onSave }: { month: number; initialVal
 
 export function BudgetYearPage() {
   const [year, setYear] = React.useState(() => new Date().getFullYear())
+  const [selectedMonth, setSelectedMonth] = React.useState<number | null>(null)
   const { data: targets = [] } = useBudgetTargets(year)
   const saveMutation = useSaveBudgetTarget(year)
 
@@ -203,7 +204,7 @@ export function BudgetYearPage() {
               {rows.map((r) => {
                 const pct = r.target > 0 ? (r.actual / r.target) * 100 : null
                 return (
-                  <TableRow key={r.month}>
+                  <TableRow key={r.month} onClick={() => setSelectedMonth(r.month)} selected={r.month === selectedMonth}>
                     <TableCell className="font-medium">{r.name}</TableCell>
                     <TableCell>
                       <TargetCell month={r.month} initialValue={r.target} onSave={handleSave} />

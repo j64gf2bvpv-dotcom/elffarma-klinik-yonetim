@@ -107,6 +107,7 @@ import { TurkeyMap } from '@/components/charts/TurkeyMap'
 import { StockStatusChart, type StockStatusPoint } from '@/components/charts/StockStatusChart'
 import { TopProductsChart } from '@/components/charts/TopProductsChart'
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
+import { useMyPreferences, useSaveMyPreferences } from '@/features/staffPreferences/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { useCommissionRules } from '@/features/commissions/hooks'
 import { calculateCommissions } from '@/features/commissions/calculateCommissions'
@@ -560,8 +561,13 @@ export function DashboardPage() {
     setConvertAmount(raw.replace(/\D/g, ''))
   }
 
-  const { data: savedLayout } = useAppSetting<LayoutItem[]>('dashboard_layout')
-  const saveLayoutMutation = useSaveAppSetting<LayoutItem[]>('dashboard_layout')
+  // Ana Panel görünümü (Sabit/Özelleştirilebilir) ve kart düzeni KİŞİSEL bir
+  // tercih — önceden app_settings'te (admin-write/staff-read) tek bir ekip
+  // genelinde ortak düzendi, artık staff_preferences'ta (sahibi kendi
+  // satırını okur/yazar) her kullanıcı kendi düzenini bağımsız kaydediyor.
+  const { data: myPreferences } = useMyPreferences()
+  const savePreferencesMutation = useSaveMyPreferences()
+  const savedLayout = myPreferences?.dashboard_layout as LayoutItem[] | null | undefined
   const [editMode, setEditMode] = React.useState(false)
   const [draftLayout, setDraftLayout] = React.useState<LayoutItem[] | null>(null)
   const dragIndexRef = React.useRef<number | null>(null)
@@ -578,9 +584,7 @@ export function DashboardPage() {
 
   const layout = sanitizeLayout(draftLayout ?? savedLayout ?? defaultLayout)
 
-  const { data: dashboardView } = useAppSetting<'classic' | 'widgets'>('dashboard_view')
-  const saveDashboardViewMutation = useSaveAppSetting<'classic' | 'widgets'>('dashboard_view')
-  const view = dashboardView ?? 'classic'
+  const view = myPreferences?.dashboard_view ?? 'classic'
 
   const aiService = useAIService()
   const businessSnapshot = useBusinessSnapshot()
@@ -622,7 +626,7 @@ export function DashboardPage() {
   }
 
   async function saveLayout() {
-    if (draftLayout) await saveLayoutMutation.mutateAsync(draftLayout)
+    if (draftLayout) await savePreferencesMutation.mutateAsync({ dashboard_layout: draftLayout })
     setEditMode(false)
   }
 
@@ -1593,14 +1597,22 @@ export function DashboardPage() {
         }
         actions={
           <div className="flex flex-wrap gap-2">
-            {isAdmin && view === 'classic' && (
-              <Button variant="outline" size="sm" onClick={() => saveDashboardViewMutation.mutate('widgets')}>
+            {view === 'classic' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => savePreferencesMutation.mutate({ dashboard_view: 'widgets' })}
+              >
                 <LayoutGrid className="size-3.5" /> Özelleştirilebilir Görünüm
               </Button>
             )}
-            {isAdmin && view === 'widgets' && !editMode && (
+            {view === 'widgets' && !editMode && (
               <>
-                <Button variant="outline" size="sm" onClick={() => saveDashboardViewMutation.mutate('classic')}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => savePreferencesMutation.mutate({ dashboard_view: 'classic' })}
+                >
                   <LayoutDashboard className="size-3.5" /> Sabit Görünüm
                 </Button>
                 <Button variant="outline" size="sm" onClick={startEditing}>
@@ -1608,12 +1620,12 @@ export function DashboardPage() {
                 </Button>
               </>
             )}
-            {isAdmin && view === 'widgets' && editMode && (
+            {view === 'widgets' && editMode && (
               <>
                 <Button variant="outline" size="sm" onClick={cancelEditing}>
                   <X className="size-3.5" /> Vazgeç
                 </Button>
-                <Button size="sm" onClick={saveLayout} disabled={saveLayoutMutation.isPending}>
+                <Button size="sm" onClick={saveLayout} disabled={savePreferencesMutation.isPending}>
                   <Save className="size-3.5" /> Kaydet
                 </Button>
               </>

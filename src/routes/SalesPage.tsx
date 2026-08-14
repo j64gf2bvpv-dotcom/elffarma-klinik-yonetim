@@ -53,6 +53,7 @@ function SalesTab({
   const { data: allSales = [], isLoading } = useSales()
   const deleteMutation = useDeleteSale()
   const recordMovement = useRecordStockMovement()
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
 
   const sales = React.useMemo(() => filterSalesByDate(allSales, from, to), [allSales, from, to])
 
@@ -139,7 +140,7 @@ function SalesTab({
               </TableHeader>
               <TableBody>
                 {sales.map((s) => (
-                  <TableRow key={s.id}>
+                  <TableRow key={s.id} onClick={() => setSelectedId(s.id)} selected={s.id === selectedId}>
                     <TableCell>{format(new Date(s.sale_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
                     <TableCell>
                       {s.type === 'sale' ? (
@@ -176,6 +177,7 @@ function IncomeExpenseReport() {
   const sixMonthsAgo = React.useMemo(() => startOfMonth(subMonths(new Date(), 5)), [])
   const { data: payments = [] } = usePayments({ from: sixMonthsAgo.toISOString() })
   const { data: expenses = [] } = useExpenses({ from: sixMonthsAgo.toISOString() })
+  const [selectedLabel, setSelectedLabel] = React.useState<string | null>(null)
 
   const rows = React.useMemo(() => {
     const buckets = new Map<string, { label: string; income: number; expense: number }>()
@@ -249,7 +251,7 @@ function IncomeExpenseReport() {
           </TableHeader>
           <TableBody>
             {rows.map((r) => (
-              <TableRow key={r.label}>
+              <TableRow key={r.label} onClick={() => setSelectedLabel(r.label)} selected={r.label === selectedLabel}>
                 <TableCell className="font-medium">{r.label}</TableCell>
                 <TableCell className="text-success">{currency(r.income)}</TableCell>
                 <TableCell className="text-destructive">{currency(r.expense)}</TableCell>
@@ -353,6 +355,7 @@ function ReportsTab() {
 function InvoicesTab() {
   const { data: invoices = [], isLoading } = useInvoices()
   const deleteMutation = useDeleteInvoice()
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
 
   return (
     <Card>
@@ -375,7 +378,7 @@ function InvoicesTab() {
             </TableHeader>
             <TableBody>
               {invoices.map((inv) => (
-                <TableRow key={inv.id}>
+                <TableRow key={inv.id} onClick={() => setSelectedId(inv.id)} selected={inv.id === selectedId}>
                   <TableCell className="font-medium">{inv.invoice_number}</TableCell>
                   <TableCell>{format(new Date(inv.issue_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
                   <TableCell>{inv.customers?.full_name ?? '—'}</TableCell>

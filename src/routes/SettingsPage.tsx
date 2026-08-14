@@ -24,11 +24,14 @@ import {
   Moon,
   FlaskConical,
   Pencil,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { companyInfo } from '@/lib/companyInfo'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -53,8 +56,17 @@ import { useColorMode } from '@/features/appSettings/useColorMode'
 import { seedDemoData, clearDemoData } from '@/features/demoData/seedDemoData'
 import { useAuth } from '@/lib/auth'
 import { tr } from '@/i18n/tr'
-import type { WhatsAppTemplate } from '@/types/database'
+import type { Staff, WhatsAppTemplate } from '@/types/database'
 import { cn } from '@/lib/utils'
+
+function initials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join('')
+}
 
 function PremiumIcon({
   icon: Icon,
@@ -383,12 +395,21 @@ function IconSetPicker() {
   )
 }
 
-function TemplateRow({ template }: { template: WhatsAppTemplate }) {
+function TemplateRow({ template, readOnly }: { template: WhatsAppTemplate; readOnly: boolean }) {
   const [name, setName] = React.useState(template.name)
   const [body, setBody] = React.useState(template.body)
   const saveMutation = useSaveWhatsAppTemplate()
   const deleteMutation = useDeleteWhatsAppTemplate()
   const dirty = name !== template.name || body !== template.body
+
+  if (readOnly) {
+    return (
+      <div className="grid gap-1 border-b py-4 last:border-b-0">
+        <p className="font-medium">{template.name}</p>
+        <p className="text-sm whitespace-pre-wrap text-muted-foreground">{template.body}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="grid gap-2 border-b py-4 last:border-b-0">
@@ -451,6 +472,84 @@ function NewTemplateForm() {
   )
 }
 
+// 'dashboard' ve 'settings' bilerek listede yok: Ana Panel her zaman
+// erişilebilir kalmalı (uygulamanın "eve dönüş" noktası), Ayarlar da öyle —
+// aksi halde admin kendi kendini (veya birini) bu ekrana erişemez hale
+// getirip izinleri geri açamayacağı bir kilitlenmeye sokabilirdi.
+const PERMISSION_NAV_KEYS = (Object.keys(tr.nav) as (keyof typeof tr.nav)[]).filter(
+  (key) => key !== 'dashboard' && key !== 'settings',
+)
+
+/** Admin, her personel için sol menüde hangi sekmelerin görüneceğini burada belirler. */
+function NavPermissionsCard({ staffList }: { staffList: Staff[] }) {
+  const [selectedId, setSelectedId] = React.useState<string | undefined>(staffList[0]?.id)
+  const updateStaffMutation = useUpdateStaff()
+
+  const selected = staffList.find((s) => s.id === selectedId) ?? staffList[0]
+
+  function toggleItem(key: string) {
+    if (!selected) return
+    const current = selected.hidden_nav_items ?? []
+    const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key]
+    updateStaffMutation.mutate({ id: selected.id, input: { hidden_nav_items: next } })
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center gap-3">
+        <PremiumIcon icon={EyeOff} />
+        <div>
+          <CardTitle>Kullanıcı Panel İzinleri</CardTitle>
+          <CardDescription>
+            Bir personel seçip hangi sekmeleri görebileceğini belirleyin — kapattığınız bir sekme o
+            kullanıcının sol menüsünden kaybolur, doğrudan bağlantıyla girmeye çalışsa da Ana Panel'e
+            yönlendirilir.
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <Select value={selected?.id} onValueChange={setSelectedId}>
+          <SelectTrigger className="w-full sm:w-64">
+            <SelectValue placeholder="Personel seçin" />
+          </SelectTrigger>
+          <SelectContent>
+            {staffList.map((member) => (
+              <SelectItem key={member.id} value={member.id}>
+                {member.full_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {selected && (
+          <div className="flex flex-wrap gap-2">
+            {PERMISSION_NAV_KEYS.map((key) => {
+              const hidden = (selected.hidden_nav_items ?? []).includes(key)
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleItem(key)}
+                  disabled={updateStaffMutation.isPending}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors',
+                    hidden
+                      ? 'border-border bg-muted text-muted-foreground'
+                      : 'border-primary/30 bg-primary/10 text-primary',
+                  )}
+                >
+                  {hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  {tr.nav[key]}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function SettingsPage() {
   const { staff: currentStaff } = useAuth()
   const { data: staffList = [] } = useStaffList()
@@ -461,6 +560,7 @@ export function SettingsPage() {
   const [nameDraft, setNameDraft] = React.useState('')
   const [seeding, setSeeding] = React.useState(false)
   const [clearing, setClearing] = React.useState(false)
+  const [selectedStaffId, setSelectedStaffId] = React.useState<string | null>(null)
 
   async function handleSeedDemoData() {
     setSeeding(true)
@@ -468,7 +568,7 @@ export function SettingsPage() {
       const result = await seedDemoData()
       await queryClient.invalidateQueries()
       toast.success('Örnek veri eklendi', {
-        description: `${result.customers} cari, ${result.products} ürün, ${result.payments} tahsilat, ${result.sales} satış, ${result.salesReps} temsilci, ${result.reminders} hatırlatma, ${result.congresses} kongre, ${result.visits} ziyaret, ${result.expenses} gider, ${result.sampleRequests} numune talebi, ${result.commissionRules} prim kuralı, ${result.clinics} klinik, ${result.crmActivities} CRM aktivitesi, ${result.crmOpportunities} CRM fırsatı, ${result.vehicles} araç, ${result.fuelLogs} yakıt kaydı, ${result.instagramLeads} Instagram doktoru`,
+        description: `${result.customers} cari, ${result.products} ürün, ${result.payments} tahsilat, ${result.sales} satış, ${result.salesReps} temsilci, ${result.reminders} hatırlatma, ${result.congresses} kongre, ${result.visits} ziyaret, ${result.expenses} gider, ${result.sampleRequests} numune talebi, ${result.commissionRules} prim kuralı, ${result.clinics} klinik, ${result.crmActivities} CRM aktivitesi, ${result.crmOpportunities} CRM fırsatı, ${result.vehicles} araç, ${result.fuelLogs} yakıt kaydı, ${result.instagramLeads} Instagram doktoru${result.budgetTargets ? `, ${result.budgetTargets} bütçe hedefi` : ''}`,
       })
     } catch (err) {
       toast.error('Örnek veri eklenemedi', { description: err instanceof Error ? err.message : undefined })
@@ -509,7 +609,6 @@ export function SettingsPage() {
       <PageHeader title="Ayarlar" description="Personel yönetimi ve WhatsApp mesaj şablonları" />
 
       <div className="grid gap-6">
-        <MyProfileCard />
         <UpdateSettingsCard />
 
         <Card>
@@ -517,7 +616,10 @@ export function SettingsPage() {
             <PremiumIcon icon={Palette} />
             <div>
               <CardTitle>Görünüm</CardTitle>
-              <CardDescription>Uygulamanın marka rengini seçin — panel, menü ve butonlara yansır.</CardDescription>
+              <CardDescription>
+                Açık/koyu mod kişisel tercihinizdir. Marka rengi, menü simgeleri gibi geri kalanı tüm ekibe
+                yansıdığı için sadece admin değiştirebilir.
+              </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="grid gap-6">
@@ -525,26 +627,30 @@ export function SettingsPage() {
               <p className="mb-2 text-sm font-medium">Görünüm Modu</p>
               <ColorModePicker />
             </div>
-            <div>
-              <p className="mb-2 text-sm font-medium">Marka Rengi</p>
-              <ThemePicker />
-            </div>
-            <div>
-              <p className="mb-2 text-sm font-medium">Özel Renk Paneli</p>
-              <CustomColorPicker />
-            </div>
-            <div>
-              <p className="mb-2 text-sm font-medium">Arkaplan Rengi</p>
-              <SurfaceColorPicker settingKey="background_theme" />
-            </div>
-            <div>
-              <p className="mb-2 text-sm font-medium">Kenar Çubuğu (Yan Panel) Rengi</p>
-              <SurfaceColorPicker settingKey="sidebar_theme" />
-            </div>
-            <div>
-              <p className="mb-2 text-sm font-medium">Menü Simge Seti</p>
-              <IconSetPicker />
-            </div>
+            {currentStaff?.role === 'admin' && (
+              <>
+                <div>
+                  <p className="mb-2 text-sm font-medium">Marka Rengi</p>
+                  <ThemePicker />
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium">Özel Renk Paneli</p>
+                  <CustomColorPicker />
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium">Arkaplan Rengi</p>
+                  <SurfaceColorPicker settingKey="background_theme" />
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium">Kenar Çubuğu (Yan Panel) Rengi</p>
+                  <SurfaceColorPicker settingKey="sidebar_theme" />
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium">Menü Simge Seti</p>
+                  <IconSetPicker />
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -563,6 +669,7 @@ export function SettingsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[52px]"></TableHead>
                   <TableHead>Ad Soyad</TableHead>
                   <TableHead>Rol</TableHead>
                   <TableHead>Durum</TableHead>
@@ -570,7 +677,19 @@ export function SettingsPage() {
               </TableHeader>
               <TableBody>
                 {staffList.map((member) => (
-                  <TableRow key={member.id}>
+                  <TableRow
+                    key={member.id}
+                    onClick={() => setSelectedStaffId(member.id)}
+                    selected={member.id === selectedStaffId}
+                  >
+                    <TableCell>
+                      <Avatar className="size-8">
+                        {member.avatar_url && <AvatarImage src={member.avatar_url} alt={member.full_name} />}
+                        <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                          {initials(member.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TableCell>
                     <TableCell className="font-medium">
                       {currentStaff?.role === 'admin' && editingNameId === member.id ? (
                         <div className="flex items-center gap-1.5">
@@ -614,39 +733,49 @@ export function SettingsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={member.role}
-                        onValueChange={(role) =>
-                          updateStaffMutation.mutate({ id: member.id, input: { role: role as 'admin' | 'staff' } })
-                        }
-                        disabled={member.id === currentStaff?.id}
-                      >
-                        <SelectTrigger className="w-36">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(tr.staffRole).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {currentStaff?.role === 'admin' ? (
+                        <Select
+                          value={member.role}
+                          onValueChange={(role) =>
+                            updateStaffMutation.mutate({ id: member.id, input: { role: role as 'admin' | 'staff' } })
+                          }
+                          disabled={member.id === currentStaff?.id}
+                        >
+                          <SelectTrigger className="w-36">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(tr.staffRole).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        tr.staffRole[member.role]
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant={member.is_active ? 'outline' : 'destructive'}
-                        disabled={member.id === currentStaff?.id}
-                        onClick={() =>
-                          updateStaffMutation.mutate({
-                            id: member.id,
-                            input: { is_active: !member.is_active },
-                          })
-                        }
-                      >
-                        {member.is_active ? 'Aktif' : 'Pasif'}
-                      </Button>
+                      {currentStaff?.role === 'admin' ? (
+                        <Button
+                          size="sm"
+                          variant={member.is_active ? 'outline' : 'destructive'}
+                          disabled={member.id === currentStaff?.id}
+                          onClick={() =>
+                            updateStaffMutation.mutate({
+                              id: member.id,
+                              input: { is_active: !member.is_active },
+                            })
+                          }
+                        >
+                          {member.is_active ? 'Aktif' : 'Pasif'}
+                        </Button>
+                      ) : (
+                        <Badge variant={member.is_active ? 'secondary' : 'destructive'}>
+                          {member.is_active ? 'Aktif' : 'Pasif'}
+                        </Badge>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -654,6 +783,8 @@ export function SettingsPage() {
             </Table>
           </CardContent>
         </Card>
+
+        {currentStaff?.role === 'admin' && <NavPermissionsCard staffList={staffList} />}
 
         <Card>
           <CardHeader className="flex-row items-center gap-3">
@@ -667,9 +798,9 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             {templates.map((template) => (
-              <TemplateRow key={template.id} template={template} />
+              <TemplateRow key={template.id} template={template} readOnly={currentStaff?.role !== 'admin'} />
             ))}
-            <NewTemplateForm />
+            {currentStaff?.role === 'admin' && <NewTemplateForm />}
           </CardContent>
         </Card>
 
@@ -759,11 +890,12 @@ export function SettingsPage() {
                 <CardDescription>
                   Panel grafiklerini ve tüm ekranları gerçek veriyle görmek için birkaç örnek doktor, ürün
                   (SKT'si yaklaşan bir lot dahil), tahsilat, satış, temsilci, hatırlatma, kongre (paket
-                  fiyatlarıyla), ziyaret, gider, numune talebi, bir prim kuralı, klinik ve CRM aktivitesi/fırsatı
-                  (Yeni'den Kaybedildi'ye kadar tüm CRM aşamalarında) ekler — Panel'deki hemen hemen tüm
-                  widget'lar ve Klinikler/CRM/Numuneler/Prim sayfaları bu veriyle dolar. Adları/başlıkları
-                  "[Örnek]" ile işaretlenir, tek tıkla geri silinebilir — gerçek verilerinize dokunmaz. (Bütçe
-                  hedefleri, gerçek verinizi yanlışlıkla ezmemek için bilerek dahil edilmedi.)
+                  fiyatlarıyla), ziyaret, gider, numune talebi, bir prim kuralı, klinik, araç/yakıt kaydı,
+                  Instagram doktoru ve CRM aktivitesi/fırsatı (Yeni'den Kaybedildi'ye kadar tüm CRM
+                  aşamalarında) ekler — Panel'deki hemen hemen tüm widget'lar ve diğer tüm sayfalar bu
+                  veriyle dolar. Bu ay için henüz hiç bütçe hedefi girilmemişse bir örnek hedef de eklenir
+                  (var olan gerçek bir hedefi asla ezmez). Adları/başlıkları "[Örnek]" ile işaretlenir, tek
+                  tıkla geri silinebilir — gerçek verilerinize dokunmaz.
                 </CardDescription>
               </div>
             </CardHeader>
@@ -782,6 +914,7 @@ export function SettingsPage() {
 
         <AIProviderSettings />
         <BackupSettingsCard />
+        <MyProfileCard />
       </div>
     </div>
   )

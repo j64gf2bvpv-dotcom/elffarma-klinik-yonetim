@@ -23,6 +23,9 @@ export function UpdateTopBarButton() {
       if (event.type === 'available') {
         setStatus('available')
         setLatestVersion(event.version)
+        toast.info(`Yeni güncelleme bulundu (v${event.version})`, {
+          description: 'İndiriliyor, hazır olunca ayrıca haber verilecek.',
+        })
       }
       if (event.type === 'not-available') {
         setStatus('idle')

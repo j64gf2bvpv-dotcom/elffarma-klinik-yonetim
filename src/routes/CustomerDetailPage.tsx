@@ -84,6 +84,7 @@ export function CustomerDetailPage() {
   const { data: allSales = [] } = useSales()
   const { data: allInvoices = [] } = useInvoices()
   const { data: pendingProducts = [] } = usePendingProducts(id)
+  const [selectedPaymentId, setSelectedPaymentId] = React.useState<string | null>(null)
   const { data: clinic } = useClinic(customer?.clinic_id ?? undefined)
   const { data: salesReps = [] } = useSalesReps()
   const { data: congressParticipations = [] } = useParticipationsByDoctorName(customer?.full_name)
@@ -686,7 +687,11 @@ export function CustomerDetailPage() {
                     </TableRow>
                   )}
                   {payments.map((p) => (
-                    <TableRow key={p.id}>
+                    <TableRow
+                      key={p.id}
+                      onClick={() => setSelectedPaymentId(p.id)}
+                      selected={p.id === selectedPaymentId}
+                    >
                       <TableCell>{format(new Date(p.paid_at), 'd MMM yyyy HH:mm', { locale: trLocale })}</TableCell>
                       <TableCell className="font-medium">
                         {Number(p.amount).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}

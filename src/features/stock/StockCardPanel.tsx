@@ -128,6 +128,7 @@ export function StockCardPanel() {
   const [productId, setProductId] = React.useState<string | undefined>(undefined)
   const [product, setProduct] = React.useState<Product | null>(null)
   const [allProductIds, setAllProductIds] = React.useState<string[]>([])
+  const [selectedRowId, setSelectedRowId] = React.useState<string | null>(null)
 
   const queryClient = useQueryClient()
   const { data: movements = [] } = useAllStockMovements()
@@ -374,7 +375,7 @@ export function StockCardPanel() {
                     </TableRow>
                   )}
                   {rows.map((row) => (
-                    <TableRow key={row.id}>
+                    <TableRow key={row.id} onClick={() => setSelectedRowId(row.id)} selected={row.id === selectedRowId}>
                       <TableCell className="whitespace-nowrap">{formatDateTime(row.date)}</TableCell>
                       {mode === 'all' && <TableCell className="text-muted-foreground">{row.productName}</TableCell>}
                       <TableCell className="font-medium">{row.doctorName ?? '—'}</TableCell>

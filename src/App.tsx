@@ -2,7 +2,7 @@ import * as React from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/AppShell'
-import { ProtectedRoute, AdminRoute } from '@/components/layout/ProtectedRoute'
+import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { LoginPage } from '@/routes/LoginPage'
 import { ResetPasswordPage } from '@/routes/ResetPasswordPage'
 import { DashboardPage } from '@/routes/DashboardPage'
@@ -79,9 +79,7 @@ function App() {
             <Route path="ajanda" element={<AgendaPage />} />
             <Route path="araclar" element={<VehiclesPage />} />
             <Route path="ekip-performansi" element={<TeamPerformancePage />} />
-            <Route element={<AdminRoute />}>
-              <Route path="ayarlar" element={<SettingsPage />} />
-            </Route>
+            <Route path="ayarlar" element={<SettingsPage />} />
           </Route>
         </Route>
 

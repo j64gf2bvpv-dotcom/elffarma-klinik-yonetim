@@ -18,9 +18,3 @@ export function ProtectedRoute() {
 
   return <Outlet />
 }
-
-export function AdminRoute() {
-  const { staff } = useAuth()
-  if (staff && staff.role !== 'admin') return <Navigate to="/" replace />
-  return <Outlet />
-}

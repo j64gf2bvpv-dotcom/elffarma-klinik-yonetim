@@ -10,7 +10,7 @@ export async function fetchStaff(): Promise<Staff[]> {
 
 export async function updateStaff(
   id: string,
-  input: Partial<Pick<Staff, 'role' | 'is_active' | 'full_name' | 'phone'>>,
+  input: Partial<Pick<Staff, 'role' | 'is_active' | 'full_name' | 'phone' | 'hidden_nav_items'>>,
 ): Promise<Staff> {
   return offlineUpdate<Staff>('staff', id, { ...input }, 'Personel güncelleme')
 }

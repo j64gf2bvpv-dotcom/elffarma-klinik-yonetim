@@ -16,7 +16,18 @@ export interface Staff {
   address: string | null
   whatsapp_phone: string | null
   social_media: string | null
+  /** Admin tarafından bu kullanıcı için gizlenen sol menü sekmeleri (NavKey değerleri). Boş = her şey görünür. */
+  hidden_nav_items: string[]
   created_at: string
+}
+
+/** Kişisel Ana Panel görünüm tercihi — her kullanıcı kendi satırını okur/yazar (bkz. staff_ai_keys ile aynı desen). */
+export interface StaffPreferences {
+  staff_id: string
+  dashboard_view: 'classic' | 'widgets' | null
+  dashboard_layout: unknown | null
+  color_mode: 'light' | 'dark' | null
+  updated_at: string
 }
 
 export interface Customer {

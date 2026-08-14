@@ -19,6 +19,8 @@ function currency(n: number | null) {
 }
 
 export function VehiclesPage() {
+  const [selectedVehicleId, setSelectedVehicleId] = React.useState<string | null>(null)
+  const [selectedLogId, setSelectedLogId] = React.useState<string | null>(null)
   const { data: vehicles = [], isLoading } = useVehicles()
   const deleteMutation = useDeleteVehicle()
   const { data: fuelLogs = [] } = useAllVehicleFuelLogs()
@@ -95,7 +97,7 @@ export function VehiclesPage() {
                 </TableRow>
               )}
               {vehicles.map((v) => (
-                <TableRow key={v.id}>
+                <TableRow key={v.id} onClick={() => setSelectedVehicleId(v.id)} selected={v.id === selectedVehicleId}>
                   <TableCell className="font-medium">
                     {v.brand_model}
                     {v.year ? ` (${v.year})` : ''}
@@ -169,7 +171,7 @@ export function VehiclesPage() {
               {recentFuelLogs.map((log) => {
                 const vehicle = vehicleById.get(log.vehicle_id)
                 return (
-                  <TableRow key={log.id}>
+                  <TableRow key={log.id} onClick={() => setSelectedLogId(log.id)} selected={log.id === selectedLogId}>
                     <TableCell>
                       {format(new Date(log.fill_date + 'T00:00:00'), 'd MMMM yyyy', { locale: trLocale })}
                     </TableCell>

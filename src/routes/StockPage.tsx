@@ -471,11 +471,8 @@ function ProductsTable({
                 <TableRow
                   key={product.id}
                   onClick={() => onSelect(product.id)}
-                  className={cn(
-                    'cursor-pointer',
-                    (isCritical || expiryStatus === 'expired') && 'bg-destructive/5',
-                    product.id === selectedId && 'bg-primary/10 border-l-4 border-l-primary',
-                  )}
+                  selected={product.id === selectedId}
+                  className={cn((isCritical || expiryStatus === 'expired') && 'bg-destructive/5')}
                 >
                   <TableCell>
                     <SafeThumbnail
@@ -510,8 +507,10 @@ function ProductsTable({
                   <TableCell>
                     <div className="flex items-center gap-1.5 text-sm">
                       {isCritical && <AlertTriangle className="size-3.5 text-destructive animate-alert-glow-red" />}
-                      <span className={cn(isCritical && 'font-medium text-destructive')}>
-                        {product.current_quantity} paket, {product.flakon_quantity} flakon
+                      <span className={cn('flex items-center gap-1.5', isCritical && 'font-medium text-destructive')}>
+                        <span>{product.current_quantity} paket</span>
+                        <span className="text-border">|</span>
+                        <span>{product.flakon_quantity} flakon</span>
                       </span>
                     </div>
                   </TableCell>

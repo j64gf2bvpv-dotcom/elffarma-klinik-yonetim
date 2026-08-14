@@ -58,6 +58,7 @@ function getInitials(name: string): string {
 
 export function CustomersPage() {
   const [search, setSearch] = React.useState('')
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [invoiceFilter, setInvoiceFilter] = React.useState<InvoiceFilter>('all')
   const [provinceFilter, setProvinceFilter] = React.useState(ALL_PROVINCES)
   const [tagFilter, setTagFilter] = React.useState(ALL_TAGS)
@@ -271,7 +272,7 @@ export function CustomersPage() {
                 </TableRow>
               )}
               {customers.map((customer) => (
-                <TableRow key={customer.id}>
+                <TableRow key={customer.id} onClick={() => setSelectedId(customer.id)} selected={customer.id === selectedId}>
                   <TableCell className="font-medium">
                     <Link to={`/musteriler/${customer.id}`} className="inline-flex items-center gap-2 hover:underline">
                       <Avatar className="size-6">

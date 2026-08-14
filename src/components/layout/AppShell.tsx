@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   Wifi,
   WifiOff,
@@ -38,7 +38,6 @@ import { useAuth } from '@/lib/auth'
 import { CLINIC_NAME } from '@/lib/supabaseClient'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useApplyBrandTheme } from '@/features/appSettings/useApplyBrandTheme'
-import { useAIStartupCheck } from '@/features/ai/useAIStartupCheck'
 import { useAutoBackupOnLaunch } from '@/features/backup/useAutoBackupOnLaunch'
 import { useWhatsNewNotification } from '@/features/appUpdate/useWhatsNewNotification'
 import { AIChatWidget } from '@/features/ai/AIChatWidget'
@@ -57,7 +56,7 @@ import { WEBMAIL_URL } from '@/lib/companyInfo'
 import { tr } from '@/i18n/tr'
 import { ElffarmaLogo } from '@/components/brand/ElffarmaLogo'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calculator } from '@/components/Calculator'
@@ -603,6 +602,7 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
             <button type="button" className="ml-1 flex items-center gap-2 rounded-lg py-1 pr-1 pl-1.5 hover:bg-accent">
               <span className="relative">
                 <Avatar className="size-8">
+                  {staff?.avatar_url && <AvatarImage src={staff.avatar_url} alt={staff.full_name} />}
                   <AvatarFallback className="bg-primary/20 text-primary-foreground text-xs">
                     {initials(staff?.full_name || '?')}
                   </AvatarFallback>
@@ -640,8 +640,9 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
 
 export function AppShell() {
   const { staff } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
   useApplyBrandTheme()
-  useAIStartupCheck()
   useAutoBackupOnLaunch(staff?.role === 'admin')
   useWhatsNewNotification()
   const { mode, toggle: toggleColorMode } = useColorMode()
@@ -656,6 +657,25 @@ export function AppShell() {
   const navDragIndexRef = React.useRef<number | null>(null)
 
   const navLayout = sanitizeNavLayout(draftNavLayout ?? savedNavLayout ?? defaultNavLayout)
+  // Admin, Ayarlar > Kullanıcı Panel İzinleri'nden her kullanıcı için hangi
+  // sekmelerin gizleneceğini belirleyebiliyor (bkz. staff.hidden_nav_items) —
+  // düzenleme modunda (navEditMode) admin sırayı/etiketleri HERKES için
+  // yönettiği için tam listeyi görmeye devam ediyor, sadece normal menü
+  // görünümü kullanıcının kendi gizli listesine göre filtreleniyor.
+  const hiddenForMe = new Set(staff?.hidden_nav_items ?? [])
+  const visibleNavLayout = navLayout.filter((item) => !hiddenForMe.has(item.key))
+
+  // Sadece menüden gizlemek yetmez — sekmeye doğrudan URL ile gidilirse de
+  // engellensin diye, mevcut sayfanın eşleştiği nav öğesi kullanıcı için
+  // gizliyse Ana Panel'e yönlendiriliyor.
+  React.useEffect(() => {
+    if (!staff) return
+    const matched = navItems.find((item) => item.to !== '/' && location.pathname.startsWith(item.to))
+    if (matched && staff.hidden_nav_items?.includes(matched.key)) {
+      navigate('/', { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, staff?.hidden_nav_items])
 
   function startNavEditing() {
     setDraftNavLayout(navLayout)
@@ -735,7 +755,7 @@ export function AppShell() {
 
         <nav className="relative z-10 flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-3">
           {!navEditMode
-            ? navLayout.map((item) => {
+            ? visibleNavLayout.map((item) => {
                 const meta = navItemsByKey.get(item.key)!
                 return (
                   <SidebarNavLink
@@ -766,19 +786,18 @@ export function AppShell() {
                   />
                 </div>
               ))}
-          {staff?.role === 'admin' && (
-            <SidebarNavLink
-              to="/ayarlar"
-              icon={iconSet.icons.settings}
-              label={tr.nav.settings}
-              variant={iconSet.variant}
-              strokeWidth={iconSet.strokeWidth}
-            />
-          )}
+          <SidebarNavLink
+            to="/ayarlar"
+            icon={iconSet.icons.settings}
+            label={tr.nav.settings}
+            variant={iconSet.variant}
+            strokeWidth={iconSet.strokeWidth}
+          />
         </nav>
 
         <div className="relative z-10 mx-3 mb-2 flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5">
           <Avatar className="size-10 shrink-0">
+            {staff?.avatar_url && <AvatarImage src={staff.avatar_url} alt={staff.full_name} />}
             <AvatarFallback className="bg-white/15 text-sidebar-foreground text-xs font-semibold">
               {initials(staff?.full_name || '?')}
             </AvatarFallback>

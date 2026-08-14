@@ -21,6 +21,7 @@ import { createClinic, deleteClinic } from '@/features/clinics/api'
 import { createCrmActivity, createCrmOpportunity } from '@/features/crm/api'
 import { createVehicle, createVehicleFuelLog, deleteVehicle } from '@/features/vehicles/api'
 import { createInstagramLead, deleteInstagramLead } from '@/features/instagramLeads/api'
+import { fetchBudgetTargets, saveBudgetTarget } from '@/features/budget/api'
 import { offlineDelete } from '@/lib/offlineMutation'
 import { iconImageDataUri, iconTones, icons } from '@/lib/iconImage'
 import type { CrmOpportunityStage, ExpenseCategory, PaymentMethod, Product } from '@/types/database'
@@ -39,10 +40,12 @@ import type { CrmOpportunityStage, ExpenseCategory, PaymentMethod, Product } fro
  * set null` olduğu için ziyaretler ayrıca kendi işaretiyle temizleniyor.
  * CRM aktivite/fırsatları ve numune talepleri customer_id'ye `on delete
  * cascade` bağlı olduğu için ayrıca silinmiyor, doktor silinince otomatik
- * temizleniyor. Bütçe hedefleri (budget_targets) BİLEREK dahil edilmedi:
- * tablo yıl+ay üzerinden upsert ediliyor ve örnek/gerçek veriyi ayırt edecek
- * bir etiket alanı yok — otomatik eklemek gerçek bir hedefi sessizce
- * ezme riski taşırdı.
+ * temizleniyor. Bütçe hedefleri (budget_targets) tablo yıl+ay üzerinden upsert
+ * edildiği ve örnek/gerçek veriyi ayırt edecek bir etiket alanı olmadığı için
+ * SADECE o ay için henüz hiç hedef girilmemişse ekleniyor (var olanı asla
+ * EZMİYOR) — bu yüzden clearDemoData bunu geri silmiyor: hangisinin örnek,
+ * hangisinin kullanıcının kendi girdiği gerçek hedef olduğu güvenle ayırt
+ * edilemiyor, kullanıcı isterse Bütçe sayfasından elle değiştirebilir.
  */
 export const DEMO_TAG = 'örnek-veri'
 const DEMO_SKU_PREFIX = 'ORNEK-'
@@ -182,6 +185,7 @@ export interface SeedResult {
   vehicles: number
   fuelLogs: number
   instagramLeads: number
+  budgetTargets: number
 }
 
 export async function seedDemoData(): Promise<SeedResult> {
@@ -495,6 +499,23 @@ export async function seedDemoData(): Promise<SeedResult> {
     console.warn('Örnek veri: Instagram doktoru eklenemedi (şema güncel olmayabilir)', err)
   }
 
+  // Bütçe Yılı sayfası "hedef yok" boş görünmesin diye bu ay için, SADECE
+  // henüz hiç hedef girilmemişse (var olan gerçek bir hedefi asla ezmeden)
+  // makul bir örnek hedef ekleniyor.
+  let budgetTargetsCount = 0
+  try {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth() + 1
+    const existingTargets = await fetchBudgetTargets(currentYear)
+    if (!existingTargets.some((t) => t.month === currentMonth)) {
+      await saveBudgetTarget(currentYear, currentMonth, 150000)
+      budgetTargetsCount = 1
+    }
+  } catch (err) {
+    console.warn('Örnek veri: bütçe hedefi eklenemedi', err)
+  }
+
   return {
     customers: createdCustomers.length,
     products: createdProducts.length,
@@ -513,6 +534,7 @@ export async function seedDemoData(): Promise<SeedResult> {
     vehicles: vehiclesCount,
     fuelLogs: fuelLogsCount,
     instagramLeads: instagramLeadsCount,
+    budgetTargets: budgetTargetsCount,
   }
 }
 

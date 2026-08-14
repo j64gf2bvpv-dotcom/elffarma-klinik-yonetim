@@ -11,9 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAISettings, useSaveAISettings, useMyAIKeys, useSaveMyAIKeys } from './hooks'
 import { providerDefaults, providerLabels, getApiKeyForProvider, personalKeyFieldForProvider } from './config'
 import { AIService } from './AIService'
+import { useAuth } from '@/lib/auth'
 import type { AIProviderId, AIConnectionTestResult } from './types'
 
 export function AIProviderSettings() {
+  const { staff } = useAuth()
+  const isAdmin = staff?.role === 'admin'
   const { data: settings } = useAISettings()
   const saveMutation = useSaveAISettings()
   const { data: myKeys } = useMyAIKeys()
@@ -93,37 +96,46 @@ export function AIProviderSettings() {
         </div>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="grid gap-1.5">
-            <Label>Sağlayıcı</Label>
-            <Select value={provider} onValueChange={(v) => handleProviderChange(v as AIProviderId)}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(providerLabels) as AIProviderId[]).map((id) => (
-                  <SelectItem key={id} value={id}>
-                    {providerLabels[id]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="ai-model">Model</Label>
-            <Input id="ai-model" value={model} onChange={(e) => setModel(e.target.value)} placeholder="qwen2.5:7b" />
-          </div>
-        </div>
+        {isAdmin ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-1.5">
+                <Label>Sağlayıcı</Label>
+                <Select value={provider} onValueChange={(v) => handleProviderChange(v as AIProviderId)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(providerLabels) as AIProviderId[]).map((id) => (
+                      <SelectItem key={id} value={id}>
+                        {providerLabels[id]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="ai-model">Model</Label>
+                <Input id="ai-model" value={model} onChange={(e) => setModel(e.target.value)} placeholder="qwen2.5:7b" />
+              </div>
+            </div>
 
-        <div className="grid gap-1.5">
-          <Label htmlFor="ai-base-url">Base URL</Label>
-          <Input
-            id="ai-base-url"
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="http://localhost:11434/v1"
-          />
-        </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="ai-base-url">Base URL</Label>
+              <Input
+                id="ai-base-url"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                placeholder="http://localhost:11434/v1"
+              />
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Sağlayıcı: <span className="font-medium text-foreground">{providerLabels[provider]}</span> · Model:{' '}
+            <span className="font-medium text-foreground">{model}</span> (admin tarafından yönetilir)
+          </p>
+        )}
 
         {provider !== 'ollama' && keyField && (
           <div className="grid gap-1.5 rounded-lg border p-3">
@@ -169,10 +181,12 @@ export function AIProviderSettings() {
         )}
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={handleSave} disabled={!dirty || saveMutation.isPending}>
-            {saveMutation.isPending && <Loader2 className="animate-spin" />}
-            Kaydet
-          </Button>
+          {isAdmin && (
+            <Button onClick={handleSave} disabled={!dirty || saveMutation.isPending}>
+              {saveMutation.isPending && <Loader2 className="animate-spin" />}
+              Kaydet
+            </Button>
+          )}
           <Button variant="outline" onClick={handleTestConnection} disabled={testing}>
             {testing && <Loader2 className="animate-spin" />}
             Bağlantıyı Test Et

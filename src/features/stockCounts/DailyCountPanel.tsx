@@ -159,11 +159,15 @@ function TodaySalesActivity({ countDate }: { countDate: string }) {
 function CountItemRow({
   item,
   readOnly,
+  selected,
+  onSelect,
   onSavePaket,
   onSaveFlakon,
 }: {
   item: StockCountItemWithProduct
   readOnly: boolean
+  selected: boolean
+  onSelect: (id: string) => void
   onSavePaket: (id: string, value: number | null) => void
   onSaveFlakon: (id: string, value: number | null) => void
 }) {
@@ -181,7 +185,7 @@ function CountItemRow({
   }, [item.counted_quantity_flakon])
 
   return (
-    <TableRow>
+    <TableRow onClick={() => onSelect(item.id)} selected={selected}>
       <TableCell className="font-medium">{item.products.name}</TableCell>
       <TableCell className="text-muted-foreground">
         {item.products.current_quantity} {item.products.unit}, {item.products.flakon_quantity} flakon
@@ -244,6 +248,7 @@ export function DailyCountPanel() {
   const updateItemMutation = useUpdateCountItem(todayCount?.id ?? '')
   const updateItemFlakonMutation = useUpdateCountItemFlakon(todayCount?.id ?? '')
   const { data: allSales = [] } = useSales()
+  const [selectedItemId, setSelectedItemId] = React.useState<string | null>(null)
 
   if (loadingToday) {
     return (
@@ -429,6 +434,8 @@ export function DailyCountPanel() {
                   key={item.id}
                   item={item}
                   readOnly={isCompleted}
+                  selected={item.id === selectedItemId}
+                  onSelect={setSelectedItemId}
                   onSavePaket={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
                   onSaveFlakon={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
                 />

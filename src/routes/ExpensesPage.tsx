@@ -23,6 +23,7 @@ function currency(n: number) {
 export function ExpensesPage() {
   const [from, setFrom] = React.useState('')
   const [to, setTo] = React.useState('')
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const { data: expenses = [], isLoading } = useExpenses({
     from: from ? new Date(from).toISOString() : undefined,
     to: to ? new Date(to + 'T23:59:59').toISOString() : undefined,
@@ -130,7 +131,11 @@ export function ExpensesPage() {
                 </TableRow>
               )}
               {expenses.map((expense) => (
-                <TableRow key={expense.id}>
+                <TableRow
+                  key={expense.id}
+                  onClick={() => setSelectedId(expense.id)}
+                  selected={expense.id === selectedId}
+                >
                   <TableCell>
                     {format(new Date(expense.expense_date), 'd MMM yyyy HH:mm', { locale: trLocale })}
                   </TableCell>

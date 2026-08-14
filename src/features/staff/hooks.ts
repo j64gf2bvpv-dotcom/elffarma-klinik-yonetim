@@ -10,8 +10,13 @@ export function useStaffList() {
 export function useUpdateStaff() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: Partial<Pick<Staff, 'role' | 'is_active' | 'full_name' | 'phone'>> }) =>
-      updateStaff(id, input),
+    mutationFn: ({
+      id,
+      input,
+    }: {
+      id: string
+      input: Partial<Pick<Staff, 'role' | 'is_active' | 'full_name' | 'phone' | 'hidden_nav_items'>>
+    }) => updateStaff(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] })
       toast.success('Personel güncellendi')

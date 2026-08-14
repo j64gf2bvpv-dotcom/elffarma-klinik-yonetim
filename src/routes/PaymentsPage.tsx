@@ -66,6 +66,9 @@ function buildKasaRows(payments: PaymentWithCustomer[]): KasaRow[] {
 export function PaymentsPage() {
   const [from, setFrom] = React.useState('')
   const [to, setTo] = React.useState('')
+  const [selectedDate, setSelectedDate] = React.useState<string | null>(null)
+  const [selectedCustomerId, setSelectedCustomerId] = React.useState<string | null>(null)
+  const [selectedPaymentId, setSelectedPaymentId] = React.useState<string | null>(null)
   const { data: payments = [], isLoading } = usePayments({
     from: from ? new Date(from).toISOString() : undefined,
     to: to ? new Date(to + 'T23:59:59').toISOString() : undefined,
@@ -243,7 +246,7 @@ export function PaymentsPage() {
               </TableHeader>
               <TableBody>
                 {kasaRows.map((row) => (
-                  <TableRow key={row.date}>
+                  <TableRow key={row.date} onClick={() => setSelectedDate(row.date)} selected={row.date === selectedDate}>
                     <TableCell className="font-medium">
                       {format(new Date(row.date), 'd MMMM yyyy, EEEE', { locale: trLocale })}
                     </TableCell>
@@ -278,7 +281,11 @@ export function PaymentsPage() {
               </TableHeader>
               <TableBody>
                 {riskRows.map((row) => (
-                  <TableRow key={row.customerId}>
+                  <TableRow
+                    key={row.customerId}
+                    onClick={() => setSelectedCustomerId(row.customerId)}
+                    selected={row.customerId === selectedCustomerId}
+                  >
                     <TableCell className="font-medium">{row.customerName}</TableCell>
                     <TableCell>{row.overdueCount}</TableCell>
                     <TableCell className="text-destructive">{currency(row.overdueAmount)}</TableCell>
@@ -370,7 +377,11 @@ export function PaymentsPage() {
                 </TableRow>
               )}
               {payments.map((payment) => (
-                <TableRow key={payment.id}>
+                <TableRow
+                  key={payment.id}
+                  onClick={() => setSelectedPaymentId(payment.id)}
+                  selected={payment.id === selectedPaymentId}
+                >
                   <TableCell>{format(new Date(payment.paid_at), 'd MMM yyyy HH:mm', { locale: trLocale })}</TableCell>
                   <TableCell className="font-medium">{payment.customers?.full_name ?? '—'}</TableCell>
                   <TableCell>

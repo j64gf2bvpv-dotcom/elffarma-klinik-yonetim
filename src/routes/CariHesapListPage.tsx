@@ -25,6 +25,7 @@ function currency(n: number) {
 
 export function CariHesapListPage() {
   const [search, setSearch] = React.useState('')
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const { data: customers = [], isLoading } = useCustomers(search)
   const { data: allPayments = [] } = usePayments({})
   const { data: allSales = [] } = useSales()
@@ -187,7 +188,11 @@ export function CariHesapListPage() {
                 </TableRow>
               )}
               {rows.map((r) => (
-                <TableRow key={r.customer.id}>
+                <TableRow
+                  key={r.customer.id}
+                  onClick={() => setSelectedId(r.customer.id)}
+                  selected={r.customer.id === selectedId}
+                >
                   <TableCell className="font-medium">
                     <Link to={`/cari-hesap/${r.customer.id}`} className="hover:underline">
                       {r.customer.full_name}

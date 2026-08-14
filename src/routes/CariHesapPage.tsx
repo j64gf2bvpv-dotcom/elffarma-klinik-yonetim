@@ -30,6 +30,7 @@ interface LedgerRow {
 
 export function CariHesapPage() {
   const { id } = useParams<{ id: string }>()
+  const [selectedRow, setSelectedRow] = React.useState<number | null>(null)
   const { data: customer, isLoading: loadingCustomer } = useCustomer(id)
   const { data: payments = [] } = usePayments({ customerId: id })
   const { data: allSales = [] } = useSales()
@@ -181,7 +182,7 @@ export function CariHesapPage() {
               </TableHeader>
               <TableBody>
                 {rowsWithBalance.map((r, i) => (
-                  <TableRow key={i}>
+                  <TableRow key={i} onClick={() => setSelectedRow(i)} selected={i === selectedRow}>
                     <TableCell className="whitespace-nowrap">
                       {format(new Date(r.date), 'd MMM yyyy', { locale: trLocale })}
                     </TableCell>

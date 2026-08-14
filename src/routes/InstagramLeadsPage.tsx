@@ -13,6 +13,7 @@ import type { InstagramLead } from '@/types/database'
 
 export function InstagramLeadsPage() {
   const [search, setSearch] = React.useState('')
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const { data: leads = [], isLoading } = useInstagramLeads()
   const deleteMutation = useDeleteInstagramLead()
 
@@ -95,7 +96,7 @@ export function InstagramLeadsPage() {
                 </TableRow>
               )}
               {filtered.map((lead) => (
-                <TableRow key={lead.id}>
+                <TableRow key={lead.id} onClick={() => setSelectedId(lead.id)} selected={lead.id === selectedId}>
                   <TableCell className="font-medium">
                     <InstagramLeadForm
                       lead={lead}
