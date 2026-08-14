@@ -283,8 +283,8 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     <SafeThumbnail
                       src={product.image_url}
                       alt={product.name}
-                      className="size-9 rounded-md border bg-muted object-contain p-0.5"
-                      fallback={<div className="size-9 rounded-md border bg-muted" />}
+                      className="size-9 rounded-md border-2 border-muted-foreground/30 bg-muted object-contain p-0.5"
+                      fallback={<div className="size-9 rounded-md border-2 border-muted-foreground/30 bg-muted" />}
                     />
                   </TableCell>
                   <TableCell className="font-medium">

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.96] - 2026-08-14
+
+**Swiss ürün resimlerinin görünmeme sebebi bulundu — açık renk zemine karışıyorlardı:** Gerçek fotoğrafları indirip renk analiziyle incelendiğinde bu ürün fotoğraflarının %55-65'inin saf beyaz olduğu görüldü; küçük simge çerçevesinin arka planı ve kenarlığı da (tasarım gereği) çok açık tonlarda olduğu için resim teknik olarak yükleniyor ama sayfanın açık zeminine karışıp fark edilmiyordu (tarayıcı konsolunda hata da çıkmıyordu, çünkü gerçek bir hata yoktu). Simge çerçevesinin kenarlığı artık belirgin şekilde koyulaştırıldı — resmin içeriği ne olursa olsun kutunun kendisi her zaman net görünüyor. Şema değişikliği yok.
+
 ## [2.17.95] - 2026-08-13
 
 **Flakon adedi artık her üründe elle girilebiliyor, Ürün Hattı sütunu kaldırıldı:** Önceden Flakon hücresi sadece "paket içinde kaç flakon var" oranı tanımlı ürünlerde düzenlenebiliyordu, diğerlerinde "—" gösterip tıklanamıyordu — artık oran tanımlı olsun olmasın her üründe tıklanıp elle girilebiliyor. Stok listesindeki "Ürün Hattı" (Dermakor/Swiss rozeti) sütunu tamamen kaldırıldı. Şema değişikliği yok.
