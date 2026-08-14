@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { RefreshCw, Loader2, CheckCircle2, DownloadCloud, AlertTriangle, RotateCw } from 'lucide-react'
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { CollapsibleCard } from '@/components/ui/collapsible-card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
@@ -56,25 +56,23 @@ export function UpdateSettingsCard() {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center gap-3">
+    <CollapsibleCard
+      icon={
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground ring-1 ring-black/5">
           <RefreshCw className="size-5" />
         </span>
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            Güncellemeler
-            <Badge variant="secondary" className="font-mono font-normal">
-              v{__APP_VERSION__}
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            Uygulama her açılışta yeni sürüm olup olmadığını arka planda otomatik kontrol eder. İsterseniz
-            buradan da elle kontrol edebilirsiniz.
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-wrap items-center gap-3">
+      }
+      title={
+        <span className="flex items-center gap-2">
+          Güncellemeler
+          <Badge variant="secondary" className="font-mono font-normal">
+            v{__APP_VERSION__}
+          </Badge>
+        </span>
+      }
+      description="Uygulama her açılışta yeni sürüm olup olmadığını arka planda otomatik kontrol eder. İsterseniz buradan da elle kontrol edebilirsiniz."
+    >
+      <div className="flex flex-wrap items-center gap-3">
         {status === 'unsupported' && (
           <p className="text-muted-foreground text-sm">Güncelleme kontrolü sadece kurulu masaüstü uygulamasında çalışır.</p>
         )}
@@ -131,7 +129,7 @@ export function UpdateSettingsCard() {
             <AlertTriangle className="size-4" /> Kontrol edilemedi{errorMessage ? `: ${errorMessage}` : ''}
           </span>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </CollapsibleCard>
   )
 }

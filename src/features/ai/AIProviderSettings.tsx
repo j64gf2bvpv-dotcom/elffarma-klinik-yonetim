@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Bot, CheckCircle2, XCircle, Loader2, KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { CollapsibleCard } from '@/components/ui/collapsible-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -82,20 +82,16 @@ export function AIProviderSettings() {
   const dirty = provider !== settings.provider || baseUrl !== settings.baseUrl || model !== settings.model
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center gap-3">
+    <CollapsibleCard
+      icon={
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground ring-1 ring-black/5">
           <Bot className="size-5" />
         </span>
-        <div>
-          <CardTitle>Yapay Zeka</CardTitle>
-          <CardDescription>
-            AI sağlayıcısını, adresini ve modelini yönetin — tüm AI işlemleri buradaki ayara göre tek bir
-            AIService üzerinden çalışır. Sohbet etmek için sağ alt köşedeki AI simgesini kullanın.
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-4">
+      }
+      title="Yapay Zeka"
+      description="AI sağlayıcısını, adresini ve modelini yönetin — tüm AI işlemleri buradaki ayara göre tek bir AIService üzerinden çalışır. Sohbet etmek için sağ alt köşedeki AI simgesini kullanın."
+    >
+      <div className="grid gap-4">
         {isAdmin ? (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -210,7 +206,7 @@ export function AIProviderSettings() {
             Yüklü modeller: {testResult.availableModels.join(', ')}
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </CollapsibleCard>
   )
 }

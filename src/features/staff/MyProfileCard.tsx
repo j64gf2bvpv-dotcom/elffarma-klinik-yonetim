@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { UserCircle2, Upload, Loader2 } from 'lucide-react'
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { CollapsibleCard } from '@/components/ui/collapsible-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -89,19 +89,17 @@ export function MyProfileCard() {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center gap-3">
+    <>
+    <CollapsibleCard
+      icon={
         <span className="bg-muted text-muted-foreground ring-1 ring-black/5 flex size-10 shrink-0 items-center justify-center rounded-xl">
           <UserCircle2 className="size-5" />
         </span>
-        <div>
-          <CardTitle>Profilim</CardTitle>
-          <CardDescription>
-            Fotoğrafınızı ve iletişim bilgilerinizi düzenleyin — kartvizitiniz sağda anlık güncellenir.
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-6 lg:grid-cols-2">
+      }
+      title="Profilim"
+      description="Fotoğrafınızı ve iletişim bilgilerinizi düzenleyin — kartvizitiniz sağda anlık güncellenir."
+    >
+      <div className="grid gap-6 lg:grid-cols-2">
         <div className="grid gap-3">
           <div className="flex items-center gap-3">
             <button
@@ -198,7 +196,8 @@ export function MyProfileCard() {
         <div className="flex items-start justify-center lg:justify-start">
           <StaffBusinessCard staff={{ ...me, ...form }} />
         </div>
-      </CardContent>
+      </div>
+    </CollapsibleCard>
 
       <AvatarCropDialog
         open={cropOpen}
@@ -209,6 +208,6 @@ export function MyProfileCard() {
         file={pendingAvatarFile}
         onConfirm={handleCropConfirm}
       />
-    </Card>
+    </>
   )
 }

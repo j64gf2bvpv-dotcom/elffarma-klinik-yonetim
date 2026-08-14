@@ -30,7 +30,7 @@ import {
 import { companyInfo } from '@/lib/companyInfo'
 
 import { PageHeader } from '@/components/layout/AppShell'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { CollapsibleCard } from '@/components/ui/collapsible-card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -495,19 +495,12 @@ function NavPermissionsCard({ staffList }: { staffList: Staff[] }) {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center gap-3">
-        <PremiumIcon icon={EyeOff} />
-        <div>
-          <CardTitle>Kullanıcı Panel İzinleri</CardTitle>
-          <CardDescription>
-            Bir personel seçip hangi sekmeleri görebileceğini belirleyin — kapattığınız bir sekme o
-            kullanıcının sol menüsünden kaybolur, doğrudan bağlantıyla girmeye çalışsa da Ana Panel'e
-            yönlendirilir.
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-4">
+    <CollapsibleCard
+      icon={<PremiumIcon icon={EyeOff} />}
+      title="Kullanıcı Panel İzinleri"
+      description="Bir personel seçip hangi sekmeleri görebileceğini belirleyin — kapattığınız bir sekme o kullanıcının sol menüsünden kaybolur, doğrudan bağlantıyla girmeye çalışsa da Ana Panel'e yönlendirilir."
+    >
+      <div className="grid gap-4">
         <Select value={selected?.id} onValueChange={setSelectedId}>
           <SelectTrigger className="w-full sm:w-64">
             <SelectValue placeholder="Personel seçin" />
@@ -545,8 +538,8 @@ function NavPermissionsCard({ staffList }: { staffList: Staff[] }) {
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </CollapsibleCard>
   )
 }
 
@@ -611,18 +604,12 @@ export function SettingsPage() {
       <div className="grid gap-6">
         <UpdateSettingsCard />
 
-        <Card>
-          <CardHeader className="flex-row items-center gap-3">
-            <PremiumIcon icon={Palette} />
-            <div>
-              <CardTitle>Görünüm</CardTitle>
-              <CardDescription>
-                Açık/koyu mod kişisel tercihinizdir. Marka rengi, menü simgeleri gibi geri kalanı tüm ekibe
-                yansıdığı için sadece admin değiştirebilir.
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-6">
+        <CollapsibleCard
+          icon={<PremiumIcon icon={Palette} />}
+          title="Görünüm"
+          description="Açık/koyu mod kişisel tercihinizdir. Marka rengi, menü simgeleri gibi geri kalanı tüm ekibe yansıdığı için sadece admin değiştirebilir."
+        >
+          <div className="grid gap-6">
             <div>
               <p className="mb-2 text-sm font-medium">Görünüm Modu</p>
               <ColorModePicker />
@@ -651,21 +638,20 @@ export function SettingsPage() {
                 </div>
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </CollapsibleCard>
 
-        <Card>
-          <CardHeader className="flex-row items-center gap-3">
-            <PremiumIcon icon={UsersRound} />
-            <div>
-              <CardTitle>Personel</CardTitle>
-              <CardDescription>
-                Yeni personel eklemek için Supabase Dashboard {'>'} Authentication {'>'} Users
-                bölümünden hesap oluşturun; burada rol ve aktiflik durumunu yönetebilirsiniz.
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
+        <CollapsibleCard
+          icon={<PremiumIcon icon={UsersRound} />}
+          title="Personel"
+          description={
+            <>
+              Yeni personel eklemek için Supabase Dashboard {'>'} Authentication {'>'} Users bölümünden hesap
+              oluşturun; burada rol ve aktiflik durumunu yönetebilirsiniz.
+            </>
+          }
+        >
+          <div className="-mx-6 -mb-6">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -781,38 +767,28 @@ export function SettingsPage() {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+        </CollapsibleCard>
 
         {currentStaff?.role === 'admin' && <NavPermissionsCard staffList={staffList} />}
 
-        <Card>
-          <CardHeader className="flex-row items-center gap-3">
-            <PremiumIcon icon={MessageCircleMore} />
-            <div>
-              <CardTitle>WhatsApp Mesaj Şablonları</CardTitle>
-              <CardDescription>
-                Doktorlara gönderilecek WhatsApp mesajlarında kullanılacak hazır metinler.
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {templates.map((template) => (
-              <TemplateRow key={template.id} template={template} readOnly={currentStaff?.role !== 'admin'} />
-            ))}
-            {currentStaff?.role === 'admin' && <NewTemplateForm />}
-          </CardContent>
-        </Card>
+        <CollapsibleCard
+          icon={<PremiumIcon icon={MessageCircleMore} />}
+          title="WhatsApp Mesaj Şablonları"
+          description="Doktorlara gönderilecek WhatsApp mesajlarında kullanılacak hazır metinler."
+        >
+          {templates.map((template) => (
+            <TemplateRow key={template.id} template={template} readOnly={currentStaff?.role !== 'admin'} />
+          ))}
+          {currentStaff?.role === 'admin' && <NewTemplateForm />}
+        </CollapsibleCard>
 
-        <Card>
-          <CardHeader className="flex-row items-center gap-3">
-            <PremiumIcon icon={Globe} />
-            <div>
-              <CardTitle>Kurumsal Bilgiler</CardTitle>
-              <CardDescription>{companyInfo.legalName}</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+        <CollapsibleCard
+          icon={<PremiumIcon icon={Globe} />}
+          title="Kurumsal Bilgiler"
+          description={companyInfo.legalName}
+        >
+          <div className="grid gap-3 text-sm sm:grid-cols-2">
             <ContactTile href="https://elffarma.com" icon={Globe} label="elffarma.com" />
             <ContactTile
               href="https://instagram.com/elffarma"
@@ -832,21 +808,20 @@ export function SettingsPage() {
               icon={MapPin}
               label={companyInfo.address}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </CollapsibleCard>
 
-        <Card>
-          <CardHeader className="flex-row items-center gap-3">
-            <PremiumIcon icon={Receipt} />
-            <div>
-              <CardTitle>Fatura & Banka Bilgileri</CardTitle>
-              <CardDescription>
-                Doktorlara tahsilat için gönderilecek IBAN ve vergi bilgileri — WhatsApp şablonlarında{' '}
-                {'{{iban}}'} olarak da kullanılabilir.
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-4 text-sm sm:grid-cols-2">
+        <CollapsibleCard
+          icon={<PremiumIcon icon={Receipt} />}
+          title="Fatura & Banka Bilgileri"
+          description={
+            <>
+              Doktorlara tahsilat için gönderilecek IBAN ve vergi bilgileri — WhatsApp şablonlarında {'{{iban}}'}{' '}
+              olarak da kullanılabilir.
+            </>
+          }
+        >
+          <div className="grid gap-4 text-sm sm:grid-cols-2">
             <div>
               <p className="text-xs font-medium text-muted-foreground">VERGİ DAİRESİ</p>
               <p>{companyInfo.taxOffice}</p>
@@ -878,28 +853,26 @@ export function SettingsPage() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CollapsibleCard>
 
         {currentStaff?.role === 'admin' && (
-          <Card>
-            <CardHeader className="flex-row items-center gap-3">
-              <PremiumIcon icon={FlaskConical} />
-              <div>
-                <CardTitle>Örnek/Deneme Verisi</CardTitle>
-                <CardDescription>
-                  Panel grafiklerini ve tüm ekranları gerçek veriyle görmek için birkaç örnek doktor, ürün
-                  (SKT'si yaklaşan bir lot dahil), tahsilat, satış, temsilci, hatırlatma, kongre (paket
-                  fiyatlarıyla), ziyaret, gider, numune talebi, bir prim kuralı, klinik, araç/yakıt kaydı,
-                  Instagram doktoru ve CRM aktivitesi/fırsatı (Yeni'den Kaybedildi'ye kadar tüm CRM
-                  aşamalarında) ekler — Panel'deki hemen hemen tüm widget'lar ve diğer tüm sayfalar bu
-                  veriyle dolar. Bu ay için henüz hiç bütçe hedefi girilmemişse bir örnek hedef de eklenir
-                  (var olan gerçek bir hedefi asla ezmez). Adları/başlıkları "[Örnek]" ile işaretlenir, tek
-                  tıkla geri silinebilir — gerçek verilerinize dokunmaz.
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
+          <CollapsibleCard
+            icon={<PremiumIcon icon={FlaskConical} />}
+            title="Örnek/Deneme Verisi"
+            description={
+              <>
+                Panel grafiklerini ve tüm ekranları gerçek veriyle görmek için birkaç örnek doktor, ürün (SKT'si
+                yaklaşan bir lot dahil), tahsilat, satış, temsilci, hatırlatma, kongre (paket fiyatlarıyla), ziyaret,
+                gider, numune talebi, bir prim kuralı, klinik, araç/yakıt kaydı, Instagram doktoru ve CRM
+                aktivitesi/fırsatı (Yeni'den Kaybedildi'ye kadar tüm CRM aşamalarında) ekler — Panel'deki hemen hemen
+                tüm widget'lar ve diğer tüm sayfalar bu veriyle dolar. Bu ay için henüz hiç bütçe hedefi
+                girilmemişse bir örnek hedef de eklenir (var olan gerçek bir hedefi asla ezmez). Adları/başlıkları
+                "[Örnek]" ile işaretlenir, tek tıkla geri silinebilir — gerçek verilerinize dokunmaz.
+              </>
+            }
+          >
+            <div className="flex flex-wrap gap-2">
               <Button onClick={handleSeedDemoData} disabled={seeding || clearing}>
                 {seeding && <Loader2 className="animate-spin" />}
                 Örnek Veri Ekle
@@ -908,8 +881,8 @@ export function SettingsPage() {
                 {clearing && <Loader2 className="animate-spin" />}
                 <Trash2 className="size-4" /> Örnek Verileri Sil
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </CollapsibleCard>
         )}
 
         <AIProviderSettings />

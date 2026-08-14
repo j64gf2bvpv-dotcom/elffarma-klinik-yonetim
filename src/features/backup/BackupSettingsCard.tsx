@@ -4,7 +4,7 @@ import { tr as trLocale } from 'date-fns/locale/tr'
 import { toast } from 'sonner'
 import { CloudUpload, Download, Loader2, Trash2, HardDrive, CheckCircle2 } from 'lucide-react'
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { CollapsibleCard } from '@/components/ui/collapsible-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -165,22 +165,16 @@ export function BackupSettingsCard() {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center gap-3">
+    <CollapsibleCard
+      icon={
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground ring-1 ring-black/5">
           <CloudUpload className="size-5" />
         </span>
-        <div>
-          <CardTitle>Yedekleme</CardTitle>
-          <CardDescription>
-            Müşteri, ürün, stok, tahsilat, satış gibi tüm iş verisi tek bir JSON dosyası olarak buluta
-            (Supabase Storage) yedeklenir. Admin girişinde son yedekten 2 günden fazla geçtiyse otomatik olarak
-            da alınır — isterseniz aşağıdan elle de tetikleyebilirsiniz. Google Drive'a yüklenen kopya, birikmesin
-            diye her seferinde aynı dosyanın üzerine yazılır.
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-4">
+      }
+      title="Yedekleme"
+      description="Müşteri, ürün, stok, tahsilat, satış gibi tüm iş verisi tek bir JSON dosyası olarak buluta (Supabase Storage) yedeklenir. Admin girişinde son yedekten 2 günden fazla geçtiyse otomatik olarak da alınır — isterseniz aşağıdan elle de tetikleyebilirsiniz. Google Drive'a yüklenen kopya, birikmesin diye her seferinde aynı dosyanın üzerine yazılır."
+    >
+      <div className="grid gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <Button onClick={() => createBackup.mutate()} disabled={createBackup.isPending}>
             {createBackup.isPending ? <Loader2 className="animate-spin" /> : <CloudUpload className="size-4" />}
@@ -233,7 +227,7 @@ export function BackupSettingsCard() {
         )}
 
         <GoogleDriveSection />
-      </CardContent>
-    </Card>
+      </div>
+    </CollapsibleCard>
   )
 }

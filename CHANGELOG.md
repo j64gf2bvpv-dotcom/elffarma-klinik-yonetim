@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.108] - 2026-08-14
+
+**Ayarlar sayfasındaki tüm kartlar artık daraltılıp genişletilebiliyor:** Sayfa artık sayfalarca aşağı inmiyor — her bölümün (Görünüm, Personel, Kullanıcı Panel İzinleri, WhatsApp Şablonları, Kurumsal/Fatura Bilgileri, Örnek Veri, Güncellemeler, Yapay Zeka, Yedekleme, Profilim) başlığına tıklayınca içeriği açılıp kapanıyor, daha derli toplu. Şema değişikliği yok.
+
 ## [2.17.107] - 2026-08-14
 
 **Profil menüsü kenar çubuğuna taşındı, Ajanda takviminde tarih üzerine gelince kısa bilgi çıkıyor, menüde göster/gizle eklendi, Stok'ta ürünler sürüklenerek sıralanabiliyor ve toplu seçilip kaldırılabiliyor:** Üst paneldeki profil fotoğrafı/menüsü kaldırıldı — "Profili Düzenle" ve "Çıkış Yap" artık kenar çubuğunun altındaki isim kartına tıklayınca açılıyor; hemen altında o an uygulamayı açık tutan diğer personel de listeleniyor. Ajanda mini takvimindeki ayrı liste kaldırıldı (panelin boyunu bozuyordu) — bunun yerine bir tarihin altındaki noktanın üzerine gelince o güne ait etkinliklerin başlığı kısa bir bilgi kutusu olarak çıkıyor. "Menüyü düzenle" ile artık admin kendi menüsündeki sekmeleri göz ikonuyla açıp kapatabiliyor. Stok listesindeki Diğer bölümü kaldırıldı (sadece Dermakor/Swiss). Ürünler artık sürüklenerek istenen sıraya getirilebiliyor, satırların başındaki kutucuklarla toplu seçilip tek seferde kaldırılabiliyor. Şema değişikliği var (products.sort_order eklendi).
