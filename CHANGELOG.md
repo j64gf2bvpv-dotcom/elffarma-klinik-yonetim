@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.117] - 2026-08-14
+
+**Doğru hedefe geri dönüldü — sol menü değil, Ürünler sekmesi:** Sol menüdeki "Stok Yönetimi" için yapılan koyulaştırma geri alındı (kullanıcı onu istememişti). Asıl istenen: Stok sayfasındaki Ürünler/Günlük Sayım/Stok Kartı/Kargo sekme çubuğunda seçili sekmenin (ör. Ürünler) koyu görünmesi — bu, `--foreground`/`--background` tabanlı koyu-seçili-sekme + yatay kaydırmada aktif sekmeyi görünüme kaydırma haliyle geri getirildi (tüm çubuğu koyu yapan ara adım değil, sadece seçili sekmenin koyu olduğu hal). Şema değişikliği yok.
+
 ## [2.17.116] - 2026-08-14
 
 **Sol menüde seçili panelin koyuluğu artırıldı:** Bir önceki düzeltmedeki koyulaştırma (bg-black/25) yeterince belirgin değildi — kullanıcı geri bildirimiyle daha güçlü bir katmana (bg-black/55) çıkarıldı, artık seçili panel net biçimde ayrışıyor. Şema değişikliği yok.
