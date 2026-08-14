@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.125] - 2026-08-14
+
+**Ana Panel'deki mini takvimde bir nota tıklayınca artık ilgili bölüme gidiyor:** Önceden hangi tarihe tıklanırsa tıklansın her zaman genel Ajanda sayfasına gidiliyordu — o günkü notla hiçbir ilgisi olmayan bir sonuçtu. O gün tek bir kayıt varsa artık Ajanda sayfasındaki nota tıklama mantığıyla aynı şekilde doğrudan ilgili yere gidiyor: kongre notu → kongre sayfası, ödeme vadesi notu → o doktorun cari kartı, hatırlatma notu → Hatırlatmalar sayfası. Aynı günde birden fazla kayıt varsa (hangisi kastedildiği belirsiz olduğundan) yine Ajanda'ya gidiliyor. Şema değişikliği yok.
+
 ## [2.17.124] - 2026-08-14
 
 **Ajanda mini takviminde tarih tooltip'i düzeltildi:** Bir tarihin üzerine gelince çıkan etkinlik listesi (kısa bilgi kutusu) her zaman ortalanıyordu — takvimin en soldaki/sağdaki sütunlarındaki tarihlerde kutu kart sınırlarının dışına taşıp yandaki panelin altında kalıyordu (kartlar `backdrop-blur` kullandığı için kendi katmanlama bağlamlarını oluşturuyor, bu yüzden salt z-index artışı yetmiyordu — kutunun kart sınırları içinde kalması gerekiyordu). Artık kenar sütunlarda kutu kenara yaslanıyor, ortadaki sütunlarda ortalı kalıyor. Ayrıca uzun etkinlik başlıklarının kutudan taşması (eksik `min-w-0`) düzeltildi — artık düzgün üç nokta ile kısaltılıyor. Bu paylaşılan bileşen (`MiniCalendar.tsx`) hem Ana Panel'deki hem Ajanda sayfasındaki takvimde kullanıldığı için düzeltme ikisini de kapsıyor. Şema değişikliği yok.

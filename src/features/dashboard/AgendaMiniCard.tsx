@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { format } from 'date-fns'
 import { ArrowRight, CalendarDays } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +22,36 @@ export function AgendaMiniCard() {
   const [month, setMonth] = React.useState(() => new Date())
   const dotsByDay = React.useMemo(() => buildAgendaDotsByDay(events), [events])
 
+  /**
+   * Bir tarihe tıklanınca önceden her zaman genel Ajanda sayfasına
+   * gidiliyordu — o tarihteki notla hiç ilgisi olmayan bir sonuçtu. O gün
+   * TEK bir kayıt varsa artık AgendaPage'in eventClick'iyle aynı mantıkla
+   * doğrudan o kaydın ilgili bölümüne gidiliyor (kongre→kongre sayfası,
+   * ödeme vadesi→cari kart, hatırlatma→Hatırlatmalar). Birden fazla kayıt
+   * varsa hangisi kastedildiği belirsiz olduğu için Ajanda'ya (o tarih
+   * seçili halde) gidiliyor.
+   */
+  function handleSelectDate(date: Date) {
+    const key = format(date, 'yyyy-MM-dd')
+    const dayEntries = dotsByDay.get(key)
+    if (dayEntries && dayEntries.length === 1) {
+      const entry = dayEntries[0]
+      if (entry.type === 'congress' && entry.linkId) {
+        navigate(`/kongreler/${entry.linkId}`)
+        return
+      }
+      if (entry.type === 'payment_due' && entry.linkId) {
+        navigate(`/musteriler/${entry.linkId}`)
+        return
+      }
+      if (entry.type === 'reminder') {
+        navigate('/hatirlatmalar')
+        return
+      }
+    }
+    navigate('/ajanda')
+  }
+
   return (
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
@@ -38,7 +69,7 @@ export function AgendaMiniCard() {
           month={month}
           onMonthChange={setMonth}
           selected={undefined}
-          onSelectDate={() => navigate('/ajanda')}
+          onSelectDate={handleSelectDate}
           dotsByDay={dotsByDay}
         />
       </CardContent>

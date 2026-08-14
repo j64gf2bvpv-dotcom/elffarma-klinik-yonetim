@@ -47,13 +47,17 @@ export function buildAgendaTooltip(event: AgendaEvent): string {
 export interface AgendaDayEntry {
   color: string
   title: string
+  type: AgendaEventType
+  linkId: string | null
 }
 
 /**
- * Her günün altına o gün düşen etkinliklerin (renk + başlık) listesini
- * eşleyen bir harita üretir — mini takvim noktaları VE üzerine gelince
- * çıkan kısa bilgi (tooltip) için. Aynı günde birden fazla aynı türden
- * etkinlik olsa da hepsi ayrı ayrı tutulur (tooltip'te tek tek görünsün diye).
+ * Her günün altına o gün düşen etkinliklerin (renk + başlık + tür/link)
+ * listesini eşleyen bir harita üretir — mini takvim noktaları VE üzerine
+ * gelince çıkan kısa bilgi (tooltip) için. type/linkId, mini takvimde bir
+ * tarihe tıklanınca (o günde TEK bir kayıt varsa) doğrudan ilgili bölüme
+ * gidebilmek için taşınıyor (bkz. AgendaMiniCard). Aynı günde birden fazla
+ * aynı türden etkinlik olsa da hepsi ayrı ayrı tutulur.
  */
 export function buildAgendaDotsByDay(events: AgendaEvent[]): Map<string, AgendaDayEntry[]> {
   const map = new Map<string, AgendaDayEntry[]>()
@@ -63,7 +67,7 @@ export function buildAgendaDotsByDay(events: AgendaEvent[]): Map<string, AgendaD
     for (const day of eachDayOfInterval({ start, end })) {
       const key = format(day, 'yyyy-MM-dd')
       const list = map.get(key) ?? []
-      list.push({ color: agendaTypeMeta[e.type].color, title: e.title })
+      list.push({ color: agendaTypeMeta[e.type].color, title: e.title, type: e.type, linkId: e.linkId })
       map.set(key, list)
     }
   }
