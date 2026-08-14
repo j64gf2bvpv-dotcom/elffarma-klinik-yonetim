@@ -42,6 +42,7 @@ import {
   useStartTodayCount,
   useTodayCount,
   useUpdateCountItem,
+  useUpdateCountItemFlakon,
 } from './hooks'
 import { exportDailyCountToExcel, exportDailyCountToPdf, exportDailyCountToWord, printDailyCount } from './exportDailyCount'
 import { exportDailySummaryImage } from './exportSummaryImage'
@@ -149,22 +150,38 @@ function TodaySalesActivity({ countDate }: { countDate: string }) {
   )
 }
 
+/**
+ * Paket ve Flakon panelleri aynı satır bileşenini paylaşır — hangi alanların
+ * (expected/counted_quantity ya da _flakon karşılıkları) okunup yazılacağı ve
+ * hangi birim etiketinin gösterileceği (ürünün kendi birimi vs. sabit
+ * "flakon") dışarıdan parametreyle veriliyor.
+ */
 function CountItemRow({
   item,
   readOnly,
+  expectedQuantity,
+  countedQuantity,
+  unitLabel,
   onSave,
   onAddStock,
 }: {
   item: StockCountItemWithProduct
   readOnly: boolean
+  expectedQuantity: number
+  countedQuantity: number | null
+  unitLabel: string
   onSave: (id: string, value: number | null) => void
   onAddStock: (item: StockCountItemWithProduct, diff: number) => void
 }) {
-  const [value, setValue] = React.useState(item.counted_quantity?.toString() ?? '')
-  const diff = value === '' ? null : Number(value) - item.expected_quantity
+  const [value, setValue] = React.useState(countedQuantity?.toString() ?? '')
+  const diff = value === '' ? null : Number(value) - expectedQuantity
 
   const [addingStock, setAddingStock] = React.useState(false)
   const [addValue, setAddValue] = React.useState('')
+
+  React.useEffect(() => {
+    setValue(countedQuantity?.toString() ?? '')
+  }, [countedQuantity])
 
   function commitAddStock() {
     const parsed = Number(addValue)
@@ -183,7 +200,7 @@ function CountItemRow({
       <TableCell className="text-muted-foreground">
         {readOnly ? (
           <span>
-            {item.expected_quantity} {item.products.unit}
+            {expectedQuantity} {unitLabel}
           </span>
         ) : addingStock ? (
           <div className="flex items-center gap-1">
@@ -230,7 +247,7 @@ function CountItemRow({
             title="Stok eklemek/düşmek için tıklayın"
             className="hover:bg-accent -mx-1 inline-flex items-center gap-1 rounded-md px-1 py-0.5"
           >
-            {item.expected_quantity} {item.products.unit}
+            {expectedQuantity} {unitLabel}
             <Plus className="text-muted-foreground size-3" />
           </button>
         )}
@@ -238,7 +255,7 @@ function CountItemRow({
       <TableCell>
         {readOnly ? (
           <span>
-            {item.counted_quantity ?? '—'} {item.products.unit}
+            {countedQuantity ?? '—'} {unitLabel}
           </span>
         ) : (
           <Input
@@ -270,6 +287,7 @@ export function DailyCountPanel() {
   const reopenMutation = useReopenCount()
   const { data: items = [] } = useCountItems(todayCount?.id)
   const updateItemMutation = useUpdateCountItem(todayCount?.id ?? '')
+  const updateItemFlakonMutation = useUpdateCountItemFlakon(todayCount?.id ?? '')
   const addStockMutation = useAddStockToCountItem(todayCount?.id ?? '')
   const { data: allSales = [] } = useSales()
 
@@ -308,11 +326,16 @@ export function DailyCountPanel() {
   const countDayLabel = format(new Date(todayCount.count_date), 'EEEE', { locale: trLocale })
 
   const pendingChangeCount = items.filter(
-    (i) => i.counted_quantity !== null && i.counted_quantity !== i.expected_quantity,
+    (i) =>
+      (i.counted_quantity !== null && i.counted_quantity !== i.expected_quantity) ||
+      (i.counted_quantity_flakon !== null && i.counted_quantity_flakon !== i.expected_quantity_flakon),
   ).length
 
   function productLine(i: StockCountItemWithProduct): { metrik: string; deger: string | number } {
-    return { metrik: i.products.name, deger: `${i.expected_quantity} ${i.products.unit}` }
+    return {
+      metrik: i.products.name,
+      deger: `${i.expected_quantity} ${i.products.unit}, ${i.expected_quantity_flakon} flakon`,
+    }
   }
   const dermakorItems = items.filter((i) => i.products.brand_line === 'dermakor')
   const swissItems = items.filter((i) => i.products.brand_line === 'swiss')
@@ -423,6 +446,12 @@ export function DailyCountPanel() {
             </p>
           </div>
         )}
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Paket Sayımı</CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -439,8 +468,43 @@ export function DailyCountPanel() {
                   key={item.id}
                   item={item}
                   readOnly={isCompleted}
+                  expectedQuantity={item.expected_quantity}
+                  countedQuantity={item.counted_quantity}
+                  unitLabel={item.products.unit}
                   onSave={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
-                  onAddStock={(countItem, diff) => addStockMutation.mutate({ item: countItem, diff })}
+                  onAddStock={(countItem, diff) => addStockMutation.mutate({ item: countItem, diff, unitKind: 'paket' })}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Flakon Sayımı</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ürün</TableHead>
+                <TableHead>Sistemdeki Miktar</TableHead>
+                <TableHead>Sayılan</TableHead>
+                <TableHead>Fark</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <CountItemRow
+                  key={item.id}
+                  item={item}
+                  readOnly={isCompleted}
+                  expectedQuantity={item.expected_quantity_flakon}
+                  countedQuantity={item.counted_quantity_flakon}
+                  unitLabel="flakon"
+                  onSave={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
+                  onAddStock={(countItem, diff) => addStockMutation.mutate({ item: countItem, diff, unitKind: 'flakon' })}
                 />
               ))}
             </TableBody>

@@ -9,8 +9,10 @@ import {
   reopenCount,
   startTodayCount,
   updateCountItem,
+  updateCountItemFlakon,
   type StockCountItemWithProduct,
 } from './api'
+import type { StockUnitKind } from '@/types/database'
 
 export function useTodayCount() {
   return useQuery({ queryKey: ['stock_counts', 'today'], queryFn: fetchTodayCount })
@@ -52,10 +54,30 @@ export function useUpdateCountItem(stockCountId: string) {
   })
 }
 
+export function useUpdateCountItemFlakon(stockCountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, counted_quantity_flakon }: { id: string; counted_quantity_flakon: number | null }) =>
+      updateCountItemFlakon(id, counted_quantity_flakon),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
+    },
+    onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
+  })
+}
+
 export function useAddStockToCountItem(stockCountId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ item, diff }: { item: StockCountItemWithProduct; diff: number }) => addStockToCountItem(item, diff),
+    mutationFn: ({
+      item,
+      diff,
+      unitKind = 'paket',
+    }: {
+      item: StockCountItemWithProduct
+      diff: number
+      unitKind?: StockUnitKind
+    }) => addStockToCountItem(item, diff, unitKind),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
       queryClient.invalidateQueries({ queryKey: ['products'] })

@@ -218,6 +218,8 @@ export interface StockCountItem {
   product_id: string
   expected_quantity: number
   counted_quantity: number | null
+  expected_quantity_flakon: number
+  counted_quantity_flakon: number | null
   note: string | null
   created_at: string
 }

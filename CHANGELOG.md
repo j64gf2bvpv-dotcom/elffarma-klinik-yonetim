@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.99] - 2026-08-14
+
+**Günlük Sayım'a ayrı Paket ve Flakon panelleri eklendi:** Günlük Sayım artık tek bir "Sayılan" sütunu yerine iki ayrı panel gösteriyor — "Paket Sayımı" ve "Flakon Sayımı", her ikisi de aynı ürün listesini kendi sistemdeki miktarı/sayılanı/farkıyla ayrı ayrı takip ediyor. "Sayımı Tamamla ve Stoğu Güncelle" butonuna basıldığında her iki panelde girilen farklar da (varsa) depodaki gerçek paket ve flakon stoklarına ayrı ayrı yansıyor. Günlük Özet'teki PDF/Excel/Word ve PNG görsel dışa aktarımları da artık her üründe hem paket hem flakon miktarını gösteriyor. Şema değişikliği var (stock_count_items tablosuna flakon sütunları eklendi).
+
 ## [2.17.98] - 2026-08-14
 
 **"Tüm Ürünleri Sıfırla" hatası için veritabanı şema kayması düzeltildi, "Stok Değeri (Maliyet)" kartı kaldırıldı:** Paralel çalışan başka bir oturum, `stock_movements` tablosuna ve stok hareketi fonksiyonlarına (satış temsilcisi bağlama, hareket kaynağı izleme gibi) migration sistemi dışından doğrudan değişiklik yapmıştı — bu hem şemanın izlenebilirliğini bozuyordu hem de sunucunun (PostgREST) bu değişiklikleri önbelleğe alma şeklini etkilemiş olabilirdi. Canlı şema artık migration geçmişine düzgünce kaydedildi ve sunucu önbelleği zorla yenilendi. Ayrıca Stok sayfasındaki "Stok Değeri (Maliyet)" kartı kaldırıldı. Şema değişikliği var (şema kayması giderildi, işlevsel bir değişiklik yok).
