@@ -262,10 +262,15 @@ export function DailyCountPanel() {
       (i.counted_quantity_flakon !== null && i.counted_quantity_flakon !== i.products.flakon_quantity),
   ).length
 
+  // "Son stok" — sayılmışsa girilen sayım, sayılmamışsa hâlâ canlı sistem
+  // stoğu (panelde ne görünüyorsa, Sayımı Tamamla sonrası depoya yansıyacak
+  // gerçek son değer bu).
   function productLine(i: StockCountItemWithProduct): { metrik: string; deger: string | number } {
+    const finalPaket = i.counted_quantity ?? i.products.current_quantity
+    const finalFlakon = i.counted_quantity_flakon ?? i.products.flakon_quantity
     return {
       metrik: i.products.name,
-      deger: `${i.products.current_quantity} ${i.products.unit}, ${i.products.flakon_quantity} flakon`,
+      deger: `${finalPaket} ${i.products.unit}, ${finalFlakon} flakon`,
     }
   }
   const dermakorItems = items.filter((i) => i.products.brand_line === 'dermakor')

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, AlertTriangle, Trash2, CalendarClock, TrendingUp, PackageSearch, RotateCcw, Loader2 } from 'lucide-react'
+import { Search, AlertTriangle, Trash2, CalendarClock, TrendingUp, PackageSearch, RotateCcw, Loader2, Check } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,7 @@ import {
   useProducts,
   useRecordStockMovement,
   useUpdateProductCampaign,
+  useUpdateProductCategory,
   useUpdateProductPrice,
 } from '@/features/stock/hooks'
 import { recordStockMovement } from '@/features/stock/api'
@@ -44,6 +45,28 @@ const ALL_BRANDS = 'all'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
+}
+
+/**
+ * Tıkla-düzenle hücrelerinde input'un yanına konan görünür "Kaydet" butonu —
+ * blur/Enter ile kaydetme zaten çalışıyor ama kullanıcı için görünür bir onay
+ * eylemi olsun diye eklendi. onMouseDown'da preventDefault yapılmazsa buton
+ * tıklanmadan önce input blur olur, commit() editing'i false yapar ve buton
+ * DOM'dan kalkıp click event'i hiç ateşlenmeden kaybolur.
+ */
+function SaveButton({ onCommit }: { onCommit: () => void }) {
+  return (
+    <Button
+      type="button"
+      size="icon"
+      className="h-8 w-8 shrink-0"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onCommit}
+      title="Kaydet"
+    >
+      <Check className="size-4" />
+    </Button>
+  )
 }
 
 
@@ -82,27 +105,30 @@ function QuantityCell({ product }: { product: Product }) {
 
   if (editing) {
     return (
-      <Input
-        type="number"
-        min="0"
-        step="1"
-        autoFocus
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onFocus={(e) => e.currentTarget.select()}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            commit()
-          }
-          if (e.key === 'Escape') {
-            setValue(String(product.current_quantity))
-            setEditing(false)
-          }
-        }}
-        className="h-8 w-20"
-      />
+      <div className="flex items-center gap-1">
+        <Input
+          type="number"
+          min="0"
+          step="1"
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onFocus={(e) => e.currentTarget.select()}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit()
+            }
+            if (e.key === 'Escape') {
+              setValue(String(product.current_quantity))
+              setEditing(false)
+            }
+          }}
+          className="h-8 w-20"
+        />
+        <SaveButton onCommit={commit} />
+      </div>
     )
   }
 
@@ -157,27 +183,30 @@ function FlakonQuantityCell({ product }: { product: Product }) {
 
   if (editing) {
     return (
-      <Input
-        type="number"
-        min="0"
-        step="1"
-        autoFocus
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onFocus={(e) => e.currentTarget.select()}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            commit()
-          }
-          if (e.key === 'Escape') {
-            setValue(String(product.flakon_quantity))
-            setEditing(false)
-          }
-        }}
-        className="h-8 w-20"
-      />
+      <div className="flex items-center gap-1">
+        <Input
+          type="number"
+          min="0"
+          step="1"
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onFocus={(e) => e.currentTarget.select()}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit()
+            }
+            if (e.key === 'Escape') {
+              setValue(String(product.flakon_quantity))
+              setEditing(false)
+            }
+          }}
+          className="h-8 w-20"
+        />
+        <SaveButton onCommit={commit} />
+      </div>
     )
   }
 
@@ -212,25 +241,28 @@ function CampaignCell({ product }: { product: Product }) {
 
   if (editing) {
     return (
-      <Input
-        autoFocus
-        placeholder="Örn. 5+1"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onFocus={(e) => e.currentTarget.select()}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            commit()
-          }
-          if (e.key === 'Escape') {
-            setValue(product.campaign ?? '')
-            setEditing(false)
-          }
-        }}
-        className="h-8 w-28"
-      />
+      <div className="flex items-center gap-1">
+        <Input
+          autoFocus
+          placeholder="Örn. 5+1"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onFocus={(e) => e.currentTarget.select()}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit()
+            }
+            if (e.key === 'Escape') {
+              setValue(product.campaign ?? '')
+              setEditing(false)
+            }
+          }}
+          className="h-8 w-28"
+        />
+        <SaveButton onCommit={commit} />
+      </div>
     )
   }
 
@@ -275,28 +307,31 @@ function PriceCell({ product }: { product: Product }) {
 
   if (editing) {
     return (
-      <Input
-        type="number"
-        min="0"
-        step="0.01"
-        autoFocus
-        placeholder="Örn. 1500"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onFocus={(e) => e.currentTarget.select()}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            commit()
-          }
-          if (e.key === 'Escape') {
-            setValue(product.unit_price != null ? String(product.unit_price) : '')
-            setEditing(false)
-          }
-        }}
-        className="h-8 w-28"
-      />
+      <div className="flex items-center gap-1">
+        <Input
+          type="number"
+          min="0"
+          step="0.01"
+          autoFocus
+          placeholder="Örn. 1500"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onFocus={(e) => e.currentTarget.select()}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit()
+            }
+            if (e.key === 'Escape') {
+              setValue(product.unit_price != null ? String(product.unit_price) : '')
+              setEditing(false)
+            }
+          }}
+          className="h-8 w-28"
+        />
+        <SaveButton onCommit={commit} />
+      </div>
     )
   }
 
@@ -321,6 +356,62 @@ function PriceCell({ product }: { product: Product }) {
       ) : (
         <span>—</span>
       )}
+    </button>
+  )
+}
+
+/** Kategoriye tıklayınca yerinde düzenlenebilir hale gelir — sadece category alanını günceller. */
+function CategoryCell({ product }: { product: Product }) {
+  const [editing, setEditing] = React.useState(false)
+  const [value, setValue] = React.useState(product.category ?? '')
+  const mutation = useUpdateProductCategory()
+
+  React.useEffect(() => {
+    if (!editing) setValue(product.category ?? '')
+  }, [product.category, editing])
+
+  function commit() {
+    setEditing(false)
+    const trimmed = value.trim()
+    if (trimmed === (product.category ?? '')) return
+    mutation.mutate({ id: product.id, category: trimmed || null })
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          autoFocus
+          placeholder="Örn. Dolgu"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onFocus={(e) => e.currentTarget.select()}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit()
+            }
+            if (e.key === 'Escape') {
+              setValue(product.category ?? '')
+              setEditing(false)
+            }
+          }}
+          className="h-8 w-28"
+        />
+        <SaveButton onCommit={commit} />
+      </div>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      title="Kategoriyi düzenlemek için tıklayın"
+      className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-muted-foreground hover:bg-accent"
+    >
+      {product.category ?? '—'}
     </button>
   )
 }
@@ -364,7 +455,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                     <SafeThumbnail
                       src={product.image_url}
                       alt={product.name}
-                      className="size-9 rounded-md border-2 border-muted-foreground/30 bg-muted object-contain p-0.5"
+                      className="size-9 rounded-md border-2 border-muted-foreground/30 bg-muted object-cover"
                       fallback={<div className="size-9 rounded-md border-2 border-muted-foreground/30 bg-muted" />}
                     />
                   </TableCell>
@@ -381,7 +472,9 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
                       }
                     />
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{product.category ?? '—'}</TableCell>
+                  <TableCell>
+                    <CategoryCell product={product} />
+                  </TableCell>
                   <TableCell>
                     <QuantityCell product={product} />
                   </TableCell>

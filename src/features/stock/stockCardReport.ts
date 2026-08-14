@@ -51,7 +51,13 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
     for (const m of sorted) {
       // Bakiye (current_quantity/paket) yalnızca paket birimli hareketlerle ilerler —
       // flakon birimli hareketler ayrı bir sayacı (flakon_quantity) etkiler, bu
-      // deftere karışırsa paket bakiyesi yanlış hesaplanır.
+      // deftere karışırsa paket bakiyesi yanlış hesaplanır. Ama Giriş/Çıkış
+      // miktarları (inQty/outQty) HER hareketin kendi yönünü yansıtmalı — flakon
+      // hareketlerinde bunları 0'a sabitlemek hem "Hareket Dökümü"nde flakon
+      // miktarını görünmez kılıyordu hem de StockCardPanel'deki satır-içi
+      // düzenlemenin (handleInlineQtyChange) yön tespitini (rowIsInSide =
+      // row.inQty > 0) flakon satırlarında hep "false" gösterip yanlışlıkla
+      // giriş↔çıkış yönünü çevirmesine yol açıyordu.
       const isFlakon = m.unit_kind === 'flakon'
       const isIn = INCREASES_STOCK.has(m.movement_type)
       if (!isFlakon) balance += isIn ? m.quantity : -m.quantity
@@ -70,8 +76,8 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
         lotId: m.lot_id,
         unitKind: m.unit_kind,
         quantity: m.quantity,
-        inQty: !isFlakon && isIn ? m.quantity : 0,
-        outQty: !isFlakon && !isIn ? m.quantity : 0,
+        inQty: isIn ? m.quantity : 0,
+        outQty: !isIn ? m.quantity : 0,
         balance,
       })
     }

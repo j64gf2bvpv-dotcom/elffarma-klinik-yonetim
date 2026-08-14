@@ -58,9 +58,16 @@ export function StockHistoryDialog({ product }: { product: Product }) {
                   {format(new Date(m.created_at), 'd MMM yyyy HH:mm', { locale: trLocale })}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={m.movement_type === 'in' ? 'success' : m.movement_type === 'out' ? 'destructive' : 'secondary'}>
-                    {tr.movementType[m.movement_type]}
-                  </Badge>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Badge variant={m.movement_type === 'in' ? 'success' : m.movement_type === 'out' ? 'destructive' : 'secondary'}>
+                      {tr.movementType[m.movement_type]}
+                    </Badge>
+                    {m.unit_kind === 'flakon' && (
+                      <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
+                        Flakon
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>{m.quantity}</TableCell>
                 <TableCell className="text-muted-foreground max-w-56">

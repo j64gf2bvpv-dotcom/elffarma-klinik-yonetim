@@ -110,7 +110,12 @@ export function StockMovementDialog({
 
   const selectedLotId = form.watch('lot_id')
   const selectedUnitKind = form.watch('unit_kind')
-  const hasFlakonTracking = activeProduct?.flakon_per_package != null
+  // Paket ve flakon stoğu artık her üründe tamamen bağımsız (bkz.
+  // decouple_flakon_from_paket_movements migration'ı) — flakon_per_package
+  // sadece bilgi amaçlı, birim seçiciyi flakon_per_package'tan bağımsız,
+  // sadece bir ürün seçili olduğu sürece göster (StockPage'deki
+  // FlakonQuantityCell ile aynı, ungated davranış).
+  const hasFlakonTracking = !!activeProduct
 
   React.useEffect(() => {
     if (activeProduct && !movement) form.setValue('unit_price', activeProduct.unit_price ?? undefined)
