@@ -777,6 +777,10 @@ export function StockPage() {
       if (orderedVisibleProducts.length === 0) return
 
       e.preventDefault()
+      // AppShell'deki sol menü ok-tuşu odak gezinmesiyle çakışmasın diye
+      // capture aşamasında yakalanıp durduruluyor — Stok sayfasındayken ok
+      // tuşları önce ürün satırları arasında gezinsin.
+      e.stopPropagation()
       const currentIndex = orderedVisibleProducts.findIndex((p) => p.id === selectedProductId)
       const goingForward = e.key === 'ArrowDown' || e.key === 'ArrowRight'
       const nextIndex =
@@ -789,8 +793,8 @@ export function StockPage() {
       setSelectedProductId(nextProduct.id)
       document.getElementById(`product-row-${nextProduct.id}`)?.scrollIntoView({ block: 'nearest' })
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleKeyDown, { capture: true })
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
   }, [orderedVisibleProducts, selectedProductId])
 
   function handleRemove(product: Product) {

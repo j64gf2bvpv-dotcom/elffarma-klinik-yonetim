@@ -152,6 +152,7 @@ function iconBoxClasses(variant: IconVariant, isActive: boolean): string {
 }
 
 function SidebarNavLink({
+  navId,
   to,
   end,
   icon: Icon,
@@ -159,6 +160,7 @@ function SidebarNavLink({
   variant = 'outline',
   strokeWidth = 1.9,
 }: {
+  navId: string
   to: string
   end?: boolean
   icon: React.ElementType
@@ -168,6 +170,7 @@ function SidebarNavLink({
 }) {
   return (
     <NavLink
+      id={navId}
       to={to}
       end={end}
       className={({ isActive }) =>
@@ -724,6 +727,38 @@ export function AppShell() {
     })
   }
 
+  // Yukarı/aşağı ok tuşlarıyla sol menüde bir önceki/sonraki panele
+  // (klavye ODAĞI) geçer — SAYFA DEĞİŞTİRMEZ, sadece hangi panelin üzerinde
+  // olduğunuzu görsel olarak vurgular (tarayıcının doğal odak halkası).
+  // Gerçekten o sayfaya gitmek isterseniz Enter'a basmanız yeterli (link
+  // zaten odaklanmış durumda). Bir sayfa (ör. Stok) kendi ok-tuşu
+  // gezinmesini capture aşamasında durdurursa bu hiç çalışmaz — yani sayfa
+  // içi liste gezinmesi (varsa) her zaman önceliklidir.
+  React.useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+      const target = e.target as HTMLElement | null
+      if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)) return
+      if (navEditMode || visibleNavLayout.length === 0) return
+
+      const activeEl = document.activeElement as HTMLElement | null
+      const currentIndex = visibleNavLayout.findIndex((item) => document.getElementById(`sidebar-nav-${item.key}`) === activeEl)
+      const nextIndex =
+        currentIndex < 0
+          ? 0
+          : e.key === 'ArrowDown'
+            ? Math.min(currentIndex + 1, visibleNavLayout.length - 1)
+            : Math.max(currentIndex - 1, 0)
+      const nextEl = document.getElementById(`sidebar-nav-${visibleNavLayout[nextIndex].key}`)
+      if (!nextEl) return
+      e.preventDefault()
+      nextEl.focus()
+      nextEl.scrollIntoView({ block: 'nearest' })
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [visibleNavLayout, navEditMode])
+
   return (
     <PresenceProvider>
     <div className="flex h-screen w-screen overflow-hidden bg-background">
@@ -777,6 +812,7 @@ export function AppShell() {
                 return (
                   <SidebarNavLink
                     key={item.key}
+                    navId={`sidebar-nav-${item.key}`}
                     to={meta.to}
                     end={meta.end}
                     icon={iconSet.icons[item.key]}
@@ -815,6 +851,7 @@ export function AppShell() {
                 )
               })}
           <SidebarNavLink
+            navId="sidebar-nav-settings"
             to="/ayarlar"
             icon={iconSet.icons.settings}
             label={tr.nav.settings}

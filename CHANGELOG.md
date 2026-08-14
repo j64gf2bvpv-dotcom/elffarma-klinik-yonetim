@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.123] - 2026-08-14
+
+**Sol menüde ok tuşuyla klavye ODAĞI gezinsin, sayfa değiştirmesin:** Bir önceki sürümde ok tuşları sol menüde doğrudan sayfa değiştiriyordu, kullanıcı bunu istemedi. Şimdi Yukarı/Aşağı sadece hangi modülün üzerinde olduğunuzu (tarayıcının doğal odak halkasıyla) gösterir — gerçekten o sayfaya gitmek için Enter'a basmak veya tıklamak gerekiyor. Stok sayfasındaki ürün satırı gezinmesiyle çakışmaması için Stok'un ok-tuşu dinleyicisi yine öncelikli (capture aşaması). Şema değişikliği yok.
+
 ## [2.17.122] - 2026-08-14
 
 **Sol menüde ok tuşuyla sayfa değiştirme özelliği geri alındı:** Kullanıcı bunu istemedi — ok tuşları sadece o an tıklanan panelin (ör. Stok tablosu) kendi içindeki satırlar arasında gezinmeli, başka bir modüle atlamamalı. AppShell.tsx ve StockPage.tsx v2.17.120 haline döndürüldü. Şema değişikliği yok.
