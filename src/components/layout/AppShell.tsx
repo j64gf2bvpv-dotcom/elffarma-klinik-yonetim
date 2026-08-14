@@ -41,6 +41,7 @@ import { useApplyBrandTheme } from '@/features/appSettings/useApplyBrandTheme'
 import { useAutoBackupOnLaunch } from '@/features/backup/useAutoBackupOnLaunch'
 import { useWhatsNewNotification } from '@/features/appUpdate/useWhatsNewNotification'
 import { AIChatWidget } from '@/features/ai/AIChatWidget'
+import { PresenceProvider } from '@/features/presence/PresenceProvider'
 import { useAIChatOpen } from '@/features/ai/useAIChatOpen'
 import { useColorMode } from '@/features/appSettings/useColorMode'
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
@@ -709,6 +710,7 @@ export function AppShell() {
   }
 
   return (
+    <PresenceProvider>
     <div className="flex h-screen w-screen overflow-hidden bg-background">
       <aside className="bg-sidebar text-sidebar-foreground relative flex w-64 shrink-0 flex-col overflow-hidden border-r border-sidebar-border">
         <div
@@ -831,6 +833,7 @@ export function AppShell() {
 
       <AIChatWidget />
     </div>
+    </PresenceProvider>
   )
 }
 

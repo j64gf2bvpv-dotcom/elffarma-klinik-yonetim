@@ -142,7 +142,7 @@ function GoogleDriveSection() {
  * Ayarlar sayfasındaki "Yedekleme" bölümü — sadece admin görür (backups
  * bucket'ına yazma/silme zaten sadece admin'e açık, bkz. schema.sql). Elle
  * "Şimdi Yedekle" düğmesi + geçmiş yedeklerin listesi (indir/sil). Otomatik
- * (24 saatte bir, açılışta) yedekleme için bkz. useAutoBackupOnLaunch —
+ * (2 günde bir, açılışta) yedekleme için bkz. useAutoBackupOnLaunch —
  * burası sadece elle tetikleme ve geçmişi görüntüleme arayüzü.
  */
 export function BackupSettingsCard() {
@@ -174,8 +174,9 @@ export function BackupSettingsCard() {
           <CardTitle>Yedekleme</CardTitle>
           <CardDescription>
             Müşteri, ürün, stok, tahsilat, satış gibi tüm iş verisi tek bir JSON dosyası olarak buluta
-            (Supabase Storage) yedeklenir. Admin girişinde son yedekten 24 saatten fazla geçtiyse otomatik olarak
-            da alınır — isterseniz aşağıdan elle de tetikleyebilirsiniz.
+            (Supabase Storage) yedeklenir. Admin girişinde son yedekten 2 günden fazla geçtiyse otomatik olarak
+            da alınır — isterseniz aşağıdan elle de tetikleyebilirsiniz. Google Drive'a yüklenen kopya, birikmesin
+            diye her seferinde aynı dosyanın üzerine yazılır.
           </CardDescription>
         </div>
       </CardHeader>

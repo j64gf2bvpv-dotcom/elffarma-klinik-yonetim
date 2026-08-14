@@ -3,23 +3,25 @@ import { toast } from 'sonner'
 import { fetchAppSetting, saveAppSetting } from '@/features/appSettings/api'
 import { createBackup } from './api'
 import { fetchAdminSecret } from './adminSecrets'
-import { uploadBackupToGoogleDrive, type GoogleDriveBackupConfig } from './googleDrive'
+import { uploadBackupToGoogleDrive, DRIVE_BACKUP_FILENAME, type GoogleDriveBackupConfig } from './googleDrive'
 import type { BackupSettings } from './hooks'
 
 const BACKUP_SETTINGS_KEY = 'backup_settings'
 const GOOGLE_DRIVE_CONFIG_KEY = 'google_drive_backup'
-const THROTTLE_MS = 24 * 60 * 60 * 1000
+const THROTTLE_MS = 2 * 24 * 60 * 60 * 1000
 
 let hasCheckedThisSession = false
 
 /**
  * Uygulama açılışında (oturum başına bir kez, admin'e girişte) son yedekten
- * bu yana 24 saatten fazla geçtiyse sessizce yeni bir buluta yedek alır.
+ * bu yana 2 günden fazla geçtiyse sessizce yeni bir buluta yedek alır.
  * `app_settings` yazması sadece admin'e açık olduğu için (bkz. schema.sql
  * app_settings RLS) bu hook SADECE admin oturumunda tetiklenir — personel
  * girişinde hiçbir şey yapmaz, Ayarlar > Yedekleme'den elle yedek almayı
  * bekler. Başarısız olursa sessizce geçilir (açılışta kullanıcıyı bir ağ/
  * yapılandırma hatasıyla karşılamamak için) — sonuç sadece konsola loglanır.
+ * Google Drive'a yüklenen dosyanın adı sabit (bkz. DRIVE_BACKUP_FILENAME) —
+ * her yedekleme yeni bir dosya biriktirmek yerine öncekinin üzerine yazar.
  */
 export function useAutoBackupOnLaunch(isAdmin: boolean) {
   React.useEffect(() => {
@@ -38,7 +40,7 @@ export function useAutoBackupOnLaunch(isAdmin: boolean) {
         const driveConfig = await fetchAdminSecret<GoogleDriveBackupConfig>(GOOGLE_DRIVE_CONFIG_KEY)
         if (driveConfig?.enabled) {
           try {
-            await uploadBackupToGoogleDrive(driveConfig, result.path, result.json)
+            await uploadBackupToGoogleDrive(driveConfig, DRIVE_BACKUP_FILENAME, result.json)
           } catch (err) {
             console.error('Otomatik Google Drive yedeklemesi başarısız', err)
           }

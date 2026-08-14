@@ -66,6 +66,24 @@ async function getAccessToken(serviceAccount: GoogleServiceAccount): Promise<str
   return data.access_token as string
 }
 
+/**
+ * Klasördeki, aynı ada sahip (yoksay: silinmiş/trash'teki) dosyayı arar —
+ * kullanıcı isteği: yedekler her seferinde yeni bir dosya olarak birikmesin,
+ * aynı ada sahip önceki yedeğin ÜZERİNE yazılsın. Adı sabit tutmak (çağıran
+ * taraf her zaman aynı `filename`'i geçer) bu aramanın güvenilir çalışmasını
+ * sağlıyor.
+ */
+async function findExistingFileId(accessToken: string, folderId: string, filename: string): Promise<string | null> {
+  const query = `name='${filename.replace(/'/g, "\\'")}' and '${folderId}' in parents and trashed=false`
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id)&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  )
+  const data = (await res.json()) as { files?: { id: string }[]; error?: { message?: string } }
+  if (!res.ok) throw new Error(data.error?.message ?? 'Google Drive\'da mevcut yedek aranamadı')
+  return data.files?.[0]?.id ?? null
+}
+
 export async function uploadBackupToGoogleDrive(
   serviceAccount: GoogleServiceAccount,
   folderIdOrUrl: string,
@@ -83,10 +101,21 @@ export async function uploadBackupToGoogleDrive(
     `Content-Type: application/json\r\n\r\n${jsonContent}\r\n` +
     `--${boundary}--`
 
-  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-    method: 'POST',
+  const existingId = await findExistingFileId(accessToken, folderId, filename)
+  // Var olan dosyanın ÜZERİNE yaz (PATCH), yoksa ilk kez oluştur (POST) —
+  // PATCH'te `parents` gönderilemez (ayrı bir "taşıma" isteği gerektirir),
+  // dosya zaten doğru klasörde olduğu için metadata'dan çıkarılıyor.
+  const url = existingId
+    ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart`
+    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
+  const uploadBody = existingId
+    ? body.replace(JSON.stringify(metadata), JSON.stringify({ name: filename }))
+    : body
+
+  const res = await fetch(url, {
+    method: existingId ? 'PATCH' : 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` },
-    body,
+    body: uploadBody,
   })
   const data = (await res.json()) as { id?: string; error?: { message?: string } }
   if (!res.ok) throw new Error(data.error?.message ?? 'Google Drive\'a yüklenemedi')

@@ -3,7 +3,12 @@ import { toast } from 'sonner'
 import { createBackup, deleteBackup, getBackupDownloadUrl, listBackups } from './api'
 import { useAppSetting, useSaveAppSetting } from '@/features/appSettings/hooks'
 import { fetchAdminSecret, saveAdminSecret } from './adminSecrets'
-import { testGoogleDriveConnection, uploadBackupToGoogleDrive, type GoogleDriveBackupConfig } from './googleDrive'
+import {
+  testGoogleDriveConnection,
+  uploadBackupToGoogleDrive,
+  DRIVE_BACKUP_FILENAME,
+  type GoogleDriveBackupConfig,
+} from './googleDrive'
 
 const BACKUP_SETTINGS_KEY = 'backup_settings'
 const GOOGLE_DRIVE_CONFIG_KEY = 'google_drive_backup'
@@ -78,7 +83,7 @@ export function useCreateBackup() {
       let driveUploaded = false
       if (driveConfig?.enabled) {
         try {
-          await uploadBackupToGoogleDrive(driveConfig, result.path, result.json)
+          await uploadBackupToGoogleDrive(driveConfig, DRIVE_BACKUP_FILENAME, result.json)
           driveUploaded = true
         } catch (err) {
           driveError = err instanceof Error ? err.message : 'Bilinmeyen hata'

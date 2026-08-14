@@ -9,6 +9,17 @@
  * ince bir sarmalayıcı.
  */
 
+/**
+ * Google Drive'daki yedek dosyasının adı BİLEREK sabit (zaman damgasız) —
+ * her yedeklemede aynı adı kullanmak, electron/googleDrive.ts'teki yükleme
+ * fonksiyonunun aynı isimli dosyayı bulup üzerine yazmasını (yeni bir dosya
+ * biriktirmek yerine) sağlıyor. Supabase Storage'daki iç yedek geçmişi
+ * (bkz. api.ts'teki createBackup) bundan ETKİLENMİYOR — o taraf, admin'in
+ * Ayarlar'dan birden fazla geçmiş yedeği görüp indirip silebilmesi için
+ * bilerek zaman damgalı ve birikimli kalıyor.
+ */
+export const DRIVE_BACKUP_FILENAME = 'elffarma-yedek.json'
+
 export interface GoogleServiceAccount {
   client_email: string
   private_key: string

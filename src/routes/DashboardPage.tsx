@@ -118,6 +118,7 @@ import { pctDelta } from '@/lib/pctDelta'
 import { tr } from '@/i18n/tr'
 import { useCountUp } from '@/hooks/useCountUp'
 import { PixelDashboard } from '@/features/dashboard/PixelDashboard'
+import { OnlineStaffCard } from '@/features/dashboard/OnlineStaffCard'
 
 // Ayrı bir yaprak bileşen: saat her saniye kendi içinde güncelleniyor, bu
 // yüzden sadece bu küçük bileşen yeniden render oluyor — tüm Dashboard'ı
@@ -292,6 +293,7 @@ type WidgetId =
   | 'commission_summary'
   | 'lot_expiry'
   | 'ai_insights'
+  | 'online_staff'
 
 // Widget'lar 12 sütunlu bir CSS Grid'e yerleşiyor; her widget'ın genişliği
 // sabit birkaç sütun-genişliği (span) seçeneğinden biri (¼/⅓/½/⅔/Tam) — asla
@@ -328,6 +330,7 @@ const DEFAULT_SPAN: Record<WidgetId, number> = {
   commission_summary: 6,
   lot_expiry: 6,
   ai_insights: 6,
+  online_staff: 4,
 }
 
 const SPAN_OPTIONS: { value: number; label: string }[] = [
@@ -360,6 +363,7 @@ const defaultLayout: LayoutItem[] = [
   { id: 'recent_activity', visible: false, span: null },
   { id: 'commission_summary', visible: false, span: null },
   { id: 'lot_expiry', visible: false, span: null },
+  { id: 'online_staff', visible: false, span: null },
 ]
 
 const widgetLabels: Record<WidgetId, string> = {
@@ -380,6 +384,7 @@ const widgetLabels: Record<WidgetId, string> = {
   commission_summary: 'Prim Özeti (Bu Ay)',
   lot_expiry: 'Lot / SKT Riski',
   ai_insights: 'Yapay Zeka Uyarıları',
+  online_staff: 'Çevrimiçi Personel',
 }
 
 type ChartPeriod = 'day' | 'week' | 'month' | 'year'
@@ -883,6 +888,10 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       )
+    }
+
+    if (id === 'online_staff') {
+      return <OnlineStaffCard />
     }
 
     if (id === 'ai_insights') {

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.105] - 2026-08-14
+
+**Ana Panel'de admin artık diğer personelin çevrimiçi olduğunu görebiliyor, yedeklemeler artık 2 günde bir alınıyor ve Google Drive kopyası birikmeden üzerine yazılıyor:** Yeni "Çevrimiçi Personel" kartı, uygulamayı o an açık tutan diğer personeli canlı olarak (yeşil nokta + fotoğraf + isim) listeliyor. Otomatik buluta yedekleme aralığı 24 saatten 2 güne çıkarıldı; Google Drive'a yüklenen kopya artık her seferinde yeni bir dosya olarak birikmiyor, aynı dosyanın üzerine yazılıyor — Ayarlar'daki geçmiş yedek listesi (Supabase Storage, indir/sil) bundan etkilenmedi, o taraf hâlâ birden çok geçmiş yedeği saklıyor. Şema değişikliği yok.
+
 ## [2.17.104] - 2026-08-14
 
 **Ayarlar artık tüm personele açık, admin kimin hangi sekmeyi göreceğini belirleyebiliyor, Ana Panel her kullanıcı için kişiselleştirilebilir:** Daha önce sadece admin görebiliyordu; artık herkes kendi profilini, açık/koyu mod tercihini, "Kendi API Anahtarım" gibi kişisel alanları buradan yönetebiliyor — marka rengi, menü simgesi, WhatsApp şablonları gibi tüm ekibi etkileyen ayarlar hâlâ sadece admin'de. Yeni "Kullanıcı Panel İzinleri" kartından admin, her personel için sol menüdeki hangi sekmelerin görüneceğini açıp kapatabiliyor — kapatılan bir sekmeye doğrudan bağlantıyla girilmeye çalışılırsa da Ana Panel'e yönlendiriliyor. Ana Panel'in "Özelleştirilebilir Görünüm" (widget sürükle/boyutlandır) modu artık sadece admin'e değil herkese açık ve her kullanıcının kendi düzeni ayrı ayrı kaydediliyor. Bu arada fark edilen bir hata da düzeltildi: açık/koyu mod önceden ekip geneli ortak bir ayardı, admin olmayan biri düğmeye bassa da sessizce hiçbir şey olmuyordu — artık tamamen kişisel. TopBar'daki ve Ayarlar > Personel listesindeki profil simgeleri artık (varsa) gerçek yüklenmiş fotoğrafı gösteriyor, sadece baş harfleri değil. Şema değişikliği var (staff.hidden_nav_items, yeni staff_preferences tablosu).
