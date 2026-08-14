@@ -524,6 +524,7 @@ function ProductsTable({
               return (
                 <TableRow
                   key={product.id}
+                  id={`product-row-${product.id}`}
                   draggable
                   onDragStart={() => (dragIndexRef.current = index)}
                   onDragOver={(e) => e.preventDefault()}
@@ -750,6 +751,47 @@ export function StockPage() {
   const deactivateMutation = useDeactivateProduct()
   const reorderMutation = useReorderProducts()
   const queryClient = useQueryClient()
+
+  // Ekranda o an görünen ürün satırlarının GERÇEK dikey sırası — ALL_BRANDS
+  // filtresinde iki ayrı ProductsTable (Dermakor sonra Swiss) render
+  // edildiği için, klavye ok tuşlarının render sırasıyla birebir eşleşmesi
+  // için aynı bölme mantığı burada da uygulanıyor.
+  const orderedVisibleProducts = React.useMemo(() => {
+    if (brandFilter === ALL_BRANDS) {
+      return [
+        ...products.filter((p) => p.brand_line === 'dermakor'),
+        ...products.filter((p) => p.brand_line === 'swiss'),
+      ]
+    }
+    return products
+  }, [products, brandFilter])
+
+  // Yukarı/aşağı/sağa/sola ok tuşlarıyla seçili ürün panelini bir öncekine/
+  // sonrakine taşır — arama kutusu gibi bir metin alanına yazarken devreye
+  // girmiyor. Seçili satır her zaman görünüme kaydırılır.
+  React.useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const target = e.target as HTMLElement | null
+      if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)) return
+      if (orderedVisibleProducts.length === 0) return
+
+      e.preventDefault()
+      const currentIndex = orderedVisibleProducts.findIndex((p) => p.id === selectedProductId)
+      const goingForward = e.key === 'ArrowDown' || e.key === 'ArrowRight'
+      const nextIndex =
+        currentIndex < 0
+          ? 0
+          : goingForward
+            ? Math.min(currentIndex + 1, orderedVisibleProducts.length - 1)
+            : Math.max(currentIndex - 1, 0)
+      const nextProduct = orderedVisibleProducts[nextIndex]
+      setSelectedProductId(nextProduct.id)
+      document.getElementById(`product-row-${nextProduct.id}`)?.scrollIntoView({ block: 'nearest' })
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [orderedVisibleProducts, selectedProductId])
 
   function handleRemove(product: Product) {
     if (!confirm(`${product.name} kaldırılsın mı? Ürün stok listesinden kaldırılır, geçmiş hareketler saklanır.`)) return

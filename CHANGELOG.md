@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.120] - 2026-08-14
+
+**Stok tablosunda ok tuşlarıyla ürün panelleri arasında gezinme eklendi:** Bir ürün satırı seçiliyken (veya hiçbiri seçili değilken) klavyeden Yukarı/Sağa bir sonraki, Aşağı/Sola bir önceki ürüne geçiyor — arama kutusuna yazarken devreye girmiyor, seçilen satır otomatik görünüme kaydırılıyor. ALL_BRANDS filtresinde Dermakor/Swiss iki ayrı tabloya bölündüğü için gezinme sırası ekrandaki görsel sırayla (önce Dermakor, sonra Swiss) birebir eşleşiyor. Şema değişikliği yok.
+
 ## [2.17.119] - 2026-08-14
 
 **Stok tablosunda kritik ürün satırları seçilince artık gerçekten koyulaşıyor:** Kritik stok/süresi geçmiş ürünlerdeki `bg-destructive/5` rengi, satır seçilince `TableRow`'un koyulaştırma sınıfını (className birleştirmesinde) eziyor, seçim görünmez kalıyordu — çoğu örnek üründe stok 0 olduğu için bu neredeyse her satırda oluyordu. Artık satır seçiliyken kritik rengi devre dışı bırakılıyor, koyu vurgu net görünüyor. Şema değişikliği yok.
