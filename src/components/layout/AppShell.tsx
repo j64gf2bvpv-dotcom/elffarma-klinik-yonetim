@@ -173,8 +173,12 @@ function SidebarNavLink({
       className={({ isActive }) =>
         cn(
           'group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-200',
+          // --sidebar-accent bazı marka temalarında kenar çubuğunun kendi
+          // arka planından daha AÇIK olabiliyor (Tabs'ta yaşanan sorunla
+          // aynı kök neden) — seçili panel her zaman koyulaşsın diye sabit
+          // bir siyah katman (bg-black/25) kullanılıyor, temadan bağımsız.
           isActive
-            ? 'bg-sidebar-accent/60 text-sidebar-accent-foreground shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_4px_10px_-2px_rgba(0,0,0,0.4)]'
+            ? 'bg-black/25 text-sidebar-accent-foreground shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_4px_10px_-2px_rgba(0,0,0,0.4)]'
             : 'text-sidebar-foreground/70 hover:bg-white/5 hover:text-sidebar-foreground',
         )
       }
