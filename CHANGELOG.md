@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.121] - 2026-08-14
+
+**Sol menüde ok tuşlarıyla modüller arası gezinme eklendi:** Ana Panel dahil her sayfada Yukarı/Aşağı tuşlarıyla sol menüdeki bir önceki/sonraki modüle (Giderler, Satışlar, Cari Hesap vb.) geçilebiliyor — arama kutusuna yazarken veya menü düzenleme modundayken devreye girmiyor. Stok sayfasındaki ürün satırı gezinmesiyle çakışmaması için Stok'un ok-tuşu dinleyicisi öncelikli hale getirildi (capture aşaması) — Stok sayfasındayken oklar önce ürünler arasında gezinir, sayfa değiştirmez. Şema değişikliği yok.
+
 ## [2.17.120] - 2026-08-14
 
 **Stok tablosunda ok tuşlarıyla ürün panelleri arasında gezinme eklendi:** Bir ürün satırı seçiliyken (veya hiçbiri seçili değilken) klavyeden Yukarı/Sağa bir sonraki, Aşağı/Sola bir önceki ürüne geçiyor — arama kutusuna yazarken devreye girmiyor, seçilen satır otomatik görünüme kaydırılıyor. ALL_BRANDS filtresinde Dermakor/Swiss iki ayrı tabloya bölündüğü için gezinme sırası ekrandaki görsel sırayla (önce Dermakor, sonra Swiss) birebir eşleşiyor. Şema değişikliği yok.
