@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.109] - 2026-08-14
+
+**Stok Yönetimi'ne yeni bir Kargo bölümü eklendi:** Yeni "Kargo" sekmesinden doktor/müşteri (opsiyonel), alıcı adı/telefon/adres, gönderilecek ürün ve miktar, gönderim tarihi ve not girilerek kargo kaydı oluşturulabiliyor. Her kayıt canlı stok durumunu ("Stokta Var"/"Stokta Yok") gösteriyor, "Bekletiliyor / Gönderilecek / Gönderildi" durumları arasında geçebiliyor — "Gönderildi" işaretlemek bağlı ürün varsa gerçek bir stok çıkışı yapıyor. Gönderim tarihi girilen kargolar otomatik olarak Hatırlatmalar'da (dolayısıyla Ajanda'da) da beliriyor. Şema değişikliği var (yeni cargo_shipments tablosu).
+
 ## [2.17.108] - 2026-08-14
 
 **Ayarlar sayfasındaki tüm kartlar artık daraltılıp genişletilebiliyor:** Sayfa artık sayfalarca aşağı inmiyor — her bölümün (Görünüm, Personel, Kullanıcı Panel İzinleri, WhatsApp Şablonları, Kurumsal/Fatura Bilgileri, Örnek Veri, Güncellemeler, Yapay Zeka, Yedekleme, Profilim) başlığına tıklayınca içeriği açılıp kapanıyor, daha derli toplu. Şema değişikliği yok.

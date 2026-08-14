@@ -531,6 +531,27 @@ export interface Reminder {
   created_at: string
 }
 
+export type CargoStatus = 'bekletiliyor' | 'gonderilecek' | 'gonderildi'
+
+export interface CargoShipment {
+  id: string
+  customer_id: string | null
+  recipient_name: string
+  phone: string | null
+  address: string | null
+  product_id: string | null
+  product_name: string
+  quantity: number
+  status: CargoStatus
+  ship_date: string | null
+  note: string | null
+  reminder_id: string | null
+  created_by: string | null
+  shipped_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type TaskStatus = 'bekliyor' | 'devam_ediyor' | 'tamamlandi' | 'iptal'
 export type TaskPriority = 'dusuk' | 'normal' | 'yuksek'
 

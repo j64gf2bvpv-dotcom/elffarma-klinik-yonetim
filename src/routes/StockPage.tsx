@@ -38,6 +38,7 @@ import {
 import { recordStockMovement } from '@/features/stock/api'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
+import { CargoPanel } from '@/features/cargo/CargoPanel'
 import { SafeThumbnail } from '@/components/SafeThumbnail'
 import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
@@ -829,6 +830,7 @@ export function StockPage() {
           <TabsTrigger value="products">Ürünler</TabsTrigger>
           <TabsTrigger value="count">Günlük Sayım</TabsTrigger>
           <TabsTrigger value="card">Stok Kartı</TabsTrigger>
+          <TabsTrigger value="cargo">Kargo</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products">
@@ -921,6 +923,10 @@ export function StockPage() {
 
         <TabsContent value="card">
           <StockCardPanel />
+        </TabsContent>
+
+        <TabsContent value="cargo">
+          <CargoPanel />
         </TabsContent>
       </Tabs>
     </div>
