@@ -251,7 +251,7 @@ function ProductsTable({ products, onRemove }: { products: Product[]; onRemove: 
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12"></TableHead>
+              <TableHead className="w-[60px]"></TableHead>
               <TableHead>Ürün</TableHead>
               <TableHead>Kategori</TableHead>
               <TableHead>Paket</TableHead>
