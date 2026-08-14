@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.114] - 2026-08-14
+
+**Sekme çubuğu (Tabs) rengi eski haline geri alındı:** Önceki iki sürümde yapılan sekme çubuğu koyulaştırma değişiklikleri geri alındı — kullanıcı geri bildirimi bahsedilen "panel"in sekme çubuğu olmadığını belirtti. `src/components/ui/tabs.tsx` artık `12adb8a~1` (özgün) haline döndü. Şema değişikliği yok.
+
 ## [2.17.113] - 2026-08-14
 
 **Sekme çubuğunun tamamı koyu renk oldu:** Bir önceki düzeltmede sadece seçili sekme koyulaştırılmıştı, çubuğun kendisi hâlâ açık renkli kalıyordu. Şimdi tüm sekme çubuğu (Stok Yönetimi'ndeki Ürünler/Günlük Sayım/Stok Kartı/Kargo ve Tümü/Dermakor/Swiss dahil, uygulama genelindeki her sekmeli panel) temadan bağımsız sabit koyu bir şerit; seçili sekme bu koyu şeridin üzerinde marka renginde dolu bir blok olarak öne çıkıyor. Şema değişikliği yok.
