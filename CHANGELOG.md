@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.113] - 2026-08-14
+
+**Sekme çubuğunun tamamı koyu renk oldu:** Bir önceki düzeltmede sadece seçili sekme koyulaştırılmıştı, çubuğun kendisi hâlâ açık renkli kalıyordu. Şimdi tüm sekme çubuğu (Stok Yönetimi'ndeki Ürünler/Günlük Sayım/Stok Kartı/Kargo ve Tümü/Dermakor/Swiss dahil, uygulama genelindeki her sekmeli panel) temadan bağımsız sabit koyu bir şerit; seçili sekme bu koyu şeridin üzerinde marka renginde dolu bir blok olarak öne çıkıyor. Şema değişikliği yok.
+
 ## [2.17.112] - 2026-08-14
 
 **Seçili sekme rengi ve yatay kaydırmada aktif sekmenin kaybolmaması düzeltildi:** Uygulama genelindeki tüm sekmeli panellerde (Stok Yönetimi, Satışlar, Cari Kart vb.) seçili sekme artık her temada garanti şekilde koyu görünüyor — önce marka rengine (`--primary`) bağlıydı ama bazı temalarda (ör. varsayılan siyah/altın) bu renk sekme çubuğundan daha açık kalabiliyordu; artık her zaman en yüksek kontrastı veren `--foreground`/`--background` çiftini kullanıyor. Sekme listesi sığmayınca artık satır kırmak yerine yatay kaydırılabiliyor ve hangi sekme seçiliyse otomatik olarak görünüme kayıyor. Şema değişikliği yok.

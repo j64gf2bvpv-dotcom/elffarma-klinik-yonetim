@@ -38,7 +38,10 @@ function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimi
       ref={listRef}
       data-slot="tabs-list"
       className={cn(
-        'bg-muted text-muted-foreground scrollbar-hide inline-flex h-9 w-fit max-w-full items-center justify-start gap-1 overflow-x-auto rounded-lg p-1',
+        // Tema/renk modundan bağımsız, HER ZAMAN koyu bir çubuk — bg-muted
+        // gibi temaya göre açılıp koyulaşan bir token yerine sabit bir koyu
+        // renk kullanılıyor ki panel her zaman "koyu" görünsün.
+        'scrollbar-hide inline-flex h-9 w-fit max-w-full items-center justify-start gap-1 overflow-x-auto rounded-lg bg-zinc-900 p-1 text-zinc-400',
         className,
       )}
       {...props}
@@ -54,7 +57,7 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "data-[state=active]:bg-foreground data-[state=active]:text-background focus-visible:ring-2 focus-visible:ring-ring/50 inline-flex h-[calc(100%-1px)] shrink-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm",
+        "text-zinc-400 hover:text-zinc-100 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring/50 inline-flex h-[calc(100%-1px)] shrink-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm",
         className,
       )}
       {...props}
