@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Image, Pressable, RefreshControl, Text, View } from 'react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Package, FileText, Building2, Pencil, Check, Wallet } from 'lucide-react-native'
+import { Package, FileText, Building2, Pencil, Check, Wallet, XCircle, Clock } from 'lucide-react-native'
 import type { CompositeScreenProps } from '@react-navigation/native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs'
@@ -124,9 +124,10 @@ interface ActivityItem {
   action: string
   time: string
   amount: string | null
-  /** Ziyaret gibi tutarı olmayan ama "tamamlandı" anlamına gelen kayıtlar
-   * için — kullanıcı isteğiyle (2026-08-17) yeşil tık. */
-  completed?: boolean
+  /** Tutarı olmayan kayıtlarda (ziyaret, teklif) sağda gösterilen durum
+   * ikonu — kullanıcı isteğiyle (2026-08-17) "kabul edildi/reddedildi/
+   * tamamlandı" gibi farklı sonuçlara farklı ikon. */
+  statusIcon?: { icon: typeof Check; color: string }
 }
 
 /** İsim / eylem / tarih-saat üç satır solda, belirlenen tutar sağda —
@@ -169,7 +170,7 @@ function ActivityRow({ item, first }: { item: ActivityItem; first: boolean }) {
       {item.amount && (
         <Text style={{ color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.sm }}>{item.amount}</Text>
       )}
-      {item.completed && <Check size={18} color={theme.colors.success} />}
+      {item.statusIcon && <item.statusIcon.icon size={18} color={item.statusIcon.color} />}
     </View>
   )
 }
@@ -305,19 +306,32 @@ export function DashboardScreen({ navigation }: Props) {
         action: 'Ziyaret gerçekleştirildi',
         time: format(new Date(v.check_in_at!), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
         amount: null,
-        completed: true,
+        statusIcon: { icon: Check, color: theme.colors.success },
         sortAt: v.check_in_at!,
       })
     }
+    // Teklif durumu (status) sonuca göre farklı eylem metni + sağda farklı
+    // ikon gösteriyor — kullanıcı isteğiyle (2026-08-17), ör. "reddedildi"
+    // için kırmızı X, "kabul edildi" için yeşil tık.
     for (const q of todaysQuotes) {
+      const statusMap: Record<string, { action: string; icon: typeof Check; color: string } | null> = {
+        kabul_edildi: { action: 'Teklif kabul edildi', icon: Check, color: theme.colors.success },
+        reddedildi: { action: 'Teklif reddedildi', icon: XCircle, color: theme.colors.destructive },
+        suresi_doldu: { action: 'Teklifin süresi doldu', icon: Clock, color: theme.colors.mutedForeground },
+        goruldu: { action: 'Teklif görüldü', icon: Clock, color: theme.colors.warning },
+        gonderildi: null,
+        taslak: null,
+      }
+      const mapped = statusMap[q.status]
       items.push({
         id: `quote-${q.id}`,
         icon: FileText,
         iconColor: theme.colors.warning,
         name: q.customer_name ?? 'Müşteri',
-        action: 'Yeni teklif oluşturuldu',
+        action: mapped?.action ?? 'Yeni teklif oluşturuldu',
         time: format(new Date(q.created_at), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
         amount: null,
+        statusIcon: mapped ? { icon: mapped.icon, color: mapped.color } : undefined,
         sortAt: q.created_at,
       })
     }
