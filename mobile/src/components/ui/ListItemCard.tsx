@@ -65,7 +65,7 @@ export function ListItemCard({
           style={{
             width: 38,
             height: 38,
-            borderRadius: 19,
+            borderRadius: theme.radius.sm,
             backgroundColor: tint + '26',
             alignItems: 'center',
             justifyContent: 'center',
