@@ -201,7 +201,14 @@ export function DashboardScreen({ navigation }: Props) {
   const isAdmin = staff?.role === 'admin'
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
-  const todaysVisits = React.useMemo(() => visits.filter((v) => v.visit_date === todayStr), [visits, todayStr])
+  // "Ziyaret gerçekleştirildi" (Son Aktiviteler) kriteriyle aynı: sadece
+  // check_in_at YAPILMIŞ ziyaretler sayılıyor (planlanan ama henüz check-in
+  // yapılmamış bir ziyaret istatistikte görünüp Son Aktiviteler'de hiç
+  // görünmüyordu — kullanıcı isteğiyle, 2026-08-17, iki bölüm tutarlı).
+  const todaysVisits = React.useMemo(
+    () => visits.filter((v) => v.check_in_at && v.check_in_at.slice(0, 10) === todayStr),
+    [visits, todayStr],
+  )
 
   const myRep = React.useMemo(
     () => salesReps.find((r) => r.name.trim().toLowerCase() === (staff?.full_name ?? '').trim().toLowerCase()),
