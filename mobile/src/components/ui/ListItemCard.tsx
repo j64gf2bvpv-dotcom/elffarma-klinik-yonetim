@@ -72,9 +72,22 @@ export function ListItemCard({
             alignItems: 'center',
             justifyContent: 'center',
             flex: 0,
+            overflow: 'hidden',
           }}
         >
-          <Text style={{ color: tint, fontWeight: '700', fontSize: theme.fontSizes.sm }}>{initials}</Text>
+          <Text
+            numberOfLines={1}
+            style={{
+              color: tint,
+              fontWeight: '700',
+              fontSize: 12,
+              lineHeight: 14,
+              textAlign: 'center',
+              letterSpacing: 0,
+            }}
+          >
+            {initials}
+          </Text>
         </View>
       ) : Icon ? (
         <View
