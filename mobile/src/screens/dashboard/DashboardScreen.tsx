@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Image, Pressable, RefreshControl, Text, View } from 'react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Package, FileText, Building2 } from 'lucide-react-native'
+import { Package, FileText, Building2, Pencil, Check } from 'lucide-react-native'
 import type { CompositeScreenProps } from '@react-navigation/native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs'
@@ -10,13 +10,14 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
 import { Card } from '@/components/ui/Card'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { TextField } from '@/components/ui/TextField'
 import { useTheme } from '@/lib/ThemeContext'
 import { useAuth } from '@/lib/auth'
 import { useSales } from '@/features/sales/hooks'
 import { useQuotes } from '@/features/quotes/hooks'
 import { usePayments } from '@/features/payments/hooks'
-import { useCurrentMonthTarget } from '@/features/budget/hooks'
-import { useSalesReps } from '@/features/salesReps/hooks'
+import { useCurrentMonthTarget, useSaveBudgetTarget } from '@/features/budget/hooks'
+import { useSalesReps, useUpdateSalesRepTarget } from '@/features/salesReps/hooks'
 import { useVisits } from '@/features/doctorVisits/hooks'
 import type { DashboardStackParamList, MainTabParamList } from '@/navigation/types'
 
@@ -52,6 +53,69 @@ function DailyStatCell({ label, value, last }: { label: string; value: string; l
   )
 }
 
+/**
+ * "Aylık Ciro Hedefi" rakamı — sadece admin dokununca düzenleyebiliyor
+ * (kullanıcı isteği, 2026-08-17). Personel bir sales_reps kaydına
+ * bağlıysa KİŞİSEL hedefi (sales_reps.sales_target), değilse kurum
+ * genelini (budget_targets, o ay) günceller — DashboardScreen'deki aynı
+ * bağlanma deseni.
+ */
+function EditableTargetValue({
+  target,
+  canEdit,
+  onSave,
+}: {
+  target: number | null
+  canEdit: boolean
+  onSave: (value: number) => Promise<unknown>
+}) {
+  const theme = useTheme()
+  const [editing, setEditing] = React.useState(false)
+  const [value, setValue] = React.useState(target != null ? String(target) : '')
+  const [saving, setSaving] = React.useState(false)
+
+  if (editing) {
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <TextField
+          value={value}
+          onChangeText={setValue}
+          keyboardType="numeric"
+          autoFocus
+          style={{ height: 32, width: 110, textAlign: 'right', paddingHorizontal: 8 }}
+        />
+        <Pressable
+          disabled={saving}
+          onPress={async () => {
+            const n = Number(value)
+            if (!Number.isFinite(n) || n < 0) return
+            setSaving(true)
+            await onSave(n)
+            setSaving(false)
+            setEditing(false)
+          }}
+          hitSlop={8}
+        >
+          <Check size={18} color={theme.colors.success} />
+        </Pressable>
+      </View>
+    )
+  }
+
+  return (
+    <Pressable
+      onPress={() => canEdit && setEditing(true)}
+      disabled={!canEdit}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+    >
+      <Text style={{ color: theme.colors.primary, fontWeight: '700', fontSize: theme.fontSizes.sm }}>
+        {target != null ? currency(target) : 'Hedef belirle'}
+      </Text>
+      {canEdit && <Pencil size={12} color={theme.colors.mutedForeground} />}
+    </Pressable>
+  )
+}
+
 interface ActivityItem {
   id: string
   icon: typeof Package
@@ -60,6 +124,9 @@ interface ActivityItem {
   action: string
   time: string
   amount: string | null
+  /** Ziyaret gibi tutarı olmayan ama "tamamlandı" anlamına gelen kayıtlar
+   * için — kullanıcı isteğiyle (2026-08-17) yeşil tık. */
+  completed?: boolean
 }
 
 /** İsim / eylem / tarih-saat üç satır solda, belirlenen tutar sağda —
@@ -102,6 +169,7 @@ function ActivityRow({ item, first }: { item: ActivityItem; first: boolean }) {
       {item.amount && (
         <Text style={{ color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.sm }}>{item.amount}</Text>
       )}
+      {item.completed && <Check size={18} color={theme.colors.success} />}
     </View>
   )
 }
@@ -128,6 +196,9 @@ export function DashboardScreen({ navigation }: Props) {
   const { data: monthTarget } = useCurrentMonthTarget()
   const { data: salesReps = [] } = useSalesReps()
   const { data: visits = [] } = useVisits()
+  const updateSalesRepTarget = useUpdateSalesRepTarget()
+  const saveBudgetTarget = useSaveBudgetTarget()
+  const isAdmin = staff?.role === 'admin'
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
   const todaysVisits = React.useMemo(() => visits.filter((v) => v.visit_date === todayStr), [visits, todayStr])
@@ -155,6 +226,15 @@ export function DashboardScreen({ navigation }: Props) {
   const goalValue = myRep ? myMonthCollected : monthTotal
   const goalTarget = myRep ? myTarget : monthTarget ?? null
   const goalRatio = goalTarget != null && goalTarget > 0 ? goalValue / goalTarget : null
+
+  async function saveGoalTarget(n: number) {
+    if (myRep) {
+      await updateSalesRepTarget.mutateAsync({ id: myRep.id, target: n })
+    } else {
+      const now = new Date()
+      await saveBudgetTarget.mutateAsync({ year: now.getFullYear(), month: now.getMonth() + 1, targetRevenue: n })
+    }
+  }
 
   const todaysSales = React.useMemo(() => sales.filter((s) => s.sale_date === todayStr && s.type === 'sale'), [sales, todayStr])
   const todaysRevenue = React.useMemo(() => todaysSales.reduce((sum, s) => sum + s.quantity * s.unit_price, 0), [todaysSales])
@@ -188,6 +268,7 @@ export function DashboardScreen({ navigation }: Props) {
         action: 'Ziyaret gerçekleştirildi',
         time: format(new Date(v.check_in_at), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
         amount: null,
+        completed: true,
         sortAt: v.check_in_at,
       })
     }
@@ -272,9 +353,7 @@ export function DashboardScreen({ navigation }: Props) {
         <Card style={{ gap: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.sm }}>Aylık Ciro Hedefi</Text>
-            <Text style={{ color: theme.colors.primary, fontWeight: '700', fontSize: theme.fontSizes.sm }}>
-              {goalTarget ? `${currency(goalValue)} / ${currency(goalTarget)}` : 'Hedef belirle'}
-            </Text>
+            <EditableTargetValue target={goalTarget} canEdit={isAdmin} onSave={saveGoalTarget} />
           </View>
           {goalRatio != null ? (
             <>
@@ -282,6 +361,9 @@ export function DashboardScreen({ navigation }: Props) {
                 {`%${Math.round(Math.max(0, Math.min(1, goalRatio)) * 100)}`}
               </Text>
               <ProgressBar ratio={goalRatio} color={goalRatio >= 1 ? theme.colors.success : theme.colors.primary} />
+              <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>
+                Şu ana kadar: <Text style={{ color: theme.colors.foreground, fontWeight: '600' }}>{currency(goalValue)}</Text>
+              </Text>
             </>
           ) : (
             <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>Bu ay için hedef belirlenmemiş</Text>
