@@ -1,8 +1,8 @@
 import * as React from 'react'
-import { Pressable, RefreshControl, Text, View } from 'react-native'
+import { Image, Pressable, RefreshControl, Text, View } from 'react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ShoppingCart, FileText, Building2 } from 'lucide-react-native'
+import { Package, FileText, Building2 } from 'lucide-react-native'
 import type { CompositeScreenProps } from '@react-navigation/native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs'
@@ -54,12 +54,17 @@ function DailyStatCell({ label, value, last }: { label: string; value: string; l
 
 interface ActivityItem {
   id: string
-  icon: typeof ShoppingCart
+  icon: typeof Package
   iconColor: string
-  title: string
+  name: string
+  action: string
   time: string
+  amount: string | null
 }
 
+/** İsim / eylem / tarih-saat üç satır solda, belirlenen tutar sağda —
+ * kullanıcı isteğiyle (2026-08-17) sepet ikonu yerine kurumsal bir ikon
+ * (Package) kullanılıyor. */
 function ActivityRow({ item, first }: { item: ActivityItem; first: boolean }) {
   const theme = useTheme()
   return (
@@ -86,11 +91,17 @@ function ActivityRow({ item, first }: { item: ActivityItem; first: boolean }) {
         <item.icon size={15} color={item.iconColor} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }} numberOfLines={2}>
-          {item.title}
+        <Text style={{ color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.sm }} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, marginTop: 2 }} numberOfLines={1}>
+          {item.action}
         </Text>
         <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, marginTop: 2 }}>{item.time}</Text>
       </View>
+      {item.amount && (
+        <Text style={{ color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.sm }}>{item.amount}</Text>
+      )}
     </View>
   )
 }
@@ -148,21 +159,22 @@ export function DashboardScreen({ navigation }: Props) {
   const todaysSales = React.useMemo(() => sales.filter((s) => s.sale_date === todayStr && s.type === 'sale'), [sales, todayStr])
   const todaysRevenue = React.useMemo(() => todaysSales.reduce((sum, s) => sum + s.quantity * s.unit_price, 0), [todaysSales])
 
-  // "Son Aktiviteler" — satış/ziyaret/teklif kayıtlarını tek bir
-  // kronolojik listede birleştiriyor (mockup'taki "ABC Güzellik Merkezi —
-  // Sipariş oluşturuldu" / "Defne Estetik Kliniği — Ziyaret gerçekleştirildi"
-  // / "Yeni Teklif — XYZ Kliniği için teklif oluşturuldu" satırlarıyla aynı
-  // dil), en yeni 8 kayıt.
+  // "Son Aktiviteler" — satış/ziyaret/teklif kayıtlarını tek bir kronolojik
+  // listede birleştiriyor. Kullanıcı isteğiyle (2026-08-17) satır düzeni:
+  // isim / eylem / tarih-saat alt alta solda, belirlenen tutar sağda; satış
+  // ikonu artık sepet değil, kurumsal bir paket/kutu ikonu.
   const recentActivity = React.useMemo<ActivityItem[]>(() => {
     const items: (ActivityItem & { sortAt: string })[] = []
     for (const s of sales.slice(0, 20)) {
       if (s.type !== 'sale') continue
       items.push({
         id: `sale-${s.id}`,
-        icon: ShoppingCart,
+        icon: Package,
         iconColor: theme.colors.primary,
-        title: `${s.customers?.full_name ?? 'Müşteri'} — Sipariş oluşturuldu`,
-        time: format(new Date(s.sale_date), 'd MMM', { locale: trLocale }),
+        name: s.customers?.full_name ?? 'Müşteri',
+        action: 'Sipariş oluşturuldu',
+        time: format(new Date(s.sale_date), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
+        amount: currency(s.quantity * s.unit_price),
         sortAt: s.sale_date,
       })
     }
@@ -172,8 +184,10 @@ export function DashboardScreen({ navigation }: Props) {
         id: `visit-${v.id}`,
         icon: Building2,
         iconColor: theme.colors.success,
-        title: `${v.doctor_name} — Ziyaret gerçekleştirildi`,
-        time: format(new Date(v.check_in_at), 'd MMM, HH:mm', { locale: trLocale }),
+        name: v.doctor_name,
+        action: 'Ziyaret gerçekleştirildi',
+        time: format(new Date(v.check_in_at), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
+        amount: null,
         sortAt: v.check_in_at,
       })
     }
@@ -182,8 +196,10 @@ export function DashboardScreen({ navigation }: Props) {
         id: `quote-${q.id}`,
         icon: FileText,
         iconColor: theme.colors.warning,
-        title: `Yeni Teklif — ${q.customer_name ?? 'Müşteri'} için teklif oluşturuldu`,
-        time: format(new Date(q.created_at), 'd MMM, HH:mm', { locale: trLocale }),
+        name: q.customer_name ?? 'Müşteri',
+        action: 'Yeni teklif oluşturuldu',
+        time: format(new Date(q.created_at), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
+        amount: null,
         sortAt: q.created_at,
       })
     }
@@ -203,24 +219,33 @@ export function DashboardScreen({ navigation }: Props) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '300', letterSpacing: 0.3 }}>
-          elf<Text style={{ fontWeight: '900' }}>FARMA</Text>
-        </Text>
+        <View>
+          <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.base, fontWeight: '300', letterSpacing: 0.3 }}>
+            elf<Text style={{ fontWeight: '900' }}>FARMA</Text>
+          </Text>
+          <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, fontStyle: 'italic', marginTop: -1 }}>
+            Estetik Sanatı
+          </Text>
+        </View>
         <Pressable onPress={() => navigation.navigate('DigerTab', { screen: 'Profile' })} hitSlop={8}>
-          <View
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              backgroundColor: theme.colors.primary + '26',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ color: theme.colors.primary, fontWeight: '700', fontSize: theme.fontSizes.sm }}>
-              {initials(staff?.full_name || '?')}
-            </Text>
-          </View>
+          {staff?.avatar_url ? (
+            <Image source={{ uri: staff.avatar_url }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+          ) : (
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: theme.colors.primary + '26',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ color: theme.colors.primary, fontWeight: '700', fontSize: theme.fontSizes.sm }}>
+                {initials(staff?.full_name || '?')}
+              </Text>
+            </View>
+          )}
         </Pressable>
       </View>
 

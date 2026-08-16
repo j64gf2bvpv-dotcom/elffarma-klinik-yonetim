@@ -1,7 +1,6 @@
 import * as React from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated'
-import { LogIn } from 'lucide-react-native'
 import { useAuth } from '@/lib/auth'
 import { isSupabaseConfigured, CLINIC_NAME } from '@/lib/supabaseClient'
 import { useTheme } from '@/lib/ThemeContext'
@@ -16,13 +15,12 @@ import { TextField } from '@/components/ui/TextField'
  * zaman kalıcı, kullanıcı sadece "Çıkış Yap" ile sonlandırır).
  *
  * Kullanıcı isteğiyle (2026-08-16) "çok basit duruyor, profesyonel olsun"
- * — koyu, marka renginde bir üst blok (wordmark + giriş yapılan uygulamanın
+ * — koyu, marka renginde bir üst blok (logo + giriş yapılan uygulamanın
  * ismi) + üzerine binen yuvarlak köşeli açık form kartı, react-native-
  * reanimated ile ikisi de kendi yönünden (üst blok yukarıdan, form kartı
- * aşağıdan) hafif gecikmeli girer. Gerçek bir logo dosyası henüz yok (bkz.
- * assets/icon.png — Expo'nun genel şablon ikonu, gerçek marka logosu
- * değil), bu yüzden masaüstündeki gibi tipografik bir "elf FARMA" wordmark
- * kullanıldı.
+ * aşağıdan) hafif gecikmeli girer. Logo, kullanıcının sağladığı gerçek
+ * marka görseli (assets/logo-orijinal.png, 2026-08-17'de eklendi — önceki
+ * placeholder icon.png'nin yerini aldı).
  */
 export function LoginScreen() {
   const { signIn, sendPasswordReset } = useAuth()
@@ -59,12 +57,9 @@ export function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Animated.View entering={FadeInDown.duration(650).springify().damping(16)} style={styles.hero}>
-          <View style={[styles.iconBox, { backgroundColor: theme.colors.primaryForeground + '1a' }]}>
-            <LogIn color={theme.colors.primaryForeground} size={26} />
+          <View style={[styles.iconBox, { backgroundColor: theme.colors.primaryForeground }]}>
+            <Image source={require('../../../assets/logo-orijinal.png')} style={styles.logoImage} resizeMode="contain" />
           </View>
-          <Text style={[styles.wordmark, { color: theme.colors.primaryForeground }]}>
-            elf<Text style={{ fontWeight: '900' }}>FARMA</Text>
-          </Text>
           <Text style={[styles.tagline, { color: theme.colors.primaryForeground + 'cc' }]}>Estetik Sanatı</Text>
         </Animated.View>
 
@@ -152,14 +147,20 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1 },
   hero: { alignItems: 'center', paddingTop: 72, paddingBottom: 56, paddingHorizontal: 24 },
   iconBox: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+    width: 92,
+    height: 92,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 18,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  wordmark: { fontSize: 30, fontWeight: '300', letterSpacing: 0.5 },
+  logoImage: { width: '100%', height: '100%' },
   tagline: { fontSize: 14, fontStyle: 'italic', marginTop: 4 },
   card: {
     flex: 1,
