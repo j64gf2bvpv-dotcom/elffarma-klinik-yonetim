@@ -52,5 +52,10 @@ export function Screen({
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  content: { flexGrow: 1, padding: 16 },
+  // minHeight: 0 — react-native-web bu View'ları gerçek CSS flexbox'a
+  // çeviriyor; CSS'te flex öğelerinin varsayılan min-height'ı "auto"
+  // olduğundan, içindeki bir FlatList flex:1 verilse bile bu satır
+  // olmadan içerik boyutuna göre büyüyüp taşıyor, kaydırma çalışmıyordu
+  // (kullanıcı isteğiyle bulunan gerçek kaydırma hatası, 2026-08-17).
+  content: { flexGrow: 1, minHeight: 0, padding: 16 },
 })

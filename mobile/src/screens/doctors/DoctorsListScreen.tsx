@@ -215,7 +215,7 @@ export function DoctorsListScreen({ navigation }: Props) {
         <FlatList
           data={rows}
           keyExtractor={(r) => r.customer.id}
-          style={{ flex: 1 }}
+          style={{ flex: 1, minHeight: 0 }}
           contentContainerStyle={{ paddingBottom: 24 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
           ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}

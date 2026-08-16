@@ -80,7 +80,7 @@ export function OrdersScreen({ navigation }: Props) {
         <FlatList
           data={filteredSales}
           keyExtractor={(s) => s.id}
-          style={{ flex: 1 }}
+          style={{ flex: 1, minHeight: 0 }}
           contentContainerStyle={{ paddingBottom: 24 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
           ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Sipariş yok</Text>}
