@@ -16,14 +16,19 @@ export function ListItemCard({
   icon: Icon,
   iconColor,
   imageUri,
+  initials,
   title,
   subtitle,
   right,
   onPress,
 }: {
-  icon: LucideIcon
+  icon?: LucideIcon
   iconColor?: string
   imageUri?: string | null
+  /** Verilirse ikon rozeti yerine bu baş harfler yuvarlak bir avatar
+   * içinde gösterilir (ör. Müşteriler listesinde doktor ad-soyad baş
+   * harfleri — kullanıcı isteğiyle, 2026-08-17, ikonlar isimle karışıyordu). */
+  initials?: string
   title: string
   subtitle?: string
   right?: React.ReactNode
@@ -40,7 +45,7 @@ export function ListItemCard({
         {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 14,
+          gap: initials ? 18 : 14,
           backgroundColor: theme.colors.card,
           borderWidth: 1,
           borderColor: theme.colors.border,
@@ -55,7 +60,21 @@ export function ListItemCard({
           source={{ uri: imageUri }}
           style={{ width: 38, height: 38, borderRadius: theme.radius.sm, backgroundColor: theme.colors.muted }}
         />
-      ) : (
+      ) : initials ? (
+        <View
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 19,
+            backgroundColor: tint + '26',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 0,
+          }}
+        >
+          <Text style={{ color: tint, fontWeight: '700', fontSize: theme.fontSizes.sm }}>{initials}</Text>
+        </View>
+      ) : Icon ? (
         <View
           style={{
             width: 38,
@@ -69,7 +88,7 @@ export function ListItemCard({
         >
           <Icon size={18} color={tint} />
         </View>
-      )}
+      ) : null}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.base }} numberOfLines={1}>
           {title}

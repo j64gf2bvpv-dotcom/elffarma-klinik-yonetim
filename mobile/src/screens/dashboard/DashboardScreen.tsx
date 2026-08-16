@@ -314,24 +314,24 @@ export function DashboardScreen({ navigation }: Props) {
     // ikon gösteriyor — kullanıcı isteğiyle (2026-08-17), ör. "reddedildi"
     // için kırmızı X, "kabul edildi" için yeşil tık.
     for (const q of todaysQuotes) {
-      const statusMap: Record<string, { action: string; icon: typeof Check; color: string } | null> = {
+      const statusMap: Record<string, { action: string; icon: typeof Check; color: string }> = {
         kabul_edildi: { action: 'Teklif kabul edildi', icon: Check, color: theme.colors.success },
         reddedildi: { action: 'Teklif reddedildi', icon: XCircle, color: theme.colors.destructive },
         suresi_doldu: { action: 'Teklifin süresi doldu', icon: Clock, color: theme.colors.mutedForeground },
         goruldu: { action: 'Teklif görüldü', icon: Clock, color: theme.colors.warning },
-        gonderildi: null,
-        taslak: null,
+        gonderildi: { action: 'Yeni teklif oluşturuldu', icon: Check, color: theme.colors.warning },
+        taslak: { action: 'Yeni teklif oluşturuldu', icon: Check, color: theme.colors.warning },
       }
-      const mapped = statusMap[q.status]
+      const mapped = statusMap[q.status] ?? { action: 'Yeni teklif oluşturuldu', icon: Check, color: theme.colors.warning }
       items.push({
         id: `quote-${q.id}`,
         icon: FileText,
         iconColor: theme.colors.warning,
         name: q.customer_name ?? 'Müşteri',
-        action: mapped?.action ?? 'Yeni teklif oluşturuldu',
+        action: mapped.action,
         time: format(new Date(q.created_at), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
         amount: null,
-        statusIcon: mapped ? { icon: mapped.icon, color: mapped.color } : undefined,
+        statusIcon: { icon: mapped.icon, color: mapped.color },
         sortAt: q.created_at,
       })
     }

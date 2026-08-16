@@ -2,7 +2,7 @@ import * as React from 'react'
 import { FlatList, Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { AppModal } from '@/components/ui/AppModal'
 import { startOfMonth } from 'date-fns'
-import { Building2, Info, MessageCircle, Navigation, Phone, Plus, Star, TrendingUp, X } from 'lucide-react-native'
+import { Info, MessageCircle, Navigation, Phone, Plus, Star, TrendingUp, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
@@ -215,6 +215,8 @@ export function DoctorsListScreen({ navigation }: Props) {
         <FlatList
           data={rows}
           keyExtractor={(r) => r.customer.id}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 24 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
           ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
@@ -262,6 +264,12 @@ function QuickActionButton({ icon: Icon, onPress }: { icon: typeof Phone; onPres
   )
 }
 
+function initialsOf(fullName: string) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean)
+  const letters = parts.length > 1 ? [parts[0], parts[parts.length - 1]] : parts.slice(0, 1)
+  return letters.map((p) => p[0]?.toUpperCase() ?? '').join('') || '?'
+}
+
 function DoctorRow({
   customer,
   balance,
@@ -280,7 +288,7 @@ function DoctorRow({
   const theme = useTheme()
   return (
     <ListItemCard
-      icon={Building2}
+      initials={initialsOf(customer.full_name)}
       iconColor={!customer.is_active ? theme.colors.mutedForeground : isPotential ? theme.colors.warning : theme.colors.success}
       title={customer.full_name}
       subtitle={
