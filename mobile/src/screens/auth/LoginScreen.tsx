@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { LogIn } from 'lucide-react-native'
 import { useAuth } from '@/lib/auth'
 import { isSupabaseConfigured, CLINIC_NAME } from '@/lib/supabaseClient'
@@ -7,11 +8,22 @@ import { useTheme } from '@/lib/ThemeContext'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
 
-/** Masaüstündeki LoginPage.tsx'in mobil karşılığı — aynı alanlar (e-posta/
+/**
+ * Masaüstündeki LoginPage.tsx'in mobil karşılığı — aynı alanlar (e-posta/
  * şifre), aynı hata mesajı eşlemesi (auth.tsx'ten geliyor, ayrıca burada
  * çevrilmiyor), "Şifremi Unuttum" aynı şekilde ayrı bir route değil, mod
  * değişimi. "Beni Hatırla" native'de yok (bkz. plan §Context — oturum her
- * zaman kalıcı, kullanıcı sadece "Çıkış Yap" ile sonlandırır). */
+ * zaman kalıcı, kullanıcı sadece "Çıkış Yap" ile sonlandırır).
+ *
+ * Kullanıcı isteğiyle (2026-08-16) "çok basit duruyor, profesyonel olsun"
+ * — koyu, marka renginde bir üst blok (wordmark + giriş yapılan uygulamanın
+ * ismi) + üzerine binen yuvarlak köşeli açık form kartı, react-native-
+ * reanimated ile ikisi de kendi yönünden (üst blok yukarıdan, form kartı
+ * aşağıdan) hafif gecikmeli girer. Gerçek bir logo dosyası henüz yok (bkz.
+ * assets/icon.png — Expo'nun genel şablon ikonu, gerçek marka logosu
+ * değil), bu yüzden masaüstündeki gibi tipografik bir "elf FARMA" wordmark
+ * kullanıldı.
+ */
 export function LoginScreen() {
   const { signIn, sendPasswordReset } = useAuth()
   const theme = useTheme()
@@ -42,98 +54,125 @@ export function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.colors.background }}
+      style={{ flex: 1, backgroundColor: theme.colors.primary }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={[styles.iconBox, { backgroundColor: theme.colors.primary }]}>
-          <LogIn color={theme.colors.primaryForeground} size={28} />
-        </View>
-        <Text style={[styles.title, { color: theme.colors.foreground }]}>{CLINIC_NAME}</Text>
-        <Text style={{ color: theme.colors.mutedForeground, marginBottom: 24 }}>
-          {mode === 'signin' ? 'Devam etmek için giriş yapın' : 'Şifrenizi mi unuttunuz?'}
-        </Text>
-
-        {!isSupabaseConfigured && (
-          <Text style={[styles.warning, { color: theme.colors.warning }]}>
-            Supabase yapılandırması eksik — mobile/.env dosyasını kontrol edin.
+        <Animated.View entering={FadeInDown.duration(650).springify().damping(16)} style={styles.hero}>
+          <View style={[styles.iconBox, { backgroundColor: theme.colors.primaryForeground + '1a' }]}>
+            <LogIn color={theme.colors.primaryForeground} size={26} />
+          </View>
+          <Text style={[styles.wordmark, { color: theme.colors.primaryForeground }]}>
+            elf<Text style={{ fontWeight: '900' }}>FARMA</Text>
           </Text>
-        )}
+          <Text style={[styles.tagline, { color: theme.colors.primaryForeground + 'cc' }]}>Estetik Sanatı</Text>
+        </Animated.View>
 
-        {mode === 'signin' ? (
-          <View style={{ gap: 14 }}>
-            <TextField
-              label="E-posta"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-            />
-            <TextField
-              label="Şifre"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password"
-            />
-            {error && <Text style={{ color: theme.colors.destructive }}>{error}</Text>}
-            <Button onPress={handleSignIn} loading={submitting} disabled={!email || !password}>
-              Giriş Yap
-            </Button>
-            <Button variant="ghost" onPress={() => setMode('forgot')}>
-              Şifremi Unuttum
-            </Button>
-          </View>
-        ) : (
-          <View style={{ gap: 14 }}>
-            {resetSent ? (
-              <Text style={{ color: theme.colors.success }}>
-                Şifre sıfırlama bağlantısı e-postanıza gönderildi.
-              </Text>
-            ) : (
-              <>
-                <TextField
-                  label="E-posta"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                />
-                {error && <Text style={{ color: theme.colors.destructive }}>{error}</Text>}
-                <Button onPress={handleForgotPassword} loading={submitting} disabled={!email}>
-                  Sıfırlama Bağlantısı Gönder
-                </Button>
-              </>
-            )}
-            <Button
-              variant="ghost"
-              onPress={() => {
-                setMode('signin')
-                setResetSent(false)
-                setError(null)
-              }}
-            >
-              Girişe Dön
-            </Button>
-          </View>
-        )}
+        <Animated.View
+          entering={FadeInUp.duration(650).delay(150).springify().damping(16)}
+          style={[styles.card, { backgroundColor: theme.colors.card, shadowColor: '#000' }]}
+        >
+          <Text style={[styles.appName, { color: theme.colors.foreground }]}>{CLINIC_NAME}</Text>
+          <Text style={{ color: theme.colors.mutedForeground, marginBottom: 22 }}>
+            {mode === 'signin' ? 'Devam etmek için giriş yapın' : 'Şifrenizi mi unuttunuz?'}
+          </Text>
+
+          {!isSupabaseConfigured && (
+            <Text style={[styles.warning, { color: theme.colors.warning }]}>
+              Supabase yapılandırması eksik — mobile/.env dosyasını kontrol edin.
+            </Text>
+          )}
+
+          {mode === 'signin' ? (
+            <View style={{ gap: 14 }}>
+              <TextField
+                label="E-posta"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
+              />
+              <TextField
+                label="Şifre"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoComplete="password"
+              />
+              {error && <Text style={{ color: theme.colors.destructive }}>{error}</Text>}
+              <Button onPress={handleSignIn} loading={submitting} disabled={!email || !password} size="lg">
+                Giriş Yap
+              </Button>
+              <Button variant="ghost" onPress={() => setMode('forgot')}>
+                Şifremi Unuttum
+              </Button>
+            </View>
+          ) : (
+            <View style={{ gap: 14 }}>
+              {resetSent ? (
+                <Text style={{ color: theme.colors.success }}>
+                  Şifre sıfırlama bağlantısı e-postanıza gönderildi.
+                </Text>
+              ) : (
+                <>
+                  <TextField
+                    label="E-posta"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                  />
+                  {error && <Text style={{ color: theme.colors.destructive }}>{error}</Text>}
+                  <Button onPress={handleForgotPassword} loading={submitting} disabled={!email} size="lg">
+                    Sıfırlama Bağlantısı Gönder
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="ghost"
+                onPress={() => {
+                  setMode('signin')
+                  setResetSent(false)
+                  setError(null)
+                }}
+              >
+                Girişe Dön
+              </Button>
+            </View>
+          )}
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  scroll: { flexGrow: 1 },
+  hero: { alignItems: 'center', paddingTop: 72, paddingBottom: 56, paddingHorizontal: 24 },
   iconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 60,
+    height: 60,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 18,
   },
-  title: { fontSize: 24, fontWeight: '700', marginBottom: 4 },
+  wordmark: { fontSize: 30, fontWeight: '300', letterSpacing: 0.5 },
+  tagline: { fontSize: 14, fontStyle: 'italic', marginTop: 4 },
+  card: {
+    flex: 1,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: -8 },
+    elevation: 8,
+  },
+  appName: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
   warning: { marginBottom: 16 },
 })
