@@ -250,11 +250,11 @@ export function DashboardScreen({ navigation }: Props) {
       </View>
 
       <Card style={{ gap: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View>
           <Text style={{ color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.base }}>
             Günlük Özet
           </Text>
-          <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>
+          <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, marginTop: 2 }}>
             {format(new Date(), 'd MMMM yyyy, EEEE', { locale: trLocale })}
           </Text>
         </View>
