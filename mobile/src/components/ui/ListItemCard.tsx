@@ -40,7 +40,7 @@ export function ListItemCard({
         {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
+          gap: 14,
           backgroundColor: theme.colors.card,
           borderWidth: 1,
           borderColor: theme.colors.border,

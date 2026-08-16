@@ -258,15 +258,21 @@ export function DashboardScreen({ navigation }: Props) {
     [todaysSales, todaysPayments],
   )
 
-  // "Son Aktiviteler" — satış/tahsilat/ziyaret/teklif kayıtlarını tek bir
-  // kronolojik listede birleştiriyor (kullanıcı isteğiyle, 2026-08-17,
-  // tahsilat da eklendi — Günlük Özet'teki Ciro rakamıyla aynı kapsam).
-  // Satır düzeni: isim / eylem / tarih-saat alt alta solda, belirlenen
-  // tutar sağda; satış ikonu sepet değil, kurumsal bir paket/kutu ikonu.
+  const todaysQuotes = React.useMemo(
+    () => quotes.filter((q) => q.created_at.slice(0, 10) === todayStr),
+    [quotes, todayStr],
+  )
+
+  // "Son Aktiviteler" — Günlük Özet'in AYNI bugüne-özel verisinden
+  // (todaysSales/todaysPayments/todaysVisits/todaysQuotes) besleniyor,
+  // ayrı/geniş bir "son 20 kayıt" havuzundan değil — kullanıcı isteğiyle
+  // (2026-08-17): "ortak bağlantılı çalışması gerekli", yani Ciro'da
+  // sayılan her şey burada da görünmeli ve tersi. Satır düzeni: isim /
+  // eylem / tarih-saat alt alta solda, belirlenen tutar sağda; satış
+  // ikonu sepet değil, kurumsal bir paket/kutu ikonu.
   const recentActivity = React.useMemo<ActivityItem[]>(() => {
     const items: (ActivityItem & { sortAt: string })[] = []
-    for (const s of sales.slice(0, 20)) {
-      if (s.type !== 'sale') continue
+    for (const s of todaysSales) {
       items.push({
         id: `sale-${s.id}`,
         icon: Package,
@@ -278,7 +284,7 @@ export function DashboardScreen({ navigation }: Props) {
         sortAt: s.sale_date,
       })
     }
-    for (const p of allPayments.slice(0, 20)) {
+    for (const p of todaysPayments) {
       items.push({
         id: `payment-${p.id}`,
         icon: Wallet,
@@ -290,21 +296,20 @@ export function DashboardScreen({ navigation }: Props) {
         sortAt: p.paid_at,
       })
     }
-    for (const v of visits.slice(0, 20)) {
-      if (!v.check_in_at) continue
+    for (const v of todaysVisits) {
       items.push({
         id: `visit-${v.id}`,
         icon: Building2,
         iconColor: theme.colors.success,
         name: v.doctor_name,
         action: 'Ziyaret gerçekleştirildi',
-        time: format(new Date(v.check_in_at), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
+        time: format(new Date(v.check_in_at!), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
         amount: null,
         completed: true,
-        sortAt: v.check_in_at,
+        sortAt: v.check_in_at!,
       })
     }
-    for (const q of quotes.slice(0, 20)) {
+    for (const q of todaysQuotes) {
       items.push({
         id: `quote-${q.id}`,
         icon: FileText,
@@ -317,7 +322,7 @@ export function DashboardScreen({ navigation }: Props) {
       })
     }
     return items.sort((a, b) => b.sortAt.localeCompare(a.sortAt)).slice(0, 8)
-  }, [sales, visits, quotes, allPayments, theme])
+  }, [todaysSales, todaysPayments, todaysVisits, todaysQuotes, theme])
 
   async function onRefresh() {
     setRefreshing(true)
