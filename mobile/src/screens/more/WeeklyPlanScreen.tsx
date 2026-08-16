@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+import { AppModal } from '@/components/ui/AppModal'
 import { addWeeks, eachDayOfInterval, endOfWeek, format, isSameDay, startOfWeek, subWeeks } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { CalendarRange, ChevronLeft, ChevronRight, Plus, Stethoscope, Trash2, X } from 'lucide-react-native'
@@ -194,7 +195,7 @@ function AddPlanModal({
 
   return (
     <>
-      <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
         <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
           <View
             style={{
@@ -243,7 +244,7 @@ function AddPlanModal({
             </Button>
           </View>
         </View>
-      </Modal>
+      </AppModal>
       <CustomerPickerModal
         visible={customerPickerOpen}
         onClose={() => setCustomerPickerOpen(false)}

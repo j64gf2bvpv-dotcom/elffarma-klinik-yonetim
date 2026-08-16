@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { FlatList, Modal, Pressable, RefreshControl, Text, View } from 'react-native'
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { AppModal } from '@/components/ui/AppModal'
 import { Plus, UserRound, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
@@ -115,7 +116,7 @@ function AddParticipantModal({
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AppModal visible={visible} animationType="slide" onRequestClose={onClose}>
       <Screen>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>Katılımcı Ekle</Text>
@@ -131,6 +132,6 @@ function AddParticipantModal({
           </Button>
         </View>
       </Screen>
-    </Modal>
+    </AppModal>
   )
 }

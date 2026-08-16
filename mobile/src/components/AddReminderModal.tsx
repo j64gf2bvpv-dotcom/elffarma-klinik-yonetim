@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Modal, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
+import { AppModal } from '@/components/ui/AppModal'
 import { format } from 'date-fns'
 import { X } from 'lucide-react-native'
 import { Screen } from '@/components/ui/Screen'
@@ -34,7 +35,7 @@ export function AddReminderModal({ visible, onClose }: { visible: boolean; onClo
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AppModal visible={visible} animationType="slide" onRequestClose={onClose}>
       <Screen>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>Yeni Hatırlatma</Text>
@@ -51,6 +52,6 @@ export function AddReminderModal({ visible, onClose }: { visible: boolean; onClo
           </Button>
         </View>
       </Screen>
-    </Modal>
+    </AppModal>
   )
 }

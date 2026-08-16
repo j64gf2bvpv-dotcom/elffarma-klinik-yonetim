@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type ViewStyle } from 'react-native'
 import type { RefreshControlProps } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTheme } from '@/lib/ThemeContext'
@@ -26,13 +26,26 @@ export function Screen({
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
       edges={['top', 'left', 'right']}
     >
-      {scroll ? (
-        <ScrollView contentContainerStyle={[styles.content, style]} refreshControl={refreshControl}>
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={[styles.content, style]}>{children}</View>
-      )}
+      {/* KeyboardAvoidingView olmadan, alttaki bir TextField'a (ör. Notlar)
+          dokununca klavye içeriğin üzerine biniyor, yazılan yer görünmüyordu —
+          "padding" davranışı içeriği klavye kadar yukarı iter. */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+      >
+        {scroll ? (
+          <ScrollView
+            contentContainerStyle={[styles.content, style]}
+            refreshControl={refreshControl}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={[styles.content, style]}>{children}</View>
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

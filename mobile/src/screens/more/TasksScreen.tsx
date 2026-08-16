@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { FlatList, Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { AppModal } from '@/components/ui/AppModal'
 import { format, isPast, isToday } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { Plus, CheckSquare, Square, Trash2, X } from 'lucide-react-native'
@@ -159,7 +160,7 @@ function AddTaskModal({ visible, onClose }: { visible: boolean; onClose: () => v
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AppModal visible={visible} animationType="slide" onRequestClose={onClose}>
       <Screen>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>Yeni Görev</Text>
@@ -202,6 +203,6 @@ function AddTaskModal({ visible, onClose }: { visible: boolean; onClose: () => v
           }}
         />
       </Screen>
-    </Modal>
+    </AppModal>
   )
 }

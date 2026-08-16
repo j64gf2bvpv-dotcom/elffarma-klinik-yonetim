@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { Pressable, RefreshControl, Text, View } from 'react-native'
+import { AppModal } from '@/components/ui/AppModal'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { Plus, ChevronLeft, ChevronRight, Trash2, X, Building2 } from 'lucide-react-native'
@@ -38,16 +39,14 @@ const stageLabels: Record<CrmOpportunityStage, string> = {
   kaybedildi: 'Kaybedildi',
 }
 
-const COLUMN_WIDTH = 260
-
 /**
- * Master talimat §14'teki "Fırsat / Sales Pipeline" Kanban görünümü — 5
- * aşama (Yeni Lead→Teklif Verildi→Müzakere→Kazanıldı/Kaybedildi) yatay
- * kaydırılabilir kolonlar halinde, her kolonda o aşamadaki fırsatların
- * kartları. Sürükle-bırak yerine (RN'de güvenilir DnD ek kütüphane
- * gerektirir) her kartta ‹ › butonlarıyla bir önceki/sonraki aşamaya
- * taşıma — aynı useUpdateOpportunity mutasyonunu kullanıyor, sadece
- * etkileşim şekli değişti.
+ * Master talimat §14'teki "Fırsat / Sales Pipeline" görünümü — 5 aşama
+ * (Yeni Lead→Teklif Verildi→Müzakere→Kazanıldı/Kaybedildi) alt alta
+ * bölümler halinde (önceden yatay kaydırılan kolonlardı — telefonda yan
+ * yana kolonlar hem sığmıyor hem "gizli içerik var" hissi vermiyordu).
+ * Sürükle-bırak yerine (RN'de güvenilir DnD ek kütüphane gerektirir) her
+ * kartta ‹ › butonlarıyla bir önceki/sonraki aşamaya taşıma — aynı
+ * useUpdateOpportunity mutasyonunu kullanıyor, sadece etkileşim şekli değişti.
  */
 export function OpportunitiesScreen(_: Props) {
   const theme = useTheme()
@@ -82,7 +81,11 @@ export function OpportunitiesScreen(_: Props) {
   }
 
   return (
-    <Screen style={{ gap: 10 }} scroll={false}>
+    <Screen
+      style={{ gap: 10 }}
+      scroll
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader
         title="Fırsatlar"
         subtitle={`${opportunities.length} kayıt · ${currency(totalAmount)} açık`}
@@ -106,17 +109,12 @@ export function OpportunitiesScreen(_: Props) {
       {isLoading && opportunities.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
       ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 10, paddingBottom: 8 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-        >
+        <View style={{ gap: 16 }}>
           {stageOrder.map((stage) => {
             const items = byStage.get(stage) ?? []
             const stageTotal = items.reduce((sum, o) => sum + (o.amount ?? 0), 0)
             return (
-              <View key={stage} style={{ width: COLUMN_WIDTH, gap: 8 }}>
+              <View key={stage} style={{ gap: 8 }}>
                 <View
                   style={{
                     flexDirection: 'row',
@@ -128,16 +126,14 @@ export function OpportunitiesScreen(_: Props) {
                   <Text style={{ color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.sm }}>
                     {stageLabels[stage]} ({items.length})
                   </Text>
-                </View>
-                {stageTotal > 0 && (
-                  <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, paddingHorizontal: 4, marginTop: -6 }}>
-                    {currency(stageTotal)}
-                  </Text>
-                )}
-                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={false}>
-                  {items.length === 0 && (
-                    <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, paddingHorizontal: 4 }}>Boş</Text>
+                  {stageTotal > 0 && (
+                    <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>{currency(stageTotal)}</Text>
                   )}
+                </View>
+                {items.length === 0 && (
+                  <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, paddingHorizontal: 4 }}>Boş</Text>
+                )}
+                <View style={{ gap: 8 }}>
                   {items.map((o) => (
                     <OpportunityCard
                       key={o.id}
@@ -147,11 +143,11 @@ export function OpportunitiesScreen(_: Props) {
                       onDelete={() => deleteMutation.mutate(o.id)}
                     />
                   ))}
-                </ScrollView>
+                </View>
               </View>
             )
           })}
-        </ScrollView>
+        </View>
       )}
       <AddOpportunityModal visible={showAdd} onClose={() => setShowAdd(false)} />
     </Screen>
@@ -255,7 +251,7 @@ function AddOpportunityModal({ visible, onClose }: { visible: boolean; onClose: 
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AppModal visible={visible} animationType="slide" onRequestClose={onClose}>
       <Screen>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>Yeni Fırsat</Text>
@@ -292,6 +288,6 @@ function AddOpportunityModal({ visible, onClose }: { visible: boolean; onClose: 
           }}
         />
       </Screen>
-    </Modal>
+    </AppModal>
   )
 }

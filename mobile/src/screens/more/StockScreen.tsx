@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { FlatList, Modal, Pressable, ScrollView, Text, View } from 'react-native'
+import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
+import { AppModal } from '@/components/ui/AppModal'
 import { Layers, Minus, PackageSearch, Plus, X } from 'lucide-react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
@@ -81,7 +82,10 @@ export function StockScreen({ route }: Props) {
       <ScreenHeader title="Stok" subtitle={`${products.length} ürün · ${criticalCount} kritik seviyede`} />
       <TextField placeholder="Ara (ürün adı)..." value={search} onChangeText={setSearch} containerStyle={{ marginBottom: 2 }} />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 8 }}>
+      {/* Önceden yatay ScrollView'dı — kategori sayısı arttıkça son çip(ler)
+          ekran dışında kayıp fark edilmiyordu. Artık sığmayan çipler alt
+          satıra sarılıyor, hepsi tek bakışta görünüyor. */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Pressable onPress={() => setCategory(null)} hitSlop={4}>
           <Badge variant={category == null ? 'default' : 'outline'}>Tümü</Badge>
         </Pressable>
@@ -95,7 +99,7 @@ export function StockScreen({ route }: Props) {
             <Badge variant={onlyCritical ? 'destructive' : 'outline'}>{`Kritik (${criticalCount})`}</Badge>
           </Pressable>
         )}
-      </ScrollView>
+      </View>
 
       {isLoading && rows.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
@@ -197,7 +201,7 @@ function ProductLotsModal({ product, onClose }: { product: Product | null; onClo
   const { data: lots = [], isLoading } = useProductLots(product?.id)
 
   return (
-    <Modal visible={!!product} animationType="slide" transparent onRequestClose={onClose}>
+    <AppModal visible={!!product} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
         <View
           style={{
@@ -247,7 +251,7 @@ function ProductLotsModal({ product, onClose }: { product: Product | null; onClo
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   )
 }
 
@@ -306,7 +310,7 @@ function StockMovementModal({
   }
 
   return (
-    <Modal visible={!!product} animationType="slide" transparent onRequestClose={onClose}>
+    <AppModal visible={!!product} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
         <View
           style={{
@@ -401,6 +405,6 @@ function StockMovementModal({
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   )
 }

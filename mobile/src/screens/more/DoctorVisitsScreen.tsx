@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { FlatList, Modal, Pressable, RefreshControl, Text, View } from 'react-native'
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { AppModal } from '@/components/ui/AppModal'
 import { format, isPast, isToday, differenceInMinutes } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { Plus, Stethoscope, Calendar, LogIn, LogOut, X, Package } from 'lucide-react-native'
@@ -157,7 +158,7 @@ function VisitDetailModal({ visit, onClose }: { visit: DoctorVisit | null; onClo
   }
 
   return (
-    <Modal visible={!!visit} animationType="slide" onRequestClose={onClose}>
+    <AppModal visible={!!visit} animationType="slide" onRequestClose={onClose}>
       <Screen scroll>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }} numberOfLines={1}>
@@ -203,7 +204,7 @@ function VisitDetailModal({ visit, onClose }: { visit: DoctorVisit | null; onClo
           )}
         </View>
       </Screen>
-    </Modal>
+    </AppModal>
   )
 }
 
@@ -229,7 +230,7 @@ function AddVisitModal({ visible, onClose }: { visible: boolean; onClose: () => 
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AppModal visible={visible} animationType="slide" onRequestClose={onClose}>
       <Screen>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>Yeni Ziyaret</Text>
@@ -247,6 +248,6 @@ function AddVisitModal({ visible, onClose }: { visible: boolean; onClose: () => 
           </Button>
         </View>
       </Screen>
-    </Modal>
+    </AppModal>
   )
 }

@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { AppModal } from '@/components/ui/AppModal'
 import * as ImagePicker from 'expo-image-picker'
 import { format, isPast, isToday, startOfMonth } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
@@ -238,7 +239,10 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
         </Badge>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+      {/* Önceden yatay ScrollView'dı — 5. buton (Ürün Ver) ekran dışında
+          kayıyor, kullanıcı kaydırmayı fark etmiyordu. Artık sığmayan
+          butonlar ikinci satıra sarılıyor, hepsi tek bakışta görünüyor. */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <QuickAction icon={Phone} label="Ara" onPress={() => customer?.phone && Linking.openURL(`tel:${customer.phone}`)} />
         <QuickAction
           icon={MessageCircle}
@@ -252,7 +256,7 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
           onPress={() => navigation.navigate('VisitFlow', { customerId, customerName: customer?.full_name ?? customerName })}
         />
         <QuickAction icon={Package} label="Ürün Ver" onPress={() => setShowGiveProduct(true)} />
-      </ScrollView>
+      </View>
 
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -428,7 +432,7 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      <Modal visible={showAiModal} animationType="slide" transparent onRequestClose={() => setShowAiModal(false)}>
+      <AppModal visible={showAiModal} animationType="slide" transparent onRequestClose={() => setShowAiModal(false)}>
         <View style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 14, maxHeight: '70%' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -456,7 +460,7 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
             )}
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       <GiveProductModal
         visible={showGiveProduct}
@@ -465,7 +469,7 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
         onClose={() => setShowGiveProduct(false)}
       />
 
-      <Modal visible={showTargetModal} animationType="slide" transparent onRequestClose={() => setShowTargetModal(false)}>
+      <AppModal visible={showTargetModal} animationType="slide" transparent onRequestClose={() => setShowTargetModal(false)}>
         <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
           <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -491,7 +495,7 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
             </Button>
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </Screen>
   )
 }
@@ -509,9 +513,14 @@ function QuickAction({
 }) {
   const theme = useTheme()
   return (
-    <Button variant="outline" size="sm" onPress={onPress} disabled={disabled} style={{ width: 82, flexDirection: 'column', height: 56, gap: 2 }}>
+    <Button variant="outline" size="sm" onPress={onPress} disabled={disabled} style={{ width: 84, flexDirection: 'column', height: 56, gap: 2 }}>
       <Icon size={16} color={disabled ? theme.colors.mutedForeground : theme.colors.primary} />
-      <Text style={{ color: disabled ? theme.colors.mutedForeground : theme.colors.foreground, fontSize: theme.fontSizes.xs, fontWeight: '600' }}>
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+        style={{ color: disabled ? theme.colors.mutedForeground : theme.colors.foreground, fontSize: theme.fontSizes.xs, fontWeight: '600' }}
+      >
         {label}
       </Text>
     </Button>
@@ -604,7 +613,7 @@ function GiveProductModal({
 
   return (
     <>
-      <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
         <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
           <View
             style={{
@@ -648,7 +657,7 @@ function GiveProductModal({
             </Button>
           </View>
         </View>
-      </Modal>
+      </AppModal>
       <ProductPickerModal
         visible={pickerOpen}
         onClose={() => setPickerOpen(false)}
@@ -812,7 +821,7 @@ function AddPaymentModal({ visible, customerId, onClose }: { visible: boolean; c
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
         <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -838,7 +847,7 @@ function AddPaymentModal({ visible, customerId, onClose }: { visible: boolean; c
           </Button>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   )
 }
 
@@ -894,7 +903,7 @@ function InvoiceModal({ payment, onClose }: { payment: PaymentWithCustomer | nul
   }
 
   return (
-    <Modal visible={!!payment} animationType="slide" transparent onRequestClose={onClose}>
+    <AppModal visible={!!payment} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
         <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -929,7 +938,7 @@ function InvoiceModal({ payment, onClose }: { payment: PaymentWithCustomer | nul
           </Button>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   )
 }
 
@@ -984,7 +993,7 @@ function InstallmentPlanModal({
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
         <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12, maxHeight: '88%' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1022,7 +1031,7 @@ function InstallmentPlanModal({
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   )
 }
 
@@ -1059,7 +1068,7 @@ function CollectInstallmentModal({ installment, onClose }: { installment: Instal
   }
 
   return (
-    <Modal visible={!!installment} animationType="slide" transparent onRequestClose={onClose}>
+    <AppModal visible={!!installment} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
         <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1085,7 +1094,7 @@ function CollectInstallmentModal({ installment, onClose }: { installment: Instal
           </Button>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   )
 }
 

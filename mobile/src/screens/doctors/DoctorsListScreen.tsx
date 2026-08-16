@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { FlatList, Linking, Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { FlatList, Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { AppModal } from '@/components/ui/AppModal'
 import { startOfMonth } from 'date-fns'
 import { Building2, Info, MessageCircle, Navigation, Phone, Plus, Star, TrendingUp, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -319,7 +320,7 @@ function QuickInfoSheet({ customer, onClose }: { customer: Customer | null; onCl
       : null
 
   return (
-    <Modal visible={!!customer} animationType="slide" transparent onRequestClose={onClose}>
+    <AppModal visible={!!customer} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
         <View
           style={{
@@ -365,7 +366,7 @@ function QuickInfoSheet({ customer, onClose }: { customer: Customer | null; onCl
           </View>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   )
 }
 
@@ -402,7 +403,7 @@ function AddDoctorModal({ visible, onClose }: { visible: boolean; onClose: () =>
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AppModal visible={visible} animationType="slide" onRequestClose={onClose}>
       <Screen>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>Yeni Doktor</Text>
@@ -420,6 +421,6 @@ function AddDoctorModal({ visible, onClose }: { visible: boolean; onClose: () =>
           </Button>
         </View>
       </Screen>
-    </Modal>
+    </AppModal>
   )
 }

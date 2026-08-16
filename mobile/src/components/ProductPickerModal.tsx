@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { FlatList, Modal, Pressable, Text, View } from 'react-native'
+import { FlatList, Pressable, Text, View } from 'react-native'
+import { AppModal } from '@/components/ui/AppModal'
 import { X } from 'lucide-react-native'
 import { Screen } from '@/components/ui/Screen'
 import { TextField } from '@/components/ui/TextField'
@@ -25,7 +26,7 @@ export function ProductPickerModal({
   const { data: products = [], isLoading } = useProducts(search)
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AppModal visible={visible} animationType="slide" onRequestClose={onClose}>
       <Screen>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>
@@ -72,6 +73,6 @@ export function ProductPickerModal({
           />
         )}
       </Screen>
-    </Modal>
+    </AppModal>
   )
 }
