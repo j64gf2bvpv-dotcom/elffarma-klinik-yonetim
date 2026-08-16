@@ -35,6 +35,38 @@ const RED_LIGHT_OKLCH = {
   sidebarAccentForeground: 'oklch(1 0 0)',
 } as const
 
+/**
+ * Aynı formülün (`brandThemeCssVars`, hue=23, chromaScale=1) mode='dark'
+ * dalı için birebir aynı OKLCH değerleri — masaüstünde koyu mod açıkken
+ * "Kırmızı" temasının aldığı hali. Kullanıcı isteğiyle (2026-08-16) mobil
+ * artık varsayılan olarak bunu kullanıyor (bkz. ThemeContext.tsx).
+ */
+const RED_DARK_OKLCH = {
+  primary: 'oklch(0.62 0.2 23)',
+  primaryForeground: 'oklch(0.99 0.003 23)',
+  secondary: 'oklch(0.27 0.03 23)',
+  secondaryForeground: 'oklch(0.92 0.02 23)',
+  muted: 'oklch(0.25 0.015 23)',
+  mutedForeground: 'oklch(0.68 0.015 23)',
+  accent: 'oklch(0.32 0.07 23)',
+  accentForeground: 'oklch(0.93 0.02 23)',
+  border: 'oklch(0.32 0.02 23)',
+  input: 'oklch(0.32 0.02 23)',
+  ring: 'oklch(0.62 0.2 23)',
+  gold: 'oklch(0.62 0.2 23)',
+  background: 'oklch(0.16 0.015 23)',
+  foreground: 'oklch(0.95 0.008 23)',
+  card: 'oklch(0.2 0.018 23)',
+  cardForeground: 'oklch(0.95 0.008 23)',
+  popover: 'oklch(0.2 0.018 23)',
+  popoverForeground: 'oklch(0.95 0.008 23)',
+  sidebar: 'oklch(0.2 0.04 23)',
+  sidebarForeground: 'oklch(0.96 0.008 23)',
+  sidebarBorder: 'oklch(0.28 0.05 23)',
+  sidebarAccent: 'oklch(0.32 0.1 23)',
+  sidebarAccentForeground: 'oklch(1 0 0)',
+} as const
+
 // Durum renkleri marka temasından bağımsız (masaüstünde de öyle — index.css'de
 // success/warning/destructive her zaman aynı).
 const STATUS_OKLCH = {
@@ -99,6 +131,17 @@ const RADIUS_MD = 0.65 * 16 // 10.4
 export const redLightTheme: Theme = {
   colors: {
     ...toHexMap(RED_LIGHT_OKLCH),
+    ...toHexMap(STATUS_OKLCH),
+  } as ThemeColors,
+  radius: { sm: RADIUS_MD - 4, md: RADIUS_MD, lg: RADIUS_MD + 4, xl: RADIUS_MD + 8 },
+  spacing: (n: number) => n * 4,
+  fontFamily: 'System',
+  fontSizes: { xs: 12, sm: 13, base: 15, lg: 17, xl: 20, xxl: 24 },
+}
+
+export const redDarkTheme: Theme = {
+  colors: {
+    ...toHexMap(RED_DARK_OKLCH),
     ...toHexMap(STATUS_OKLCH),
   } as ThemeColors,
   radius: { sm: RADIUS_MD - 4, md: RADIUS_MD, lg: RADIUS_MD + 4, xl: RADIUS_MD + 8 },

@@ -1,13 +1,14 @@
 import * as React from 'react'
-import { redLightTheme, type Theme } from './theme'
+import { redDarkTheme, type Theme } from './theme'
 
-const ThemeContext = React.createContext<Theme>(redLightTheme)
+const ThemeContext = React.createContext<Theme>(redDarkTheme)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Sabit tema: masaüstünün varsayılan "Kırmızı" temasıyla eşleşen açık/beyaz
-  // zemin + kırmızı vurgu. app_settings.brand_theme'e bağlı seçilebilir
+  // Sabit tema: masaüstünün "Kırmızı" temasının KOYU modda aldığı halle
+  // birebir eşleşen renkler (kullanıcı isteği, 2026-08-16 — önceden açık
+  // zemin kullanılıyordu). app_settings.brand_theme'e bağlı seçilebilir
   // tema/renk modu senkronizasyonu ileride eklenebilir.
-  return <ThemeContext.Provider value={redLightTheme}>{children}</ThemeContext.Provider>
+  return <ThemeContext.Provider value={redDarkTheme}>{children}</ThemeContext.Provider>
 }
 
 export function useTheme(): Theme {

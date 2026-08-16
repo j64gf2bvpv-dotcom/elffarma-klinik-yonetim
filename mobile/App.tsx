@@ -19,7 +19,9 @@ export default function App() {
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <OfflineSyncProvider>
-                <StatusBar style="dark" />
+                {/* Koyu tema arka planına karşı durum çubuğu ikonları da açık
+                    renk olmalı — aksi halde saat/pil/sinyal görünmez olurdu. */}
+                <StatusBar style="light" />
                 <RootNavigator />
                 <Toast />
               </OfflineSyncProvider>
