@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Image, Pressable, RefreshControl, Text, View } from 'react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Package, FileText, Building2, Pencil, Check } from 'lucide-react-native'
+import { Package, FileText, Building2, Pencil, Check, Wallet } from 'lucide-react-native'
 import type { CompositeScreenProps } from '@react-navigation/native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs'
@@ -237,12 +237,25 @@ export function DashboardScreen({ navigation }: Props) {
   }
 
   const todaysSales = React.useMemo(() => sales.filter((s) => s.sale_date === todayStr && s.type === 'sale'), [sales, todayStr])
-  const todaysRevenue = React.useMemo(() => todaysSales.reduce((sum, s) => sum + s.quantity * s.unit_price, 0), [todaysSales])
+  // "Ciro" — kullanıcı isteğiyle (2026-08-17) sadece sales tablosundaki
+  // satışları değil, o gün alınan tahsilatları (payments) da kapsıyor;
+  // Hedeflerim kartındaki aynı tanımla (monthPayments) tutarlı olsun diye.
+  const todaysPayments = React.useMemo(
+    () => allPayments.filter((p) => p.paid_at.slice(0, 10) === todayStr),
+    [allPayments, todayStr],
+  )
+  const todaysRevenue = React.useMemo(
+    () =>
+      todaysSales.reduce((sum, s) => sum + s.quantity * s.unit_price, 0) +
+      todaysPayments.reduce((sum, p) => sum + Number(p.amount), 0),
+    [todaysSales, todaysPayments],
+  )
 
-  // "Son Aktiviteler" — satış/ziyaret/teklif kayıtlarını tek bir kronolojik
-  // listede birleştiriyor. Kullanıcı isteğiyle (2026-08-17) satır düzeni:
-  // isim / eylem / tarih-saat alt alta solda, belirlenen tutar sağda; satış
-  // ikonu artık sepet değil, kurumsal bir paket/kutu ikonu.
+  // "Son Aktiviteler" — satış/tahsilat/ziyaret/teklif kayıtlarını tek bir
+  // kronolojik listede birleştiriyor (kullanıcı isteğiyle, 2026-08-17,
+  // tahsilat da eklendi — Günlük Özet'teki Ciro rakamıyla aynı kapsam).
+  // Satır düzeni: isim / eylem / tarih-saat alt alta solda, belirlenen
+  // tutar sağda; satış ikonu sepet değil, kurumsal bir paket/kutu ikonu.
   const recentActivity = React.useMemo<ActivityItem[]>(() => {
     const items: (ActivityItem & { sortAt: string })[] = []
     for (const s of sales.slice(0, 20)) {
@@ -256,6 +269,18 @@ export function DashboardScreen({ navigation }: Props) {
         time: format(new Date(s.sale_date), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
         amount: currency(s.quantity * s.unit_price),
         sortAt: s.sale_date,
+      })
+    }
+    for (const p of allPayments.slice(0, 20)) {
+      items.push({
+        id: `payment-${p.id}`,
+        icon: Wallet,
+        iconColor: theme.colors.success,
+        name: p.customers?.full_name ?? 'Müşteri',
+        action: 'Tahsilat alındı',
+        time: format(new Date(p.paid_at), 'd MMMM yyyy, HH:mm', { locale: trLocale }),
+        amount: currency(Number(p.amount)),
+        sortAt: p.paid_at,
       })
     }
     for (const v of visits.slice(0, 20)) {
@@ -285,7 +310,7 @@ export function DashboardScreen({ navigation }: Props) {
       })
     }
     return items.sort((a, b) => b.sortAt.localeCompare(a.sortAt)).slice(0, 8)
-  }, [sales, visits, quotes, theme])
+  }, [sales, visits, quotes, allPayments, theme])
 
   async function onRefresh() {
     setRefreshing(true)
