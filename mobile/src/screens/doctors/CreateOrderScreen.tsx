@@ -6,6 +6,7 @@ import { Screen } from '@/components/ui/Screen'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { TextField } from '@/components/ui/TextField'
 import { ProductPickerModal } from '@/components/ProductPickerModal'
 import { useTheme } from '@/lib/ThemeContext'
@@ -38,14 +39,18 @@ function emptyLine(): OrderLine {
  * şemasında ayrı bir iskonto/KDV sütunu yok (masaüstündeki SaleForm.tsx da
  * aynı düz adet×birim-fiyat modelini kullanıyor, uydurma bir alan
  * eklenmedi). Her satır kaydedilirken hem `sales` tablosuna satır düşer hem
- * de `record_stock_movement` RPC'siyle stok "out" hareketi tetiklenir —
+ * de `record_stock_movement` RPC'siyle stok hareketi tetiklenir —
  * CLAUDE.md kuralı gereği current_quantity'ye asla doğrudan yazılmaz.
+ * Satış/İade seçimi masaüstündeki SaleForm.tsx ile aynı mantığı izliyor:
+ * satışta stok "out", iadede "in" hareketi düşer (kullanıcı isteğiyle,
+ * 2026-08-17 — mobilde önceden sadece satış girilebiliyordu).
  */
 export function CreateOrderScreen({ route, navigation }: Props) {
   const { customerId, customerName } = route.params
   const theme = useTheme()
   const createSale = useCreateSale()
   const recordMovement = useRecordStockMovement()
+  const [saleType, setSaleType] = React.useState<'sale' | 'return'>('sale')
   const [lines, setLines] = React.useState<OrderLine[]>([emptyLine()])
   const [pickerForLine, setPickerForLine] = React.useState<string | null>(null)
   const [note, setNote] = React.useState('')
@@ -81,7 +86,7 @@ export function CreateOrderScreen({ route, navigation }: Props) {
         const quantity = Number(line.quantity)
         const unitPrice = Number(line.unitPrice)
         await createSale.mutateAsync({
-          type: 'sale',
+          type: saleType,
           customer_id: customerId,
           product_id: line.productId,
           product_name: line.productName,
@@ -92,12 +97,12 @@ export function CreateOrderScreen({ route, navigation }: Props) {
         })
         await recordMovement.mutateAsync({
           product_id: line.productId,
-          movement_type: 'out',
+          movement_type: saleType === 'sale' ? 'out' : 'in',
           quantity,
-          reason: 'Satış',
+          reason: saleType === 'sale' ? 'Satış' : 'İade',
           customer_id: customerId,
           unit_price: unitPrice,
-          note: note.trim() || `${customerName} için sipariş`,
+          note: note.trim() || (saleType === 'sale' ? `${customerName} için sipariş` : `${customerName} tarafından iade edildi`),
         })
       }
       navigation.goBack()
@@ -108,7 +113,16 @@ export function CreateOrderScreen({ route, navigation }: Props) {
 
   return (
     <Screen scroll style={{ gap: 14 }}>
-      <ScreenHeader title="Yeni Sipariş" subtitle={customerName} />
+      <ScreenHeader title={saleType === 'sale' ? 'Yeni Sipariş' : 'Yeni İade'} subtitle={customerName} />
+
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Pressable onPress={() => setSaleType('sale')} hitSlop={4}>
+          <Badge variant={saleType === 'sale' ? 'default' : 'outline'}>Satış</Badge>
+        </Pressable>
+        <Pressable onPress={() => setSaleType('return')} hitSlop={4}>
+          <Badge variant={saleType === 'return' ? 'destructive' : 'outline'}>İade</Badge>
+        </Pressable>
+      </View>
 
       {lines.map((line) => (
         <Card key={line.key} style={{ gap: 10 }}>
@@ -177,7 +191,7 @@ export function CreateOrderScreen({ route, navigation }: Props) {
       </Card>
 
       <Button onPress={onSubmit} loading={submitting} disabled={validLines.length === 0}>
-        Siparişi Kaydet
+        {saleType === 'sale' ? 'Siparişi Kaydet' : 'İadeyi Kaydet'}
       </Button>
 
       <ProductPickerModal visible={pickerForLine !== null} onClose={() => setPickerForLine(null)} onSelect={selectProduct} />
