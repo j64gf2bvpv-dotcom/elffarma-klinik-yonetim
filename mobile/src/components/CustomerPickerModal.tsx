@@ -26,7 +26,7 @@ export function CustomerPickerModal({
       <Screen>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>
-            Doktor Seç
+            Müşteri Seç
           </Text>
           <Pressable onPress={onClose} hitSlop={12}>
             <X size={22} color={theme.colors.foreground} />

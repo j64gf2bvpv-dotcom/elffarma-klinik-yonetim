@@ -26,6 +26,10 @@ export type ActivitiesStackParamList = {
   ActivitiesList: undefined
 }
 
+export type OrdersStackParamList = {
+  OrdersList: undefined
+}
+
 export type MoreStackParamList = {
   MoreMenu: undefined
   ComingSoon: { title: string }
@@ -51,7 +55,13 @@ export type MoreStackParamList = {
 export type MainTabParamList = {
   AnaSayfaTab: undefined
   DoktorlarTab: NavigatorScreenParams<DoctorsStackParamList>
+  YeniSiparisTab: undefined
+  SiparislerTab: NavigatorScreenParams<OrdersStackParamList>
+  DigerTab: NavigatorScreenParams<MoreStackParamList>
+  // Ana sekme çubuğunda artık görünmüyor (kullanıcı isteğiyle pazarlama
+  // görselindeki 5 sekmeye indirildi: Ana Sayfa/Müşteriler/+/Siparişler/
+  // Daha Fazla) ama Daha Fazla menüsünden hâlâ erişilebiliyor — bu yüzden
+  // navigator'dan tamamen kaldırılmadı, sadece tabBarButton gizlendi.
   HaritaTab: undefined
   AktivitelerTab: undefined
-  DigerTab: NavigatorScreenParams<MoreStackParamList>
 }

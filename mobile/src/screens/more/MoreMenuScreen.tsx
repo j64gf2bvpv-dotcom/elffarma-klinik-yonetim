@@ -17,12 +17,14 @@ import {
   CalendarRange,
   Send,
   MessageSquare,
+  Map as MapIcon,
+  Activity,
 } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
 import { useTheme } from '@/lib/ThemeContext'
 import { useAuth } from '@/lib/auth'
-import type { MoreStackParamList } from '@/navigation/types'
+import type { MoreStackParamList, MainTabParamList } from '@/navigation/types'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'MoreMenu'>
 
@@ -33,25 +35,38 @@ interface MenuItem {
   adminOnly?: boolean
 }
 
-// Master talimat §6'daki "Daha Fazla" menüsü — Doktorlar/Harita/Aktiviteler
-// artık kendi alt sekmeleri olduğu için burada değil.
+// Ana sekme çubuğu artık pazarlama görselindeki 4 gerçek sekmeye
+// (Ana Sayfa/Müşteriler/+/Siparişler) indirildiği için Harita ve
+// Aktiviteler de (önceden kendi sekmeleriydi) buraya taşındı — kod/özellik
+// silinmedi, sadece giriş noktası değişti (kullanıcı isteği, 2026-08-16).
 const items: MenuItem[] = [
   { key: 'Hedeflerim', label: 'Hedeflerim', icon: Target },
+  { key: 'Bildirimler', label: 'Bildirimler', icon: BellRing },
   { key: 'Stok', label: 'Stok', icon: Boxes },
   { key: 'Fırsat Yönetimi', label: 'Fırsatlar', icon: TrendingUp },
   { key: 'Teklifler', label: 'Teklifler', icon: FileText },
   { key: 'Kongreler', label: 'Kongreler', icon: Presentation },
   { key: 'Görevler', label: 'Görevler', icon: CheckSquare },
   { key: 'Doktor Ziyaretleri', label: 'Ziyaret Geçmişi', icon: Stethoscope },
+  { key: 'Harita', label: 'Harita', icon: MapIcon },
+  { key: 'Aktiviteler', label: 'Aktiviteler', icon: Activity },
   { key: 'Haftalık Rapor', label: 'Haftalık Rapor', icon: CalendarRange },
   { key: 'Haftalık Plan', label: 'Haftalık Plan', icon: Send },
   { key: 'Ekip Sohbeti', label: 'Ekip Sohbeti', icon: MessageSquare },
   { key: 'Ajanda', label: 'Ajanda', icon: CalendarDays },
-  { key: 'Hatırlatmalar', label: 'Hatırlatmalar', icon: BellRing },
   { key: 'Kartvizit Tara', label: 'Kartvizit Tara', icon: ScanLine },
   { key: 'AI Analiz', label: 'Yapay Zeka Analiz', icon: Sparkles },
   { key: 'Ayarlar', label: 'Ayarlar', icon: SlidersHorizontal, adminOnly: true },
 ]
+
+// Bu ikisi artık ana sekme çubuğunda değil (kendi bağımsız Tab.Screen'leri
+// hâlâ kayıtlı, sadece tabBarButton gizli — bkz. MainTabs.tsx), bu yüzden
+// MoreStack'in İÇİNDEKİ bir rota değil, üst (tab) navigator'a geçilmesi
+// gerekiyor: navigation.getParent().
+const PARENT_TAB_ROUTES: Record<string, keyof MainTabParamList> = {
+  Harita: 'HaritaTab',
+  Aktiviteler: 'AktivitelerTab',
+}
 
 export function MoreMenuScreen({ navigation }: Props) {
   const theme = useTheme()
@@ -71,13 +86,16 @@ export function MoreMenuScreen({ navigation }: Props) {
         renderItem={({ item }) => (
           <Pressable
             onPress={() => {
+              const parentTab = PARENT_TAB_ROUTES[item.key]
+              if (parentTab) return navigation.getParent()?.navigate(parentTab as never)
+
               const routeMap: Record<string, string> = {
                 'Doktor Ziyaretleri': 'DoctorVisits',
                 'Haftalık Rapor': 'WeeklyReport',
                 'Haftalık Plan': 'WeeklyPlan',
                 'Ekip Sohbeti': 'TeamChat',
                 'Ajanda': 'Agenda',
-                'Hatırlatmalar': 'Reminders',
+                'Bildirimler': 'Reminders',
                 'Kartvizit Tara': 'BusinessCardScan',
                 'AI Analiz': 'AIAnalysis',
                 'Ayarlar': 'Settings',
