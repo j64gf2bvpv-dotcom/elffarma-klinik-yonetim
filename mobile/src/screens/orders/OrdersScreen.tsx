@@ -2,7 +2,7 @@ import * as React from 'react'
 import { FlatList, RefreshControl, Text, View } from 'react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ShoppingCart, Undo2 } from 'lucide-react-native'
+import { Package, Undo2 } from 'lucide-react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
@@ -54,7 +54,7 @@ export function OrdersScreen() {
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
             <ListItemCard
-              icon={item.type === 'return' ? Undo2 : ShoppingCart}
+              icon={item.type === 'return' ? Undo2 : Package}
               iconColor={item.type === 'return' ? theme.colors.destructive : theme.colors.primary}
               title={item.customers?.full_name ?? 'Bilinmeyen müşteri'}
               subtitle={`${item.product_name} × ${item.quantity} · ${format(new Date(item.sale_date), 'd MMM yyyy', { locale: trLocale })}`}

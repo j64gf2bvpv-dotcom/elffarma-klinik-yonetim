@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { View } from 'react-native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { Gauge, Users, ShoppingCart, MoreHorizontal, Plus, Map as MapIcon, Activity } from 'lucide-react-native'
+import { Gauge, Users, Package, MoreHorizontal, Plus, Map as MapIcon, Activity } from 'lucide-react-native'
 import { useTheme } from '@/lib/ThemeContext'
 import { DashboardStack } from './DashboardStack'
 import { DoctorsStack } from './DoctorsStack'
@@ -93,7 +93,7 @@ export function MainTabs() {
         <Tab.Screen
           name="SiparislerTab"
           component={OrdersStack}
-          options={{ title: 'Siparişler', tabBarIcon: ({ color, size }) => <ShoppingCart color={color} size={size} /> }}
+          options={{ title: 'Siparişler', tabBarIcon: ({ color, size }) => <Package color={color} size={size} /> }}
         />
         <Tab.Screen
           name="DigerTab"
