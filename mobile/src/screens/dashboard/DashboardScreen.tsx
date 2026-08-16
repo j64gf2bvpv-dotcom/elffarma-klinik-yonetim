@@ -277,7 +277,7 @@ export function DashboardScreen({ navigation }: Props) {
             </Text>
           </View>
           {goalRatio != null ? (
-            <ProgressBar ratio={goalRatio} color={goalRatio >= 1 ? theme.colors.success : theme.colors.primary} />
+            <ProgressBar ratio={goalRatio} color={goalRatio >= 1 ? theme.colors.success : theme.colors.primary} showPercentage />
           ) : (
             <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>Bu ay için hedef belirlenmemiş</Text>
           )}
