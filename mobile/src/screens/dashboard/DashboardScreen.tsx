@@ -67,6 +67,20 @@ function initials(name: string) {
     .join('')
 }
 
+/** "Günlük Özet" kartındaki üç eşit sütun — pazarlama görselindeki gibi
+ * ikonsuz, kalın rakam + altında etiket. */
+function DailyStatCell({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  const theme = useTheme()
+  return (
+    <View style={{ flex: 1, alignItems: 'center', borderRightWidth: last ? 0 : 1, borderRightColor: theme.colors.border }}>
+      <Text style={{ color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.lg }} numberOfLines={1}>
+        {value}
+      </Text>
+      <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, marginTop: 2 }}>{label}</Text>
+    </View>
+  )
+}
+
 function SectionHeader({ title, onPressMore }: { title: string; onPressMore?: () => void }) {
   const theme = useTheme()
   return (
@@ -202,6 +216,12 @@ export function DashboardScreen({ navigation }: Props) {
     [monthPayments, sales, todayStr],
   )
 
+  // Pazarlama görselindeki "Günlük Özet" — Ziyaret/Sipariş/Ciro üç sütunu,
+  // hepsi BUGÜNE ait (mockup'ta "16 Mayıs 2024, Perşembe" başlığıyla aynı
+  // çerçeve). Kullanıcı isteğiyle (2026-08-16) birebir bu görselin yapısı.
+  const todaysSales = React.useMemo(() => sales.filter((s) => s.sale_date === todayStr && s.type === 'sale'), [sales, todayStr])
+  const todaysRevenue = React.useMemo(() => todaysSales.reduce((sum, s) => sum + s.quantity * s.unit_price, 0), [todaysSales])
+
   async function onRefresh() {
     setRefreshing(true)
     await queryClient.invalidateQueries()
@@ -305,6 +325,22 @@ export function DashboardScreen({ navigation }: Props) {
           </Text>
         </Pressable>
       </View>
+
+      <Card style={{ gap: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.base }}>
+            Günlük Özet
+          </Text>
+          <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>
+            {format(new Date(), 'd MMMM yyyy, EEEE', { locale: trLocale })}
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          <DailyStatCell label="Ziyaret" value={todaysVisits.length.toLocaleString('tr-TR')} />
+          <DailyStatCell label="Sipariş" value={todaysSales.length.toLocaleString('tr-TR')} />
+          <DailyStatCell label="Ciro" value={currency(todaysRevenue)} last />
+        </View>
+      </Card>
 
       <PendingSyncBadge />
 

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Image, Pressable, Text, View } from 'react-native'
 import { ChevronRight, type LucideIcon } from 'lucide-react-native'
 import { useTheme } from '@/lib/ThemeContext'
 
@@ -8,10 +8,14 @@ import { useTheme } from '@/lib/ThemeContext'
  * yerini alan, kart görünümlü satır bileşeni — ikon rozeti + başlık/alt
  * başlık + sağda rakam/rozet, gocust referansındaki "Today's Activities"
  * kart listesiyle aynı yerleşim dili (bkz. mobil Dashboard önizlemesi).
+ * `imageUri` verilirse (ör. ürün fotoğrafı) ikon rozeti yerine gerçek
+ * görsel gösterilir — pazarlama görselindeki "Ürün Kataloğu" ekranındaki
+ * ürün fotoğraflarıyla aynı dilde (kullanıcı isteği, 2026-08-16).
  */
 export function ListItemCard({
   icon: Icon,
   iconColor,
+  imageUri,
   title,
   subtitle,
   right,
@@ -19,6 +23,7 @@ export function ListItemCard({
 }: {
   icon: LucideIcon
   iconColor?: string
+  imageUri?: string | null
   title: string
   subtitle?: string
   right?: React.ReactNode
@@ -45,19 +50,26 @@ export function ListItemCard({
         pressed && { opacity: 0.65 },
       ]}
     >
-      <View
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: theme.radius.sm,
-          backgroundColor: tint + '26',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flex: 0,
-        }}
-      >
-        <Icon size={18} color={tint} />
-      </View>
+      {imageUri ? (
+        <Image
+          source={{ uri: imageUri }}
+          style={{ width: 38, height: 38, borderRadius: theme.radius.sm, backgroundColor: theme.colors.muted }}
+        />
+      ) : (
+        <View
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: theme.radius.sm,
+            backgroundColor: tint + '26',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 0,
+          }}
+        >
+          <Icon size={18} color={tint} />
+        </View>
+      )}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.base }} numberOfLines={1}>
           {title}

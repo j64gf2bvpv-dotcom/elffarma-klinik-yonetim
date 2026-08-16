@@ -150,6 +150,7 @@ function ProductRow({
     <ListItemCard
       icon={PackageSearch}
       iconColor={critical ? theme.colors.destructive : theme.colors.primary}
+      imageUri={product.image_url}
       title={product.name}
       subtitle={[product.category, product.brand_line, product.unit_price != null ? currency(product.unit_price) : null]
         .filter(Boolean)
