@@ -50,6 +50,8 @@ export type MoreStackParamList = {
   WeeklyReport: undefined
   WeeklyPlan: undefined
   TeamChat: undefined
+  Profile: undefined
+  Support: undefined
 }
 
 export type MainTabParamList = {

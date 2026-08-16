@@ -165,7 +165,8 @@ export function CreateOrderScreen({ route, navigation }: Props) {
       ))}
 
       <Button variant="outline" onPress={() => setLines((prev) => [...prev, emptyLine()])}>
-        <Plus size={16} color={theme.colors.foreground} /> Ürün Ekle
+        <Plus size={16} color={theme.colors.foreground} />
+        <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }}>Ürün Ekle</Text>
       </Button>
 
       <TextField label="Not" value={note} onChangeText={setNote} placeholder="Sipariş ile ilgili not..." multiline />

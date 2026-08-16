@@ -3,14 +3,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient } from '@supabase/supabase-js'
 import Constants from 'expo-constants'
 
-// process.env.EXPO_PUBLIC_* Metro'nun statik inline transformuyla native'de
-// güvenilir çalışıyor ama web hedefinde çalışma zamanında undefined
-// kalabiliyor (SDK 57'de gözlemlendi, 2026-08-16) — app.config.js'in
-// `extra` alanına yazılan kopya, expo-constants üzerinden HER platformda
-// (native + web) tutarlı okunuyor, bu yüzden yedek olarak kullanılıyor.
+// KÖK SEBEP (2026-08-16, SDK 57, sadece web hedefi): Expo CLI'nin web
+// geliştirme paketine gömdüğü "HMR env vars" enjeksiyonu
+// (process.env = Object.defineProperties(...)) EXPO_PUBLIC_SUPABASE_URL
+// değerindeki "https" önekini siliyor — sonuç "://xxx.supabase.co" gibi
+// geçersiz bir URL oluyor (doğrulandı: derlenen pakette bu şekilde
+// görüldü). Bu bozulma process.env'i "tanımsız" değil "yanlış ama dolu"
+// bıraktığı için ?? ile basit bir fallback işe yaramıyor — bu yüzden
+// app.config.js'in `extra` alanından (Node/CLI seviyesinde bir kere
+// hesaplanıp expo-constants ile HİÇBİR platformda bu bozulmaya uğramadan
+// okunan) gelen kopya BİLEREK ÖNCELİKLİ, process.env ikincil sırada.
 const extra = Constants.expoConfig?.extra ?? {}
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? (extra.supabaseUrl as string | null)
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? (extra.supabaseAnonKey as string | null)
+const supabaseUrl = (extra.supabaseUrl as string | null) ?? process.env.EXPO_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = (extra.supabaseAnonKey as string | null) ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
@@ -39,4 +44,4 @@ export const supabase = createClient(
   },
 )
 
-export const CLINIC_NAME = process.env.EXPO_PUBLIC_CLINIC_NAME || (extra.clinicName as string | undefined) || 'Elffarma Paket Programı'
+export const CLINIC_NAME = (extra.clinicName as string | undefined) || process.env.EXPO_PUBLIC_CLINIC_NAME || 'Elffarma Paket Programı'

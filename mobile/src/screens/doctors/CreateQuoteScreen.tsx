@@ -150,7 +150,8 @@ export function CreateQuoteScreen({ route, navigation }: Props) {
       ))}
 
       <Button variant="outline" onPress={() => setLines((prev) => [...prev, emptyLine()])}>
-        <Plus size={16} color={theme.colors.foreground} /> Ürün Ekle
+        <Plus size={16} color={theme.colors.foreground} />
+        <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.sm }}>Ürün Ekle</Text>
       </Button>
 
       <View style={{ flexDirection: 'row', gap: 8 }}>
