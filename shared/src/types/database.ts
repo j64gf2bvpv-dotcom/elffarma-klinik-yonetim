@@ -498,6 +498,7 @@ export interface AppSetting<T = unknown> {
 }
 
 export type SaleType = 'sale' | 'return'
+export type SaleStatus = 'bekleyen' | 'onaylandi' | 'tamamlandi'
 
 export interface Sale {
   id: string
@@ -510,6 +511,7 @@ export interface Sale {
   unit_price: number
   sale_date: string
   note: string | null
+  status: SaleStatus
   created_by: string | null
   created_at: string
 }

@@ -94,6 +94,7 @@ export function CreateOrderScreen({ route, navigation }: Props) {
           unit_price: unitPrice,
           sale_date: todayStr,
           note: note.trim() || null,
+          status: 'bekleyen',
         })
         await recordMovement.mutateAsync({
           product_id: line.productId,

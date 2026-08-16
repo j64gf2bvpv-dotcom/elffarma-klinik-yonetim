@@ -28,6 +28,7 @@ export type ActivitiesStackParamList = {
 
 export type OrdersStackParamList = {
   OrdersList: undefined
+  EditOrder: { saleId: string }
 }
 
 export type MoreStackParamList = {
