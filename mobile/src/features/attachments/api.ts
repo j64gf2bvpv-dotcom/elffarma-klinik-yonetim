@@ -45,6 +45,14 @@ export async function uploadAttachment(
   )
 }
 
+/** Stok listesindeki her ürün satırı için ayrı sorgu atmamak üzere — hangi
+ * ürünlerin en az bir belgesi (PDF/katalog) var, tek sorguda öğrenilir. */
+export async function fetchProductIdsWithAttachments(): Promise<string[]> {
+  const { data, error } = await supabase.from('attachments').select('owner_id').eq('owner_type', 'product')
+  if (error) throw error
+  return [...new Set((data as { owner_id: string }[]).map((r) => r.owner_id))]
+}
+
 export async function getAttachmentUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from('documents').createSignedUrl(path, 60 * 10)
   if (error) throw error

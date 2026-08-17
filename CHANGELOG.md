@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.132] - 2026-08-17
+
+**Ürünlere PDF/katalog eklenebiliyor — admin yükler, satış elemanları mobilde görüntüler:** Kullanıcı isteğiyle (2026-08-17), yeni bir tablo/bucket açmadan var olan genel "Belgeler" sistemi (attachments tablosu + documents bucket, doktor/kongre belgelerinde zaten kullanılan aynı desen) 'product' sahiplik tipiyle genişletildi. Masaüstünde Ürünü Düzenle penceresine "Belgeler" bölümü eklendi (Belge Yükle/indir/sil — sadece admin yükleyip silebiliyor, RLS ile korunuyor). Mobilde Ürünler ve Stok listesinde belgesi olan ürünlerin yanında bir belge ikonu beliriyor, dokununca imzalı URL ile açılıyor (mobilde yükleme yok — cihazda dosya seçici kurulu değil, bu yüzden yükleme masaüstünden yapılıyor). Gerçek bir PDF yüklenip indirilip silinerek uçtan uca doğrulandı. Şema değişikliği var (attachments.owner_type'a 'product' eklendi, product tipi için yazma admin'e özel).
+
 ## [2.17.131] - 2026-08-17
 
 **Mobil Ürünler ve Stok'ta lot takibi kaldırıldı, ürün satırı sadeleşti:** Kullanıcı isteğiyle (2026-08-17) lot bölümü (satırdaki lot ikonu, salt-okunur lot listesi penceresi, stok hareketi eklerken "Lot (opsiyonel)" seçici ve "Yeni Lot" alt formu) tamamen kaldırıldı — masaüstündeki lot takibi bundan etkilenmedi. Ürün satırında artık ürün adının altında sırayla son kullanma tarihi ve satış fiyatı ayrı satırlarda gösteriliyor (önceden kategori/ürün hattı/fiyat tek satırda karışık yazıyordu). Sekme adı "Stok"tan "Ürünler ve Stok"a çevrildi (alt sekme çubuğu + Daha Fazla menüsü). Şema değişikliği yok.

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Toast from 'react-native-toast-message'
-import { fetchAttachments, uploadAttachment, getAttachmentUrl, deleteAttachment } from './api'
+import { fetchAttachments, fetchProductIdsWithAttachments, uploadAttachment, getAttachmentUrl, deleteAttachment } from './api'
 import type { AttachmentOwnerType } from '@shared/types/database'
 
 export function useAttachments(ownerType: AttachmentOwnerType, ownerId: string) {
@@ -9,6 +9,10 @@ export function useAttachments(ownerType: AttachmentOwnerType, ownerId: string) 
     queryFn: () => fetchAttachments(ownerType, ownerId),
     enabled: !!ownerId,
   })
+}
+
+export function useProductIdsWithAttachments() {
+  return useQuery({ queryKey: ['attachments', 'product', 'ids'], queryFn: fetchProductIdsWithAttachments })
 }
 
 export function useUploadAttachment(ownerType: AttachmentOwnerType, ownerId: string) {

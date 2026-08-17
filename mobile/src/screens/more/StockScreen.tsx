@@ -1,7 +1,7 @@
 import * as React from 'react'
-import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
+import { FlatList, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { AppModal } from '@/components/ui/AppModal'
-import { Minus, PackageSearch, Plus, X } from 'lucide-react-native'
+import { FileText, Minus, PackageSearch, Plus, X } from 'lucide-react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -15,6 +15,7 @@ import { ListItemCard } from '@/components/ui/ListItemCard'
 import { useTheme } from '@/lib/ThemeContext'
 import { useAuth } from '@/lib/auth'
 import { useProducts, useRecordStockMovement } from '@/features/stock/hooks'
+import { useAttachments, useAttachmentUrl, useProductIdsWithAttachments } from '@/features/attachments/hooks'
 import { getExpiryStatus } from '@shared/businessLogic/expiry'
 import type { MoreStackParamList } from '@/navigation/types'
 import type { MovementType, Product } from '@shared/types/database'
@@ -51,6 +52,7 @@ export function StockScreen({ route }: Props) {
   const [refreshing, setRefreshing] = React.useState(false)
   const [movementProduct, setMovementProduct] = React.useState<Product | null>(null)
   const [movementType, setMovementType] = React.useState<MovementType>('in')
+  const [pdfProduct, setPdfProduct] = React.useState<Product | null>(null)
 
   function openMovement(product: Product, type: MovementType) {
     setMovementType(type)
@@ -58,6 +60,8 @@ export function StockScreen({ route }: Props) {
   }
 
   const { data: products = [], isLoading } = useProducts(search)
+  const { data: productIdsWithPdf = [] } = useProductIdsWithAttachments()
+  const pdfIdSet = React.useMemo(() => new Set(productIdsWithPdf), [productIdsWithPdf])
 
   const categories = React.useMemo(() => {
     const set = new Set(products.map((p) => p.category).filter((c): c is string => !!c))
@@ -119,15 +123,18 @@ export function StockScreen({ route }: Props) {
             <ProductRow
               product={item}
               isAdmin={isAdmin}
+              hasPdf={pdfIdSet.has(item.id)}
               onPress={isAdmin ? () => openMovement(item, 'in') : undefined}
               onQuickIn={() => openMovement(item, 'in')}
               onQuickOut={() => openMovement(item, 'out')}
+              onOpenPdf={() => setPdfProduct(item)}
             />
           )}
         />
       )}
 
       <StockMovementModal product={movementProduct} initialType={movementType} onClose={() => setMovementProduct(null)} />
+      <ProductPdfModal product={pdfProduct} onClose={() => setPdfProduct(null)} />
     </Screen>
   )
 }
@@ -135,15 +142,19 @@ export function StockScreen({ route }: Props) {
 function ProductRow({
   product,
   isAdmin,
+  hasPdf,
   onPress,
   onQuickIn,
   onQuickOut,
+  onOpenPdf,
 }: {
   product: Product
   isAdmin: boolean
+  hasPdf: boolean
   onPress?: () => void
   onQuickIn: () => void
   onQuickOut: () => void
+  onOpenPdf: () => void
 }) {
   const theme = useTheme()
   const critical = product.current_quantity <= product.critical_stock_threshold
@@ -174,6 +185,15 @@ function ProductRow({
             {expiry === 'expired' && <Badge variant="destructive">Süresi Doldu</Badge>}
             {expiry === 'soon' && <Badge variant="warning">Yakında Doluyor</Badge>}
           </View>
+          {hasPdf && (
+            <Pressable
+              onPress={onOpenPdf}
+              hitSlop={6}
+              style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.primary + '26', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <FileText size={13} color={theme.colors.primary} />
+            </Pressable>
+          )}
           {isAdmin && (
             <View style={{ gap: 6 }}>
               <Pressable
@@ -195,6 +215,61 @@ function ProductRow({
         </View>
       }
     />
+  )
+}
+
+/** Admin'in (masaüstünden, Ürün Düzenle > Belgeler) ürüne eklediği PDF/
+ * katalog dosyalarını satış elemanlarının görüntülemesi için — kullanıcı
+ * isteğiyle (2026-08-17). Yükleme mobilde yok (expo-document-picker kurulu
+ * değil), sadece görüntüleme: imzalı URL alınıp cihazın kendi tarayıcısında/
+ * PDF görüntüleyicisinde açılıyor. */
+function ProductPdfModal({ product, onClose }: { product: Product | null; onClose: () => void }) {
+  const theme = useTheme()
+  const { data: files = [], isLoading } = useAttachments('product', product?.id ?? '')
+  const getUrl = useAttachmentUrl()
+
+  async function openFile(path: string) {
+    const url = await getUrl.mutateAsync(path)
+    Linking.openURL(url)
+  }
+
+  return (
+    <AppModal visible={!!product} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, minHeight: 0, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
+        <View
+          style={{
+            backgroundColor: theme.colors.card,
+            borderTopLeftRadius: theme.radius.xl,
+            borderTopRightRadius: theme.radius.xl,
+            padding: theme.spacing(5),
+            gap: 12,
+            maxHeight: '75%',
+            minHeight: 0,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700', flex: 1 }} numberOfLines={1}>
+              Belgeler — {product?.name}
+            </Text>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <X size={22} color={theme.colors.foreground} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ gap: 8 }}>
+            {isLoading && <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>}
+            {files.map((f) => (
+              <ListItemCard
+                key={f.id}
+                icon={FileText}
+                title={f.file_name}
+                subtitle={format(new Date(f.created_at), 'd MMM yyyy', { locale: trLocale })}
+                onPress={() => openFile(f.file_path)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </AppModal>
   )
 }
 

@@ -18,6 +18,7 @@ import { CurrencyInput } from '@/components/ui/currency-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useCreateProduct, useProductCatalogs, useUpdateProduct } from './hooks'
+import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import type { Product } from '@/types/database'
 
 const NO_BRAND = '__none__'
@@ -323,6 +324,11 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
                 </FormItem>
               )}
             />
+            {product && (
+              <div className="border-t pt-4">
+                <AttachmentsPanel ownerType="product" ownerId={product.id} />
+              </div>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Vazgeç
