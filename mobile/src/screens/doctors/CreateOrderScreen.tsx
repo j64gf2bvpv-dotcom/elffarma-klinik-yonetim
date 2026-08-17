@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { Plus, Trash2, Package } from 'lucide-react-native'
+import { Plus, Minus, Trash2, Package } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
@@ -125,59 +125,58 @@ export function CreateOrderScreen({ route, navigation }: Props) {
         </Pressable>
       </View>
 
-      {lines.map((line) => (
-        <Card key={line.key} style={{ gap: 10 }}>
-          <Pressable onPress={() => setPickerForLine(line.key)}>
-            <View
-              style={{
-                height: 44,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                borderRadius: theme.radius.md,
-                paddingHorizontal: 12,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 8,
-                backgroundColor: theme.colors.input,
-              }}
-            >
-              <Package size={16} color={theme.colors.mutedForeground} />
-              <Text style={{ color: line.productName ? theme.colors.foreground : theme.colors.mutedForeground, flex: 1 }} numberOfLines={1}>
-                {line.productName || 'Ürün seç...'}
-              </Text>
+      {lines.map((line) => {
+        const quantity = Number(line.quantity) || 0
+        return (
+          <Card key={line.key} style={{ gap: 10 }}>
+            <Pressable onPress={() => setPickerForLine(line.key)}>
+              <View
+                style={{
+                  height: 44,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  borderRadius: theme.radius.md,
+                  paddingHorizontal: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  backgroundColor: theme.colors.input,
+                }}
+              >
+                <Package size={16} color={theme.colors.mutedForeground} />
+                <Text style={{ color: line.productName ? theme.colors.foreground : theme.colors.mutedForeground, flex: 1 }} numberOfLines={1}>
+                  {line.productName || 'Ürün seç...'}
+                </Text>
+              </View>
+            </Pressable>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <QuantityStepper value={quantity} onChange={(n) => updateLine(line.key, { quantity: String(n) })} />
+              <TextField
+                label="Birim Fiyat"
+                value={line.unitPrice}
+                onChangeText={(v) => updateLine(line.key, { unitPrice: v })}
+                keyboardType="numeric"
+                style={{ width: 120 }}
+              />
             </View>
-          </Pressable>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TextField
-              label="Adet"
-              value={line.quantity}
-              onChangeText={(v) => updateLine(line.key, { quantity: v })}
-              keyboardType="numeric"
-              style={{ flex: 1 }}
-            />
-            <TextField
-              label="Birim Fiyat"
-              value={line.unitPrice}
-              onChangeText={(v) => updateLine(line.key, { unitPrice: v })}
-              keyboardType="numeric"
-              style={{ flex: 1 }}
-            />
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>Ara Toplam</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Text style={{ color: theme.colors.foreground, fontWeight: '700' }}>
-                {currency((Number(line.quantity) || 0) * (Number(line.unitPrice) || 0))}
-              </Text>
-              {lines.length > 1 && (
-                <Pressable onPress={() => removeLine(line.key)} hitSlop={8}>
-                  <Trash2 size={16} color={theme.colors.destructive} />
-                </Pressable>
-              )}
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs }}>{quantity} adet</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Text style={{ color: theme.colors.foreground, fontWeight: '700' }}>
+                  {currency(quantity * (Number(line.unitPrice) || 0))}
+                </Text>
+                {lines.length > 1 && (
+                  <Pressable onPress={() => removeLine(line.key)} hitSlop={8}>
+                    <Trash2 size={16} color={theme.colors.destructive} />
+                  </Pressable>
+                )}
+              </View>
             </View>
-          </View>
-        </Card>
-      ))}
+          </Card>
+        )
+      })}
 
       <Button variant="outline" onPress={() => setLines((prev) => [...prev, emptyLine()])}>
         <Plus size={16} color={theme.colors.foreground} />
@@ -197,5 +196,47 @@ export function CreateOrderScreen({ route, navigation }: Props) {
 
       <ProductPickerModal visible={pickerForLine !== null} onClose={() => setPickerForLine(null)} onSelect={selectProduct} />
     </Screen>
+  )
+}
+
+function QuantityStepper({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const theme = useTheme()
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+      <Pressable
+        onPress={() => onChange(Math.max(1, value - 1))}
+        hitSlop={8}
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: theme.radius.sm,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Minus size={16} color={theme.colors.foreground} />
+      </Pressable>
+      <Text style={{ minWidth: 22, textAlign: 'center', color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.base }}>
+        {value}
+      </Text>
+      <Pressable
+        onPress={() => onChange(value + 1)}
+        hitSlop={8}
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: theme.radius.sm,
+          borderWidth: 1,
+          borderColor: theme.colors.primary,
+          backgroundColor: theme.colors.primary + '1a',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Plus size={16} color={theme.colors.primary} />
+      </Pressable>
+    </View>
   )
 }

@@ -30,7 +30,7 @@ export function Screen({
           dokununca klavye içeriğin üzerine biniyor, yazılan yer görünmüyordu —
           "padding" davranışı içeriği klavye kadar yukarı iter. */}
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ flex: 1, minHeight: 0 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >
@@ -51,7 +51,7 @@ export function Screen({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, minHeight: 0 },
   // minHeight: 0 — react-native-web bu View'ları gerçek CSS flexbox'a
   // çeviriyor; CSS'te flex öğelerinin varsayılan min-height'ı "auto"
   // olduğundan, içindeki bir FlatList flex:1 verilse bile bu satır
