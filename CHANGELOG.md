@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.134] - 2026-08-17
+
+**Mobil "Yeni Sipariş" kullanıcının paylaştığı mockup'a birebir uyacak şekilde 3 adımlı sihirbaza çevrildi:** Müşteri → Ürünler → Onay (üstte numaralı adım göstergesi, tamamlanan adımlar tikli). Alt sekme çubuğundaki "+" artık ayrı bir müşteri seçim penceresi açmadan doğrudan bu sihirbazı (1. adım boş) açıyor — müşteri seçimi sihirbazın kendi içinde. Doktor Detay'dan "Yeni Sipariş" ile gelince müşteri dolu gelir, yine 1. adımdan başlanır. Alt sekme çubuğu tekrar düzeltildi: sola yaslanma giderildi (her sekme artık eşit genişlikte, tam genişliği kaplıyor), "Müşteriler" artık tek satıra sığıyor. **Ürünler ve Stok'ta admin artık ürüne broşür resmi ve PDF ekleyebiliyor** (dokununca açılan "Belgeler" penceresinden — resim ekleme hemen çalışıyor, PDF ekleme için yeni eklenen `expo-document-picker`/`expo-file-system` paketleri nedeniyle uygulamanın gerçek cihazda yeniden derlenmesi gerekiyor). Şema değişikliği yok.
+
 ## [2.17.133] - 2026-08-17
 
 **Mobilde gerçek cihazda bildirilen "sayfa aşağı kaymıyor" hatası kök nedeniyle düzeltildi (tüm panellerde):** Audit Log, Hatırlatmalar, Kongreler, Görevler, Doktor Ziyaretleri, Kongre Detayı, Ürünler ve Stok, Teklifler, Ajanda ekranlarında liste `FlatList` yerine (bugün erken saatte Siparişler/Müşteriler'de bulunup düzeltilen aynı kök neden: `Screen` zaten tek bir dış ScrollView, içine ikinci bir FlatList koymak flex/yükseklik zincirini bozup kaydırmayı kesiyordu) düz `View` + `.map()` ile render ediliyor — ekranın tamamı artık tek, güvenilir bir kaydırma alanı. Ayrıca alt sekme çubuğu 6 sekmeye göre küçültüldü, "Ürünler ve Stok" artık kesilmeden iki satıra sarılıp ortalı görünüyor. Şema değişikliği yok.

@@ -1,9 +1,14 @@
 import * as React from 'react'
 import { Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { AppModal } from '@/components/ui/AppModal'
-import { FileText, Minus, PackageSearch, Plus, X } from 'lucide-react-native'
+import { FileText, ImagePlus, Loader2, Minus, PackageSearch, Plus, Upload, X } from 'lucide-react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
+import * as ImagePicker from 'expo-image-picker'
+import * as DocumentPicker from 'expo-document-picker'
+import { File } from 'expo-file-system'
+import { encode } from 'base64-arraybuffer'
+import Toast from 'react-native-toast-message'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { Screen } from '@/components/ui/Screen'
@@ -15,7 +20,7 @@ import { ListItemCard } from '@/components/ui/ListItemCard'
 import { useTheme } from '@/lib/ThemeContext'
 import { useAuth } from '@/lib/auth'
 import { useProducts, useRecordStockMovement } from '@/features/stock/hooks'
-import { useAttachments, useAttachmentUrl, useProductIdsWithAttachments } from '@/features/attachments/hooks'
+import { useAttachments, useAttachmentUrl, useProductIdsWithAttachments, useUploadAttachment } from '@/features/attachments/hooks'
 import { getExpiryStatus } from '@shared/businessLogic/expiry'
 import type { MoreStackParamList } from '@/navigation/types'
 import type { MovementType, Product } from '@shared/types/database'
@@ -140,7 +145,7 @@ export function StockScreen({ route }: Props) {
       )}
 
       <StockMovementModal product={movementProduct} initialType={movementType} onClose={() => setMovementProduct(null)} />
-      <ProductPdfModal product={pdfProduct} onClose={() => setPdfProduct(null)} />
+      <ProductPdfModal product={pdfProduct} isAdmin={isAdmin} onClose={() => setPdfProduct(null)} />
     </Screen>
   )
 }
@@ -191,7 +196,10 @@ function ProductRow({
             {expiry === 'expired' && <Badge variant="destructive">Süresi Doldu</Badge>}
             {expiry === 'soon' && <Badge variant="warning">Yakında Doluyor</Badge>}
           </View>
-          {hasPdf && (
+          {/* Admin'e her zaman görünür (belgesi olmasa bile eklemek için giriş
+              noktası) — diğer personele sadece belgesi varsa (kullanıcı
+              isteği, 2026-08-17). */}
+          {(hasPdf || isAdmin) && (
             <Pressable
               onPress={onOpenPdf}
               hitSlop={6}
@@ -224,19 +232,63 @@ function ProductRow({
   )
 }
 
-/** Admin'in (masaüstünden, Ürün Düzenle > Belgeler) ürüne eklediği PDF/
- * katalog dosyalarını satış elemanlarının görüntülemesi için — kullanıcı
- * isteğiyle (2026-08-17). Yükleme mobilde yok (expo-document-picker kurulu
- * değil), sadece görüntüleme: imzalı URL alınıp cihazın kendi tarayıcısında/
- * PDF görüntüleyicisinde açılıyor. */
-function ProductPdfModal({ product, onClose }: { product: Product | null; onClose: () => void }) {
+/** Ürüne eklenmiş broşür/katalog belgelerini (PDF ve resim) gösterir —
+ * herkes görüntüleyebilir (imzalı URL, cihazın kendi tarayıcısında/PDF
+ * görüntüleyicisinde açılır). Admin ayrıca buradan yeni resim (kamera
+ * rulosundan, expo-image-picker) veya PDF (expo-document-picker) ekleyebilir
+ * — kullanıcı isteğiyle, 2026-08-17. PDF ekleme yeni bir native modül
+ * gerektirdiğinden gerçek cihazda çalışması için uygulamanın yeniden
+ * derlenmesi (npx expo run:ios/android) gerekiyor; web önizlemesinde
+ * doğrudan çalışır. */
+function ProductPdfModal({ product, isAdmin, onClose }: { product: Product | null; isAdmin: boolean; onClose: () => void }) {
   const theme = useTheme()
   const { data: files = [], isLoading } = useAttachments('product', product?.id ?? '')
   const getUrl = useAttachmentUrl()
+  const uploadMutation = useUploadAttachment('product', product?.id ?? '')
+  const [uploading, setUploading] = React.useState<'image' | 'pdf' | null>(null)
 
   async function openFile(path: string) {
     const url = await getUrl.mutateAsync(path)
     Linking.openURL(url)
+  }
+
+  async function pickAndUploadImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      Toast.show({ type: 'error', text1: 'İzin gerekli', text2: 'Galeri izni verilmedi' })
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.7 })
+    if (result.canceled || !result.assets[0]?.base64) return
+    setUploading('image')
+    try {
+      await uploadMutation.mutateAsync({
+        fileName: `brosur-${Date.now()}.jpg`,
+        base64: result.assets[0].base64,
+        contentType: 'image/jpeg',
+      })
+    } finally {
+      setUploading(null)
+    }
+  }
+
+  async function pickAndUploadPdf() {
+    const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' })
+    if (result.canceled || !result.assets[0]) return
+    const asset = result.assets[0]
+    setUploading('pdf')
+    try {
+      // Web'de asset.base64 doğrudan geliyor; native'de (iOS/Android) yok —
+      // orada dosya expo-file-system ile okunup base64'e çevriliyor.
+      const base64 = asset.base64 ?? encode(await new File(asset.uri).arrayBuffer())
+      await uploadMutation.mutateAsync({
+        fileName: asset.name,
+        base64,
+        contentType: asset.mimeType ?? 'application/pdf',
+      })
+    } finally {
+      setUploading(null)
+    }
   }
 
   return (
@@ -261,8 +313,37 @@ function ProductPdfModal({ product, onClose }: { product: Product | null; onClos
               <X size={22} color={theme.colors.foreground} />
             </Pressable>
           </View>
+
+          {isAdmin && (
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Button variant="outline" size="sm" style={{ flex: 1 }} onPress={pickAndUploadImage} disabled={uploading !== null}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {uploading === 'image' ? (
+                    <Loader2 size={14} color={theme.colors.foreground} />
+                  ) : (
+                    <ImagePlus size={14} color={theme.colors.foreground} />
+                  )}
+                  <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.xs }}>Resim Ekle</Text>
+                </View>
+              </Button>
+              <Button variant="outline" size="sm" style={{ flex: 1 }} onPress={pickAndUploadPdf} disabled={uploading !== null}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {uploading === 'pdf' ? (
+                    <Loader2 size={14} color={theme.colors.foreground} />
+                  ) : (
+                    <Upload size={14} color={theme.colors.foreground} />
+                  )}
+                  <Text style={{ color: theme.colors.foreground, fontWeight: '600', fontSize: theme.fontSizes.xs }}>PDF Ekle</Text>
+                </View>
+              </Button>
+            </View>
+          )}
+
           <ScrollView contentContainerStyle={{ gap: 8 }}>
             {isLoading && <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>}
+            {!isLoading && files.length === 0 && (
+              <Text style={{ color: theme.colors.mutedForeground }}>Henüz belge yok.</Text>
+            )}
             {files.map((f) => (
               <ListItemCard
                 key={f.id}

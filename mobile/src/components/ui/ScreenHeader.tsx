@@ -12,25 +12,31 @@ import { useTheme } from '@/lib/ThemeContext'
  * geri gidilebilecek bir ekransa (`canGoBack()`) burada kendi geri okunu
  * gösteriyor — sekme köklerinde (Dashboard, Doktorlar listesi, Harita vb.)
  * `canGoBack()` false döndüğü için ok görünmüyor.
+ *
+ * `onBack` verilirse (ör. çok adımlı sihirbazlarda bir önceki adıma dönmek
+ * için) ekrandan çıkmak yerine o çağrılır — kullanıcı isteğiyle, 2026-08-17
+ * (CreateOrderScreen'in adım sihirbazı).
  */
 export function ScreenHeader({
   title,
   subtitle,
   actions,
+  onBack,
 }: {
   title: string
   subtitle?: string
   actions?: React.ReactNode
+  onBack?: () => void
 }) {
   const theme = useTheme()
   const navigation = useNavigation()
-  const canGoBack = navigation.canGoBack()
+  const canGoBack = onBack != null || navigation.canGoBack()
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 8 }}>
       {canGoBack && (
         <Pressable
-          onPress={() => navigation.goBack()}
+          onPress={() => (onBack ? onBack() : navigation.goBack())}
           hitSlop={10}
           style={({ pressed }) => [
             {

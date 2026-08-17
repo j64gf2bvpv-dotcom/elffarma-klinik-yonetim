@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Text, View } from 'react-native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Gauge, Users, Package, Boxes, MoreHorizontal, Plus, Map as MapIcon, Activity } from 'lucide-react-native'
 import { useTheme } from '@/lib/ThemeContext'
 import { DashboardStack } from './DashboardStack'
@@ -10,16 +11,14 @@ import { StockStack } from './StockStack'
 import { MapStack } from './MapStack'
 import { ActivitiesStack } from './ActivitiesStack'
 import { MoreStack } from './MoreStack'
-import { CustomerPickerModal } from '@/components/CustomerPickerModal'
 import { navigationRef } from './navigationRef'
 import type { MainTabParamList } from './types'
-import type { Customer } from '@shared/types/database'
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
 
 /** "+" sekmesi hiçbir zaman gerçekten açılmıyor — tabPress'te preventDefault
- * yapılıp müşteri seçim penceresi gösteriliyor, bu yüzden boş bir bileşen
- * yeterli (bkz. MainTabs'taki listeners). */
+ * yapılıp doğrudan Yeni Sipariş sihirbazına gidiliyor, bu yüzden boş bir
+ * bileşen yeterli (bkz. MainTabs'taki listeners). */
 function NoopScreen() {
   return <View style={{ flex: 1 }} />
 }
@@ -36,120 +35,118 @@ function NoopScreen() {
  */
 export function MainTabs() {
   const theme = useTheme()
-  const [pickerOpen, setPickerOpen] = React.useState(false)
+  const insets = useSafeAreaInsets()
 
   return (
-    <>
-      <Tab.Navigator
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: theme.colors.primary,
-          tabBarInactiveTintColor: theme.colors.mutedForeground,
-          tabBarStyle: { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border },
-          // Kullanıcı isteğiyle (2026-08-17) 6 sekme sığdırmak için küçültüldü
-          // ve iki satıra sarılabiliyor — "Ürünler ve Stok" artık kesilmeden
-          // tam yazıyor, ortalı (varsayılan davranış zaten ortalı, önceki
-          // kesilme yalnızca metnin sığmamasından kaynaklanıyordu).
-          tabBarLabelStyle: { fontSize: 9.5, textAlign: 'center' },
-          tabBarItemStyle: { paddingHorizontal: 0 },
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.mutedForeground,
+        // Kullanıcı isteğiyle (2026-08-17) — önceki denemede etiket 2 satıra
+        // sarılıyordu ama sekme kutusunun yüksekliği artırılmamıştı, bu
+        // yüzden ikinci satır çubuğun dışına taşıp gerçek cihazda
+        // okunamıyordu. Şimdi çubuğun kendi yüksekliği (+ alt safe-area) 2
+        // satırlık etiketi rahatça içine alacak şekilde büyütüldü, TÜM
+        // sekmeler aynı (ortalı, taşmayan) etiket bileşenini kullanıyor.
+        // Kullanıcı isteğiyle (2026-08-17) — çubuk sola yaslanmış görünüyordu.
+        // flexDirection/justifyContent'i (ve her sekmeye flex:1) elle
+        // belirtmek, kütüphanenin varsayılan eşit-dağıtım davranışına
+        // güvenmek yerine, çubuğun tamamını kapladığından ve her sekmenin
+        // eşit genişlikte + ortalı olduğundan emin oluyor.
+        tabBarStyle: {
+          backgroundColor: theme.colors.card,
+          borderTopColor: theme.colors.border,
+          height: 68 + insets.bottom,
+          paddingTop: 6,
+          paddingBottom: insets.bottom + 6,
+          flexDirection: 'row',
+          width: '100%',
+        },
+        tabBarItemStyle: { flex: 1, paddingHorizontal: 0, alignItems: 'center', justifyContent: 'center' },
+        tabBarLabel: ({ color, children }) => (
+          <Text style={{ color, fontSize: 9.5, textAlign: 'center', lineHeight: 12, marginTop: 1 }} numberOfLines={2}>
+            {children}
+          </Text>
+        ),
+      }}
+    >
+      <Tab.Screen
+        name="AnaSayfaTab"
+        component={DashboardStack}
+        options={{ title: 'Ana Sayfa', tabBarIcon: ({ color, size }) => <Gauge color={color} size={size} /> }}
+      />
+      <Tab.Screen
+        name="DoktorlarTab"
+        component={DoctorsStack}
+        options={{ title: 'Müşteriler', tabBarIcon: ({ color, size }) => <Users color={color} size={size} /> }}
+      />
+      <Tab.Screen
+        name="YeniSiparisTab"
+        component={NoopScreen}
+        options={{
+          title: '',
+          tabBarIcon: () => (
+            <View
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 23,
+                marginBottom: 18,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.colors.primary,
+                shadowColor: theme.colors.primary,
+                shadowOpacity: 0.4,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 3 },
+                elevation: 4,
+              }}
+            >
+              <Plus color={theme.colors.primaryForeground} size={24} />
+            </View>
+          ),
         }}
-      >
-        <Tab.Screen
-          name="AnaSayfaTab"
-          component={DashboardStack}
-          options={{ title: 'Ana Sayfa', tabBarIcon: ({ color, size }) => <Gauge color={color} size={size} /> }}
-        />
-        <Tab.Screen
-          name="DoktorlarTab"
-          component={DoctorsStack}
-          options={{ title: 'Müşteriler', tabBarIcon: ({ color, size }) => <Users color={color} size={size} /> }}
-        />
-        <Tab.Screen
-          name="YeniSiparisTab"
-          component={NoopScreen}
-          options={{
-            title: '',
-            tabBarIcon: () => (
-              <View
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 23,
-                  marginBottom: 18,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: theme.colors.primary,
-                  shadowColor: theme.colors.primary,
-                  shadowOpacity: 0.4,
-                  shadowRadius: 8,
-                  shadowOffset: { width: 0, height: 3 },
-                  elevation: 4,
-                }}
-              >
-                <Plus color={theme.colors.primaryForeground} size={24} />
-              </View>
-            ),
-          }}
-          listeners={{
-            tabPress: (e) => {
-              e.preventDefault()
-              setPickerOpen(true)
-            },
-          }}
-        />
-        <Tab.Screen
-          name="SiparislerTab"
-          component={OrdersStack}
-          options={{ title: 'Siparişler', tabBarIcon: ({ color, size }) => <Package color={color} size={size} /> }}
-        />
-        <Tab.Screen
-          name="StokTab"
-          component={StockStack}
-          options={{
-            title: 'Ürünler ve Stok',
-            tabBarIcon: ({ color, size }) => <Boxes color={color} size={size} />,
-            tabBarLabel: ({ color }) => (
-              <Text style={{ color, fontSize: 9.5, textAlign: 'center', lineHeight: 11 }} numberOfLines={2}>
-                Ürünler ve Stok
-              </Text>
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="DigerTab"
-          component={MoreStack}
-          options={{ title: 'Daha Fazla', tabBarIcon: ({ color, size }) => <MoreHorizontal color={color} size={size} /> }}
-        />
-        <Tab.Screen
-          name="HaritaTab"
-          component={MapStack}
-          options={{ tabBarButton: () => null, tabBarIcon: ({ color, size }) => <MapIcon color={color} size={size} /> }}
-        />
-        <Tab.Screen
-          name="AktivitelerTab"
-          component={ActivitiesStack}
-          options={{ tabBarButton: () => null, tabBarIcon: ({ color, size }) => <Activity color={color} size={size} /> }}
-        />
-      </Tab.Navigator>
-
-      <CustomerPickerModal
-        visible={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelect={(customer: Customer) => {
-          setPickerOpen(false)
-          // RootNavigator'ın kendi navigationRef'i (deep-link handler'ın da
-          // kullandığı) — Main > DoktorlarTab > CreateOrder'a iç içe geçmiş
-          // parametrelerle gitmek için tip çıkarımı zorlanıyor, bu yüzden
-          // burada gevşetiliyor (aşağıdaki rota adı/parametreler
-          // DoctorsStackParamList ile birebir eşleşiyor, elle doğrulandı).
-          if (navigationRef.isReady()) {
-            navigationRef.navigate('Main', {
-              screen: 'DoktorlarTab',
-              params: { screen: 'CreateOrder', params: { customerId: customer.id, customerName: customer.full_name } },
-            } as never)
-          }
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault()
+            // Kullanıcı isteğiyle (2026-08-17) — "+" artık ayrı bir müşteri
+            // seçim penceresi açmadan doğrudan Yeni Sipariş sihirbazına
+            // gidiyor, müşteri seçimi sihirbazın kendi 1. adımında.
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('Main', {
+                screen: 'DoktorlarTab',
+                params: { screen: 'CreateOrder', params: undefined },
+              } as never)
+            }
+          },
         }}
       />
-    </>
+      <Tab.Screen
+        name="SiparislerTab"
+        component={OrdersStack}
+        options={{ title: 'Siparişler', tabBarIcon: ({ color, size }) => <Package color={color} size={size} /> }}
+      />
+      <Tab.Screen
+        name="StokTab"
+        component={StockStack}
+        options={{ title: 'Ürünler ve Stok', tabBarIcon: ({ color, size }) => <Boxes color={color} size={size} /> }}
+      />
+      <Tab.Screen
+        name="DigerTab"
+        component={MoreStack}
+        options={{ title: 'Daha Fazla', tabBarIcon: ({ color, size }) => <MoreHorizontal color={color} size={size} /> }}
+      />
+      <Tab.Screen
+        name="HaritaTab"
+        component={MapStack}
+        options={{ tabBarButton: () => null, tabBarIcon: ({ color, size }) => <MapIcon color={color} size={size} /> }}
+      />
+      <Tab.Screen
+        name="AktivitelerTab"
+        component={ActivitiesStack}
+        options={{ tabBarButton: () => null, tabBarIcon: ({ color, size }) => <Activity color={color} size={size} /> }}
+      />
+    </Tab.Navigator>
   )
 }

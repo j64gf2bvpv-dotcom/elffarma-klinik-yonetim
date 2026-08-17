@@ -14,7 +14,7 @@ export type DoctorsStackParamList = {
   DoctorsList: undefined
   DoctorDetail: { customerId: string; customerName: string }
   VisitFlow: { customerId: string; customerName: string }
-  CreateOrder: { customerId: string; customerName: string }
+  CreateOrder: { customerId?: string; customerName?: string } | undefined
   CreateQuote: { customerId: string; customerName: string }
 }
 
