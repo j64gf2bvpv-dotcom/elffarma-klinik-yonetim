@@ -48,6 +48,7 @@ export type MoreStackParamList = {
   Targets: undefined
   AuditLogs: undefined
   Stock: { onlyCritical?: boolean } | undefined
+  Documents: undefined
   WeeklyReport: undefined
   WeeklyPlan: undefined
   TeamChat: undefined

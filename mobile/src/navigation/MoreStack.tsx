@@ -16,6 +16,7 @@ import { CongressDetailScreen } from '@/screens/more/CongressDetailScreen'
 import { TargetsScreen } from '@/screens/more/TargetsScreen'
 import { AuditLogsScreen } from '@/screens/more/AuditLogsScreen'
 import { StockScreen } from '@/screens/more/StockScreen'
+import { DocumentsScreen } from '@/screens/more/DocumentsScreen'
 import { WeeklyReportScreen } from '@/screens/more/WeeklyReportScreen'
 import { WeeklyPlanScreen } from '@/screens/more/WeeklyPlanScreen'
 import { TeamChatScreen } from '@/screens/more/TeamChatScreen'
@@ -46,6 +47,7 @@ export function MoreStack() {
       <Stack.Screen name="Targets" component={TargetsScreen} />
       <Stack.Screen name="AuditLogs" component={AuditLogsScreen} />
       <Stack.Screen name="Stock" component={StockScreen} />
+      <Stack.Screen name="Documents" component={DocumentsScreen} />
       <Stack.Screen name="WeeklyReport" component={WeeklyReportScreen} />
       <Stack.Screen name="WeeklyPlan" component={WeeklyPlanScreen} />
       <Stack.Screen name="TeamChat" component={TeamChatScreen} />

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Alert, Text, View } from 'react-native'
+import { Alert, Image, Text, View } from 'react-native'
 import { type LucideIcon } from 'lucide-react-native'
 import {
   Stethoscope,
@@ -11,6 +11,7 @@ import {
   TrendingUp,
   CheckSquare,
   FileText,
+  Files,
   Presentation,
   Target,
   Boxes,
@@ -42,28 +43,33 @@ export interface MenuItem {
 
 export const MORE_MENU_ORDER_SETTING_KEY = 'mobile_more_menu_order'
 
-// Pazarlama görselindeki "Daha Fazla" listesiyle aynı sırada (kullanıcı
-// isteği, 2026-08-16: "menüler tam istediğim gibi olmalı, sıralamalar tam
-// istediğim gibi"). "Dökümanlar" görselde vardı ama uygulamada global bir
-// "tüm belgelerim" ekranının karşılığı yok (attachments API'si sadece
-// tek bir kayda bağlı belgeleri destekliyor, ör. bir doktorun dosyaları) —
-// bu yüzden eklenmedi, gerçek bir özellik istenirse ayrı ele alınmalı.
+// Kullanıcının paylaştığı "Daha Fazla" mockup'ına birebir uyacak şekilde
+// (2026-08-17) varsayılan görünüm sadece 7 satır: Profil Bilgileri,
+// Hedeflerim, Bildirimler, Dökümanlar, Destek, Ayarlar, Çıkış Yap. Geri
+// kalan modüller (aşağıdaki secondaryItems) varsayılan olarak gizli
+// (bkz. migration 20260817123833 — staff.mobile_hidden_panels'ın yeni
+// varsayılanı) — admin isterse Ayarlar > Panel Yönetimi'nden personel
+// bazında geri açabilir, tamamen kaldırılmadılar.
 // 'Profil Bilgileri' ve 'Ayarlar' her zaman sabit — admin bu ikisini
 // gizleyip kendini kilitleyemesin diye yönetilebilir listeye dahil değil.
 const primaryItems: MenuItem[] = [{ key: 'Profil Bilgileri', label: 'Profil Bilgileri', icon: UserRound }]
 const settingsItem: MenuItem = { key: 'Ayarlar', label: 'Ayarlar', icon: SlidersHorizontal, adminOnly: true }
 
+// Mockup'taki sıra: Hedeflerim, Bildirimler, Dökümanlar, Destek — bu dördü
+// de MANAGEABLE_ITEMS'ın parçası (admin gizleyip sırasını değiştirebilir)
+// ama yeni varsayılan gizleme listesinde YOK, bu yüzden herkeste açık başlar.
 const managedPrimaryItems: MenuItem[] = [
   { key: 'Hedeflerim', label: 'Hedeflerim', icon: Target },
   { key: 'Bildirimler', label: 'Bildirimler', icon: BellRing },
+  { key: 'Dökümanlar', label: 'Dökümanlar', icon: Files },
   { key: 'Destek', label: 'Destek', icon: LifeBuoy },
 ]
 
 // Ana sekme çubuğu artık pazarlama görselindeki 4 gerçek sekmeye
 // (Ana Sayfa/Müşteriler/+/Siparişler) indirildiği için Harita ve
 // Aktiviteler de (önceden kendi sekmeleriydi) buraya taşındı — kod/özellik
-// silinmedi, sadece giriş noktası değişti. Bunlar görselde birebir yok ama
-// uygulamanın var olan diğer modülleri — "Diğer Modüller" başlığı altında.
+// silinmedi, sadece giriş noktası değişti. Bunlar mockup'ta yok, bu yüzden
+// (Stok gibi) yeni varsayılan gizleme listesinde — admin geri açabilir.
 const secondaryItems: MenuItem[] = [
   { key: 'Stok', label: 'Ürünler ve Stok', icon: Boxes },
   { key: 'Fırsat Yönetimi', label: 'Fırsatlar', icon: TrendingUp },
@@ -96,6 +102,7 @@ const PARENT_TAB_ROUTES: Record<string, keyof MainTabParamList> = {
 
 const ROUTE_MAP: Record<string, string> = {
   'Profil Bilgileri': 'Profile',
+  'Dökümanlar': 'Documents',
   'Destek': 'Support',
   'Doktor Ziyaretleri': 'DoctorVisits',
   'Haftalık Rapor': 'WeeklyReport',
@@ -156,9 +163,14 @@ export function MoreMenuScreen({ navigation }: Props) {
             backgroundColor: theme.colors.primary + '22',
             alignItems: 'center',
             justifyContent: 'center',
+            overflow: 'hidden',
           }}
         >
-          <UserRound size={26} color={theme.colors.primary} />
+          {staff?.avatar_url ? (
+            <Image source={{ uri: staff.avatar_url }} style={{ width: 56, height: 56 }} />
+          ) : (
+            <UserRound size={26} color={theme.colors.primary} />
+          )}
         </View>
         <View>
           <Text style={{ color: theme.colors.foreground, fontWeight: '700', fontSize: theme.fontSizes.lg }}>
@@ -170,34 +182,21 @@ export function MoreMenuScreen({ navigation }: Props) {
         </View>
       </View>
 
+      {/* Kullanıcının mockup'ına göre (2026-08-17) tek, düz bir liste —
+          ayrı "Diğer Modüller" başlığı kaldırıldı, admin'in geri açtığı
+          modüller de aynı akışa dahil oluyor. */}
       <View style={{ gap: 8 }}>
         {primaryItems.map((item) => (
+          <ListItemCard key={item.key} icon={item.icon} title={item.label} onPress={() => handlePress(item)} />
+        ))}
+        {visibleManagedItems.map((item) => (
           <ListItemCard key={item.key} icon={item.icon} title={item.label} onPress={() => handlePress(item)} />
         ))}
         {isAdmin && (
           <ListItemCard key={settingsItem.key} icon={settingsItem.icon} title={settingsItem.label} onPress={() => handlePress(settingsItem)} />
         )}
+        <ListItemCard icon={LogOut} iconColor={theme.colors.destructive} title="Çıkış Yap" onPress={confirmSignOut} />
       </View>
-
-      <View style={{ gap: 8 }}>
-        <Text
-          style={{
-            color: theme.colors.mutedForeground,
-            fontSize: theme.fontSizes.xs,
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-            marginBottom: 2,
-          }}
-        >
-          Diğer Modüller
-        </Text>
-        {visibleManagedItems.map((item) => (
-          <ListItemCard key={item.key} icon={item.icon} title={item.label} onPress={() => handlePress(item)} />
-        ))}
-      </View>
-
-      <ListItemCard icon={LogOut} iconColor={theme.colors.destructive} title="Çıkış Yap" onPress={confirmSignOut} />
     </Screen>
   )
 }

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.135] - 2026-08-17
+
+**Mobilde "Daha Fazla" kullanıcının paylaştığı mockup'a göre sadeleştirildi:** varsayılan görünüm artık sadece 7 satır (Profil Bilgileri, Hedeflerim, Bildirimler, Dökümanlar, Destek, Ayarlar, Çıkış Yap) — gerçek profil fotoğrafı avatarı da eklendi. Geri kalan 14 modül (Stok, Fırsatlar, Teklifler, Kongreler, Görevler, Ziyaret Geçmişi, Harita, Aktiviteler, Haftalık Rapor, Haftalık Plan, Ekip Sohbeti, Ajanda, Kartvizit Tara, Yapay Zeka Analiz) kaldırılmadı, sadece yeni personel için varsayılan olarak gizlendi — admin Ayarlar > Panel Yönetimi'nden istediği personel için tekrar açabilir. Yeni **"Dökümanlar"** ekranı: admin'in ürünlere eklediği tüm broşür/katalog resim ve PDF'lerini, her ürüne tek tek girmeden, aranabilir tek bir listeden gösteriyor.
+
 ## [2.17.134] - 2026-08-17
 
 **Mobil "Yeni Sipariş" kullanıcının paylaştığı mockup'a birebir uyacak şekilde 3 adımlı sihirbaza çevrildi:** Müşteri → Ürünler → Onay (üstte numaralı adım göstergesi, tamamlanan adımlar tikli). Alt sekme çubuğundaki "+" artık ayrı bir müşteri seçim penceresi açmadan doğrudan bu sihirbazı (1. adım boş) açıyor — müşteri seçimi sihirbazın kendi içinde. Doktor Detay'dan "Yeni Sipariş" ile gelince müşteri dolu gelir, yine 1. adımdan başlanır. Alt sekme çubuğu tekrar düzeltildi: sola yaslanma giderildi (her sekme artık eşit genişlikte, tam genişliği kaplıyor), "Müşteriler" artık tek satıra sığıyor. **Ürünler ve Stok'ta admin artık ürüne broşür resmi ve PDF ekleyebiliyor** (dokununca açılan "Belgeler" penceresinden — resim ekleme hemen çalışıyor, PDF ekleme için yeni eklenen `expo-document-picker`/`expo-file-system` paketleri nedeniyle uygulamanın gerçek cihazda yeniden derlenmesi gerekiyor). Şema değişikliği yok.

@@ -53,6 +53,21 @@ export async function fetchProductIdsWithAttachments(): Promise<string[]> {
   return [...new Set((data as { owner_id: string }[]).map((r) => r.owner_id))]
 }
 
+/** "Dökümanlar" ekranı — her ürüne tek tek girmeden, admin'in ürünlere
+ * eklediği TÜM broşür/katalog belgelerini tek listede göstermek için
+ * (kullanıcı isteği, 2026-08-17). `attachments` polimorfik olduğundan
+ * (owner_id herhangi bir tabloya işaret edebiliyor) gerçek bir FK/join
+ * yok — ürün adı, hooks katmanında `useProducts` ile ayrıca eşleştiriliyor. */
+export async function fetchAllProductAttachments(): Promise<Attachment[]> {
+  const { data, error } = await supabase
+    .from('attachments')
+    .select('*')
+    .eq('owner_type', 'product')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as Attachment[]
+}
+
 export async function getAttachmentUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from('documents').createSignedUrl(path, 60 * 10)
   if (error) throw error
