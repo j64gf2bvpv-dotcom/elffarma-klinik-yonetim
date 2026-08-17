@@ -65,7 +65,7 @@ const managedPrimaryItems: MenuItem[] = [
 // silinmedi, sadece giriş noktası değişti. Bunlar görselde birebir yok ama
 // uygulamanın var olan diğer modülleri — "Diğer Modüller" başlığı altında.
 const secondaryItems: MenuItem[] = [
-  { key: 'Stok', label: 'Stok', icon: Boxes },
+  { key: 'Stok', label: 'Ürünler ve Stok', icon: Boxes },
   { key: 'Fırsat Yönetimi', label: 'Fırsatlar', icon: TrendingUp },
   { key: 'Teklifler', label: 'Teklifler', icon: FileText },
   { key: 'Kongreler', label: 'Kongreler', icon: Presentation },

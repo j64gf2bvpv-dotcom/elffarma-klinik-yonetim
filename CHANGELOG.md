@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.131] - 2026-08-17
+
+**Mobil Ürünler ve Stok'ta lot takibi kaldırıldı, ürün satırı sadeleşti:** Kullanıcı isteğiyle (2026-08-17) lot bölümü (satırdaki lot ikonu, salt-okunur lot listesi penceresi, stok hareketi eklerken "Lot (opsiyonel)" seçici ve "Yeni Lot" alt formu) tamamen kaldırıldı — masaüstündeki lot takibi bundan etkilenmedi. Ürün satırında artık ürün adının altında sırayla son kullanma tarihi ve satış fiyatı ayrı satırlarda gösteriliyor (önceden kategori/ürün hattı/fiyat tek satırda karışık yazıyordu). Sekme adı "Stok"tan "Ürünler ve Stok"a çevrildi (alt sekme çubuğu + Daha Fazla menüsü). Şema değişikliği yok.
+
 ## [2.17.130] - 2026-08-17
 
 **Stok Yönetimi'nde "Tümü" artık gerçekten her ürünü gösteriyor, admin yeni katalog ekleyebiliyor:** Daha önce "Tümü" sekmesi sadece Dermakor/Swiss ürün hattındaki ürünleri gösteriyordu — bu ikisine ait olmayan (`brand_line` boş) ürünler sessizce hiç görünmüyordu (canlı veride 4 örnek ürün bu şekilde kayıptı, gerçek testte bulundu). Artık bu ürünler "Diğer" adıyla ayrı bir grupta gösteriliyor. Ürün hattı artık sabit 2 değerle (Dermakor/Swiss) sınırlı değil — "Tümü" sekmesinin yanına eklenen "+ Yeni Katalog" butonuyla (sadece admin) yeni bir ürün hattı/katalog eklenebiliyor, Yeni Ürün formundaki katalog seçimi de bu listeden geliyor. Şema değişikliği var (yeni `product_catalogs` tablosu, `products.brand_line` artık ona FK — mevcut veri/komisyon kuralı eşleşmeleri bozulmadan, hiçbir mevcut kod değişmeden).

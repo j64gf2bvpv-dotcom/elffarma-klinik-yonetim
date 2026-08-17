@@ -19,6 +19,7 @@ export function ListItemCard({
   initials,
   title,
   subtitle,
+  subtitleNumberOfLines = 1,
   right,
   onPress,
 }: {
@@ -31,6 +32,9 @@ export function ListItemCard({
   initials?: string
   title: string
   subtitle?: string
+  /** Varsayılan 1 — Stok'ta SKT/fiyatı alt alta iki satır göstermek için
+   * opsiyonel olarak artırılabiliyor (kullanıcı isteği, 2026-08-17). */
+  subtitleNumberOfLines?: number
   right?: React.ReactNode
   onPress?: () => void
 }) {
@@ -109,7 +113,10 @@ export function ListItemCard({
           {title}
         </Text>
         {subtitle && (
-          <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, marginTop: 1 }} numberOfLines={1}>
+          <Text
+            style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, marginTop: 1 }}
+            numberOfLines={subtitleNumberOfLines}
+          >
             {subtitle}
           </Text>
         )}

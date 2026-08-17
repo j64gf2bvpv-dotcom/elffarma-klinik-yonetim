@@ -99,7 +99,7 @@ export function MainTabs() {
         <Tab.Screen
           name="StokTab"
           component={StockStack}
-          options={{ title: 'Stok', tabBarIcon: ({ color, size }) => <Boxes color={color} size={size} /> }}
+          options={{ title: 'Ürünler ve Stok', tabBarIcon: ({ color, size }) => <Boxes color={color} size={size} /> }}
         />
         <Tab.Screen
           name="DigerTab"
