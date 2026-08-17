@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Pressable, RefreshControl, Text, View } from 'react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { useQueryClient } from '@tanstack/react-query'
@@ -31,6 +31,12 @@ function currency(n: number) {
  * önceden bu görselin durum rozetlerinin şemada karşılığı yoktu).
  * Satırlar tıklanabilir — EditOrderScreen'e gidip mevcut kaydı
  * düzenleyip/silebiliyor, durumu değiştirebiliyor.
+ * Liste FlatList yerine düz ScrollView + .map() ile render ediliyor
+ * (kullanıcı isteğiyle, 2026-08-17) — web hedefinde FlatList'i esnek
+ * (flex) bir üst kapsayıcı içinde yükseklik sınırlamaya çalışmak
+ * (flex:1 + minHeight:0 zinciri) tekrarlayan kaydırma/kesilme
+ * sorunlarına yol açtı; bu liste boyutu için (yüzlerce değil onlarca
+ * kayıt) virtualization gerekmiyor, düz ScrollView çok daha güvenilir.
  */
 export function OrdersScreen({ navigation }: Props) {
   const theme = useTheme()
@@ -58,7 +64,11 @@ export function OrdersScreen({ navigation }: Props) {
   const filteredSales = statusFilter === 'all' ? sales : sales.filter((s) => s.status === statusFilter)
 
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader title="Siparişler" subtitle={`${sales.length} kayıt · ${currency(totalAmount)}`} />
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
         {(
@@ -76,17 +86,14 @@ export function OrdersScreen({ navigation }: Props) {
       </View>
       {isLoading && sales.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
+      ) : filteredSales.length === 0 ? (
+        <Text style={{ color: theme.colors.mutedForeground }}>Sipariş yok</Text>
       ) : (
-        <FlatList
-          data={filteredSales}
-          keyExtractor={(s) => s.id}
-          style={{ flex: 1, minHeight: 0 }}
-          contentContainerStyle={{ paddingBottom: 24 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-          ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Sipariş yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => <OrderRow item={item} onPress={() => navigation.navigate('EditOrder', { saleId: item.id })} />}
-        />
+        <View style={{ gap: 8 }}>
+          {filteredSales.map((item) => (
+            <OrderRow key={item.id} item={item} onPress={() => navigation.navigate('EditOrder', { saleId: item.id })} />
+          ))}
+        </View>
       )}
     </Screen>
   )

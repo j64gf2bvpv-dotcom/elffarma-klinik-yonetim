@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { AppModal } from '@/components/ui/AppModal'
 import { startOfMonth } from 'date-fns'
 import { Info, MessageCircle, Navigation, Phone, Plus, Star, TrendingUp, X } from 'lucide-react-native'
@@ -42,6 +42,11 @@ function currency(n: number) {
  * rozeti. Bakiye computeCariLedger'dan (shared/), "aktif" doktorun
  * customers.is_active alanına, "potansiyel" ise henüz hiç satış/tahsilatı
  * olmayan doktorlara karşılık gelir (ayrı bir "status" sütunu şemada yok).
+ * Liste FlatList yerine düz ScrollView + .map() ile render ediliyor
+ * (kullanıcı isteğiyle, 2026-08-17) — web hedefinde FlatList'i esnek
+ * (flex) bir üst kapsayıcı içinde yükseklik sınırlamaya çalışmak
+ * tekrarlayan kaydırma/kesilme sorunlarına yol açtı, bu liste boyutu
+ * için virtualization gerekmiyor (bkz. OrdersScreen'deki aynı not).
  */
 export function DoctorsListScreen({ navigation }: Props) {
   const theme = useTheme()
@@ -149,7 +154,11 @@ export function DoctorsListScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader
         title="Doktorlar"
         subtitle={`${customers.length} kayıt`}
@@ -211,17 +220,13 @@ export function DoctorsListScreen({ navigation }: Props) {
       )}
       {isLoading && rows.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
+      ) : rows.length === 0 ? (
+        <Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>
       ) : (
-        <FlatList
-          data={rows}
-          keyExtractor={(r) => r.customer.id}
-          style={{ flex: 1, minHeight: 0 }}
-          contentContainerStyle={{ paddingBottom: 24 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-          ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => (
+        <View style={{ gap: 8 }}>
+          {rows.map((item) => (
             <DoctorRow
+              key={item.customer.id}
               customer={item.customer}
               balance={item.balance}
               isPotential={item.isPotential}
@@ -231,8 +236,8 @@ export function DoctorsListScreen({ navigation }: Props) {
               }
               onInfoPress={() => setInfoCustomer(item.customer)}
             />
-          )}
-        />
+          ))}
+        </View>
       )}
       <AddDoctorModal visible={showAdd} onClose={() => setShowAdd(false)} />
       <QuickInfoSheet customer={infoCustomer} onClose={() => setInfoCustomer(null)} />
