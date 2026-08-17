@@ -19,8 +19,10 @@ import { TextField } from '@/components/ui/TextField'
  * ismi) + üzerine binen yuvarlak köşeli açık form kartı, react-native-
  * reanimated ile ikisi de kendi yönünden (üst blok yukarıdan, form kartı
  * aşağıdan) hafif gecikmeli girer. Logo, kullanıcının sağladığı gerçek
- * marka görseli (assets/logo-orijinal.png, 2026-08-17'de eklendi — önceki
- * placeholder icon.png'nin yerini aldı).
+ * marka görseli — 2026-08-17'de arka planı şeffaflaştırılmış hâliyle
+ * (assets/logo-transparent.png, sadece beyaz yazı) değiştirildi; "Estetik
+ * Sanatı" alt başlığı görselin kendi içinde olduğu için ayrı bir Text'e
+ * gerek kalmadı, beyaz kutu da kaldırıldı — logo doğrudan hero zemininde.
  */
 export function LoginScreen() {
   const { signIn, sendPasswordReset } = useAuth()
@@ -57,10 +59,7 @@ export function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Animated.View entering={FadeInDown.duration(650).springify().damping(16)} style={styles.hero}>
-          <View style={[styles.iconBox, { backgroundColor: theme.colors.primaryForeground }]}>
-            <Image source={require('../../../assets/logo-orijinal.png')} style={styles.logoImage} resizeMode="contain" />
-          </View>
-          <Text style={[styles.tagline, { color: theme.colors.primaryForeground + 'cc' }]}>Estetik Sanatı</Text>
+          <Image source={require('../../../assets/logo-transparent.png')} style={styles.logoImage} resizeMode="contain" />
         </Animated.View>
 
         <Animated.View
@@ -145,23 +144,8 @@ export function LoginScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flexGrow: 1 },
-  hero: { alignItems: 'center', paddingTop: 72, paddingBottom: 56, paddingHorizontal: 24 },
-  iconBox: {
-    width: 92,
-    height: 92,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 18,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  logoImage: { width: '100%', height: '100%' },
-  tagline: { fontSize: 14, fontStyle: 'italic', marginTop: 4 },
+  hero: { alignItems: 'center', paddingTop: 84, paddingBottom: 64, paddingHorizontal: 24 },
+  logoImage: { width: 260, height: 60 },
   card: {
     flex: 1,
     borderTopLeftRadius: 32,

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.126] - 2026-08-17
+
+**Mobil giriş ekranındaki logo artık arka plansız:** Kullanıcının sağladığı marka görselinin kırmızı arka planı kaldırılıp (piksel bazlı şeffaflaştırma) sadece beyaz "elf FARMA / Estetik Sanatı" yazısı bırakıldı — yeni `assets/logo-transparent.png`. Önceki tasarımdaki logoyu saran beyaz yuvarlak kutu ve ayrı "Estetik Sanatı" metni kaldırıldı, logo artık doğrudan kırmızı hero zemininin üzerinde. Şema değişikliği yok.
+
 ## [2.17.125] - 2026-08-14
 
 **Ana Panel'deki mini takvimde bir nota tıklayınca artık ilgili bölüme gidiyor:** Önceden hangi tarihe tıklanırsa tıklansın her zaman genel Ajanda sayfasına gidiliyordu — o günkü notla hiçbir ilgisi olmayan bir sonuçtu. O gün tek bir kayıt varsa artık Ajanda sayfasındaki nota tıklama mantığıyla aynı şekilde doğrudan ilgili yere gidiyor: kongre notu → kongre sayfası, ödeme vadesi notu → o doktorun cari kartı, hatırlatma notu → Hatırlatmalar sayfası. Aynı günde birden fazla kayıt varsa (hangisi kastedildiği belirsiz olduğundan) yine Ajanda'ya gidiliyor. Şema değişikliği yok.
