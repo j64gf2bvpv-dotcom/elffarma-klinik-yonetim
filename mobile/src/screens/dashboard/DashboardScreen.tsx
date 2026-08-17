@@ -351,14 +351,12 @@ export function DashboardScreen({ navigation }: Props) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View>
-          <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.base, fontWeight: '300', letterSpacing: 0.3 }}>
-            elf<Text style={{ fontWeight: '900' }}>FARMA</Text>
-          </Text>
-          <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.xs, fontStyle: 'italic', marginTop: -1 }}>
-            Estetik Sanatı
-          </Text>
-        </View>
+        <Image
+          source={require('../../../assets/logo-transparent.png')}
+          style={{ width: 130, height: 30 }}
+          tintColor={theme.colors.foreground}
+          resizeMode="contain"
+        />
         <Pressable onPress={() => navigation.navigate('DigerTab', { screen: 'Profile' })} hitSlop={8}>
           {staff?.avatar_url ? (
             <Image source={{ uri: staff.avatar_url }} style={{ width: 36, height: 36, borderRadius: 18 }} />

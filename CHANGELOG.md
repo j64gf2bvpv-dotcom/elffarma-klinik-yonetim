@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.127] - 2026-08-17
+
+**Mobil Ana Sayfa'nın sol üstündeki elyazı-logosu gerçek marka görseliyle değiştirildi:** Önceden elle yazılmış "elf**FARMA**" + "Estetik Sanatı" metniydi — artık giriş ekranındaki aynı şeffaf logo görseli (`assets/logo-transparent.png`), açık/koyu temaya göre otomatik renklenecek şekilde (`tintColor`). Şema değişikliği yok.
+
 ## [2.17.126] - 2026-08-17
 
 **Mobil giriş ekranındaki logo artık arka plansız:** Kullanıcının sağladığı marka görselinin kırmızı arka planı kaldırılıp (piksel bazlı şeffaflaştırma) sadece beyaz "elf FARMA / Estetik Sanatı" yazısı bırakıldı — yeni `assets/logo-transparent.png`. Önceki tasarımdaki logoyu saran beyaz yuvarlak kutu ve ayrı "Estetik Sanatı" metni kaldırıldı, logo artık doğrudan kırmızı hero zemininin üzerinde. Şema değişikliği yok.
