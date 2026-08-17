@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.136] - 2026-08-17
+
+**Mobil `package-lock.json` dosyası düzeltildi:** EAS Build sırasında `expo-dev-client` paketinin otomatik eklenmesi kilit dosyasını eksik bırakmıştı, bu yüzden bulut derlemesi "Install dependencies" adımında `npm ci` hatasıyla düşüyordu. `npm install` ile kilit dosyası yeniden senkronize edildi, `npm ci` artık hatasız çalışıyor. Şema değişikliği yok.
+
 ## [2.17.135] - 2026-08-17
 
 **Mobilde "Daha Fazla" kullanıcının paylaştığı mockup'a göre sadeleştirildi:** varsayılan görünüm artık sadece 7 satır (Profil Bilgileri, Hedeflerim, Bildirimler, Dökümanlar, Destek, Ayarlar, Çıkış Yap) — gerçek profil fotoğrafı avatarı da eklendi. Geri kalan 14 modül (Stok, Fırsatlar, Teklifler, Kongreler, Görevler, Ziyaret Geçmişi, Harita, Aktiviteler, Haftalık Rapor, Haftalık Plan, Ekip Sohbeti, Ajanda, Kartvizit Tara, Yapay Zeka Analiz) kaldırılmadı, sadece yeni personel için varsayılan olarak gizlendi — admin Ayarlar > Panel Yönetimi'nden istediği personel için tekrar açabilir. Yeni **"Dökümanlar"** ekranı: admin'in ürünlere eklediği tüm broşür/katalog resim ve PDF'lerini, her ürüne tek tek girmeden, aranabilir tek bir listeden gösteriyor.
