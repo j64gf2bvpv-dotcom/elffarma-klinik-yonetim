@@ -1,11 +1,12 @@
 import * as React from 'react'
 import { View } from 'react-native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { Gauge, Users, Package, MoreHorizontal, Plus, Map as MapIcon, Activity } from 'lucide-react-native'
+import { Gauge, Users, Package, Boxes, MoreHorizontal, Plus, Map as MapIcon, Activity } from 'lucide-react-native'
 import { useTheme } from '@/lib/ThemeContext'
 import { DashboardStack } from './DashboardStack'
 import { DoctorsStack } from './DoctorsStack'
 import { OrdersStack } from './OrdersStack'
+import { StockStack } from './StockStack'
 import { MapStack } from './MapStack'
 import { ActivitiesStack } from './ActivitiesStack'
 import { MoreStack } from './MoreStack'
@@ -94,6 +95,11 @@ export function MainTabs() {
           name="SiparislerTab"
           component={OrdersStack}
           options={{ title: 'Siparişler', tabBarIcon: ({ color, size }) => <Package color={color} size={size} /> }}
+        />
+        <Tab.Screen
+          name="StokTab"
+          component={StockStack}
+          options={{ title: 'Stok', tabBarIcon: ({ color, size }) => <Boxes color={color} size={size} /> }}
         />
         <Tab.Screen
           name="DigerTab"

@@ -28,16 +28,19 @@ import { Screen } from '@/components/ui/Screen'
 import { ListItemCard } from '@/components/ui/ListItemCard'
 import { useTheme } from '@/lib/ThemeContext'
 import { useAuth } from '@/lib/auth'
+import { useAppSetting } from '@/features/appSettings/hooks'
 import type { MoreStackParamList, MainTabParamList } from '@/navigation/types'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'MoreMenu'>
 
-interface MenuItem {
+export interface MenuItem {
   key: string
   label: string
   icon: LucideIcon
   adminOnly?: boolean
 }
+
+export const MORE_MENU_ORDER_SETTING_KEY = 'mobile_more_menu_order'
 
 // Pazarlama görselindeki "Daha Fazla" listesiyle aynı sırada (kullanıcı
 // isteği, 2026-08-16: "menüler tam istediğim gibi olmalı, sıralamalar tam
@@ -45,12 +48,15 @@ interface MenuItem {
 // "tüm belgelerim" ekranının karşılığı yok (attachments API'si sadece
 // tek bir kayda bağlı belgeleri destekliyor, ör. bir doktorun dosyaları) —
 // bu yüzden eklenmedi, gerçek bir özellik istenirse ayrı ele alınmalı.
-const primaryItems: MenuItem[] = [
-  { key: 'Profil Bilgileri', label: 'Profil Bilgileri', icon: UserRound },
+// 'Profil Bilgileri' ve 'Ayarlar' her zaman sabit — admin bu ikisini
+// gizleyip kendini kilitleyemesin diye yönetilebilir listeye dahil değil.
+const primaryItems: MenuItem[] = [{ key: 'Profil Bilgileri', label: 'Profil Bilgileri', icon: UserRound }]
+const settingsItem: MenuItem = { key: 'Ayarlar', label: 'Ayarlar', icon: SlidersHorizontal, adminOnly: true }
+
+const managedPrimaryItems: MenuItem[] = [
   { key: 'Hedeflerim', label: 'Hedeflerim', icon: Target },
   { key: 'Bildirimler', label: 'Bildirimler', icon: BellRing },
   { key: 'Destek', label: 'Destek', icon: LifeBuoy },
-  { key: 'Ayarlar', label: 'Ayarlar', icon: SlidersHorizontal, adminOnly: true },
 ]
 
 // Ana sekme çubuğu artık pazarlama görselindeki 4 gerçek sekmeye
@@ -74,6 +80,10 @@ const secondaryItems: MenuItem[] = [
   { key: 'Kartvizit Tara', label: 'Kartvizit Tara', icon: ScanLine },
   { key: 'AI Analiz', label: 'Yapay Zeka Analiz', icon: Sparkles },
 ]
+
+/** Admin'in personel bazında gizleyebildiği / sırasını değiştirebildiği
+ * tüm paneller — bkz. PanelManagementCard.tsx (Ayarlar > Panel Yönetimi). */
+export const MANAGEABLE_ITEMS: MenuItem[] = [...managedPrimaryItems, ...secondaryItems]
 
 // Bu ikisi artık ana sekme çubuğunda değil (kendi bağımsız Tab.Screen'leri
 // hâlâ kayıtlı, sadece tabBarButton gizli — bkz. MainTabs.tsx), bu yüzden
@@ -108,6 +118,18 @@ export function MoreMenuScreen({ navigation }: Props) {
   const theme = useTheme()
   const { staff, signOut } = useAuth()
   const isAdmin = staff?.role === 'admin'
+  const { data: savedOrder = [] } = useAppSetting<string[]>(MORE_MENU_ORDER_SETTING_KEY)
+
+  const visibleManagedItems = React.useMemo(() => {
+    const hidden = new Set(staff?.mobile_hidden_panels ?? [])
+    const visible = MANAGEABLE_ITEMS.filter((item) => !hidden.has(item.key))
+    if (!savedOrder || savedOrder.length === 0) return visible
+    return [...visible].sort((a, b) => {
+      const ia = savedOrder.indexOf(a.key)
+      const ib = savedOrder.indexOf(b.key)
+      return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib)
+    })
+  }, [staff?.mobile_hidden_panels, savedOrder])
 
   function handlePress(item: MenuItem) {
     const parentTab = PARENT_TAB_ROUTES[item.key]
@@ -149,11 +171,12 @@ export function MoreMenuScreen({ navigation }: Props) {
       </View>
 
       <View style={{ gap: 8 }}>
-        {primaryItems
-          .filter((item) => !item.adminOnly || isAdmin)
-          .map((item) => (
-            <ListItemCard key={item.key} icon={item.icon} title={item.label} onPress={() => handlePress(item)} />
-          ))}
+        {primaryItems.map((item) => (
+          <ListItemCard key={item.key} icon={item.icon} title={item.label} onPress={() => handlePress(item)} />
+        ))}
+        {isAdmin && (
+          <ListItemCard key={settingsItem.key} icon={settingsItem.icon} title={settingsItem.label} onPress={() => handlePress(settingsItem)} />
+        )}
       </View>
 
       <View style={{ gap: 8 }}>
@@ -169,7 +192,7 @@ export function MoreMenuScreen({ navigation }: Props) {
         >
           Diğer Modüller
         </Text>
-        {secondaryItems.map((item) => (
+        {visibleManagedItems.map((item) => (
           <ListItemCard key={item.key} icon={item.icon} title={item.label} onPress={() => handlePress(item)} />
         ))}
       </View>

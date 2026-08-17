@@ -169,16 +169,21 @@ function VisitDetailModal({ visit, onClose }: { visit: DoctorVisit | null; onClo
           </Pressable>
         </View>
         <View style={{ gap: 12 }}>
-          <TextField label="Görüşme Notu" value={notes} onChangeText={setNotes} placeholder="Ne konuşuldu..." multiline />
+          {visit && (
+            <Text style={{ color: theme.colors.mutedForeground, fontSize: theme.fontSizes.sm }}>
+              {format(new Date(visit.visit_date), 'd MMMM yyyy', { locale: trLocale })}
+            </Text>
+          )}
           <TextField
-            label="Konuşulan / Verilen Ürünler"
+            label="Ziyaret Sonucu (Konuşulan / Verilen Ürünler)"
             value={discussedProducts}
             onChangeText={setDiscussedProducts}
             placeholder="Örn: Fillicia 200"
             multiline
           />
+          <TextField label="Notlar" value={notes} onChangeText={setNotes} placeholder="Ne konuşuldu..." multiline />
           <TextField
-            label="Sonraki Takip Tarihi (Planlanan)"
+            label="Sonraki Ziyaret (Planlanan)"
             value={nextVisitDate}
             onChangeText={setNextVisitDate}
             placeholder="YYYY-MM-DD"

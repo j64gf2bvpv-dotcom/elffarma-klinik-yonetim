@@ -44,7 +44,7 @@ export function CustomerPickerModal({
   }
 
   return (
-    <AppModal visible={visible} animationType="slide" onRequestClose={handleClose}>
+    <AppModal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={handleClose}>
       <Screen>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>

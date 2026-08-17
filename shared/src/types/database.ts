@@ -18,6 +18,8 @@ export interface Staff {
   social_media: string | null
   /** Admin tarafından bu kullanıcı için gizlenen sol menü sekmeleri (NavKey değerleri). Boş = her şey görünür. */
   hidden_nav_items: string[]
+  /** Admin tarafından bu kullanıcı için gizlenen mobil "Daha Fazla" panelleri (item key'leri). Boş = her şey görünür. */
+  mobile_hidden_panels: string[]
   created_at: string
 }
 

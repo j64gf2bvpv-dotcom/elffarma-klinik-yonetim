@@ -10,7 +10,13 @@ export function useStaffList() {
 export function useUpdateStaff() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Partial<Pick<Staff, 'role' | 'is_active' | 'full_name' | 'phone' | 'avatar_url' | 'job_title'>> }) =>
+    mutationFn: ({
+      id,
+      patch,
+    }: {
+      id: string
+      patch: Partial<Pick<Staff, 'role' | 'is_active' | 'full_name' | 'phone' | 'avatar_url' | 'job_title' | 'mobile_hidden_panels'>>
+    }) =>
       updateStaff(id, patch),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['staff'] })

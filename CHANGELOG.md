@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.129] - 2026-08-17
+
+**Mobil "Daha Fazla" menüsüne admin panel yönetimi eklendi, alt sekme çubuğuna Stok eklendi:** Ayarlar sayfasına yeni "Panel Yönetimi (Daha Fazla)" kartı — admin artık Daha Fazla menüsündeki panellerin sırasını (yukarı/aşağı, herkes için ortak) değiştirebiliyor ve personel bazında hangi panellerin gizleneceğini (personel seçip göz ikonuyla) belirleyebiliyor. Şema değişikliği var (yeni `staff.mobile_hidden_panels`, sıralama `app_settings` içinde). Alt sekme çubuğuna Siparişler'in yanına bir "Stok" kısayolu eklendi (Daha Fazla'dan da erişilebilmeye devam ediyor). Doktor Ziyaretleri detay/düzenleme penceresindeki alanlar istenen sıraya alındı (tarih, ziyaret sonucu, notlar, sonraki ziyaret, kaydet). "+" ile açılan Müşteri Seç penceresi artık tam ekran (sheet görünümü kaldırıldı).
+
 ## [2.17.128] - 2026-08-17
 
 **Mobil canlı testte bulunan birkaç sorun düzeltildi:** Doktor Detay'daki "Ürün Ver" hızlı eylemi kaldırılıp yerine doğrudan sipariş ekranına götüren "Yeni Sipariş" kondu (eski "Ürün Ver" doğrudan stok düşen ayrı bir akıştı, artık kullanılmıyor). Stok'ta ürün miktarı düzeltme (giriş/çıkış) artık sadece admin'e açık, diğer personel listeyi görür ama düzenleyemez. Doktorlar listesindeki satırların soldaki renkli çubuğu artık durum (potansiyel/aktif) yerine doktora özel sabit bir renk — aynı doktor her zaman aynı renk, taranırken ayırt etmek kolaylaşsın diye (durum zaten rozetlerde ayrıca gösteriliyor). Doktor Detay'daki hızlı eylem butonlarında "WhatsApp" yazısının kesilmesi düzeltildi. Stok'taki kategori çipleri (Tümü ve diğerleri) tekrar yatay kaydırmaya çevrildi. Şema değişikliği yok.

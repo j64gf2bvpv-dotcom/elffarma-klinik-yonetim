@@ -15,6 +15,7 @@ import { useAuth } from '@/lib/auth'
 import { useStaffList, useUpdateStaff } from '@/features/staff/hooks'
 import { useAppSetting } from '@/features/appSettings/hooks'
 import { uploadBase64Image } from '@/lib/uploadImage'
+import { PanelManagementCard } from './PanelManagementCard'
 import type { AISettings } from '@/features/ai/types'
 import type { MoreStackParamList } from '@/navigation/types'
 
@@ -216,6 +217,9 @@ export function SettingsScreen({ navigation }: Props) {
           </View>
         </Card>
       )}
+
+      {/* Panel Yönetimi (admin) */}
+      {staff?.role === 'admin' && <PanelManagementCard />}
 
       {/* Audit Log (admin) */}
       {staff?.role === 'admin' && (

@@ -60,6 +60,7 @@ export type MainTabParamList = {
   DoktorlarTab: NavigatorScreenParams<DoctorsStackParamList>
   YeniSiparisTab: undefined
   SiparislerTab: NavigatorScreenParams<OrdersStackParamList>
+  StokTab: undefined
   DigerTab: NavigatorScreenParams<MoreStackParamList>
   // Ana sekme çubuğunda artık görünmüyor (kullanıcı isteğiyle pazarlama
   // görselindeki 5 sekmeye indirildi: Ana Sayfa/Müşteriler/+/Siparişler/
