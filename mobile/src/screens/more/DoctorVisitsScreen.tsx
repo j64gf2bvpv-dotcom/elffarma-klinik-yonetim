@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Pressable, RefreshControl, Text, View } from 'react-native'
 import { AppModal } from '@/components/ui/AppModal'
 import { format, isPast, isToday, differenceInMinutes } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
@@ -39,7 +39,11 @@ export function DoctorVisitsScreen(_: Props) {
   const activeCount = visits.filter(v => v.check_in_at && !v.check_out_at).length
 
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader
         title="Doktor Ziyaretleri"
         subtitle={`${visits.length} kayıt${activeCount > 0 ? ` · ${activeCount} aktif` : ''}`}
@@ -49,16 +53,16 @@ export function DoctorVisitsScreen(_: Props) {
           </Button>
         }
       />
+      {/* Kullanıcı isteğiyle (2026-08-17) FlatList yerine düz View + .map() —
+          Screen zaten tek bir dış ScrollView, içine ikinci bir FlatList
+          koymak kaydırmayı kesiyordu. */}
       {isLoading && visits.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
+      ) : visits.length === 0 ? (
+        <Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>
       ) : (
-        <FlatList
-          data={visits}
-          keyExtractor={(v) => v.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-          ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => {
+        <View style={{ gap: 8 }}>
+          {visits.map((item) => {
             const overdue = item.next_visit_date != null && isPast(new Date(item.next_visit_date)) && !isToday(new Date(item.next_visit_date))
             const isActive = !!item.check_in_at && !item.check_out_at
             const isCompleted = !!item.check_in_at && !!item.check_out_at
@@ -67,6 +71,7 @@ export function DoctorVisitsScreen(_: Props) {
               : null
             return (
               <ListItemCard
+                key={item.id}
                 icon={Stethoscope}
                 iconColor={isActive ? theme.colors.success : isCompleted ? theme.colors.mutedForeground : theme.colors.primary}
                 title={item.doctor_name}
@@ -109,8 +114,8 @@ export function DoctorVisitsScreen(_: Props) {
                 }
               />
             )
-          }}
-        />
+          })}
+        </View>
       )}
       <AddVisitModal visible={showAdd} onClose={() => setShowAdd(false)} />
       <VisitDetailModal visit={detailVisit} onClose={() => setDetailVisit(null)} />

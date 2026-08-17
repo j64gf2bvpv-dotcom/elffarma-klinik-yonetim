@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { View } from 'react-native'
+import { Text, View } from 'react-native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Gauge, Users, Package, Boxes, MoreHorizontal, Plus, Map as MapIcon, Activity } from 'lucide-react-native'
 import { useTheme } from '@/lib/ThemeContext'
@@ -46,6 +46,12 @@ export function MainTabs() {
           tabBarActiveTintColor: theme.colors.primary,
           tabBarInactiveTintColor: theme.colors.mutedForeground,
           tabBarStyle: { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border },
+          // Kullanıcı isteğiyle (2026-08-17) 6 sekme sığdırmak için küçültüldü
+          // ve iki satıra sarılabiliyor — "Ürünler ve Stok" artık kesilmeden
+          // tam yazıyor, ortalı (varsayılan davranış zaten ortalı, önceki
+          // kesilme yalnızca metnin sığmamasından kaynaklanıyordu).
+          tabBarLabelStyle: { fontSize: 9.5, textAlign: 'center' },
+          tabBarItemStyle: { paddingHorizontal: 0 },
         }}
       >
         <Tab.Screen
@@ -99,7 +105,15 @@ export function MainTabs() {
         <Tab.Screen
           name="StokTab"
           component={StockStack}
-          options={{ title: 'Ürünler ve Stok', tabBarIcon: ({ color, size }) => <Boxes color={color} size={size} /> }}
+          options={{
+            title: 'Ürünler ve Stok',
+            tabBarIcon: ({ color, size }) => <Boxes color={color} size={size} />,
+            tabBarLabel: ({ color }) => (
+              <Text style={{ color, fontSize: 9.5, textAlign: 'center', lineHeight: 11 }} numberOfLines={2}>
+                Ürünler ve Stok
+              </Text>
+            ),
+          }}
         />
         <Tab.Screen
           name="DigerTab"

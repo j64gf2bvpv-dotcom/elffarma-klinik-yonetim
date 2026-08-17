@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Pressable, RefreshControl, Text, View } from 'react-native'
 import { AppModal } from '@/components/ui/AppModal'
 import { Plus, UserRound, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -55,7 +55,11 @@ export function CongressDetailScreen({ route }: Props) {
   const attendedCount = participants.filter((p) => p.attendance_status === 'attended').length
 
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader
         title={congressName}
         subtitle={`${participants.length} katılımcı · ${attendedCount} katıldı`}
@@ -65,17 +69,18 @@ export function CongressDetailScreen({ route }: Props) {
           </Button>
         }
       />
+      {/* Kullanıcı isteğiyle (2026-08-17) FlatList yerine düz View + .map() —
+          Screen zaten tek bir dış ScrollView, içine ikinci bir FlatList
+          koymak kaydırmayı kesiyordu. */}
       {isLoading && participants.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
+      ) : participants.length === 0 ? (
+        <Text style={{ color: theme.colors.mutedForeground }}>Katılımcı yok</Text>
       ) : (
-        <FlatList
-          data={participants}
-          keyExtractor={(p) => p.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-          ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Katılımcı yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => (
+        <View style={{ gap: 8 }}>
+          {participants.map((item) => (
             <ListItemCard
+              key={item.id}
               icon={UserRound}
               iconColor={item.attendance_status === 'attended' ? theme.colors.success : theme.colors.mutedForeground}
               title={item.doctor_name}
@@ -86,8 +91,8 @@ export function CongressDetailScreen({ route }: Props) {
                 </Pressable>
               }
             />
-          )}
-        />
+          ))}
+        </View>
       )}
       <AddParticipantModal congressId={congressId} visible={showAdd} onClose={() => setShowAdd(false)} />
     </Screen>

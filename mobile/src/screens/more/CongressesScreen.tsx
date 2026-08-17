@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Pressable, RefreshControl, Text, View } from 'react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { Presentation, MapPin, CheckCircle2 } from 'lucide-react-native'
@@ -35,19 +35,24 @@ export function CongressesScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader title="Kongreler" subtitle={`${congresses.length} kayıt`} />
+      {/* Kullanıcı isteğiyle (2026-08-17) FlatList yerine düz View + .map() —
+          Screen zaten tek bir dış ScrollView, içine ikinci bir FlatList
+          koymak kaydırmayı kesiyordu. */}
       {isLoading && congresses.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
+      ) : congresses.length === 0 ? (
+        <Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>
       ) : (
-        <FlatList
-          data={congresses}
-          keyExtractor={(c) => c.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-          ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => (
+        <View style={{ gap: 8 }}>
+          {congresses.map((item) => (
             <Pressable
+              key={item.id}
               onPress={() => navigation.navigate('CongressDetail', { congressId: item.id, congressName: item.name })}
             >
               <Card>
@@ -107,8 +112,8 @@ export function CongressesScreen({ navigation }: Props) {
               )}
               </Card>
             </Pressable>
-          )}
-        />
+          ))}
+        </View>
       )}
     </Screen>
   )

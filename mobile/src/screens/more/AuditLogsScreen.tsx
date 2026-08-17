@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, RefreshControl, Text, View } from 'react-native'
+import { RefreshControl, Text, View } from 'react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { FilePlus, FilePen, FileX, Terminal, type LucideIcon } from 'lucide-react-native'
@@ -47,35 +47,39 @@ export function AuditLogsScreen(_: Props) {
     setRefreshing(false)
   }
 
+  const iconColorMap: Record<string, string> = {
+    success: theme.colors.success,
+    primary: theme.colors.primary,
+    destructive: theme.colors.destructive,
+    warning: theme.colors.warning,
+  }
+
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader title="Audit Log" subtitle={`Son ${logs.length} işlem`} />
+      {/* Kullanıcı isteğiyle (2026-08-17) FlatList yerine düz View + .map() —
+          Siparişler/Müşteriler'deki aynı kök neden: Screen zaten tek bir dış
+          ScrollView, içine ikinci bir FlatList koymak kaydırmayı kesiyordu. */}
       {isLoading && logs.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
+      ) : logs.length === 0 ? (
+        <Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>
       ) : (
-        <FlatList
-          data={logs}
-          keyExtractor={(l) => l.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-          ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => {
-            const iconColorMap: Record<string, string> = {
-              success: theme.colors.success,
-              primary: theme.colors.primary,
-              destructive: theme.colors.destructive,
-              warning: theme.colors.warning,
-            }
-            return (
-              <ListItemCard
-                icon={actionIcons[item.action]}
-                iconColor={iconColorMap[actionColors[item.action]]}
-                title={item.description}
-                subtitle={`${item.staff_name} · ${format(new Date(item.created_at), 'd MMM yyyy HH:mm', { locale: trLocale })}`}
-              />
-            )
-          }}
-        />
+        <View style={{ gap: 8 }}>
+          {logs.map((item) => (
+            <ListItemCard
+              key={item.id}
+              icon={actionIcons[item.action]}
+              iconColor={iconColorMap[actionColors[item.action]]}
+              title={item.description}
+              subtitle={`${item.staff_name} · ${format(new Date(item.created_at), 'd MMM yyyy HH:mm', { locale: trLocale })}`}
+            />
+          ))}
+        </View>
       )}
     </Screen>
   )

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { AppModal } from '@/components/ui/AppModal'
 import { format, isPast, isToday } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
@@ -65,7 +65,11 @@ export function TasksScreen(_: Props) {
   }
 
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader
         title="Görevler"
         subtitle={`${pendingCount} aktif · ${tasks.length} toplam`}
@@ -84,19 +88,20 @@ export function TasksScreen(_: Props) {
           </Pressable>
         ))}
       </ScrollView>
+      {/* Kullanıcı isteğiyle (2026-08-17) FlatList yerine düz View + .map() —
+          Screen zaten tek bir dış ScrollView, içine ikinci bir FlatList
+          koymak kaydırmayı kesiyordu. */}
       {isLoading && tasks.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
+      ) : tasks.length === 0 ? (
+        <Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>
       ) : (
-        <FlatList
-          data={tasks}
-          keyExtractor={(t) => t.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-          ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => {
+        <View style={{ gap: 8 }}>
+          {tasks.map((item) => {
             const overdue = item.due_date && item.status !== 'tamamlandi' && item.status !== 'iptal' && isPast(new Date(item.due_date)) && !isToday(new Date(item.due_date))
             return (
               <ListItemCard
+                key={item.id}
                 icon={item.status === 'tamamlandi' ? CheckSquare : Square}
                 iconColor={item.status === 'tamamlandi' ? theme.colors.success : overdue ? theme.colors.destructive : theme.colors.primary}
                 title={item.title}
@@ -127,8 +132,8 @@ export function TasksScreen(_: Props) {
                 }
               />
             )
-          }}
-        />
+          })}
+        </View>
       )}
       <AddTaskModal visible={showAdd} onClose={() => setShowAdd(false)} />
     </Screen>

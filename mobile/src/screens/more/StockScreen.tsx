@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { AppModal } from '@/components/ui/AppModal'
 import { FileText, Minus, PackageSearch, Plus, X } from 'lucide-react-native'
 import { format } from 'date-fns'
@@ -86,7 +86,11 @@ export function StockScreen({ route }: Props) {
   }
 
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader title="Ürünler ve Stok" subtitle={`${products.length} ürün · ${criticalCount} kritik seviyede`} />
       <TextField placeholder="Ara (ürün adı)..." value={search} onChangeText={setSearch} containerStyle={{ marginBottom: 2 }} />
 
@@ -109,18 +113,20 @@ export function StockScreen({ route }: Props) {
         )}
       </ScrollView>
 
+      {/* Kullanıcı isteğiyle (2026-08-17) FlatList yerine düz View + .map() —
+          Siparişler/Müşteriler'de bulunan aynı kök neden: Screen zaten tek
+          bir dış ScrollView (scroll prop), içine ikinci bir kaydırılabilir
+          (FlatList) iç içe koymak flex/yükseklik zincirini bozup kaydırmayı
+          kesiyordu. Bu liste boyutu (onlarca ürün) virtualization gerektirmiyor. */}
       {isLoading && rows.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
+      ) : rows.length === 0 ? (
+        <Text style={{ color: theme.colors.mutedForeground }}>Ürün yok</Text>
       ) : (
-        <FlatList
-          data={rows}
-          keyExtractor={(p) => p.id}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Ürün yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => (
+        <View style={{ gap: 8 }}>
+          {rows.map((item) => (
             <ProductRow
+              key={item.id}
               product={item}
               isAdmin={isAdmin}
               hasPdf={pdfIdSet.has(item.id)}
@@ -129,8 +135,8 @@ export function StockScreen({ route }: Props) {
               onQuickOut={() => openMovement(item, 'out')}
               onOpenPdf={() => setPdfProduct(item)}
             />
-          )}
-        />
+          ))}
+        </View>
       )}
 
       <StockMovementModal product={movementProduct} initialType={movementType} onClose={() => setMovementProduct(null)} />

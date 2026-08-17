@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { FileText, Share2, Trash2 } from 'lucide-react-native'
@@ -67,7 +67,11 @@ export function QuotesScreen(_: Props) {
   }
 
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader title="Teklifler" subtitle={`${quotes.length} kayıt`} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: 2 }}>
         {statusFilters.map((s) => (
@@ -76,17 +80,18 @@ export function QuotesScreen(_: Props) {
           </Pressable>
         ))}
       </ScrollView>
+      {/* Kullanıcı isteğiyle (2026-08-17) FlatList yerine düz View + .map() —
+          Screen zaten tek bir dış ScrollView, içine ikinci bir FlatList
+          koymak kaydırmayı kesiyordu. */}
       {isLoading && quotes.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
+      ) : quotes.length === 0 ? (
+        <Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>
       ) : (
-        <FlatList
-          data={quotes}
-          keyExtractor={(q) => q.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-          ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => (
+        <View style={{ gap: 8 }}>
+          {quotes.map((item) => (
             <ListItemCard
+              key={item.id}
               icon={FileText}
               iconColor={theme.colors.primary}
               title={item.customer_name}
@@ -105,8 +110,8 @@ export function QuotesScreen(_: Props) {
                 </View>
               }
             />
-          )}
-        />
+          ))}
+        </View>
       )}
     </Screen>
   )

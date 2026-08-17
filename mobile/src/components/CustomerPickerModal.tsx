@@ -97,6 +97,7 @@ export function CustomerPickerModal({
               <Text style={{ color: theme.colors.mutedForeground, marginTop: 12 }}>Yükleniyor...</Text>
             ) : (
               <FlatList
+                style={{ flex: 1 }}
                 data={customers}
                 keyExtractor={(c) => c.id}
                 ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground, marginTop: 12 }}>Sonuç yok</Text>}

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Pressable, RefreshControl, Text, View } from 'react-native'
 import { format, isPast, isToday } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { Plus, BellRing, Circle, CheckCircle2, Trash2 } from 'lucide-react-native'
@@ -36,7 +36,11 @@ export function RemindersScreen(_: Props) {
   const done = reminders.filter(r => r.is_done)
 
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader
         title="Hatırlatmalar"
         subtitle={`${pending.length} bekleyen · ${done.length} tamam`}
@@ -46,19 +50,20 @@ export function RemindersScreen(_: Props) {
           </Button>
         }
       />
+      {/* Kullanıcı isteğiyle (2026-08-17) FlatList yerine düz View + .map() —
+          Screen zaten tek bir dış ScrollView, içine ikinci bir FlatList
+          koymak kaydırmayı kesiyordu. */}
       {isLoading && reminders.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
+      ) : reminders.length === 0 ? (
+        <Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>
       ) : (
-        <FlatList
-          data={reminders}
-          keyExtractor={(r) => r.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-          ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Kayıt yok</Text>}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => {
+        <View style={{ gap: 8 }}>
+          {reminders.map((item) => {
             const overdue = !item.is_done && item.due_date && isPast(new Date(item.due_date)) && !isToday(new Date(item.due_date))
             return (
               <ListItemCard
+                key={item.id}
                 icon={item.is_done ? CheckCircle2 : BellRing}
                 iconColor={item.is_done ? theme.colors.success : overdue ? theme.colors.destructive : theme.colors.primary}
                 title={item.title}
@@ -83,8 +88,8 @@ export function RemindersScreen(_: Props) {
                 }
               />
             )
-          }}
-        />
+          })}
+        </View>
       )}
       <AddReminderModal visible={showAdd} onClose={() => setShowAdd(false)} />
     </Screen>

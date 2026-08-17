@@ -63,6 +63,7 @@ export function AIAnalysisScreen(_: Props) {
       />
       <FlatList
         ref={flatListRef}
+        style={{ flex: 1 }}
         data={messages}
         keyExtractor={(m) => m.id}
         contentContainerStyle={{ paddingVertical: 8, gap: 8 }}

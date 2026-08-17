@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.133] - 2026-08-17
+
+**Mobilde gerçek cihazda bildirilen "sayfa aşağı kaymıyor" hatası kök nedeniyle düzeltildi (tüm panellerde):** Audit Log, Hatırlatmalar, Kongreler, Görevler, Doktor Ziyaretleri, Kongre Detayı, Ürünler ve Stok, Teklifler, Ajanda ekranlarında liste `FlatList` yerine (bugün erken saatte Siparişler/Müşteriler'de bulunup düzeltilen aynı kök neden: `Screen` zaten tek bir dış ScrollView, içine ikinci bir FlatList koymak flex/yükseklik zincirini bozup kaydırmayı kesiyordu) düz `View` + `.map()` ile render ediliyor — ekranın tamamı artık tek, güvenilir bir kaydırma alanı. Ayrıca alt sekme çubuğu 6 sekmeye göre küçültüldü, "Ürünler ve Stok" artık kesilmeden iki satıra sarılıp ortalı görünüyor. Şema değişikliği yok.
+
 ## [2.17.132] - 2026-08-17
 
 **Ürünlere PDF/katalog eklenebiliyor — admin yükler, satış elemanları mobilde görüntüler:** Kullanıcı isteğiyle (2026-08-17), yeni bir tablo/bucket açmadan var olan genel "Belgeler" sistemi (attachments tablosu + documents bucket, doktor/kongre belgelerinde zaten kullanılan aynı desen) 'product' sahiplik tipiyle genişletildi. Masaüstünde Ürünü Düzenle penceresine "Belgeler" bölümü eklendi (Belge Yükle/indir/sil — sadece admin yükleyip silebiliyor, RLS ile korunuyor). Mobilde Ürünler ve Stok listesinde belgesi olan ürünlerin yanında bir belge ikonu beliriyor, dokununca imzalı URL ile açılıyor (mobilde yükleme yok — cihazda dosya seçici kurulu değil, bu yüzden yükleme masaüstünden yapılıyor). Gerçek bir PDF yüklenip indirilip silinerek uçtan uca doğrulandı. Şema değişikliği var (attachments.owner_type'a 'product' eklendi, product tipi için yazma admin'e özel).

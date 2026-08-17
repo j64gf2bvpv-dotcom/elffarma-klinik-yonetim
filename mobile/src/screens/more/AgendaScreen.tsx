@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Animated, FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Animated, Pressable, RefreshControl, Text, View } from 'react-native'
 import {
   addMonths,
   eachDayOfInterval,
@@ -122,7 +122,11 @@ export function AgendaScreen(_: Props) {
   const displayedItems = selectedDate ? items.filter((i) => i.date === selectedDate) : items
 
   return (
-    <Screen style={{ gap: 10 }}>
+    <Screen
+      scroll
+      style={{ gap: 10 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+    >
       <ScreenHeader
         title="Ajanda"
         subtitle={`${items.length} yaklaşan etkinlik`}
@@ -213,37 +217,38 @@ export function AgendaScreen(_: Props) {
         </View>
       )}
 
-      <FlatList
-        data={displayedItems}
-        keyExtractor={(i) => i.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-        ListEmptyComponent={
-          <View style={{ alignItems: 'center', gap: 8, paddingTop: 24 }}>
-            <CalendarDays size={40} color={theme.colors.mutedForeground} />
-            <Text style={{ color: theme.colors.mutedForeground }}>
-              {selectedDate ? 'Bu gün için etkinlik yok' : 'Yaklaşan etkinlik yok'}
-            </Text>
-          </View>
-        }
-        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-        renderItem={({ item }) => {
-          const { label, overdue } = dateLabel(item.date)
-          return (
-            <ListItemCard
-              icon={iconFor(item.type)}
-              iconColor={overdue ? theme.colors.destructive : colorFor(item.type)}
-              title={item.title}
-              subtitle={item.subtitle}
-              right={
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Bell size={12} color={theme.colors.mutedForeground} />
-                  <Badge variant={overdue ? 'destructive' : 'outline'}>{label}</Badge>
-                </View>
-              }
-            />
-          )
-        }}
-      />
+      {/* Kullanıcı isteğiyle (2026-08-17) FlatList yerine düz View + .map() —
+          Screen zaten tek bir dış ScrollView, içine ikinci bir FlatList
+          koymak kaydırmayı kesiyordu. */}
+      {displayedItems.length === 0 ? (
+        <View style={{ alignItems: 'center', gap: 8, paddingTop: 24 }}>
+          <CalendarDays size={40} color={theme.colors.mutedForeground} />
+          <Text style={{ color: theme.colors.mutedForeground }}>
+            {selectedDate ? 'Bu gün için etkinlik yok' : 'Yaklaşan etkinlik yok'}
+          </Text>
+        </View>
+      ) : (
+        <View style={{ gap: 8 }}>
+          {displayedItems.map((item) => {
+            const { label, overdue } = dateLabel(item.date)
+            return (
+              <ListItemCard
+                key={item.id}
+                icon={iconFor(item.type)}
+                iconColor={overdue ? theme.colors.destructive : colorFor(item.type)}
+                title={item.title}
+                subtitle={item.subtitle}
+                right={
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Bell size={12} color={theme.colors.mutedForeground} />
+                    <Badge variant={overdue ? 'destructive' : 'outline'}>{label}</Badge>
+                  </View>
+                }
+              />
+            )
+          })}
+        </View>
+      )}
       <AddReminderModal visible={showAdd} onClose={() => setShowAdd(false)} />
     </Screen>
   )

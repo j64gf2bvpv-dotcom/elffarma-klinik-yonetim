@@ -47,6 +47,7 @@ export function ProductPickerModal({
           <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
         ) : (
           <FlatList
+            style={{ flex: 1 }}
             data={products}
             keyExtractor={(p) => p.id}
             ListEmptyComponent={<Text style={{ color: theme.colors.mutedForeground }}>Sonuç yok</Text>}
