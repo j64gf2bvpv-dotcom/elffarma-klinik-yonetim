@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ListItemCard } from '@/components/ui/ListItemCard'
 import { useTheme } from '@/lib/ThemeContext'
+import { useAuth } from '@/lib/auth'
 import { useCreateProductLot, useProducts, useProductLots, useRecordStockMovement } from '@/features/stock/hooks'
 import { getExpiryStatus } from '@shared/businessLogic/expiry'
 import type { MoreStackParamList } from '@/navigation/types'
@@ -36,10 +37,17 @@ function currency(n: number) {
  * giriş/çıkış (mal kabul, sayım düzeltmesi, numune vb.) yapılabiliyor.
  * Dashboard'daki "kritik stok" uyarısından `onlyCritical` param'ıyla
  * doğrudan filtrelenmiş buraya gelinebiliyor.
+ *
+ * Stok hareketi (giriş/çıkış, "sayım düzeltmesi") kullanıcı isteğiyle
+ * (2026-08-17) sadece admin'e açık — diğer personel listeyi görür ama
+ * miktar düzeltemez, +/- butonları ve satıra dokunma bu yüzden isAdmin'e
+ * bağlı.
  */
 export function StockScreen({ route }: Props) {
   const theme = useTheme()
   const queryClient = useQueryClient()
+  const { staff } = useAuth()
+  const isAdmin = staff?.role === 'admin'
   const [search, setSearch] = React.useState('')
   const [category, setCategory] = React.useState<string | null>(null)
   const [onlyCritical, setOnlyCritical] = React.useState(!!route.params?.onlyCritical)
@@ -82,10 +90,10 @@ export function StockScreen({ route }: Props) {
       <ScreenHeader title="Stok" subtitle={`${products.length} ürün · ${criticalCount} kritik seviyede`} />
       <TextField placeholder="Ara (ürün adı)..." value={search} onChangeText={setSearch} containerStyle={{ marginBottom: 2 }} />
 
-      {/* Önceden yatay ScrollView'dı — kategori sayısı arttıkça son çip(ler)
-          ekran dışında kayıp fark edilmiyordu. Artık sığmayan çipler alt
-          satıra sarılıyor, hepsi tek bakışta görünüyor. */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      {/* Kullanıcı isteğiyle (2026-08-17) tekrar yatay kaydırmaya çevrildi —
+          alt satıra sarma, "Tümü" ile kategoriler arasında ürün listesine
+          bakarken gereksiz yer kaplıyordu. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 8 }}>
         <Pressable onPress={() => setCategory(null)} hitSlop={4}>
           <Badge variant={category == null ? 'default' : 'outline'}>Tümü</Badge>
         </Pressable>
@@ -99,7 +107,7 @@ export function StockScreen({ route }: Props) {
             <Badge variant={onlyCritical ? 'destructive' : 'outline'}>{`Kritik (${criticalCount})`}</Badge>
           </Pressable>
         )}
-      </View>
+      </ScrollView>
 
       {isLoading && rows.length === 0 ? (
         <Text style={{ color: theme.colors.mutedForeground }}>Yükleniyor...</Text>
@@ -114,7 +122,8 @@ export function StockScreen({ route }: Props) {
           renderItem={({ item }) => (
             <ProductRow
               product={item}
-              onPress={() => openMovement(item, 'in')}
+              isAdmin={isAdmin}
+              onPress={isAdmin ? () => openMovement(item, 'in') : undefined}
               onQuickIn={() => openMovement(item, 'in')}
               onQuickOut={() => openMovement(item, 'out')}
               onLots={() => setLotsProduct(item)}
@@ -131,13 +140,15 @@ export function StockScreen({ route }: Props) {
 
 function ProductRow({
   product,
+  isAdmin,
   onPress,
   onQuickIn,
   onQuickOut,
   onLots,
 }: {
   product: Product
-  onPress: () => void
+  isAdmin: boolean
+  onPress?: () => void
   onQuickIn: () => void
   onQuickOut: () => void
   onLots: () => void
@@ -166,20 +177,24 @@ function ProductRow({
             {expiry === 'soon' && <Badge variant="warning">Yakında Doluyor</Badge>}
           </View>
           <View style={{ gap: 6 }}>
-            <Pressable
-              onPress={onQuickIn}
-              hitSlop={6}
-              style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.success + '26', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Plus size={13} color={theme.colors.success} />
-            </Pressable>
-            <Pressable
-              onPress={onQuickOut}
-              hitSlop={6}
-              style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.destructive + '26', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Minus size={13} color={theme.colors.destructive} />
-            </Pressable>
+            {isAdmin && (
+              <Pressable
+                onPress={onQuickIn}
+                hitSlop={6}
+                style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.success + '26', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Plus size={13} color={theme.colors.success} />
+              </Pressable>
+            )}
+            {isAdmin && (
+              <Pressable
+                onPress={onQuickOut}
+                hitSlop={6}
+                style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.destructive + '26', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Minus size={13} color={theme.colors.destructive} />
+              </Pressable>
+            )}
             <Pressable
               onPress={onLots}
               hitSlop={6}

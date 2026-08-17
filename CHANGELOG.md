@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.128] - 2026-08-17
+
+**Mobil canlı testte bulunan birkaç sorun düzeltildi:** Doktor Detay'daki "Ürün Ver" hızlı eylemi kaldırılıp yerine doğrudan sipariş ekranına götüren "Yeni Sipariş" kondu (eski "Ürün Ver" doğrudan stok düşen ayrı bir akıştı, artık kullanılmıyor). Stok'ta ürün miktarı düzeltme (giriş/çıkış) artık sadece admin'e açık, diğer personel listeyi görür ama düzenleyemez. Doktorlar listesindeki satırların soldaki renkli çubuğu artık durum (potansiyel/aktif) yerine doktora özel sabit bir renk — aynı doktor her zaman aynı renk, taranırken ayırt etmek kolaylaşsın diye (durum zaten rozetlerde ayrıca gösteriliyor). Doktor Detay'daki hızlı eylem butonlarında "WhatsApp" yazısının kesilmesi düzeltildi. Stok'taki kategori çipleri (Tümü ve diğerleri) tekrar yatay kaydırmaya çevrildi. Şema değişikliği yok.
+
 ## [2.17.127] - 2026-08-17
 
 **Mobil Ana Sayfa'nın sol üstündeki elyazı-logosu gerçek marka görseliyle değiştirildi:** Önceden elle yazılmış "elf**FARMA**" + "Estetik Sanatı" metniydi — artık giriş ekranındaki aynı şeffaf logo görseli (`assets/logo-transparent.png`), açık/koyu temaya göre otomatik renklenecek şekilde (`tintColor`). Şema değişikliği yok.

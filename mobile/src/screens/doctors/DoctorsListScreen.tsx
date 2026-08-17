@@ -275,6 +275,31 @@ function initialsOf(fullName: string) {
   return letters.map((p) => p[0]?.toUpperCase() ?? '').join('') || '?'
 }
 
+// Kullanıcı isteğiyle (2026-08-17) satırın soldaki rengi artık durum
+// (potansiyel/aktif) değil, doktora özel — aynı doktor her zaman aynı
+// rengi alır (id'den sabit hash), listede taranırken doktorları ayırt
+// etmek kolaylaşsın diye. "Potansiyel" ve bakiye bilgisi zaten rozetlerde
+// ayrıca gösteriliyor, bu yüzden renk üzerinden tekrar aynı bilgiyi
+// vermeye gerek yoktu.
+const DOCTOR_PALETTE = [
+  '#F87171',
+  '#FB923C',
+  '#FBBF24',
+  '#A3E635',
+  '#34D399',
+  '#22D3EE',
+  '#60A5FA',
+  '#818CF8',
+  '#C084FC',
+  '#F472B6',
+]
+
+function colorForDoctor(id: string) {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  return DOCTOR_PALETTE[hash % DOCTOR_PALETTE.length]
+}
+
 function DoctorRow({
   customer,
   balance,
@@ -294,7 +319,7 @@ function DoctorRow({
   return (
     <ListItemCard
       initials={initialsOf(customer.full_name)}
-      iconColor={!customer.is_active ? theme.colors.mutedForeground : isPotential ? theme.colors.warning : theme.colors.success}
+      iconColor={!customer.is_active ? theme.colors.mutedForeground : colorForDoctor(customer.id)}
       title={customer.full_name}
       subtitle={
         [customer.specialty, customer.hospital_name, customer.province, visitsThisMonth > 0 ? `Bu ay ${visitsThisMonth} ziyaret` : null]

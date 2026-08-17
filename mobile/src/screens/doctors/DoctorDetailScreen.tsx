@@ -23,7 +23,6 @@ import {
   FileText,
   Camera,
   Trash2,
-  Package,
   HandCoins,
   Receipt,
   CalendarClock,
@@ -38,7 +37,6 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
 import { ListItemCard } from '@/components/ui/ListItemCard'
-import { ProductPickerModal } from '@/components/ProductPickerModal'
 import { useTheme } from '@/lib/ThemeContext'
 import { useCustomer, useUpdateCustomerNotes } from '@/features/customers/hooks'
 import {
@@ -59,14 +57,13 @@ import { useOpportunities } from '@/features/opportunities/hooks'
 import { useVisits } from '@/features/doctorVisits/hooks'
 import { useParticipationsByDoctorName } from '@/features/congresses/hooks'
 import { useAttachments, useUploadAttachment, useAttachmentUrl, useDeleteAttachment } from '@/features/attachments/hooks'
-import { useRecordStockMovement } from '@/features/stock/hooks'
 import { useCustomerTarget, useUpsertCustomerTarget } from '@/features/customerTargets/hooks'
 import { computeCariLedger, cariBalance } from '@shared/businessLogic/cariLedger'
 import { summarizeDoctorForRep } from '@/features/ai/doctorSummary'
 import { AIServiceError } from '@/features/ai/types'
 import { tr } from '@shared/i18n/tr'
 import type { DoctorsStackParamList } from '@/navigation/types'
-import type { CrmOpportunityStage, PaymentMethod, Product } from '@shared/types/database'
+import type { CrmOpportunityStage, PaymentMethod } from '@shared/types/database'
 import type { InstallmentWithPlan, PaymentWithCustomer } from '@/features/payments/api'
 
 type Props = NativeStackScreenProps<DoctorsStackParamList, 'DoctorDetail'>
@@ -123,7 +120,6 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
   const [aiLoading, setAiLoading] = React.useState(false)
   const [aiError, setAiError] = React.useState<string | null>(null)
   const [showAiModal, setShowAiModal] = React.useState(false)
-  const [showGiveProduct, setShowGiveProduct] = React.useState(false)
   const [showTargetModal, setShowTargetModal] = React.useState(false)
   const [targetInput, setTargetInput] = React.useState('')
   React.useLayoutEffect(() => navigation.setOptions({ title: customerName }), [navigation, customerName])
@@ -239,9 +235,9 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
         </Badge>
       </View>
 
-      {/* Önceden yatay ScrollView'dı — 5. buton (Ürün Ver) ekran dışında
-          kayıyor, kullanıcı kaydırmayı fark etmiyordu. Artık sığmayan
-          butonlar ikinci satıra sarılıyor, hepsi tek bakışta görünüyor. */}
+      {/* Önceden yatay ScrollView'dı — 5. buton ekran dışında kayıyor,
+          kullanıcı kaydırmayı fark etmiyordu. Artık sığmayan butonlar
+          ikinci satıra sarılıyor, hepsi tek bakışta görünüyor. */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <QuickAction icon={Phone} label="Ara" onPress={() => customer?.phone && Linking.openURL(`tel:${customer.phone}`)} />
         <QuickAction
@@ -255,7 +251,11 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
           label="Ziyaret"
           onPress={() => navigation.navigate('VisitFlow', { customerId, customerName: customer?.full_name ?? customerName })}
         />
-        <QuickAction icon={Package} label="Ürün Ver" onPress={() => setShowGiveProduct(true)} />
+        <QuickAction
+          icon={ShoppingCart}
+          label="Yeni Sipariş"
+          onPress={() => navigation.navigate('CreateOrder', { customerId, customerName: customer?.full_name ?? customerName })}
+        />
       </View>
 
       <View>
@@ -462,13 +462,6 @@ export function DoctorDetailScreen({ route, navigation }: Props) {
         </View>
       </AppModal>
 
-      <GiveProductModal
-        visible={showGiveProduct}
-        customerId={customerId}
-        customerName={customer?.full_name ?? customerName}
-        onClose={() => setShowGiveProduct(false)}
-      />
-
       <AppModal visible={showTargetModal} animationType="slide" transparent onRequestClose={() => setShowTargetModal(false)}>
         <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
           <View style={{ backgroundColor: theme.colors.card, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: theme.spacing(5), gap: 12 }}>
@@ -513,12 +506,12 @@ function QuickAction({
 }) {
   const theme = useTheme()
   return (
-    <Button variant="outline" size="sm" onPress={onPress} disabled={disabled} style={{ width: 84, flexDirection: 'column', height: 56, gap: 2 }}>
+    <Button variant="outline" size="sm" onPress={onPress} disabled={disabled} style={{ width: 96, flexDirection: 'column', height: 56, gap: 2 }}>
       <Icon size={16} color={disabled ? theme.colors.mutedForeground : theme.colors.primary} />
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={0.8}
+        minimumFontScale={0.7}
         style={{ color: disabled ? theme.colors.mutedForeground : theme.colors.foreground, fontSize: theme.fontSizes.xs, fontWeight: '600' }}
       >
         {label}
@@ -562,111 +555,6 @@ function NotesEditor({ customerId, initialNotes }: { customerId: string; initial
         </Button>
       )}
     </Card>
-  )
-}
-
-/**
- * Doktor Detay > "Ürün Ver" hızlı eylemi — ziyaret check-in'ine bağlı
- * olmadan (VisitFlowScreen'deki "Verilen Numuneler"nden farklı, oraya
- * girmeden hızlı kayıt için) doğrudan bir ürünü bu doktora verildi olarak
- * kaydeder; aynı record_stock_movement RPC'si ('sample' tipiyle), stoktan
- * gerçekten düşülür.
- */
-function GiveProductModal({
-  visible,
-  customerId,
-  customerName,
-  onClose,
-}: {
-  visible: boolean
-  customerId: string
-  customerName: string
-  onClose: () => void
-}) {
-  const theme = useTheme()
-  const recordMovement = useRecordStockMovement()
-  const [product, setProduct] = React.useState<Product | null>(null)
-  const [pickerOpen, setPickerOpen] = React.useState(false)
-  const [quantity, setQuantity] = React.useState('1')
-  const [note, setNote] = React.useState('')
-
-  React.useEffect(() => {
-    if (visible) {
-      setProduct(null)
-      setQuantity('1')
-      setNote('')
-    }
-  }, [visible])
-
-  async function onSave() {
-    const qty = Number(quantity)
-    if (!product || !qty || qty <= 0) return
-    await recordMovement.mutateAsync({
-      product_id: product.id,
-      movement_type: 'sample',
-      quantity: qty,
-      customer_id: customerId,
-      note: note.trim() || `${customerName} için verildi`,
-    })
-    onClose()
-  }
-
-  return (
-    <>
-      <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
-          <View
-            style={{
-              backgroundColor: theme.colors.card,
-              borderTopLeftRadius: theme.radius.xl,
-              borderTopRightRadius: theme.radius.xl,
-              padding: theme.spacing(5),
-              gap: 12,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ color: theme.colors.foreground, fontSize: theme.fontSizes.lg, fontWeight: '700' }}>Ürün Ver</Text>
-              <Pressable onPress={onClose} hitSlop={12}>
-                <X size={22} color={theme.colors.foreground} />
-              </Pressable>
-            </View>
-            <Pressable onPress={() => setPickerOpen(true)}>
-              <View
-                style={{
-                  height: 44,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  borderRadius: theme.radius.md,
-                  paddingHorizontal: 12,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  backgroundColor: theme.colors.input,
-                }}
-              >
-                <Package size={16} color={theme.colors.mutedForeground} />
-                <Text style={{ color: product ? theme.colors.foreground : theme.colors.mutedForeground, flex: 1 }} numberOfLines={1}>
-                  {product?.name ?? 'Ürün seç...'}
-                </Text>
-              </View>
-            </Pressable>
-            <TextField label="Miktar *" value={quantity} onChangeText={setQuantity} keyboardType="numeric" />
-            <TextField label="Not" value={note} onChangeText={setNote} placeholder="Detay..." />
-            <Button onPress={onSave} loading={recordMovement.isPending} disabled={!product || !Number(quantity)}>
-              Kaydet
-            </Button>
-          </View>
-        </View>
-      </AppModal>
-      <ProductPickerModal
-        visible={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelect={(p) => {
-          setProduct(p)
-          setPickerOpen(false)
-        }}
-      />
-    </>
   )
 }
 
