@@ -17,10 +17,18 @@ import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { useCreateProduct, useUpdateProduct } from './hooks'
+import { useCreateProduct, useProductCatalogs, useUpdateProduct } from './hooks'
 import type { Product } from '@/types/database'
 
 const NO_BRAND = '__none__'
+
+/** StockPage.tsx'teki aynı isimli fonksiyonla birebir — sadece dermakor/swiss
+ * için düzgün büyük harfli görünüm, yeni eklenen kataloglar yazıldığı gibi. */
+function catalogLabel(name: string) {
+  if (name === 'dermakor') return 'Dermakor'
+  if (name === 'swiss') return 'Swiss'
+  return name
+}
 
 const schema = z.object({
   name: z.string().min(2, 'Ürün adı gerekli'),
@@ -45,6 +53,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateProduct()
   const updateMutation = useUpdateProduct()
+  const { data: catalogs = [] } = useProductCatalogs()
 
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
@@ -78,7 +87,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
       campaign: values.campaign || null,
       expiry_date: values.expiry_date || null,
       barcode: values.barcode || null,
-      brand_line: values.brand_line && values.brand_line !== NO_BRAND ? (values.brand_line as 'dermakor' | 'swiss') : null,
+      brand_line: values.brand_line && values.brand_line !== NO_BRAND ? values.brand_line : null,
       image_url: values.image_url || null,
     }
     if (product) {
@@ -268,7 +277,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
               name="brand_line"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Ürün Hattı (opsiyonel)</FormLabel>
+                  <FormLabel>Katalog / Ürün Hattı (opsiyonel)</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger className="w-full">
@@ -277,8 +286,11 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
                     </FormControl>
                     <SelectContent>
                       <SelectItem value={NO_BRAND}>Belirtilmedi</SelectItem>
-                      <SelectItem value="dermakor">Dermakor</SelectItem>
-                      <SelectItem value="swiss">Swiss</SelectItem>
+                      {catalogs.map((c) => (
+                        <SelectItem key={c.id} value={c.name}>
+                          {catalogLabel(c.name)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

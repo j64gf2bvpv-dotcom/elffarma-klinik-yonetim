@@ -2,7 +2,17 @@ export type StaffRole = 'admin' | 'staff'
 export type MovementType = 'in' | 'out' | 'adjustment' | 'sample' | 'return' | 'disposal'
 export type PaymentMethod = 'nakit' | 'kredi_karti' | 'havale' | 'pos'
 export type DoctorType = 'sahis' | 'hastane'
-export type BrandLine = 'dermakor' | 'swiss'
+/** Artık sabit 2 değerle sınırlı değil — admin `product_catalogs` tablosuna
+ * yeni katalog ekleyebiliyor, geçerli değer product_catalogs.name'e FK ile
+ * bağlı, TS tarafında serbest string. */
+export type BrandLine = string
+
+export interface ProductCatalog {
+  id: string
+  name: string
+  sort_order: number
+  created_at: string
+}
 
 export interface Staff {
   id: string

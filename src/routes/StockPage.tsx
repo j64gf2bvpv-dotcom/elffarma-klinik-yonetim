@@ -12,6 +12,7 @@ import {
   Loader2,
   Check,
   GripVertical,
+  Plus,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -37,7 +38,9 @@ import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
 import { ProductLotsDialog } from '@/features/stock/ProductLotsDialog'
 import {
+  useCreateProductCatalog,
   useDeactivateProduct,
+  useProductCatalogs,
   useProducts,
   useRecordStockMovement,
   useReorderProducts,
@@ -67,6 +70,20 @@ import type { ImportSummary } from '@/lib/importData'
 import type { BrandLine, Product } from '@/types/database'
 
 const ALL_BRANDS = 'all'
+/** Kategorisi/hattı olmayan ya da artık geçerli bir katalogda bulunmayan
+ * ürünlerin düştüğü "Tümü" altındaki son grup — hiçbir ürün sessizce
+ * kaybolmasın diye (kullanıcı isteği, 2026-08-17). */
+const UNCATALOGED = '__uncataloged__'
+
+/** Mevcut iki katalog (dermakor/swiss) veritabanında hâlâ küçük harf
+ * saklanıyor (geçmiş veriyle/komisyon kurallarıyla uyumluluk bozulmasın diye
+ * değiştirilmedi) — sadece görünüm için düzgün yazılıyor. Admin'in
+ * ekleyeceği yeni kataloglar zaten yazdığı gibi görünür. */
+function catalogLabel(name: string) {
+  if (name === 'dermakor') return 'Dermakor'
+  if (name === 'swiss') return 'Swiss'
+  return name
+}
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
@@ -739,6 +756,59 @@ function ResetAllStockDialog({ affectedCount }: { affectedCount: number }) {
   )
 }
 
+/** Kullanıcı isteğiyle (2026-08-17) — Dermakor/Swiss'e sınırlı kalmasın diye
+ * admin buradan yeni bir katalog/ürün hattı ekleyebiliyor; personel sadece
+ * mevcut katalogları görür/filtreler, ekleme butonu admin'e özel. */
+function AddCatalogDialog({ existingNames }: { existingNames: string[] }) {
+  const { staff } = useAuth()
+  const createCatalog = useCreateProductCatalog()
+  const [open, setOpen] = React.useState(false)
+  const [name, setName] = React.useState('')
+
+  if (staff?.role !== 'admin') return null
+
+  const trimmed = name.trim()
+  const duplicate = trimmed.length > 0 && existingNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())
+
+  async function handleAdd() {
+    if (!trimmed || duplicate) return
+    await createCatalog.mutateAsync(trimmed)
+    setName('')
+    setOpen(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (!next) setName('') }}>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Plus className="size-3.5" /> Yeni Katalog
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Yeni Katalog Ekle</DialogTitle>
+          <DialogDescription>Ürün hattı/marka olarak eklenir, "Tümü" sekmesinde ayrı bir grup olarak görünür.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Label htmlFor="new-catalog-name">Katalog Adı</Label>
+          <Input
+            id="new-catalog-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Örn: Acme Kozmetik"
+            autoFocus
+          />
+          {duplicate && <p className="text-destructive text-xs">Bu isimde bir katalog zaten var.</p>}
+        </div>
+        <DialogFooter>
+          <Button onClick={handleAdd} disabled={!trimmed || duplicate || createCatalog.isPending}>
+            {createCatalog.isPending && <Loader2 className="animate-spin" />}
+            Ekle
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function StockPage() {
   const [search, setSearch] = React.useState('')
   const [brandFilter, setBrandFilter] = React.useState<typeof ALL_BRANDS | BrandLine>(ALL_BRANDS)
@@ -748,23 +818,28 @@ export function StockPage() {
   const [checkedIds, setCheckedIds] = React.useState<Set<string>>(new Set())
   const { data: products = [], isLoading } = useProducts(search, brandFilter === ALL_BRANDS ? undefined : brandFilter)
   const { data: allProducts = [] } = useProducts('')
+  const { data: catalogs = [] } = useProductCatalogs()
   const deactivateMutation = useDeactivateProduct()
   const reorderMutation = useReorderProducts()
   const queryClient = useQueryClient()
 
   // Ekranda o an görünen ürün satırlarının GERÇEK dikey sırası — ALL_BRANDS
-  // filtresinde iki ayrı ProductsTable (Dermakor sonra Swiss) render
-  // edildiği için, klavye ok tuşlarının render sırasıyla birebir eşleşmesi
-  // için aynı bölme mantığı burada da uygulanıyor.
+  // filtresinde katalog başına bir ProductsTable (+ eşleşmeyen ürünler için
+  // son bir "Diğer" grubu) render edildiği için, klavye ok tuşlarının
+  // render sırasıyla birebir eşleşmesi için aynı bölme mantığı burada da
+  // uygulanıyor. Hiçbir ürün bu listeden düşmüyor (kullanıcı isteği,
+  // 2026-08-17 — önceden brand_line dermakor/swiss olmayan ürünler "Tümü"
+  // sekmesinde sessizce hiç görünmüyordu).
   const orderedVisibleProducts = React.useMemo(() => {
     if (brandFilter === ALL_BRANDS) {
+      const catalogNames = new Set(catalogs.map((c) => c.name))
       return [
-        ...products.filter((p) => p.brand_line === 'dermakor'),
-        ...products.filter((p) => p.brand_line === 'swiss'),
+        ...catalogs.flatMap((c) => products.filter((p) => p.brand_line === c.name)),
+        ...products.filter((p) => !p.brand_line || !catalogNames.has(p.brand_line)),
       ]
     }
     return products
-  }, [products, brandFilter])
+  }, [products, brandFilter, catalogs])
 
   // Yukarı/aşağı/sağa/sola ok tuşlarıyla seçili ürün panelini bir öncekine/
   // sonrakine taşır — arama kutusu gibi bir metin alanına yazarken devreye
@@ -946,10 +1021,14 @@ export function StockPage() {
             <Tabs value={brandFilter} onValueChange={(v) => setBrandFilter(v as typeof brandFilter)}>
               <TabsList>
                 <TabsTrigger value={ALL_BRANDS}>Tümü</TabsTrigger>
-                <TabsTrigger value="dermakor">Dermakor</TabsTrigger>
-                <TabsTrigger value="swiss">Swiss</TabsTrigger>
+                {catalogs.map((c) => (
+                  <TabsTrigger key={c.id} value={c.name}>
+                    {catalogLabel(c.name)}
+                  </TabsTrigger>
+                ))}
               </TabsList>
             </Tabs>
+            <AddCatalogDialog existingNames={catalogs.map((c) => c.name)} />
           </div>
 
           {checkedIds.size > 0 && (
@@ -973,32 +1052,43 @@ export function StockPage() {
 
           {!isLoading && brandFilter === ALL_BRANDS && (
             <div className="grid gap-6">
-              <div className="min-w-0">
-                <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Dermakor</h3>
-                <ProductsTable
-                  products={products.filter((p) => p.brand_line === 'dermakor')}
-                  onRemove={handleRemove}
-                  selectedId={selectedProductId}
-                  onSelect={setSelectedProductId}
-                  checkedIds={checkedIds}
-                  onToggleChecked={toggleChecked}
-                  onToggleAll={toggleAllChecked}
-                  onReorder={handleReorder}
-                />
-              </div>
-              <div className="min-w-0">
-                <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Swiss</h3>
-                <ProductsTable
-                  products={products.filter((p) => p.brand_line === 'swiss')}
-                  onRemove={handleRemove}
-                  selectedId={selectedProductId}
-                  onSelect={setSelectedProductId}
-                  checkedIds={checkedIds}
-                  onToggleChecked={toggleChecked}
-                  onToggleAll={toggleAllChecked}
-                  onReorder={handleReorder}
-                />
-              </div>
+              {catalogs.map((c) => (
+                <div key={c.id} className="min-w-0">
+                  <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    {catalogLabel(c.name)}
+                  </h3>
+                  <ProductsTable
+                    products={products.filter((p) => p.brand_line === c.name)}
+                    onRemove={handleRemove}
+                    selectedId={selectedProductId}
+                    onSelect={setSelectedProductId}
+                    checkedIds={checkedIds}
+                    onToggleChecked={toggleChecked}
+                    onToggleAll={toggleAllChecked}
+                    onReorder={handleReorder}
+                  />
+                </div>
+              ))}
+              {(() => {
+                const catalogNames = new Set(catalogs.map((c) => c.name))
+                const uncataloged = products.filter((p) => !p.brand_line || !catalogNames.has(p.brand_line))
+                if (uncataloged.length === 0) return null
+                return (
+                  <div key={UNCATALOGED} className="min-w-0">
+                    <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Diğer</h3>
+                    <ProductsTable
+                      products={uncataloged}
+                      onRemove={handleRemove}
+                      selectedId={selectedProductId}
+                      onSelect={setSelectedProductId}
+                      checkedIds={checkedIds}
+                      onToggleChecked={toggleChecked}
+                      onToggleAll={toggleAllChecked}
+                      onReorder={handleReorder}
+                    />
+                  </div>
+                )
+              })()}
             </div>
           )}
 

@@ -2,11 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   createProduct,
+  createProductCatalog,
   createProductLot,
   deactivateProduct,
   deleteStockMovement,
   fetchAllProductLots,
   fetchAllStockMovements,
+  fetchProductCatalogs,
   fetchProductLots,
   fetchProducts,
   fetchStockMovements,
@@ -22,10 +24,31 @@ import {
   type RecordMovementInput,
   type UpdateMovementInput,
 } from './api'
-import type { BrandLine, Product, ProductLot } from '@/types/database'
+import type { BrandLine, Product, ProductCatalog, ProductLot } from '@/types/database'
 
 export function useProducts(search: string, brandLine?: BrandLine) {
   return useQuery({ queryKey: ['products', search, brandLine], queryFn: () => fetchProducts(search, brandLine) })
+}
+
+export function useProductCatalogs() {
+  return useQuery({ queryKey: ['product_catalogs'], queryFn: fetchProductCatalogs })
+}
+
+export function useCreateProductCatalog() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (name: string) => {
+      const current = queryClient.getQueryData<ProductCatalog[]>(['product_catalogs']) ?? []
+      const nextSortOrder = current.reduce((max, c) => Math.max(max, c.sort_order), -1) + 1
+      return createProductCatalog(name, nextSortOrder)
+    },
+    onSuccess: (created) => {
+      queryClient.setQueryData<ProductCatalog[]>(['product_catalogs'], (old) => (old ? [...old, created] : old))
+      queryClient.invalidateQueries({ queryKey: ['product_catalogs'] })
+      toast.success('Katalog eklendi')
+    },
+    onError: (error: Error) => toast.error('Katalog eklenemedi', { description: error.message }),
+  })
 }
 
 export function useStockMovements(productId: string | undefined) {

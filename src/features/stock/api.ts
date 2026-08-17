@@ -1,6 +1,16 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineRpc } from '@/lib/offlineMutation'
-import type { BrandLine, MovementType, Product, ProductLot, StockMovement, StockUnitKind } from '@/types/database'
+import type { BrandLine, MovementType, Product, ProductCatalog, ProductLot, StockMovement, StockUnitKind } from '@/types/database'
+
+export async function fetchProductCatalogs(): Promise<ProductCatalog[]> {
+  const { data, error } = await supabase.from('product_catalogs').select('*').order('sort_order', { ascending: true })
+  if (error) throw error
+  return data as ProductCatalog[]
+}
+
+export async function createProductCatalog(name: string, sortOrder: number): Promise<ProductCatalog> {
+  return offlineInsert<ProductCatalog>('product_catalogs', { name, sort_order: sortOrder }, `Katalog: ${name}`)
+}
 
 export interface ProductInput {
   name: string

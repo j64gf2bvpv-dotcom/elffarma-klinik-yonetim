@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.130] - 2026-08-17
+
+**Stok Yönetimi'nde "Tümü" artık gerçekten her ürünü gösteriyor, admin yeni katalog ekleyebiliyor:** Daha önce "Tümü" sekmesi sadece Dermakor/Swiss ürün hattındaki ürünleri gösteriyordu — bu ikisine ait olmayan (`brand_line` boş) ürünler sessizce hiç görünmüyordu (canlı veride 4 örnek ürün bu şekilde kayıptı, gerçek testte bulundu). Artık bu ürünler "Diğer" adıyla ayrı bir grupta gösteriliyor. Ürün hattı artık sabit 2 değerle (Dermakor/Swiss) sınırlı değil — "Tümü" sekmesinin yanına eklenen "+ Yeni Katalog" butonuyla (sadece admin) yeni bir ürün hattı/katalog eklenebiliyor, Yeni Ürün formundaki katalog seçimi de bu listeden geliyor. Şema değişikliği var (yeni `product_catalogs` tablosu, `products.brand_line` artık ona FK — mevcut veri/komisyon kuralı eşleşmeleri bozulmadan, hiçbir mevcut kod değişmeden).
+
 ## [2.17.129] - 2026-08-17
 
 **Mobil "Daha Fazla" menüsüne admin panel yönetimi eklendi, alt sekme çubuğuna Stok eklendi:** Ayarlar sayfasına yeni "Panel Yönetimi (Daha Fazla)" kartı — admin artık Daha Fazla menüsündeki panellerin sırasını (yukarı/aşağı, herkes için ortak) değiştirebiliyor ve personel bazında hangi panellerin gizleneceğini (personel seçip göz ikonuyla) belirleyebiliyor. Şema değişikliği var (yeni `staff.mobile_hidden_panels`, sıralama `app_settings` içinde). Alt sekme çubuğuna Siparişler'in yanına bir "Stok" kısayolu eklendi (Daha Fazla'dan da erişilebilmeye devam ediyor). Doktor Ziyaretleri detay/düzenleme penceresindeki alanlar istenen sıraya alındı (tarih, ziyaret sonucu, notlar, sonraki ziyaret, kaydet). "+" ile açılan Müşteri Seç penceresi artık tam ekran (sheet görünümü kaldırıldı).
