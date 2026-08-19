@@ -30,6 +30,15 @@ function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
 }
 
+/** UTC ISO zaman damgasını cihazın YEREL takvim gününe çevirir — `.slice(0,10)`
+ * UTC gün dilimini döndürüyordu, bu da yerel gece yarısı ile UTC gece yarısı
+ * arasındaki (TR'de 03:00'e kadar) kayıtları "bugün" filtresinden düşürüyordu
+ * (kullanıcı isteğiyle bulundu, 2026-08-20 — gerçek, önceden ertelenmiş bir
+ * saat dilimi hatası). */
+function localDateStr(iso: string) {
+  return format(new Date(iso), 'yyyy-MM-dd')
+}
+
 function initials(name: string) {
   return name
     .trim()
@@ -207,7 +216,7 @@ export function DashboardScreen({ navigation }: Props) {
   // yapılmamış bir ziyaret istatistikte görünüp Son Aktiviteler'de hiç
   // görünmüyordu — kullanıcı isteğiyle, 2026-08-17, iki bölüm tutarlı).
   const todaysVisits = React.useMemo(
-    () => visits.filter((v) => v.check_in_at && v.check_in_at.slice(0, 10) === todayStr),
+    () => visits.filter((v) => v.check_in_at && localDateStr(v.check_in_at) === todayStr),
     [visits, todayStr],
   )
 
@@ -218,7 +227,7 @@ export function DashboardScreen({ navigation }: Props) {
 
   const monthStart = React.useMemo(() => format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'), [])
   const monthPayments = React.useMemo(
-    () => allPayments.filter((p) => p.paid_at.slice(0, 10) >= monthStart),
+    () => allPayments.filter((p) => localDateStr(p.paid_at) >= monthStart),
     [allPayments, monthStart],
   )
   const monthTotal = React.useMemo(() => monthPayments.reduce((sum, p) => sum + Number(p.amount), 0), [monthPayments])
@@ -249,7 +258,7 @@ export function DashboardScreen({ navigation }: Props) {
   // satışları değil, o gün alınan tahsilatları (payments) da kapsıyor;
   // Hedeflerim kartındaki aynı tanımla (monthPayments) tutarlı olsun diye.
   const todaysPayments = React.useMemo(
-    () => allPayments.filter((p) => p.paid_at.slice(0, 10) === todayStr),
+    () => allPayments.filter((p) => localDateStr(p.paid_at) === todayStr),
     [allPayments, todayStr],
   )
   const todaysRevenue = React.useMemo(
@@ -260,7 +269,7 @@ export function DashboardScreen({ navigation }: Props) {
   )
 
   const todaysQuotes = React.useMemo(
-    () => quotes.filter((q) => q.created_at.slice(0, 10) === todayStr),
+    () => quotes.filter((q) => localDateStr(q.created_at) === todayStr),
     [quotes, todayStr],
   )
 

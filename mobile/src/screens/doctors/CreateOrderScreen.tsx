@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Pressable, Text, View } from 'react-native'
+import { format } from 'date-fns'
 import { Plus, Minus, Trash2, Package, Check, ChevronRight, UserRound } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
@@ -96,7 +97,7 @@ export function CreateOrderScreen({ route, navigation }: Props) {
 
   const validLines = lines.filter((l) => l.productId && Number(l.quantity) > 0)
   const grandTotal = validLines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0)
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
 
   async function onSubmit() {
     if (!customerId || validLines.length === 0) return

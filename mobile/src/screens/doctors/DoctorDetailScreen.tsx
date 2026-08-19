@@ -848,7 +848,7 @@ function InstallmentPlanModal({
   const [totalAmount, setTotalAmount] = React.useState('')
   const [installmentCount, setInstallmentCount] = React.useState('3')
   const [intervalDays, setIntervalDays] = React.useState('30')
-  const [firstDueDate, setFirstDueDate] = React.useState(new Date().toISOString().slice(0, 10))
+  const [firstDueDate, setFirstDueDate] = React.useState(format(new Date(), 'yyyy-MM-dd'))
   const [lateFeeRate, setLateFeeRate] = React.useState('')
   const [description, setDescription] = React.useState('')
 
@@ -857,7 +857,7 @@ function InstallmentPlanModal({
       setTotalAmount('')
       setInstallmentCount('3')
       setIntervalDays('30')
-      setFirstDueDate(new Date().toISOString().slice(0, 10))
+      setFirstDueDate(format(new Date(), 'yyyy-MM-dd'))
       setLateFeeRate('')
       setDescription('')
     }

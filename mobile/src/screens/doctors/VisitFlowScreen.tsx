@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Alert, Pressable, Text, View } from 'react-native'
 import * as Location from 'expo-location'
+import { format } from 'date-fns'
 import { MapPin, CheckCircle2, Minus, Plus, Package, X } from 'lucide-react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '@/components/ui/Screen'
@@ -48,7 +49,7 @@ export function VisitFlowScreen({ route, navigation }: Props) {
   const [samples, setSamples] = React.useState<{ product: Product; quantity: number }[]>([])
   const [pickerOpen, setPickerOpen] = React.useState(false)
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
   const activeVisit = visits.find(
     (v) => v.customer_id === customerId && v.visit_date === todayStr && v.check_in_at && !v.check_out_at,
   )

@@ -1,4 +1,5 @@
 import { decode } from 'base64-arraybuffer'
+import { format } from 'date-fns'
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
 import type { Payment, PaymentInstallment, PaymentInstallmentPlan, PaymentMethod } from '@shared/types/database'
@@ -139,7 +140,7 @@ export async function createInstallmentPlan(input: InstallmentPlanInput): Promis
       {
         plan_id: plan.id,
         installment_no: i + 1,
-        due_date: dueDate.toISOString().slice(0, 10),
+        due_date: format(dueDate, 'yyyy-MM-dd'),
         amount,
       },
       `Taksit ${i + 1}/${input.installment_count}`,

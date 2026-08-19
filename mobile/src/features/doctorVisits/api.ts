@@ -1,3 +1,4 @@
+import { format } from 'date-fns'
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineDelete, offlineUpdate, getCurrentUserId } from '@/lib/offlineMutation'
 import type { DoctorVisit } from '@shared/types/database'
@@ -79,7 +80,7 @@ export async function startVisitForCustomer(customerId: string, doctorName: stri
   return offlineInsert<DoctorVisit>('doctor_visits', {
     customer_id: customerId,
     doctor_name: doctorName,
-    visit_date: new Date().toISOString().slice(0, 10),
+    visit_date: format(new Date(), 'yyyy-MM-dd'),
     sales_rep_id: salesRepId,
   }, `Ziyaret: ${doctorName}`)
 }
