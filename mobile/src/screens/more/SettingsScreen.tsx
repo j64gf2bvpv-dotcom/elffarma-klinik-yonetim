@@ -16,6 +16,7 @@ import { useStaffList, useUpdateStaff } from '@/features/staff/hooks'
 import { useAppSetting } from '@/features/appSettings/hooks'
 import { uploadBase64Image } from '@/lib/uploadImage'
 import { PanelManagementCard } from './PanelManagementCard'
+import { SampleDataCard } from './SampleDataCard'
 import type { AISettings } from '@/features/ai/types'
 import type { MoreStackParamList } from '@/navigation/types'
 
@@ -220,6 +221,9 @@ export function SettingsScreen({ navigation }: Props) {
 
       {/* Panel Yönetimi (admin) */}
       {staff?.role === 'admin' && <PanelManagementCard />}
+
+      {/* Örnek Veri (admin) */}
+      {staff?.role === 'admin' && <SampleDataCard />}
 
       {/* Audit Log (admin) */}
       {staff?.role === 'admin' && (
