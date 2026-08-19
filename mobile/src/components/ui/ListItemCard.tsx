@@ -62,7 +62,7 @@ export function ListItemCard({
       {imageUri ? (
         <Image
           source={{ uri: imageUri }}
-          style={{ width: 38, height: 38, borderRadius: theme.radius.sm, backgroundColor: theme.colors.muted }}
+          style={{ width: 38, height: 38, borderRadius: theme.radius.sm, backgroundColor: theme.colors.muted, flexShrink: 0, flexGrow: 0 }}
         />
       ) : initials ? (
         <View
@@ -75,7 +75,8 @@ export function ListItemCard({
             borderColor: tint,
             alignItems: 'center',
             justifyContent: 'center',
-            flex: 0,
+            flexShrink: 0,
+            flexGrow: 0,
             overflow: 'hidden',
           }}
         >
@@ -102,7 +103,8 @@ export function ListItemCard({
             backgroundColor: tint + '26',
             alignItems: 'center',
             justifyContent: 'center',
-            flex: 0,
+            flexShrink: 0,
+            flexGrow: 0,
           }}
         >
           <Icon size={18} color={tint} />
