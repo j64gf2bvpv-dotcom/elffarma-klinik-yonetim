@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.146] - 2026-08-20
+
+**Stok hareketi düzenleme/silmede "stoğu negatife düşürür" hatası kaldırıldı:** Bir hareketi düzenlerken/silerken sonuç ürünün stoğunu eksiye düşürecekse işlem artık reddedilmiyor — eski davranışa dönüldü: stok 0'da sabitleniyor, düzenleme/silme her zaman başarılı oluyor. (Yeni bir satış/numune/manuel çıkış kaydı oluştururken "yeterli stok yok" kontrolü kasıtlı olarak dokunulmadan kalıyor — bu, ileriye dönük işlemler için hâlâ anlamlı.) Şema değişikliği: `update_stock_movement`/`delete_stock_movement` RPC'leri.
+
 ## [2.17.145] - 2026-08-20
 
 **Stok Kartı'nda uzun sebep/not metni artık rakamlarla çakışmıyor:** Hareket dökümündeki Sebep/Not sütunu, uzun bir metin (ör. "Excel içe aktarma — başlangıç stok eşitleme") girildiğinde satır içinde sarılıp Giriş/Çıkış rakamlarına taşıyordu. Sütun artık tek satırda üç nokta ile kırpılıyor, tam metin üzerine gelince (title/tooltip) görülebiliyor. Ayrıca 4 adet test amaçlı eklenmiş "[Örnek]" ürünü pasifleştirilip bugünkü Günlük Sayım'dan çıkarıldı. Şema değişikliği yok.
