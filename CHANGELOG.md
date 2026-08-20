@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.148] - 2026-08-20
+
+**Stok Kartı'na (tek ürün) "Tüm Hareketleri Sil" eklendi:** Sadece yöneticiye açık, geri alınamaz bir işlem — gerekçe zorunlu, ürün adını yazarak iki adımlı onay isteniyor (StockPage'teki "Tüm Ürünleri Sıfırla" ile aynı desen). O ürüne ait TÜM geçmiş stok hareketleri kalıcı olarak silinip stok (paket + flakon) 0'a çekiliyor; kim/ne zaman/neden sildiği audit_logs'a ayrıca kaydediliyor. Diğer ürünlere dokunmaz. Şema değişikliği: yeni `delete_all_stock_movements_for_product` RPC'si.
+
 ## [2.17.147] - 2026-08-20
 
 **Geçmiş Sayımlar açılır/kapanır oldu:** Günlük Sayım'daki "Geçmiş Sayımlar" listesinde artık bir tarihe tıklayınca o günün sayım kalemleri (ürün, o günkü stok, girilen paket/flakon, son stok) genişleyip görülebiliyor — önceden sadece tarih ve durum rozeti vardı. Şema değişikliği yok.

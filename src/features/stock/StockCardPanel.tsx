@@ -2,13 +2,24 @@ import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ImageDown, IdCard, ArrowLeftRight, Pencil, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { ImageDown, IdCard, ArrowLeftRight, Pencil, Trash2, Loader2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
@@ -16,6 +27,8 @@ import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { ProductMultiCombobox } from '@/features/stock/ProductMultiCombobox'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
+import { useAuth } from '@/lib/auth'
+import { supabase } from '@/lib/supabaseClient'
 import { useSales } from '@/features/sales/hooks'
 import { useSampleRequests } from '@/features/samples/hooks'
 import { useCustomers } from '@/features/customers/hooks'
@@ -109,6 +122,115 @@ function InlineQtyCell({ value, onCommit }: { value: number; onCommit: (next: nu
     >
       {value > 0 ? value : <span className="text-muted-foreground">—</span>}
     </button>
+  )
+}
+
+/**
+ * Tek ürün görünümündeki tüm hareket geçmişini kalıcı olarak siler (o
+ * üründen başka HİÇBİR ürüne dokunmaz). stock_movements normalde hiç
+ * silinmeyen bir denetim kaydı olduğu için bilerek sadece yöneticiye açık,
+ * gerekçe zorunlu ve yazarak onay istiyor (bkz. StockPage'teki
+ * ResetAllStockDialog ile aynı iki adımlı desen). Silme sonrası ürünün
+ * paket/flakon stoğu 0'a çekilir — boş bir defterle tutarlı tek değer bu.
+ */
+function DeleteAllMovementsDialog({ product }: { product: Product }) {
+  const { staff } = useAuth()
+  const queryClient = useQueryClient()
+  const [open, setOpen] = React.useState(false)
+  const [step, setStep] = React.useState<1 | 2>(1)
+  const [reason, setReason] = React.useState('')
+  const [confirmText, setConfirmText] = React.useState('')
+  const [submitting, setSubmitting] = React.useState(false)
+
+  if (staff?.role !== 'admin') return null
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) {
+      setStep(1)
+      setReason('')
+      setConfirmText('')
+    }
+  }
+
+  async function handleConfirm() {
+    setSubmitting(true)
+    try {
+      const { data, error } = await supabase.rpc('delete_all_stock_movements_for_product', {
+        p_product_id: product.id,
+        p_reason: reason.trim(),
+      })
+      if (error) throw error
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      await queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
+      toast.success(`${product.name} için ${data ?? 0} hareket kalıcı olarak silindi`)
+      handleOpenChange(false)
+    } catch (error) {
+      toast.error('Silinemedi', { description: error instanceof Error ? error.message : String(error) })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="text-destructive hover:text-destructive"
+        onClick={() => setOpen(true)}
+        title="Bu ürünün TÜM stok hareket geçmişini kalıcı olarak siler"
+      >
+        <Trash2 className="size-3.5" /> Tüm Hareketleri Sil
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{product.name} — Tüm Hareketleri Sil</DialogTitle>
+          <DialogDescription>
+            {step === 1
+              ? 'Bu ürüne ait TÜM geçmiş giriş/çıkış hareketleri kalıcı olarak silinecek ve stok (paket + flakon) 0\'a çekilecek. Bu işlem geri alınamaz.'
+              : 'Son onay: devam etmek için ürün adını aşağıya yazın.'}
+          </DialogDescription>
+        </DialogHeader>
+        {step === 1 ? (
+          <div className="grid gap-1.5">
+            <Label htmlFor="delete-all-reason">Gerekçe (zorunlu)</Label>
+            <Textarea
+              id="delete-all-reason"
+              rows={3}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Ör. hatalı toplu içe aktarma sonrası geçmişi temizleme..."
+            />
+          </div>
+        ) : (
+          <div className="grid gap-1.5">
+            <Label htmlFor="delete-all-confirm">Onaylamak için "{product.name}" yazın</Label>
+            <Input id="delete-all-confirm" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoFocus />
+          </div>
+        )}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+            Vazgeç
+          </Button>
+          {step === 1 ? (
+            <Button type="button" variant="destructive" disabled={!reason.trim()} onClick={() => setStep(2)}>
+              Devam Et
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={confirmText.trim() !== product.name || submitting}
+              onClick={handleConfirm}
+            >
+              {submitting && <Loader2 className="animate-spin" />}
+              Kalıcı Olarak Sil
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -315,6 +437,7 @@ export function StockCardPanel() {
                   </Button>
                 }
               />
+              {mode === 'single' && product && <DeleteAllMovementsDialog product={product} />}
               <ExportMenu<StockCardRow>
                 title={mode === 'single' ? `Stok Kartı — ${product?.name}` : 'Stok Kartı — Tüm Ürünler'}
                 filename={mode === 'single' ? `stok-karti-${product?.sku ?? product?.name}` : 'stok-karti-tum-urunler'}
