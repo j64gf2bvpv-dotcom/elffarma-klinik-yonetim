@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.139] - 2026-08-20
+
+**Seçili satır vurgusu karanlık modda güçlendirildi:** Bir tabloda tıklanan satırı işaretleyen gri vurgu, karanlık modda zemin zaten koyu olduğu için (siyah üstüne siyah eklenince) neredeyse görünmüyordu. Karanlık modda artık siyah yerine hafif beyaz bir katman kullanılıyor — seçili satır (Stok listesi dahil tüm tablolarda) her iki modda da net görünüyor. Şema değişikliği yok.
+
 ## [2.17.138] - 2026-08-20
 
 **Günlük Sayım tablosuna canlı "Son Stok" kolonu eklendi:** Paket Sayımı/Fark ve Flakon Sayımı/Fark kolonlarının yanına, sayım girildikçe anlık güncellenen bir "Son Stok" kolonu eklendi — sayım girilmişse o değeri, girilmemişse hâlâ canlı sistem stoğunu gösterir (aynı hesap zaten aşağıdaki "Günlük Özet" kartında ve dışa aktarımında kullanılıyordu, artık ana sayım tablosunda da görünüyor). Şema değişikliği yok.

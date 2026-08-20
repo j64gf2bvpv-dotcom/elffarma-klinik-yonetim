@@ -182,8 +182,10 @@ function TableRow({ className, selected, ...props }: React.ComponentProps<'tr'> 
         props.onClick && 'cursor-pointer',
         // bg-primary/25 bazı marka temalarında (primary açık/doygun az ise)
         // yeterince belirgin koyulaşmıyordu — sabit, temadan bağımsız güçlü
-        // bir siyah katman kullanılıyor ki seçili satır her zaman net görülsün.
-        selected && 'bg-black/15 shadow-[inset_6px_0_0_0_var(--primary)] font-medium',
+        // bir katman kullanılıyor ki seçili satır her zaman net görülsün.
+        // Karanlık modda zemin zaten koyu (oklch ~0.16-0.2) olduğu için siyah
+        // eklemek neredeyse görünmüyordu — orada beyaz katman kullanılıyor.
+        selected && 'bg-black/15 dark:bg-white/12 shadow-[inset_6px_0_0_0_var(--primary)] font-medium',
         className,
       )}
       {...props}
