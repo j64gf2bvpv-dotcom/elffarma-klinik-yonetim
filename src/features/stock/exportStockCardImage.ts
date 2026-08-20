@@ -98,7 +98,7 @@ export function exportStockCardImage(
     price: (r) => (r.unitPrice != null ? currency(r.unitPrice) : '—'),
     in: (r) => (r.inQty ? String(r.inQty) : ''),
     out: (r) => (r.outQty ? String(r.outQty) : ''),
-    balance: (r) => String(r.balance),
+    balance: (r) => (r.unitKind === 'flakon' ? `${r.flakonBalance} flakon` : String(r.balance)),
   }
 
   const kindColor: Record<StockCardRow['kind'], string> = {

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.152] - 2026-08-20
+
+**Hareket Dökümü'nde flakon satırlarının Güncel Stok kolonu düzeltildi:** Paket ve flakon stokları birbirinden tamamen bağımsız iki sayaç olduğu için (bkz. daha önceki "paket/flakon bağımsızlaştırma" değişikliği), flakon türündeki bir giriş/çıkış hareketinden sonra "Güncel Stok" kolonu yanlışlıkla değişmeyen paket bakiyesini gösteriyordu — flakon hareketi yapılmış gibi görünmüyordu, tutmuyor gibi duruyordu. Artık flakon satırlarında bu kolon o ana kadarki flakon bakiyesini ("N flakon") gösteriyor; paket satırları eskisi gibi paket bakiyesini gösteriyor. Tablo, Excel/Word/PDF dışa aktarma ve Görsel (PNG) çıktısının hepsinde düzeltildi. Şema değişikliği yok.
+
 ## [2.17.151] - 2026-08-20
 
 **Günün Satış/İade Hareketleri paneli düzenlenebilir hale getirildi:** Günlük Sayım ekranındaki bu panelde artık her satış/iade satırında satış temsilcisi (alan/teslim eden) yerinde değiştirilebiliyor, ayrıca bir "İptal Et" butonuyla kayıt iptal edilebiliyor — iptal, SalesPage'deki silme ile aynı desende stok etkisini tersine çevirip kaydı siliyor (stok yanlış kalmasın diye). Ekleme zaten mevcuttu (panel başlığındaki "Yeni Satış / İade"). Şema değişikliği yok.

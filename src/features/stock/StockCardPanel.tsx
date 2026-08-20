@@ -451,7 +451,7 @@ export function StockCardPanel() {
                   { header: 'Sebep / Not', value: (r) => r.reason ?? r.note ?? '' },
                   { header: 'Giriş', value: (r) => r.inQty || '' },
                   { header: 'Çıkış', value: (r) => r.outQty || '' },
-                  { header: 'Güncel Stok', value: (r) => r.balance },
+                  { header: 'Güncel Stok', value: (r) => (r.unitKind === 'flakon' ? `${r.flakonBalance} flakon` : r.balance) },
                 ]}
               />
               <Button
@@ -522,7 +522,9 @@ export function StockCardPanel() {
                       <TableCell className="text-destructive tabular-nums">
                         <InlineQtyCell value={row.outQty} onCommit={(next) => handleInlineQtyChange(row, 'out', next)} />
                       </TableCell>
-                      <TableCell className="font-medium tabular-nums">{row.balance}</TableCell>
+                      <TableCell className="font-medium tabular-nums">
+                        {row.unitKind === 'flakon' ? `${row.flakonBalance} flakon` : row.balance}
+                      </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
                           <StockMovementDialog

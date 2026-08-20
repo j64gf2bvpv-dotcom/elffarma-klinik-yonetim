@@ -20,6 +20,7 @@ export interface StockCardRow {
   inQty: number
   outQty: number
   balance: number
+  flakonBalance: number
 }
 
 const INCREASES_STOCK: ReadonlySet<MovementType> = new Set(['in', 'return', 'adjustment'])
@@ -48,10 +49,11 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
     if (productId && pid !== productId) continue
     const sorted = [...list].sort((a, b) => a.created_at.localeCompare(b.created_at))
     let balance = 0
+    let flakonBalance = 0
     for (const m of sorted) {
       // Bakiye (current_quantity/paket) yalnızca paket birimli hareketlerle ilerler —
-      // flakon birimli hareketler ayrı bir sayacı (flakon_quantity) etkiler, bu
-      // deftere karışırsa paket bakiyesi yanlış hesaplanır. Ama Giriş/Çıkış
+      // flakon birimli hareketler ayrı bir sayacı (flakon_quantity, flakonBalance)
+      // etkiler, bu deftere karışırsa paket bakiyesi yanlış hesaplanır. Ama Giriş/Çıkış
       // miktarları (inQty/outQty) HER hareketin kendi yönünü yansıtmalı — flakon
       // hareketlerinde bunları 0'a sabitlemek hem "Hareket Dökümü"nde flakon
       // miktarını görünmez kılıyordu hem de StockCardPanel'deki satır-içi
@@ -60,7 +62,8 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
       // giriş↔çıkış yönünü çevirmesine yol açıyordu.
       const isFlakon = m.unit_kind === 'flakon'
       const isIn = INCREASES_STOCK.has(m.movement_type)
-      if (!isFlakon) balance += isIn ? m.quantity : -m.quantity
+      if (isFlakon) flakonBalance += isIn ? m.quantity : -m.quantity
+      else balance += isIn ? m.quantity : -m.quantity
       rows.push({
         id: m.id,
         date: m.created_at,
@@ -79,6 +82,7 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
         inQty: isIn ? m.quantity : 0,
         outQty: !isIn ? m.quantity : 0,
         balance,
+        flakonBalance,
       })
     }
   }
