@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.140] - 2026-08-20
+
+**Kurulum paketi CI hatası düzeltildi:** `package-lock.json`, `package.json`'a sonradan eklenen mobil derleme bağımlılıklarıyla senkron değildi, bu yüzden bir önceki sürüm denemesi (v2.17.139) derleme aşamasında başarısız oldu ve hiç yayınlanamadı — 14 Ağustos'tan (v2.17.110) beri biriken TÜM düzeltmeler (ürün düzenleme yetki hatası, flakon stok takibi, Günlük Sayım Son Stok kolonu, otomatik güncelleme düzeltmeleri ve dahası) bu sürümle ilk kez gerçekten yayınlanıyor. Şema değişikliği yok.
+
 ## [2.17.139] - 2026-08-20
 
 **Seçili satır vurgusu karanlık modda güçlendirildi:** Bir tabloda tıklanan satırı işaretleyen gri vurgu, karanlık modda zemin zaten koyu olduğu için (siyah üstüne siyah eklenince) neredeyse görünmüyordu. Karanlık modda artık siyah yerine hafif beyaz bir katman kullanılıyor — seçili satır (Stok listesi dahil tüm tablolarda) her iki modda da net görünüyor. Şema değişikliği yok.
