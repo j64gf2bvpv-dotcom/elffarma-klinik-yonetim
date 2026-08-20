@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.144] - 2026-08-20
+
+**Günlük Sayım: Paket/Flakon artık "eklenen" anlamına geliyor, ürün ekle/çıkar eklendi:** "Paket"/"Flakon" kutularına girilen sayı artık bir yeniden-sayım değil, o gün EKLENEN miktar — Son Stok = Sistemdeki Miktar + girilen değer. "Sayımı Tamamla" da buna göre her pozitif girişi doğrudan bir stok girişi (in) olarak işliyor. Kolon başlıkları sadeleştirildi (Paket/Flakon). Sayım kartına "Sayıma ürün ekle" arama kutusu ve her satıra bir "sayımdan çıkar" butonu eklendi — sayım başladıktan sonra unutulan ya da yanlışlıkla dahil edilmiş ürünler elle düzenlenebiliyor. Şema değişikliği yok.
+
 ## [2.17.143] - 2026-08-20
 
 **Günlük Sayım tablosundan "Paket Fark" ve "Flakon Fark" kolonları kaldırıldı:** Sayım tablosu artık Ürün / Sistemdeki Miktar / Paket Sayımı / Flakon Sayımı / Son Stok kolonlarını gösteriyor — fark rozetleri kullanıcı isteğiyle çıkarıldı. Şema değişikliği yok.

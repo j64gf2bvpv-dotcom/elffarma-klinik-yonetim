@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
+import { toast } from 'sonner'
 import {
   ClipboardCheck,
   CheckCircle2,
@@ -15,6 +16,7 @@ import {
   Printer,
   ImageDown,
   AlertTriangle,
+  Trash2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -32,9 +34,12 @@ import {
 import { ExportMenu } from '@/components/ExportMenu'
 import { useSales } from '@/features/sales/hooks'
 import { SaleForm } from '@/features/sales/SaleForm'
+import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import {
+  useAddCountItem,
   useCompleteCount,
   useCountItems,
+  useDeleteCountItem,
   usePastCounts,
   useReopenCount,
   useStartTodayCount,
@@ -163,6 +168,7 @@ function CountItemRow({
   onSelect,
   onSavePaket,
   onSaveFlakon,
+  onDelete,
 }: {
   item: StockCountItemWithProduct
   readOnly: boolean
@@ -170,13 +176,15 @@ function CountItemRow({
   onSelect: (id: string) => void
   onSavePaket: (id: string, value: number | null) => void
   onSaveFlakon: (id: string, value: number | null) => void
+  onDelete: (item: StockCountItemWithProduct) => void
 }) {
   const [paketValue, setPaketValue] = React.useState(item.counted_quantity?.toString() ?? '')
   const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
-  // Son Stok — sayım girilmişse o değer, girilmemişse hâlâ canlı sistem stoğu
-  // (Günlük Özet/dışa aktarımdaki aynı "productLine" hesabıyla birebir tutarlı).
-  const finalPaket = paketValue === '' ? item.products.current_quantity : Number(paketValue)
-  const finalFlakon = flakonValue === '' ? item.products.flakon_quantity : Number(flakonValue)
+  // Son Stok = Sistemdeki Miktar + Eklenen (Paket/Flakon Sayımı kutusu artık
+  // bir yeniden-sayım değil, BUGÜN EKLENEN miktarı ifade ediyor — bkz.
+  // productLine() ve completeCount()'taki aynı toplama mantığı).
+  const finalPaket = item.products.current_quantity + (paketValue === '' ? 0 : Number(paketValue))
+  const finalFlakon = item.products.flakon_quantity + (flakonValue === '' ? 0 : Number(flakonValue))
 
   React.useEffect(() => {
     setPaketValue(item.counted_quantity?.toString() ?? '')
@@ -226,6 +234,22 @@ function CountItemRow({
         {finalPaket} {item.products.unit}
         {finalFlakon > 0 && `, ${finalFlakon} flakon`}
       </TableCell>
+      {!readOnly && (
+        <TableCell>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            title="Sayımdan çıkar"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(item)
+            }}
+          >
+            <Trash2 className="size-4 text-destructive" />
+          </Button>
+        </TableCell>
+      )}
     </TableRow>
   )
 }
@@ -239,8 +263,15 @@ export function DailyCountPanel() {
   const { data: items = [] } = useCountItems(todayCount?.id)
   const updateItemMutation = useUpdateCountItem(todayCount?.id ?? '')
   const updateItemFlakonMutation = useUpdateCountItemFlakon(todayCount?.id ?? '')
+  const addItemMutation = useAddCountItem(todayCount?.id ?? '')
+  const deleteItemMutation = useDeleteCountItem(todayCount?.id ?? '')
   const { data: allSales = [] } = useSales()
   const [selectedItemId, setSelectedItemId] = React.useState<string | null>(null)
+
+  function handleDeleteItem(item: StockCountItemWithProduct) {
+    if (!confirm(`${item.products.name} bu sayımdan çıkarılsın mı?`)) return
+    deleteItemMutation.mutate(item.id)
+  }
 
   if (loadingToday) {
     return (
@@ -277,17 +308,15 @@ export function DailyCountPanel() {
   const countDayLabel = format(new Date(todayCount.count_date), 'EEEE', { locale: trLocale })
 
   const pendingChangeCount = items.filter(
-    (i) =>
-      (i.counted_quantity !== null && i.counted_quantity !== i.products.current_quantity) ||
-      (i.counted_quantity_flakon !== null && i.counted_quantity_flakon !== i.products.flakon_quantity),
+    (i) => (i.counted_quantity ?? 0) > 0 || (i.counted_quantity_flakon ?? 0) > 0,
   ).length
 
-  // "Son stok" — sayılmışsa girilen sayım, sayılmamışsa hâlâ canlı sistem
-  // stoğu (panelde ne görünüyorsa, Sayımı Tamamla sonrası depoya yansıyacak
-  // gerçek son değer bu).
+  // "Son stok" = Sistemdeki Miktar + Paket/Flakon Sayımı kutusuna girilen
+  // (bugün eklenen) miktar — Sayımı Tamamla sonrası depoya yansıyacak gerçek
+  // son değer bu (bkz. completeCount()'taki aynı toplama mantığı).
   function productLine(i: StockCountItemWithProduct): { metrik: string; deger: string | number } {
-    const finalPaket = i.counted_quantity ?? i.products.current_quantity
-    const finalFlakon = i.counted_quantity_flakon ?? i.products.flakon_quantity
+    const finalPaket = i.products.current_quantity + (i.counted_quantity ?? 0)
+    const finalFlakon = i.products.flakon_quantity + (i.counted_quantity_flakon ?? 0)
     return {
       metrik: i.products.name,
       deger: finalFlakon > 0 ? `${finalPaket} ${i.products.unit}, ${finalFlakon} flakon` : `${finalPaket} ${i.products.unit}`,
@@ -405,8 +434,23 @@ export function DailyCountPanel() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">Sayım</CardTitle>
+          {!isCompleted && (
+            <div className="w-64">
+              <ProductCombobox
+                value={undefined}
+                placeholder="Sayıma ürün ekle..."
+                onChange={(product) => {
+                  if (items.some((i) => i.product_id === product.id)) {
+                    toast.info('Bu ürün zaten sayımda')
+                    return
+                  }
+                  addItemMutation.mutate(product)
+                }}
+              />
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -414,9 +458,10 @@ export function DailyCountPanel() {
               <TableRow>
                 <TableHead>Ürün</TableHead>
                 <TableHead>Sistemdeki Miktar</TableHead>
-                <TableHead>Paket Sayımı</TableHead>
-                <TableHead>Flakon Sayımı</TableHead>
+                <TableHead>Paket</TableHead>
+                <TableHead>Flakon</TableHead>
                 <TableHead>Son Stok</TableHead>
+                {!isCompleted && <TableHead></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -429,6 +474,7 @@ export function DailyCountPanel() {
                   onSelect={setSelectedItemId}
                   onSavePaket={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
                   onSaveFlakon={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
+                  onDelete={handleDeleteItem}
                 />
               ))}
             </TableBody>

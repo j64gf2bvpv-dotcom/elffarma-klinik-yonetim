@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  addCountItem,
   completeCount,
+  deleteCountItem,
   fetchCountItems,
   fetchPastCounts,
   fetchTodayCount,
@@ -10,6 +12,7 @@ import {
   updateCountItem,
   updateCountItemFlakon,
 } from './api'
+import type { Product } from '@/types/database'
 
 export function useTodayCount() {
   return useQuery({ queryKey: ['stock_counts', 'today'], queryFn: fetchTodayCount })
@@ -60,6 +63,31 @@ export function useUpdateCountItemFlakon(stockCountId: string) {
       queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
     },
     onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
+  })
+}
+
+export function useAddCountItem(stockCountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (product: Pick<Product, 'id' | 'current_quantity' | 'flakon_quantity'>) =>
+      addCountItem(stockCountId, product),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
+      toast.success('Ürün sayıma eklendi')
+    },
+    onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
+  })
+}
+
+export function useDeleteCountItem(stockCountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteCountItem(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
+      toast.success('Ürün sayımdan çıkarıldı')
+    },
+    onError: (error: Error) => toast.error('Çıkarılamadı', { description: error.message }),
   })
 }
 
