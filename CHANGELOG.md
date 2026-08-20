@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.141] - 2026-08-20
+
+**Kurulum paketi CI hatası tekrar düzeltildi (kesin):** v2.17.140'ın düzeltmesi yerel Node 24 ile üretilmişti, CI'nın kullandığı Node 22/npm 10 farklı bir bağımlılık çözümlemesi bekliyordu (typescript@5.9.3'ün nested kopyası eksikti) — lock dosyası bu sefer CI'yla birebir aynı Node 22 sürümüyle yeniden üretildi. Şema değişikliği yok.
+
 ## [2.17.140] - 2026-08-20
 
 **Kurulum paketi CI hatası düzeltildi:** `package-lock.json`, `package.json`'a sonradan eklenen mobil derleme bağımlılıklarıyla senkron değildi, bu yüzden bir önceki sürüm denemesi (v2.17.139) derleme aşamasında başarısız oldu ve hiç yayınlanamadı — 14 Ağustos'tan (v2.17.110) beri biriken TÜM düzeltmeler (ürün düzenleme yetki hatası, flakon stok takibi, Günlük Sayım Son Stok kolonu, otomatik güncelleme düzeltmeleri ve dahası) bu sürümle ilk kez gerçekten yayınlanıyor. Şema değişikliği yok.
