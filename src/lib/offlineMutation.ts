@@ -24,6 +24,22 @@ function isNetworkError(error: unknown): boolean {
   return /failed to fetch|networkerror|network request failed|load failed/i.test(message)
 }
 
+/**
+ * PostgREST'in `.single()` sıfır satır döndüğünde attığı PGRST116 hatası
+ * ("Cannot coerce the result to a single JSON object") — genelde satırın
+ * kendisi yerine RLS'in o yazma işlemini sessizce reddetmesinden kaynaklanır
+ * (ör. sadece yöneticinin düzenleyebildiği bir tabloya personel yazmaya
+ * çalışması). Kullanıcıya bu ham teknik mesajı göstermek yerine anlaşılır
+ * bir Türkçe yetki hatasına çeviriyoruz.
+ */
+function translatePermissionError(error: unknown): unknown {
+  const code = (error as { code?: string } | null | undefined)?.code
+  if (code === 'PGRST116') {
+    return new Error('Bu işlem için yetkiniz yok — sadece yönetici yapabilir.')
+  }
+  return error
+}
+
 export async function offlineInsert<T>(
   table: string,
   payload: Record<string, unknown>,
@@ -42,7 +58,7 @@ export async function offlineInsert<T>(
     if (error) throw error
     return data as T
   } catch (error) {
-    if (!isNetworkError(error)) throw error
+    if (!isNetworkError(error)) throw translatePermissionError(error)
     await enqueueMutation({ type: 'insert', table, payload: withId, description })
     return { ...withId, created_at: new Date().toISOString() } as unknown as T
   }
@@ -64,7 +80,7 @@ export async function offlineUpdate<T>(
     if (error) throw error
     return data as T
   } catch (error) {
-    if (!isNetworkError(error)) throw error
+    if (!isNetworkError(error)) throw translatePermissionError(error)
     await enqueueMutation({ type: 'update', table, match: { id }, payload, description })
     return { id, ...payload } as unknown as T
   }
@@ -90,7 +106,7 @@ export async function offlineUpsert<T>(
     if (error) throw error
     return data as T
   } catch (error) {
-    if (!isNetworkError(error)) throw error
+    if (!isNetworkError(error)) throw translatePermissionError(error)
     await enqueueMutation({ type: 'upsert', table, payload, description, onConflict })
     return payload as unknown as T
   }

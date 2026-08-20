@@ -266,6 +266,8 @@ function FlakonQuantityCell({ product }: { product: Product }) {
 
 /** Kampanya metnine tıklayınca yerinde düzenlenebilir hale gelir — sadece campaign alanını günceller. */
 function CampaignCell({ product }: { product: Product }) {
+  const { staff } = useAuth()
+  const isAdmin = staff?.role === 'admin'
   const [editing, setEditing] = React.useState(false)
   const [value, setValue] = React.useState(product.campaign ?? '')
   const mutation = useUpdateProductCampaign()
@@ -279,6 +281,10 @@ function CampaignCell({ product }: { product: Product }) {
     const trimmed = value.trim()
     if (trimmed === (product.campaign ?? '')) return
     mutation.mutate({ id: product.id, campaign: trimmed || null })
+  }
+
+  if (!isAdmin) {
+    return product.campaign ? <Badge variant="success">{product.campaign}</Badge> : <span className="text-muted-foreground">—</span>
   }
 
   if (editing) {
@@ -326,6 +332,8 @@ function CampaignCell({ product }: { product: Product }) {
 
 /** Satış fiyatına tıklayınca yerinde düzenlenebilir hale gelir — sadece unit_price alanını günceller. */
 function PriceCell({ product }: { product: Product }) {
+  const { staff } = useAuth()
+  const isAdmin = staff?.role === 'admin'
   const [editing, setEditing] = React.useState(false)
   const [value, setValue] = React.useState(product.unit_price != null ? String(product.unit_price) : '')
   const mutation = useUpdateProductPrice()
@@ -345,6 +353,16 @@ function PriceCell({ product }: { product: Product }) {
       return
     }
     mutation.mutate({ id: product.id, unit_price: parsed })
+  }
+
+  if (!isAdmin) {
+    return product.unit_price ? (
+      <span className="text-muted-foreground">
+        {Number(product.unit_price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+      </span>
+    ) : (
+      <span className="text-muted-foreground">—</span>
+    )
   }
 
   if (editing) {
@@ -404,6 +422,8 @@ function PriceCell({ product }: { product: Product }) {
 
 /** Kategoriye tıklayınca yerinde düzenlenebilir hale gelir — sadece category alanını günceller. */
 function CategoryCell({ product }: { product: Product }) {
+  const { staff } = useAuth()
+  const isAdmin = staff?.role === 'admin'
   const [editing, setEditing] = React.useState(false)
   const [value, setValue] = React.useState(product.category ?? '')
   const mutation = useUpdateProductCategory()
@@ -417,6 +437,10 @@ function CategoryCell({ product }: { product: Product }) {
     const trimmed = value.trim()
     if (trimmed === (product.category ?? '')) return
     mutation.mutate({ id: product.id, category: trimmed || null })
+  }
+
+  if (!isAdmin) {
+    return <span className="text-muted-foreground">{product.category || '—'}</span>
   }
 
   if (editing) {
@@ -488,6 +512,8 @@ function ProductsTable({
   onToggleAll: (products: Product[], checkAll: boolean) => void
   onReorder: (products: Product[]) => void
 }) {
+  const { staff } = useAuth()
+  const isAdmin = staff?.role === 'admin'
   const dragIndexRef = React.useRef<number | null>(null)
   const allChecked = products.length > 0 && products.every((p) => checkedIds.has(p.id))
 
@@ -575,17 +601,26 @@ function ProductsTable({
                     />
                   </TableCell>
                   <TableCell className="font-medium">
-                    <ProductForm
-                      product={product}
-                      trigger={
-                        <button type="button" className="block text-left hover:underline" title="Tüm bilgileri düzenle">
-                          {product.name}
-                          {product.barcode && (
-                            <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>
-                          )}
-                        </button>
-                      }
-                    />
+                    {isAdmin ? (
+                      <ProductForm
+                        product={product}
+                        trigger={
+                          <button type="button" className="block text-left hover:underline" title="Tüm bilgileri düzenle">
+                            {product.name}
+                            {product.barcode && (
+                              <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>
+                            )}
+                          </button>
+                        }
+                      />
+                    ) : (
+                      <div>
+                        {product.name}
+                        {product.barcode && (
+                          <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <CategoryCell product={product} />
@@ -633,10 +668,14 @@ function ProductsTable({
                       <StockHistoryDialog product={product} />
                       <ProductLotsDialog product={product} />
                       <StockMovementDialog product={product} />
-                      <ProductForm product={product} />
-                      <Button variant="ghost" size="icon" onClick={() => onRemove(product)}>
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
+                      {isAdmin && (
+                        <>
+                          <ProductForm product={product} />
+                          <Button variant="ghost" size="icon" onClick={() => onRemove(product)}>
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -810,6 +849,8 @@ function AddCatalogDialog({ existingNames }: { existingNames: string[] }) {
 }
 
 export function StockPage() {
+  const { staff } = useAuth()
+  const isAdmin = staff?.role === 'admin'
   const [search, setSearch] = React.useState('')
   const [brandFilter, setBrandFilter] = React.useState<typeof ALL_BRANDS | BrandLine>(ALL_BRANDS)
   // Kaydırırken hangi satırla ilgilendiğini kaybetmemek için tıklanan satır
@@ -951,22 +992,26 @@ export function StockPage() {
                 { header: 'Son Kullanım Tarihi', value: (p) => p.expiry_date ?? '' },
               ]}
             />
-            <ImportMenu
-              onImport={handleImport}
-              templateFilename="stok-sablon"
-              templateHeaders={PRODUCT_IMPORT_HEADERS}
-              templateSampleRows={PRODUCT_IMPORT_SAMPLE_ROWS}
-            />
-            <SmartImportDialog
-              title="Ürünleri Akıllı İçe Aktar"
-              targetLabel="stok/ürün"
-              fieldHeaders={PRODUCT_IMPORT_HEADERS}
-              fieldHints={PRODUCT_IMPORT_FIELD_HINTS}
-              onImport={handleImport}
-            />
-            <DailyMovementImportButton />
-            <ResetAllStockDialog affectedCount={resetAffectedCount} />
-            <ProductForm />
+            {isAdmin && (
+              <>
+                <ImportMenu
+                  onImport={handleImport}
+                  templateFilename="stok-sablon"
+                  templateHeaders={PRODUCT_IMPORT_HEADERS}
+                  templateSampleRows={PRODUCT_IMPORT_SAMPLE_ROWS}
+                />
+                <SmartImportDialog
+                  title="Ürünleri Akıllı İçe Aktar"
+                  targetLabel="stok/ürün"
+                  fieldHeaders={PRODUCT_IMPORT_HEADERS}
+                  fieldHints={PRODUCT_IMPORT_FIELD_HINTS}
+                  onImport={handleImport}
+                />
+                <DailyMovementImportButton />
+                <ResetAllStockDialog affectedCount={resetAffectedCount} />
+                <ProductForm />
+              </>
+            )}
           </div>
         }
       />
@@ -1028,7 +1073,7 @@ export function StockPage() {
                 ))}
               </TabsList>
             </Tabs>
-            <AddCatalogDialog existingNames={catalogs.map((c) => c.name)} />
+            {isAdmin && <AddCatalogDialog existingNames={catalogs.map((c) => c.name)} />}
           </div>
 
           {checkedIds.size > 0 && (
@@ -1037,14 +1082,16 @@ export function StockPage() {
               <Button variant="outline" size="sm" onClick={() => setCheckedIds(new Set())}>
                 Seçimi Temizle
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={handleBulkRemove}
-              >
-                <Trash2 className="size-3.5" /> Seçilenleri Kaldır
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={handleBulkRemove}
+                >
+                  <Trash2 className="size-3.5" /> Seçilenleri Kaldır
+                </Button>
+              )}
             </div>
           )}
 
