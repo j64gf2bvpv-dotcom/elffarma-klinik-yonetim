@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.138] - 2026-08-20
+
+**Günlük Sayım tablosuna canlı "Son Stok" kolonu eklendi:** Paket Sayımı/Fark ve Flakon Sayımı/Fark kolonlarının yanına, sayım girildikçe anlık güncellenen bir "Son Stok" kolonu eklendi — sayım girilmişse o değeri, girilmemişse hâlâ canlı sistem stoğunu gösterir (aynı hesap zaten aşağıdaki "Günlük Özet" kartında ve dışa aktarımında kullanılıyordu, artık ana sayım tablosunda da görünüyor). Şema değişikliği yok.
+
 ## [2.17.137] - 2026-08-20
 
 **Stok'ta ürün düzenlemede "Cannot coerce the result..." hatası çözüldü:** Ürünler admin-write/staff-read kuralına tabi (bkz. CLAUDE.md) — personel bir ürünü (birim, kategori, kritik stok, fiyat, kampanya, düzenle/sil, yeni ürün, katalog ekleme, toplu içe aktarma) düzenlemeye çalıştığında veritabanı sessizce reddediyordu ama arayüz bunu anlaşılmaz bir teknik hatayla ("Cannot coerce the result to a single JSON object") gösteriyordu. İki düzeltme: (1) Stok sayfasında bu düzenleme/silme/ekleme kontrolleri artık sadece yöneticilere görünüyor, personel salt-okunur görüyor; (2) her ihtimale karşı, bu tür bir yetki hatası başka bir yerde de oluşursa artık "Bu işlem için yetkiniz yok — sadece yönetici yapabilir." gibi anlaşılır bir Türkçe mesaj gösteriliyor. Şema değişikliği yok.

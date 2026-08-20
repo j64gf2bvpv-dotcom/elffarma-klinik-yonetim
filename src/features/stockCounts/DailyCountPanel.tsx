@@ -175,6 +175,10 @@ function CountItemRow({
   const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
   const paketDiff = paketValue === '' ? null : Number(paketValue) - item.products.current_quantity
   const flakonDiff = flakonValue === '' ? null : Number(flakonValue) - item.products.flakon_quantity
+  // Son Stok — sayım girilmişse o değer, girilmemişse hâlâ canlı sistem stoğu
+  // (Günlük Özet/dışa aktarımdaki aynı "productLine" hesabıyla birebir tutarlı).
+  const finalPaket = paketValue === '' ? item.products.current_quantity : Number(paketValue)
+  const finalFlakon = flakonValue === '' ? item.products.flakon_quantity : Number(flakonValue)
 
   React.useEffect(() => {
     setPaketValue(item.counted_quantity?.toString() ?? '')
@@ -233,6 +237,10 @@ function CountItemRow({
             {flakonDiff > 0 ? `+${flakonDiff}` : flakonDiff}
           </Badge>
         )}
+      </TableCell>
+      <TableCell className="font-medium">
+        {finalPaket} {item.products.unit}
+        {finalFlakon > 0 && `, ${finalFlakon} flakon`}
       </TableCell>
     </TableRow>
   )
@@ -426,6 +434,7 @@ export function DailyCountPanel() {
                 <TableHead>Paket Fark</TableHead>
                 <TableHead>Flakon Sayımı</TableHead>
                 <TableHead>Flakon Fark</TableHead>
+                <TableHead>Son Stok</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
