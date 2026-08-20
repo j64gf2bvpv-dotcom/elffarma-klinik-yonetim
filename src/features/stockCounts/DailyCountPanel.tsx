@@ -263,13 +263,12 @@ function CountItemRow({
     <TableRow onClick={() => onSelect(item.id)} selected={selected}>
       <TableCell className="font-medium">{item.products.name}</TableCell>
       <TableCell className="text-muted-foreground">
-        {item.products.current_quantity} {item.products.unit}, {item.products.flakon_quantity} flakon
+        {item.products.current_quantity} {item.products.unit}
+        {item.products.flakon_quantity > 0 && `, ${item.products.flakon_quantity} flakon`}
       </TableCell>
       <TableCell>
         {readOnly ? (
-          <span>
-            {item.counted_quantity ?? '—'} {item.products.unit}
-          </span>
+          <span>{item.counted_quantity ? `${item.counted_quantity} ${item.products.unit}` : '—'}</span>
         ) : (
           <Input
             type="number"
@@ -283,7 +282,7 @@ function CountItemRow({
       </TableCell>
       <TableCell>
         {readOnly ? (
-          <span>{item.counted_quantity_flakon ?? '—'} flakon</span>
+          <span>{item.counted_quantity_flakon ? `${item.counted_quantity_flakon} flakon` : '—'}</span>
         ) : (
           <Input
             type="number"
@@ -365,12 +364,11 @@ function PastCountRow({ count }: { count: StockCount }) {
                   <TableRow key={i.id}>
                     <TableCell className="font-medium">{i.products.name}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {i.expected_quantity} {i.products.unit}, {i.expected_quantity_flakon} flakon
+                      {i.expected_quantity} {i.products.unit}
+                      {i.expected_quantity_flakon > 0 && `, ${i.expected_quantity_flakon} flakon`}
                     </TableCell>
-                    <TableCell>
-                      {i.counted_quantity ?? '—'} {i.products.unit}
-                    </TableCell>
-                    <TableCell>{i.counted_quantity_flakon ?? '—'} flakon</TableCell>
+                    <TableCell>{i.counted_quantity ? `${i.counted_quantity} ${i.products.unit}` : '—'}</TableCell>
+                    <TableCell>{i.counted_quantity_flakon ? `${i.counted_quantity_flakon} flakon` : '—'}</TableCell>
                     <TableCell className="font-medium">
                       {i.expected_quantity + (i.counted_quantity ?? 0)} {i.products.unit}
                       {i.expected_quantity_flakon + (i.counted_quantity_flakon ?? 0) > 0 &&

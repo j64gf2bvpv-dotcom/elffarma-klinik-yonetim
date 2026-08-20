@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.153] - 2026-08-20
+
+**Günlük Sayım'da sıfır miktarlar artık boş/sıfır yazı yerine "—" gösteriyor:** "Sistemdeki Miktar" kolonunda flakon 0 ise ", 0 flakon" ibaresi hiç yazılmıyor. "Paket" ve "Flakon" kolonlarında (hem açık sayımın salt-okunur görünümünde hem Geçmiş Sayımlar'ın açılır detayında) sayılan miktar 0/boşsa artık sadece "—" gösteriliyor, "0 adet"/"0 flakon" gibi gürültü yazılmıyor. Şema değişikliği yok.
+
 ## [2.17.152] - 2026-08-20
 
 **Hareket Dökümü'nde flakon satırlarının Güncel Stok kolonu düzeltildi:** Paket ve flakon stokları birbirinden tamamen bağımsız iki sayaç olduğu için (bkz. daha önceki "paket/flakon bağımsızlaştırma" değişikliği), flakon türündeki bir giriş/çıkış hareketinden sonra "Güncel Stok" kolonu yanlışlıkla değişmeyen paket bakiyesini gösteriyordu — flakon hareketi yapılmış gibi görünmüyordu, tutmuyor gibi duruyordu. Artık flakon satırlarında bu kolon o ana kadarki flakon bakiyesini ("N flakon") gösteriyor; paket satırları eskisi gibi paket bakiyesini gösteriyor. Tablo, Excel/Word/PDF dışa aktarma ve Görsel (PNG) çıktısının hepsinde düzeltildi. Şema değişikliği yok.
