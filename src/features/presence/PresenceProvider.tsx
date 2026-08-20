@@ -33,7 +33,15 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
 
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState<OnlinePeer>()
-      setOnline(Object.values(state).flatMap((entries) => entries.map((e) => ({ ...e }))))
+      // Aynı personel aynı `key` altında birden fazla presence kaydına sahip
+      // olabilir (sekme/pencere yeniden bağlanırken eski bağlantı henüz
+      // düşmemişken yenisi track edilmesi gibi) — listede aynı kişi iki kez
+      // görünmesin diye staff_id başına tek kayda indiriyoruz.
+      const byStaffId = new Map<string, OnlinePeer>()
+      for (const entries of Object.values(state)) {
+        for (const e of entries) byStaffId.set(e.staff_id, { ...e })
+      }
+      setOnline(Array.from(byStaffId.values()))
     })
 
     channel.subscribe(async (status) => {
