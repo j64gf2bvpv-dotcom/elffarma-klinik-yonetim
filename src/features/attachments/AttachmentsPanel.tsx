@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useAuth } from '@/lib/auth'
 import { getAttachmentUrl } from './api'
 import { useAttachments, useDeleteAttachment, useUploadAttachment } from './hooks'
 import type { AttachmentOwnerType } from '@/types/database'
@@ -16,6 +17,12 @@ interface AttachmentsPanelProps {
 }
 
 export function AttachmentsPanel({ ownerType, ownerId }: AttachmentsPanelProps) {
+  const { staff } = useAuth()
+  // "product" belgeleri sadece yönetici ekleyip/silebiliyor (bkz. attachments
+  // RLS politikaları) — personelde deneme, RLS'in sessizce reddedip yükleme
+  // butonunun görünüşte çalışmıyormuş gibi durmasına yol açıyordu; en baştan
+  // gizlemek daha net.
+  const canManage = ownerType !== 'product' || staff?.role === 'admin'
   const { data: attachments = [], isLoading } = useAttachments(ownerType, ownerId)
   const uploadMutation = useUploadAttachment(ownerType, ownerId)
   const deleteMutation = useDeleteAttachment(ownerType, ownerId)
@@ -44,16 +51,18 @@ export function AttachmentsPanel({ ownerType, ownerId }: AttachmentsPanelProps) 
     <div>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold">Belgeler</h3>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploadMutation.isPending}
-        >
-          {uploadMutation.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
-          Belge Yükle
-        </Button>
+        {canManage && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadMutation.isPending}
+          >
+            {uploadMutation.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
+            Belge Yükle
+          </Button>
+        )}
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
       </div>
       <Card>
@@ -80,9 +89,11 @@ export function AttachmentsPanel({ ownerType, ownerId }: AttachmentsPanelProps) 
                 >
                   {downloadingId === att.id ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(att)}>
-                  <Trash2 className="size-3.5 text-destructive" />
-                </Button>
+                {canManage && (
+                  <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(att)}>
+                    <Trash2 className="size-3.5 text-destructive" />
+                  </Button>
+                )}
               </div>
             </div>
           ))}

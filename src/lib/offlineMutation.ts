@@ -25,16 +25,17 @@ function isNetworkError(error: unknown): boolean {
 }
 
 /**
- * PostgREST'in `.single()` sıfır satır döndüğünde attığı PGRST116 hatası
- * ("Cannot coerce the result to a single JSON object") — genelde satırın
- * kendisi yerine RLS'in o yazma işlemini sessizce reddetmesinden kaynaklanır
- * (ör. sadece yöneticinin düzenleyebildiği bir tabloya personel yazmaya
- * çalışması). Kullanıcıya bu ham teknik mesajı göstermek yerine anlaşılır
- * bir Türkçe yetki hatasına çeviriyoruz.
+ * İki farklı ham teknik hatayı — PostgREST'in `.single()` sıfır satır
+ * döndüğünde attığı PGRST116 ("Cannot coerce the result to a single JSON
+ * object") ve doğrudan bir RLS politikası ihlali (Postgres kodu 42501 /
+ * "row-level security policy" mesajı) — anlaşılır bir Türkçe yetki hatasına
+ * çeviriyoruz. İkisi de aynı kök nedenden geliyor: sadece yöneticinin
+ * yazabildiği bir tabloya/satıra personel yazmaya çalışması.
  */
 function translatePermissionError(error: unknown): unknown {
   const code = (error as { code?: string } | null | undefined)?.code
-  if (code === 'PGRST116') {
+  const message = error instanceof Error ? error.message : String(error ?? '')
+  if (code === 'PGRST116' || code === '42501' || /row-level security policy/i.test(message)) {
     return new Error('Bu işlem için yetkiniz yok — sadece yönetici yapabilir.')
   }
   return error
@@ -122,7 +123,7 @@ export async function offlineDelete(table: string, id: string, description: stri
     const { error } = await supabase.from(table).delete().eq('id', id)
     if (error) throw error
   } catch (error) {
-    if (!isNetworkError(error)) throw error
+    if (!isNetworkError(error)) throw translatePermissionError(error)
     await enqueueMutation({ type: 'delete', table, match: { id }, description })
   }
 }
