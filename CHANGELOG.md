@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.151] - 2026-08-20
+
+**Günün Satış/İade Hareketleri paneli düzenlenebilir hale getirildi:** Günlük Sayım ekranındaki bu panelde artık her satış/iade satırında satış temsilcisi (alan/teslim eden) yerinde değiştirilebiliyor, ayrıca bir "İptal Et" butonuyla kayıt iptal edilebiliyor — iptal, SalesPage'deki silme ile aynı desende stok etkisini tersine çevirip kaydı siliyor (stok yanlış kalmasın diye). Ekleme zaten mevcuttu (panel başlığındaki "Yeni Satış / İade"). Şema değişikliği yok.
+
 ## [2.17.150] - 2026-08-20
 
 **Çevrimiçi personel listesinde mükerrer kullanıcı düzeltildi:** Aynı personel bazen (sekme/pencere yeniden bağlanırken eski bağlantı düşmeden yenisi başlaması gibi durumlarda) çevrimiçi listede iki kez görünebiliyordu. Presence senkronizasyonu artık personel id'sine göre tekilleştiriliyor — kenar çubuğundaki ve Ana Panel'deki "Çevrimiçi Personel" listeleri her kişiyi bir kez gösteriyor. Şema değişikliği yok.

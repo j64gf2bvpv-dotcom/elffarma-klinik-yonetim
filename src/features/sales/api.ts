@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { offlineInsert, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
+import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
 import type { Sale, SaleType } from '@/types/database'
 
 export interface SaleInput {
@@ -43,6 +43,10 @@ export async function createSale(input: SaleInput): Promise<Sale> {
     { ...input, created_by: createdBy },
     `${input.type === 'sale' ? 'Satış' : 'İade'}: ${input.product_name}`,
   )
+}
+
+export async function updateSaleRep(id: string, salesRepId: string | null): Promise<Sale> {
+  return offlineUpdate<Sale>('sales', id, { sales_rep_id: salesRepId }, 'Satış/iade temsilcisini değiştirme')
 }
 
 export async function deleteSale(id: string): Promise<void> {

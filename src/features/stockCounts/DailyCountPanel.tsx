@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,9 +34,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ExportMenu } from '@/components/ExportMenu'
-import { useSales } from '@/features/sales/hooks'
+import { useSales, useUpdateSaleRep, useDeleteSale } from '@/features/sales/hooks'
 import { SaleForm } from '@/features/sales/SaleForm'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
+import { useRecordStockMovement } from '@/features/stock/hooks'
+import { useSalesReps } from '@/features/salesReps/hooks'
 import {
   useAddCountItem,
   useCompleteCount,
@@ -51,8 +54,79 @@ import {
 import { exportDailyCountToExcel, exportDailyCountToPdf, exportDailyCountToWord, printDailyCount } from './exportDailyCount'
 import { exportDailySummaryImage } from './exportSummaryImage'
 import type { StockCountItemWithProduct } from './api'
+import type { SaleWithRelations } from '@/features/sales/api'
 import type { StockCount } from '@/types/database'
 import { cn } from '@/lib/utils'
+
+const NO_REP = '__none__'
+
+/**
+ * Günün Satış/İade Hareketleri panelindeki tek bir satır — satış temsilcisini
+ * (iadeyi alan / teslim eden) yerinde değiştirmeyi ve kaydı iptal etmeyi
+ * (stok etkisini tersine çevirip kaydı silmeyi, bkz. SalesPage.tsx'teki aynı
+ * desen) destekler.
+ */
+function SalesActivityRow({ sale, repRoleLabel }: { sale: SaleWithRelations; repRoleLabel: string }) {
+  const { data: salesReps = [] } = useSalesReps()
+  const updateRepMutation = useUpdateSaleRep()
+  const recordMovement = useRecordStockMovement()
+  const deleteMutation = useDeleteSale()
+
+  async function handleCancel() {
+    if (
+      !confirm(
+        `${sale.product_name} (${sale.quantity} adet) ${sale.type === 'sale' ? 'satış' : 'iade'} kaydı iptal edilsin mi? Stok buna göre düzeltilecek.`,
+      )
+    )
+      return
+    if (sale.product_id) {
+      await recordMovement.mutateAsync({
+        product_id: sale.product_id,
+        movement_type: sale.type === 'sale' ? 'in' : 'out',
+        quantity: sale.quantity,
+        reason: `${sale.type === 'sale' ? 'Satış' : 'İade'} kaydı iptal edildi — stok düzeltmesi`,
+        note: sale.product_name,
+      })
+    }
+    deleteMutation.mutate(sale.id)
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2.5 text-sm">
+      <div className="min-w-0">
+        <span className="font-medium">{sale.customers?.full_name ?? '—'}</span>
+        <span className="text-muted-foreground">
+          {' '}
+          — {sale.product_name} × {sale.quantity}
+        </span>
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <span className="text-xs text-muted-foreground">{repRoleLabel}:</span>
+        <Select
+          value={sale.sales_rep_id ?? NO_REP}
+          onValueChange={(value) => updateRepMutation.mutate({ id: sale.id, salesRepId: value === NO_REP ? null : value })}
+        >
+          <SelectTrigger className="h-7 w-36 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NO_REP}>Belirtilmedi</SelectItem>
+            {salesReps
+              .filter((r) => r.is_active)
+              .map((rep) => (
+                <SelectItem key={rep.id} value={rep.id}>
+                  {rep.name}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+        <Button variant="ghost" size="icon" className="size-7" onClick={handleCancel} title="İptal Et">
+          <Trash2 className="size-3.5 text-destructive" />
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 function TodaySalesActivity({ countDate }: { countDate: string }) {
   const { data: sales = [] } = useSales()
@@ -101,13 +175,7 @@ function TodaySalesActivity({ countDate }: { countDate: string }) {
           <div className="grid gap-2">
             {returns.length === 0 && <p className="text-muted-foreground text-sm">Bugün iade yok</p>}
             {returns.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-md border p-2.5 text-sm">
-                <span className="font-medium">{s.customers?.full_name ?? '—'}</span>
-                <span className="text-muted-foreground">
-                  {s.product_name} × {s.quantity}
-                  {s.sales_reps?.name && ` — ${s.sales_reps.name} tarafından alındı`}
-                </span>
-              </div>
+              <SalesActivityRow key={s.id} sale={s} repRoleLabel="Alan" />
             ))}
           </div>
         </div>
@@ -119,13 +187,7 @@ function TodaySalesActivity({ countDate }: { countDate: string }) {
           <div className="grid gap-2">
             {outgoing.length === 0 && <p className="text-muted-foreground text-sm">Bugün çıkan ürün yok</p>}
             {outgoing.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-md border p-2.5 text-sm">
-                <span className="font-medium">{s.customers?.full_name ?? '—'}</span>
-                <span className="text-muted-foreground">
-                  {s.product_name} × {s.quantity}
-                  {s.sales_reps?.name && ` — ${s.sales_reps.name} tarafından elden teslim edildi`}
-                </span>
-              </div>
+              <SalesActivityRow key={s.id} sale={s} repRoleLabel="Teslim eden" />
             ))}
           </div>
         </div>
