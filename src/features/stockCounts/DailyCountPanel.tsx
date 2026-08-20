@@ -465,7 +465,7 @@ export function DailyCountPanel() {
               rows={summaryRows}
               columns={[
                 { header: 'Ürün', value: (r) => r.metrik },
-                { header: 'Adet', value: (r) => r.deger },
+                { header: 'Son Stok', value: (r) => r.deger },
               ]}
             />
             <Button

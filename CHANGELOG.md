@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.142] - 2026-08-20
+
+**Günlük Özet'in PNG/Excel/Word/PDF dışa aktarımında "Son Stok" etiketi netleştirildi:** Değer zaten sayım varsa sayım, yoksa canlı sistem stoğuydu (paket + flakon) ama sütun başlığı sadece "Adet" yazıyordu — hangi rakamın gösterildiği belirsizdi. Hem "Görsel (PNG)" hem "Özeti Dışa Aktar" (Excel/Word/PDF) çıktısında sütun artık "Son Stok" olarak etiketleniyor. Şema değişikliği yok.
+
 ## [2.17.141] - 2026-08-20
 
 **Kurulum paketi CI hatası tekrar düzeltildi (kesin):** v2.17.140'ın düzeltmesi yerel Node 24 ile üretilmişti, CI'nın kullandığı Node 22/npm 10 farklı bir bağımlılık çözümlemesi bekliyordu (typescript@5.9.3'ün nested kopyası eksikti) — lock dosyası bu sefer CI'yla birebir aynı Node 22 sürümüyle yeniden üretildi. Şema değişikliği yok.

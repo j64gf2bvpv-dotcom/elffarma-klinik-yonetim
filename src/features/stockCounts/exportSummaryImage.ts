@@ -59,7 +59,7 @@ export function exportDailySummaryImage(
     ctx.fillStyle = '#a8a2b3'
     ctx.font = 'bold 13px "Segoe UI", sans-serif'
     ctx.fillText('ÜRÜN', 32, y)
-    ctx.fillText('ADET', width - 140, y)
+    ctx.fillText('SON STOK', width - 140, y)
     y += itemsHeaderHeight
 
     for (const item of items) {
