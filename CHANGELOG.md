@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.145] - 2026-08-20
+
+**Stok Kartı'nda uzun sebep/not metni artık rakamlarla çakışmıyor:** Hareket dökümündeki Sebep/Not sütunu, uzun bir metin (ör. "Excel içe aktarma — başlangıç stok eşitleme") girildiğinde satır içinde sarılıp Giriş/Çıkış rakamlarına taşıyordu. Sütun artık tek satırda üç nokta ile kırpılıyor, tam metin üzerine gelince (title/tooltip) görülebiliyor. Ayrıca 4 adet test amaçlı eklenmiş "[Örnek]" ürünü pasifleştirilip bugünkü Günlük Sayım'dan çıkarıldı. Şema değişikliği yok.
+
 ## [2.17.144] - 2026-08-20
 
 **Günlük Sayım: Paket/Flakon artık "eklenen" anlamına geliyor, ürün ekle/çıkar eklendi:** "Paket"/"Flakon" kutularına girilen sayı artık bir yeniden-sayım değil, o gün EKLENEN miktar — Son Stok = Sistemdeki Miktar + girilen değer. "Sayımı Tamamla" da buna göre her pozitif girişi doğrudan bir stok girişi (in) olarak işliyor. Kolon başlıkları sadeleştirildi (Paket/Flakon). Sayım kartına "Sayıma ürün ekle" arama kutusu ve her satıra bir "sayımdan çıkar" butonu eklendi — sayım başladıktan sonra unutulan ya da yanlışlıkla dahil edilmiş ürünler elle düzenlenebiliyor. Şema değişikliği yok.

@@ -390,7 +390,9 @@ export function StockCardPanel() {
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{row.unitPrice != null ? currency(row.unitPrice) : '—'}</TableCell>
-                      <TableCell className="text-muted-foreground max-w-56">{row.reason ?? row.note ?? '—'}</TableCell>
+                      <TableCell className="text-muted-foreground max-w-56 truncate" title={row.reason ?? row.note ?? undefined}>
+                        {row.reason ?? row.note ?? '—'}
+                      </TableCell>
                       <TableCell className="text-success tabular-nums">
                         <InlineQtyCell value={row.inQty} onCommit={(next) => handleInlineQtyChange(row, 'in', next)} />
                       </TableCell>
