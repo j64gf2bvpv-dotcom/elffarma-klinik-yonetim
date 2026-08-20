@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.147] - 2026-08-20
+
+**Geçmiş Sayımlar açılır/kapanır oldu:** Günlük Sayım'daki "Geçmiş Sayımlar" listesinde artık bir tarihe tıklayınca o günün sayım kalemleri (ürün, o günkü stok, girilen paket/flakon, son stok) genişleyip görülebiliyor — önceden sadece tarih ve durum rozeti vardı. Şema değişikliği yok.
+
 ## [2.17.146] - 2026-08-20
 
 **Stok hareketi düzenleme/silmede "stoğu negatife düşürür" hatası kaldırıldı:** Bir hareketi düzenlerken/silerken sonuç ürünün stoğunu eksiye düşürecekse işlem artık reddedilmiyor — eski davranışa dönüldü: stok 0'da sabitleniyor, düzenleme/silme her zaman başarılı oluyor. (Yeni bir satış/numune/manuel çıkış kaydı oluştururken "yeterli stok yok" kontrolü kasıtlı olarak dokunulmadan kalıyor — bu, ileriye dönük işlemler için hâlâ anlamlı.) Şema değişikliği: `update_stock_movement`/`delete_stock_movement` RPC'leri.

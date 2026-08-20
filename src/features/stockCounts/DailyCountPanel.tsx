@@ -17,6 +17,7 @@ import {
   ImageDown,
   AlertTriangle,
   Trash2,
+  ChevronDown,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -50,6 +51,8 @@ import {
 import { exportDailyCountToExcel, exportDailyCountToPdf, exportDailyCountToWord, printDailyCount } from './exportDailyCount'
 import { exportDailySummaryImage } from './exportSummaryImage'
 import type { StockCountItemWithProduct } from './api'
+import type { StockCount } from '@/types/database'
+import { cn } from '@/lib/utils'
 
 function TodaySalesActivity({ countDate }: { countDate: string }) {
   const { data: sales = [] } = useSales()
@@ -251,6 +254,74 @@ function CountItemRow({
         </TableCell>
       )}
     </TableRow>
+  )
+}
+
+/** Geçmiş bir sayımın kalemlerini açılınca gösteren satır — tıklanmadan
+ * önce hiç sorgu atmaz (useCountItems'a sadece açıkken gerçek id verilir).
+ * Geçmiş bir sayım için "Sistemdeki Miktar"/"Son Stok" bilerek CANLI ürün
+ * stoğu değil, o sayımın kendi expected_quantity anlık görüntüsü + o gün
+ * girilen değer üzerinden hesaplanır — aksi halde aradan geçen zamanda olan
+ * başka hareketler yüzünden o günkü gerçek son stok yanlış görünürdü.
+ */
+function PastCountRow({ count }: { count: StockCount }) {
+  const [open, setOpen] = React.useState(false)
+  const { data: items = [], isLoading } = useCountItems(open ? count.id : undefined)
+
+  return (
+    <div className="rounded-md border">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent/40"
+      >
+        <span className="flex items-center gap-2">
+          <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
+          {format(new Date(count.count_date), 'd MMMM yyyy', { locale: trLocale })}
+        </span>
+        <Badge variant={count.status === 'completed' ? 'success' : 'secondary'}>
+          {count.status === 'completed' ? 'Tamamlandı' : 'Açık'}
+        </Badge>
+      </button>
+      {open && (
+        <div className="border-t">
+          {isLoading && <p className="text-muted-foreground p-3 text-sm">Yükleniyor...</p>}
+          {!isLoading && items.length === 0 && <p className="text-muted-foreground p-3 text-sm">Kalem yok</p>}
+          {!isLoading && items.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ürün</TableHead>
+                  <TableHead>O Günkü Stok</TableHead>
+                  <TableHead>Paket</TableHead>
+                  <TableHead>Flakon</TableHead>
+                  <TableHead>Son Stok</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((i) => (
+                  <TableRow key={i.id}>
+                    <TableCell className="font-medium">{i.products.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {i.expected_quantity} {i.products.unit}, {i.expected_quantity_flakon} flakon
+                    </TableCell>
+                    <TableCell>
+                      {i.counted_quantity ?? '—'} {i.products.unit}
+                    </TableCell>
+                    <TableCell>{i.counted_quantity_flakon ?? '—'} flakon</TableCell>
+                    <TableCell className="font-medium">
+                      {i.expected_quantity + (i.counted_quantity ?? 0)} {i.products.unit}
+                      {i.expected_quantity_flakon + (i.counted_quantity_flakon ?? 0) > 0 &&
+                        `, ${i.expected_quantity_flakon + (i.counted_quantity_flakon ?? 0)} flakon`}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -524,12 +595,7 @@ export function DailyCountPanel() {
             {pastCounts
               .filter((c) => c.id !== todayCount.id)
               .map((c) => (
-                <div key={c.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                  <span>{format(new Date(c.count_date), 'd MMMM yyyy', { locale: trLocale })}</span>
-                  <Badge variant={c.status === 'completed' ? 'success' : 'secondary'}>
-                    {c.status === 'completed' ? 'Tamamlandı' : 'Açık'}
-                  </Badge>
-                </div>
+                <PastCountRow key={c.id} count={c} />
               ))}
           </CardContent>
         </Card>
