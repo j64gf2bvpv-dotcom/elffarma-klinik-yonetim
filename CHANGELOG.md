@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.143] - 2026-08-20
+
+**Günlük Sayım tablosundan "Paket Fark" ve "Flakon Fark" kolonları kaldırıldı:** Sayım tablosu artık Ürün / Sistemdeki Miktar / Paket Sayımı / Flakon Sayımı / Son Stok kolonlarını gösteriyor — fark rozetleri kullanıcı isteğiyle çıkarıldı. Şema değişikliği yok.
+
 ## [2.17.142] - 2026-08-20
 
 **Günlük Özet'in PNG/Excel/Word/PDF dışa aktarımında "Son Stok" etiketi netleştirildi:** Değer zaten sayım varsa sayım, yoksa canlı sistem stoğuydu (paket + flakon) ama sütun başlığı sadece "Adet" yazıyordu — hangi rakamın gösterildiği belirsizdi. Hem "Görsel (PNG)" hem "Özeti Dışa Aktar" (Excel/Word/PDF) çıktısında sütun artık "Son Stok" olarak etiketleniyor. Şema değişikliği yok.

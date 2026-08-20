@@ -173,8 +173,6 @@ function CountItemRow({
 }) {
   const [paketValue, setPaketValue] = React.useState(item.counted_quantity?.toString() ?? '')
   const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
-  const paketDiff = paketValue === '' ? null : Number(paketValue) - item.products.current_quantity
-  const flakonDiff = flakonValue === '' ? null : Number(flakonValue) - item.products.flakon_quantity
   // Son Stok — sayım girilmişse o değer, girilmemişse hâlâ canlı sistem stoğu
   // (Günlük Özet/dışa aktarımdaki aynı "productLine" hesabıyla birebir tutarlı).
   const finalPaket = paketValue === '' ? item.products.current_quantity : Number(paketValue)
@@ -211,13 +209,6 @@ function CountItemRow({
         )}
       </TableCell>
       <TableCell>
-        {paketDiff !== null && (
-          <Badge variant={paketDiff === 0 ? 'secondary' : paketDiff > 0 ? 'success' : 'destructive'}>
-            {paketDiff > 0 ? `+${paketDiff}` : paketDiff}
-          </Badge>
-        )}
-      </TableCell>
-      <TableCell>
         {readOnly ? (
           <span>{item.counted_quantity_flakon ?? '—'} flakon</span>
         ) : (
@@ -229,13 +220,6 @@ function CountItemRow({
             onChange={(e) => setFlakonValue(e.target.value)}
             onBlur={() => onSaveFlakon(item.id, flakonValue === '' ? null : Number(flakonValue))}
           />
-        )}
-      </TableCell>
-      <TableCell>
-        {flakonDiff !== null && (
-          <Badge variant={flakonDiff === 0 ? 'secondary' : flakonDiff > 0 ? 'success' : 'destructive'}>
-            {flakonDiff > 0 ? `+${flakonDiff}` : flakonDiff}
-          </Badge>
         )}
       </TableCell>
       <TableCell className="font-medium">
@@ -431,9 +415,7 @@ export function DailyCountPanel() {
                 <TableHead>Ürün</TableHead>
                 <TableHead>Sistemdeki Miktar</TableHead>
                 <TableHead>Paket Sayımı</TableHead>
-                <TableHead>Paket Fark</TableHead>
                 <TableHead>Flakon Sayımı</TableHead>
-                <TableHead>Flakon Fark</TableHead>
                 <TableHead>Son Stok</TableHead>
               </TableRow>
             </TableHeader>
