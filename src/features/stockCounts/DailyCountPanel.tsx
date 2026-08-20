@@ -60,6 +60,17 @@ import { cn } from '@/lib/utils'
 
 const NO_REP = '__none__'
 
+/** 0 paket/adet için "0 adet" yerine sade "—" — sıfır sayıların ekranda gürültü yapmaması için. */
+function paketLabel(qty: number, unit: string): string {
+  return qty > 0 ? `${qty} ${unit}` : '—'
+}
+
+/** Son Stok: paket 0 ise tek başına "—"; flakon varsa "(paket - flakon)", yoksa sade paket miktarı. */
+function finalStockLabel(paket: number, flakon: number, unit: string): string {
+  if (paket <= 0) return '—'
+  return flakon > 0 ? `(${paket} - ${flakon})` : `${paket} ${unit}`
+}
+
 /**
  * Günün Satış/İade Hareketleri panelindeki tek bir satır — satış temsilcisini
  * (iadeyi alan / teslim eden) yerinde değiştirmeyi ve kaydı iptal etmeyi
@@ -263,7 +274,7 @@ function CountItemRow({
     <TableRow onClick={() => onSelect(item.id)} selected={selected}>
       <TableCell className="font-medium">{item.products.name}</TableCell>
       <TableCell className="text-muted-foreground">
-        {item.products.current_quantity} {item.products.unit}
+        {paketLabel(item.products.current_quantity, item.products.unit)}
         {item.products.flakon_quantity > 0 && `, ${item.products.flakon_quantity} flakon`}
       </TableCell>
       <TableCell>
@@ -294,10 +305,7 @@ function CountItemRow({
           />
         )}
       </TableCell>
-      <TableCell className="font-medium">
-        {finalPaket} {item.products.unit}
-        {finalFlakon > 0 && `, ${finalFlakon} flakon`}
-      </TableCell>
+      <TableCell className="font-medium">{finalStockLabel(finalPaket, finalFlakon, item.products.unit)}</TableCell>
       {!readOnly && (
         <TableCell>
           <Button
@@ -364,15 +372,17 @@ function PastCountRow({ count }: { count: StockCount }) {
                   <TableRow key={i.id}>
                     <TableCell className="font-medium">{i.products.name}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {i.expected_quantity} {i.products.unit}
+                      {paketLabel(i.expected_quantity, i.products.unit)}
                       {i.expected_quantity_flakon > 0 && `, ${i.expected_quantity_flakon} flakon`}
                     </TableCell>
                     <TableCell>{i.counted_quantity ? `${i.counted_quantity} ${i.products.unit}` : '—'}</TableCell>
                     <TableCell>{i.counted_quantity_flakon ? `${i.counted_quantity_flakon} flakon` : '—'}</TableCell>
                     <TableCell className="font-medium">
-                      {i.expected_quantity + (i.counted_quantity ?? 0)} {i.products.unit}
-                      {i.expected_quantity_flakon + (i.counted_quantity_flakon ?? 0) > 0 &&
-                        `, ${i.expected_quantity_flakon + (i.counted_quantity_flakon ?? 0)} flakon`}
+                      {finalStockLabel(
+                        i.expected_quantity + (i.counted_quantity ?? 0),
+                        i.expected_quantity_flakon + (i.counted_quantity_flakon ?? 0),
+                        i.products.unit,
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -450,7 +460,7 @@ export function DailyCountPanel() {
     const finalFlakon = i.products.flakon_quantity + (i.counted_quantity_flakon ?? 0)
     return {
       metrik: i.products.name,
-      deger: finalFlakon > 0 ? `${finalPaket} ${i.products.unit}, ${finalFlakon} flakon` : `${finalPaket} ${i.products.unit}`,
+      deger: finalStockLabel(finalPaket, finalFlakon, i.products.unit),
     }
   }
   const dermakorItems = items.filter((i) => i.products.brand_line === 'dermakor')

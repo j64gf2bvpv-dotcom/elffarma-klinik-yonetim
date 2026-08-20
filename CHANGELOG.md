@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.154] - 2026-08-20
+
+**Günlük Sayım'da Son Stok formatı ve sıfır gösterimi netleştirildi:** "Son Stok" artık paket ve flakon ikisi de varsa "(paket - flakon)" biçiminde parantez içinde gösteriliyor; flakon yoksa sade paket miktarı, paket de 0 ise tek başına "—" yazıyor. "Sistemdeki Miktar"/"O Günkü Stok" kolonlarında da paket miktarı 0 ise "0 adet" yerine "—" gösteriliyor. Aynı format Günlük Özet dışa aktarma (Excel/Word/PDF/Görsel PNG) çıktılarına da yansıdı. Şema değişikliği yok.
+
 ## [2.17.153] - 2026-08-20
 
 **Günlük Sayım'da sıfır miktarlar artık boş/sıfır yazı yerine "—" gösteriyor:** "Sistemdeki Miktar" kolonunda flakon 0 ise ", 0 flakon" ibaresi hiç yazılmıyor. "Paket" ve "Flakon" kolonlarında (hem açık sayımın salt-okunur görünümünde hem Geçmiş Sayımlar'ın açılır detayında) sayılan miktar 0/boşsa artık sadece "—" gösteriliyor, "0 adet"/"0 flakon" gibi gürültü yazılmıyor. Şema değişikliği yok.
