@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.167] - 2026-08-21
+
+**Günlük Sayım'a "Son Günlerin Stoğu" karşılaştırma tablosu eklendi:** Son 3 tamamlanmış sayımın Son Stok değerini ürün başına, tarih tarih yan yana gösteren salt-okunur bir tablo — bugünkü sayımı girerken son günlerin stoğuna bakıp ona göre ekleme/çıkarma kararı verilebilsin diye. Sayım tablosunun hemen üzerinde duruyor. Sadece tamamlanmış sayımlar dikkate alınıyor — yarım kalmış (açık) bir sayımın eksik verisi yanıltıcı olmasın diye. Şema değişikliği yok.
+
 ## [2.17.166] - 2026-08-21
 
 **Giriş / Çıkış Ekle formunda Enter ile sıradaki alana geçme eklendi:** Ürün seçilince otomatik olarak Miktar alanına odaklanıyor; Miktar → Enter → Birim Fiyat → Enter → Sebep → Enter → Not şeklinde klavyeden elini kaldırmadan ilerlenebiliyor. Tab'a basmaya gerek kalmıyor.

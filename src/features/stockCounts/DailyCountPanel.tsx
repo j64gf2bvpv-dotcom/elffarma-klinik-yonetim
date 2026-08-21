@@ -326,6 +326,87 @@ function CountItemRow({
   )
 }
 
+/**
+ * Son 3 tamamlanmış sayımın Son Stok değerini ürün başına yan yana (tarih
+ * tarih) gösteren salt-okunur karşılaştırma tablosu — kullanıcı isteğiyle
+ * (2026-08-21), bugünkü sayımı girerken son günlerin stoğuna bakıp ona göre
+ * ekleme/çıkarma kararı verebilsin diye. PastCountRow ile aynı sebepten
+ * (bkz. yukarıdaki yorum) CANLI ürün stoğu değil, o günün kendi
+ * expected_quantity anlık görüntüsü kullanılıyor — geçmiş bir günün "o gün
+ * son stok neydi" sorusunun cevabı aradan geçen zamanla değişmemeli.
+ */
+function RecentStockComparison({ recentCounts }: { recentCounts: StockCount[] }) {
+  const c0 = recentCounts[0]
+  const c1 = recentCounts[1]
+  const c2 = recentCounts[2]
+  const { data: items0 = [] } = useCountItems(c0?.id)
+  const { data: items1 = [] } = useCountItems(c1?.id)
+  const { data: items2 = [] } = useCountItems(c2?.id)
+
+  if (recentCounts.length === 0) return null
+
+  const dayItems = [items0, items1, items2]
+  const productRows = new Map<string, { name: string; unit: string; days: (StockCountItemWithProduct | undefined)[] }>()
+  recentCounts.forEach((_, dayIndex) => {
+    for (const item of dayItems[dayIndex]) {
+      if (!productRows.has(item.product_id)) {
+        productRows.set(item.product_id, {
+          name: item.products.name,
+          unit: item.products.unit,
+          days: [undefined, undefined, undefined],
+        })
+      }
+      productRows.get(item.product_id)!.days[dayIndex] = item
+    }
+  })
+  const sortedRows = Array.from(productRows.values()).sort((a, b) => a.name.localeCompare(b.name, 'tr'))
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm text-muted-foreground">Son Günlerin Stoğu</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Ürün</TableHead>
+              {recentCounts.map((c) => (
+                <TableHead key={c.id}>{format(new Date(c.count_date), 'd MMM', { locale: trLocale })}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedRows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={recentCounts.length + 1} className="text-muted-foreground py-6 text-center">
+                  Henüz geçmiş sayım verisi yok
+                </TableCell>
+              </TableRow>
+            )}
+            {sortedRows.map((row) => (
+              <TableRow key={row.name}>
+                <TableCell className="font-medium">{row.name}</TableCell>
+                {row.days.slice(0, recentCounts.length).map((item, i) => (
+                  <TableCell key={i}>
+                    {item
+                      ? finalStockLabel(
+                          item.expected_quantity + (item.counted_quantity ?? 0),
+                          item.expected_quantity_flakon + (item.counted_quantity_flakon ?? 0),
+                          row.unit,
+                        )
+                      : '—'}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+}
+
 /** Geçmiş bir sayımın kalemlerini açılınca gösteren satır — tıklanmadan
  * önce hiç sorgu atmaz (useCountItems'a sadece açıkken gerçek id verilir).
  * Geçmiş bir sayım için "Sistemdeki Miktar"/"Son Stok" bilerek CANLI ürün
@@ -438,11 +519,12 @@ export function DailyCountPanel() {
   }
 
   const isCompleted = todayCount.status === 'completed'
-  const previousDate =
-    pastCounts
-      .filter((c) => c.id !== todayCount.id)
-      .map((c) => c.count_date)
-      .sort((a, b) => b.localeCompare(a))[0] ?? null
+  const otherPastCounts = pastCounts.filter((c) => c.id !== todayCount.id)
+  const previousDate = otherPastCounts.map((c) => c.count_date).sort((a, b) => b.localeCompare(a))[0] ?? null
+  // Sadece TAMAMLANMIŞ sayımlar — açık (yarım kalmış) bir sayımın kısmi/boş
+  // verisi "o günün son stoğu" gibi gösterilirse ekleme/çıkarma kararını
+  // yanlış yönlendirir.
+  const recentCounts = otherPastCounts.filter((c) => c.status === 'completed').slice(0, 3)
   const todayOutgoingSales = allSales.filter((s) => s.sale_date === todayCount.count_date && s.type === 'sale')
 
   const countDateLabel = format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })
@@ -573,6 +655,8 @@ export function DailyCountPanel() {
           </div>
         )}
       </Card>
+
+      <RecentStockComparison recentCounts={recentCounts} />
 
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
