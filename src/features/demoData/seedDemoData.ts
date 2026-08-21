@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { createCustomer, deleteCustomer } from '@/features/customers/api'
-import { createProduct } from '@/features/stock/api'
+import { createProduct, deactivateProduct } from '@/features/stock/api'
 import { recordStockMovement } from '@/features/stock/api'
 import { createSale } from '@/features/sales/api'
 import { createPayment } from '@/features/payments/api'
@@ -22,7 +22,6 @@ import { createCrmActivity, createCrmOpportunity } from '@/features/crm/api'
 import { createVehicle, createVehicleFuelLog, deleteVehicle } from '@/features/vehicles/api'
 import { createInstagramLead, deleteInstagramLead } from '@/features/instagramLeads/api'
 import { fetchBudgetTargets, saveBudgetTarget } from '@/features/budget/api'
-import { offlineDelete } from '@/lib/offlineMutation'
 import { iconImageDataUri, iconTones, icons } from '@/lib/iconImage'
 import type { CrmOpportunityStage, ExpenseCategory, PaymentMethod, Product } from '@/types/database'
 
@@ -584,13 +583,19 @@ export async function clearDemoData(): Promise<ClearResult> {
     await deleteCustomer(c.id)
   }
 
+  // Kalıcı silme (offlineDelete) burada kasıtlı KULLANILMIYOR — bu ürünler
+  // seedDemoData'nın kendi oluşturduğu örnek numune taleplerinden (sample_items)
+  // referans alabiliyor, bu da DELETE'i "foreign key constraint" hatasıyla
+  // reddedip temizlemeyi yarım bırakıyordu (canlı veritabanında doğrulandı).
+  // Gerçek ürünlerdeki "Ürünü kaldır" ile aynı yumuşak silme (is_active=false)
+  // bu riski tamamen ortadan kaldırıyor.
   const { data: products, error: productsError } = await supabase
     .from('products')
     .select('id')
     .like('sku', `${DEMO_SKU_PREFIX}%`)
   if (productsError) throw productsError
   for (const p of products ?? []) {
-    await offlineDelete('products', p.id, 'Örnek ürün silme')
+    await deactivateProduct(p.id)
   }
 
   const salesReps = await deleteAllByIlike('sales_reps', 'name')

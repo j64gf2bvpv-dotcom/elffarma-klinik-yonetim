@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.162] - 2026-08-21
+
+**Örnek veri sistemleri tek bir yerde birleştirildi, gerçek bir bug düzeltildi:** Bir önceki sürümde Stok sekmesine eklenen küçük "Örnek Veri Ekle/Temizle" menüsü kaldırıldı — meğerse Ayarlar'da çok daha kapsamlı bir Örnek Veri sistemi (ürünler, müşteriler, satışlar, kongreler, giderler ve daha fazlasını kapsayan) zaten varmış. O sistemin "temizle" adımında gerçek bir hata bulundu: ürünleri kalıcı olarak silmeye çalışıyordu, bu da bir örnek ürün daha önce bir numune talebinden referans almışsa yabancı anahtar hatasıyla reddedilip temizliği yarım bırakıyordu. Artık Stok Kartı'ndaki "Ürünü kaldır" ile aynı yumuşak silme yöntemini kullanıyor — bu risk tamamen ortadan kalktı. Tek, doğru çalışan sistem kaldı. Şema değişikliği yok.
+
 ## [2.17.161] - 2026-08-21
 
 **Stok'ta test verisi aracı eklendi (admin):** Ürünler sekmesinin araç çubuğuna yeni bir menü eklendi — "Örnek Veri Ekle" 3 test ürünü (biri flakon takipli) + birkaç giriş hareketiyle birlikte oluşturuyor, "Örnek Verileri Temizle" bunları (ve daha önce sistemde kalmış aynı "[Örnek] " önekli eski demo ürünleri) kaldırıyor. Temizleme, gerçek ürünlerdeki "Ürünü kaldır" ile aynı yumuşak silme (is_active=false) yöntemini kullanıyor — kalıcı silme denendi ama bazı ürünlerin numune talepleri gibi başka tablolardan referansı olabildiği için güvenilir değildi, yumuşak silme bu riski tamamen ortadan kaldırıyor. Gerçek ürün/hareket verilerine kesinlikle dokunmuyor — canlı veritabanında admin hesabıyla uçtan uca test edilip doğrulandı. Şema değişikliği yok.
