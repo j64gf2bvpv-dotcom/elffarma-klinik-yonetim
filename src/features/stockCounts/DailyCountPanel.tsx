@@ -60,15 +60,28 @@ import { cn } from '@/lib/utils'
 
 const NO_REP = '__none__'
 
-/** 0 paket/adet için "0 adet" yerine sade "—" — sıfır sayıların ekranda gürültü yapmaması için. */
-function paketLabel(qty: number, unit: string): string {
-  return qty > 0 ? `${qty} ${unit}` : '—'
+/** "Son Günlerin Stoğu" tablosunda her gün ayrı bir renkle yazılsın diye
+ * (kullanıcı isteği, 2026-08-22) — tema CSS değişkenlerine bağlı, karanlık
+ * modda da okunaklı 3 semantik renk (marka/başarı/uyarı). */
+const DAY_COLOR_CLASSES = ['text-primary', 'text-success', 'text-warning']
+
+/** 0 paket için "0 Paket" yerine sade "—" — sıfır sayıların ekranda gürültü yapmaması için. */
+function paketLabel(qty: number): string {
+  return qty > 0 ? `${qty} Paket` : '—'
 }
 
-/** Son Stok: paket 0 ise tek başına "—"; flakon varsa "(paket - flakon)", yoksa sade paket miktarı. */
-function finalStockLabel(paket: number, flakon: number, unit: string): string {
+/** Son Stok: paket 0 ise tek başına "—"; flakon varsa "(6 Paket - 4 Flakon)", yoksa sade paket miktarı —
+ * kullanıcı isteğiyle (2026-08-22) ürünün genel "adet" birimi yerine her zaman Paket/Flakon yazıyor. */
+function finalStockLabel(paket: number, flakon: number): string {
   if (paket <= 0) return '—'
-  return flakon > 0 ? `(${paket} - ${flakon})` : `${paket} ${unit}`
+  return flakon > 0 ? `(${paket} Paket - ${flakon} Flakon)` : `${paket} Paket`
+}
+
+/** Bugün girilen tam sayım varsa onu, yoksa (henüz sayılmadı) tabanı (önceki
+ * sayım / ilk sayımsa canlı stok) döndürür — "adetler aynıysa dünkü sayımla
+ * eklemeden yaz" kuralı (kullanıcı isteği, 2026-08-22). */
+function resolveCounted(baseline: number, counted: number | null): number {
+  return counted ?? baseline
 }
 
 /**
@@ -233,12 +246,16 @@ function TodaySalesActivity({ countDate }: { countDate: string }) {
  * Tek satırda hem paket hem flakon sayımı — önceden iki ayrı panelde (Paket
  * Sayımı / Flakon Sayımı) aynı ürün satırları tekrarlanıyordu; kullanıcı
  * kaydırırken hangi ürünün hangi tabloda olduğunu takip etmek zor olduğu için
- * tek tabloda birleştirildi. "Sistemdeki Miktar" artık HER ZAMAN canlı
- * products.current_quantity/flakon_quantity — elle düzenlenemez, sadece
- * referans için gösterilir (bkz. api.ts'teki completeCount açıklaması).
+ * tek tabloda birleştirildi. "Sistemdeki Miktar" artık bir önceki TAMAMLANMIŞ
+ * sayımın Son Stok değeri (baseline prop) — canlı products stoğu değil
+ * (kullanıcı isteğiyle, 2026-08-22). Paket/Flakon kutusu bugünkü TAM sayımı
+ * ifade eder: taban ile aynıysa Son Stok hiçbir şey eklemeden aynı rakamı
+ * gösterir, farklıysa Son Stok bugün girilen yeni rakamı gösterir (aradaki
+ * fark Sayımı Tamamla'da bir stok hareketi olarak uygulanır, bkz. api.ts).
  */
 function CountItemRow({
   item,
+  baseline,
   readOnly,
   selected,
   onSelect,
@@ -247,6 +264,7 @@ function CountItemRow({
   onDelete,
 }: {
   item: StockCountItemWithProduct
+  baseline: { paket: number; flakon: number }
   readOnly: boolean
   selected: boolean
   onSelect: (id: string) => void
@@ -256,11 +274,8 @@ function CountItemRow({
 }) {
   const [paketValue, setPaketValue] = React.useState(item.counted_quantity?.toString() ?? '')
   const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
-  // Son Stok = Sistemdeki Miktar + Eklenen (Paket/Flakon Sayımı kutusu artık
-  // bir yeniden-sayım değil, BUGÜN EKLENEN miktarı ifade ediyor — bkz.
-  // productLine() ve completeCount()'taki aynı toplama mantığı).
-  const finalPaket = item.products.current_quantity + (paketValue === '' ? 0 : Number(paketValue))
-  const finalFlakon = item.products.flakon_quantity + (flakonValue === '' ? 0 : Number(flakonValue))
+  const finalPaket = resolveCounted(baseline.paket, paketValue === '' ? null : Number(paketValue))
+  const finalFlakon = resolveCounted(baseline.flakon, flakonValue === '' ? null : Number(flakonValue))
 
   React.useEffect(() => {
     setPaketValue(item.counted_quantity?.toString() ?? '')
@@ -273,18 +288,19 @@ function CountItemRow({
   return (
     <TableRow onClick={() => onSelect(item.id)} selected={selected}>
       <TableCell className="font-medium">{item.products.name}</TableCell>
-      <TableCell className="text-muted-foreground">
-        {paketLabel(item.products.current_quantity, item.products.unit)}
-        {item.products.flakon_quantity > 0 && `, ${item.products.flakon_quantity} flakon`}
+      <TableCell className="font-bold text-foreground">
+        {paketLabel(baseline.paket)}
+        {baseline.flakon > 0 && `, ${baseline.flakon} Flakon`}
       </TableCell>
       <TableCell>
         {readOnly ? (
-          <span>{item.counted_quantity ? `${item.counted_quantity} ${item.products.unit}` : '—'}</span>
+          <span>{item.counted_quantity != null ? `${item.counted_quantity} Paket` : '—'}</span>
         ) : (
           <Input
             type="number"
             min="0"
             className="w-20"
+            placeholder={String(baseline.paket)}
             value={paketValue}
             onChange={(e) => setPaketValue(e.target.value)}
             onBlur={() => onSavePaket(item.id, paketValue === '' ? null : Number(paketValue))}
@@ -293,19 +309,20 @@ function CountItemRow({
       </TableCell>
       <TableCell>
         {readOnly ? (
-          <span>{item.counted_quantity_flakon ? `${item.counted_quantity_flakon} flakon` : '—'}</span>
+          <span>{item.counted_quantity_flakon != null ? `${item.counted_quantity_flakon} Flakon` : '—'}</span>
         ) : (
           <Input
             type="number"
             min="0"
             className="w-20"
+            placeholder={String(baseline.flakon)}
             value={flakonValue}
             onChange={(e) => setFlakonValue(e.target.value)}
             onBlur={() => onSaveFlakon(item.id, flakonValue === '' ? null : Number(flakonValue))}
           />
         )}
       </TableCell>
-      <TableCell className="font-medium">{finalStockLabel(finalPaket, finalFlakon, item.products.unit)}</TableCell>
+      <TableCell className="font-medium">{finalStockLabel(finalPaket, finalFlakon)}</TableCell>
       {!readOnly && (
         <TableCell>
           <Button
@@ -346,19 +363,25 @@ function RecentStockComparison({ recentCounts }: { recentCounts: StockCount[] })
   if (recentCounts.length === 0) return null
 
   const dayItems = [items0, items1, items2]
-  const productRows = new Map<string, { name: string; unit: string; days: (StockCountItemWithProduct | undefined)[] }>()
+  const productRows = new Map<
+    string,
+    { productId: string; name: string; days: (StockCountItemWithProduct | undefined)[] }
+  >()
   recentCounts.forEach((_, dayIndex) => {
     for (const item of dayItems[dayIndex]) {
       if (!productRows.has(item.product_id)) {
         productRows.set(item.product_id, {
+          productId: item.product_id,
           name: item.products.name,
-          unit: item.products.unit,
           days: [undefined, undefined, undefined],
         })
       }
       productRows.get(item.product_id)!.days[dayIndex] = item
     }
   })
+  // Aynı isimli iki farklı ürün olabildiği için (ör. "MIXO LIGHT") anahtar
+  // isim değil product_id — aksi halde React "duplicate key" uyarısı verip
+  // satırları çoğaltıyor/atlıyordu (fark edildi, 2026-08-22).
   const sortedRows = Array.from(productRows.values()).sort((a, b) => a.name.localeCompare(b.name, 'tr'))
 
   return (
@@ -371,8 +394,13 @@ function RecentStockComparison({ recentCounts }: { recentCounts: StockCount[] })
           <TableHeader>
             <TableRow>
               <TableHead>Ürün</TableHead>
-              {recentCounts.map((c) => (
-                <TableHead key={c.id}>{format(new Date(c.count_date), 'd MMM', { locale: trLocale })}</TableHead>
+              {recentCounts.map((c, i) => (
+                <TableHead
+                  key={c.id}
+                  className={cn('border-l font-bold', DAY_COLOR_CLASSES[i % DAY_COLOR_CLASSES.length])}
+                >
+                  {format(new Date(c.count_date), 'd MMM', { locale: trLocale })}
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -385,15 +413,14 @@ function RecentStockComparison({ recentCounts }: { recentCounts: StockCount[] })
               </TableRow>
             )}
             {sortedRows.map((row) => (
-              <TableRow key={row.name}>
+              <TableRow key={row.productId}>
                 <TableCell className="font-medium">{row.name}</TableCell>
                 {row.days.slice(0, recentCounts.length).map((item, i) => (
-                  <TableCell key={i}>
+                  <TableCell key={i} className={cn('border-l font-medium', DAY_COLOR_CLASSES[i % DAY_COLOR_CLASSES.length])}>
                     {item
                       ? finalStockLabel(
                           item.expected_quantity + (item.counted_quantity ?? 0),
                           item.expected_quantity_flakon + (item.counted_quantity_flakon ?? 0),
-                          row.unit,
                         )
                       : '—'}
                   </TableCell>
@@ -453,16 +480,15 @@ function PastCountRow({ count }: { count: StockCount }) {
                   <TableRow key={i.id}>
                     <TableCell className="font-medium">{i.products.name}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {paketLabel(i.expected_quantity, i.products.unit)}
-                      {i.expected_quantity_flakon > 0 && `, ${i.expected_quantity_flakon} flakon`}
+                      {paketLabel(i.expected_quantity)}
+                      {i.expected_quantity_flakon > 0 && `, ${i.expected_quantity_flakon} Flakon`}
                     </TableCell>
-                    <TableCell>{i.counted_quantity ? `${i.counted_quantity} ${i.products.unit}` : '—'}</TableCell>
-                    <TableCell>{i.counted_quantity_flakon ? `${i.counted_quantity_flakon} flakon` : '—'}</TableCell>
+                    <TableCell>{i.counted_quantity ? `${i.counted_quantity} Paket` : '—'}</TableCell>
+                    <TableCell>{i.counted_quantity_flakon ? `${i.counted_quantity_flakon} Flakon` : '—'}</TableCell>
                     <TableCell className="font-medium">
                       {finalStockLabel(
                         i.expected_quantity + (i.counted_quantity ?? 0),
                         i.expected_quantity_flakon + (i.counted_quantity_flakon ?? 0),
-                        i.products.unit,
                       )}
                     </TableCell>
                   </TableRow>
@@ -489,6 +515,27 @@ export function DailyCountPanel() {
   const deleteItemMutation = useDeleteCountItem(todayCount?.id ?? '')
   const { data: allSales = [] } = useSales()
   const [selectedItemId, setSelectedItemId] = React.useState<string | null>(null)
+
+  // Bir önceki TAMAMLANMIŞ sayım — "Sistemdeki Miktar" artık bunun Son Stok
+  // değeri (canlı products stoğu değil, kullanıcı isteğiyle 2026-08-22).
+  // Hook sırası bozulmasın diye (erken return'lerden ÖNCE) burada, en
+  // tepede çağrılıyor — bkz. aşağıdaki baselineByProduct.
+  const otherPastCountsForBaseline = pastCounts.filter((c) => c.id !== todayCount?.id)
+  const previousCompletedCount = otherPastCountsForBaseline.find((c) => c.status === 'completed')
+  const { data: previousItems = [] } = useCountItems(previousCompletedCount?.id)
+  const baselineByProduct = React.useMemo(() => {
+    const map = new Map<string, { paket: number; flakon: number }>()
+    for (const item of previousItems) {
+      map.set(item.product_id, {
+        paket: item.expected_quantity + (item.counted_quantity ?? 0),
+        flakon: item.expected_quantity_flakon + (item.counted_quantity_flakon ?? 0),
+      })
+    }
+    return map
+  }, [previousItems])
+  function getBaseline(item: StockCountItemWithProduct) {
+    return baselineByProduct.get(item.product_id) ?? { paket: item.products.current_quantity, flakon: item.products.flakon_quantity }
+  }
 
   function handleDeleteItem(item: StockCountItemWithProduct) {
     if (!confirm(`${item.products.name} bu sayımdan çıkarılsın mı?`)) return
@@ -530,19 +577,26 @@ export function DailyCountPanel() {
   const countDateLabel = format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })
   const countDayLabel = format(new Date(todayCount.count_date), 'EEEE', { locale: trLocale })
 
-  const pendingChangeCount = items.filter(
-    (i) => (i.counted_quantity ?? 0) > 0 || (i.counted_quantity_flakon ?? 0) > 0,
-  ).length
+  // "Değişecek" — bugün girilen sayı taban (önceki sayım) ile FARKLIYSA
+  // sayılıyor; aynıysa (kullanıcı isteğiyle) hiçbir hareket kaydedilmeyeceği
+  // için değişiklik olarak sayılmıyor.
+  const pendingChangeCount = items.filter((i) => {
+    const baseline = getBaseline(i)
+    const paketChanged = i.counted_quantity != null && i.counted_quantity !== baseline.paket
+    const flakonChanged = i.counted_quantity_flakon != null && i.counted_quantity_flakon !== baseline.flakon
+    return paketChanged || flakonChanged
+  }).length
 
-  // "Son stok" = Sistemdeki Miktar + Paket/Flakon Sayımı kutusuna girilen
-  // (bugün eklenen) miktar — Sayımı Tamamla sonrası depoya yansıyacak gerçek
-  // son değer bu (bkz. completeCount()'taki aynı toplama mantığı).
+  // "Son stok" = bugün girilen tam sayım varsa o, yoksa taban (önceki sayım)
+  // — Sayımı Tamamla sonrası depoya yansıyacak gerçek son değer bu (bkz.
+  // completeCount()'taki aynı fark mantığı).
   function productLine(i: StockCountItemWithProduct): { metrik: string; deger: string | number } {
-    const finalPaket = i.products.current_quantity + (i.counted_quantity ?? 0)
-    const finalFlakon = i.products.flakon_quantity + (i.counted_quantity_flakon ?? 0)
+    const baseline = getBaseline(i)
+    const finalPaket = resolveCounted(baseline.paket, i.counted_quantity)
+    const finalFlakon = resolveCounted(baseline.flakon, i.counted_quantity_flakon)
     return {
       metrik: i.products.name,
-      deger: finalStockLabel(finalPaket, finalFlakon, i.products.unit),
+      deger: finalStockLabel(finalPaket, finalFlakon),
     }
   }
   const dermakorItems = items.filter((i) => i.products.brand_line === 'dermakor')
@@ -682,10 +736,16 @@ export function DailyCountPanel() {
             <TableHeader>
               <TableRow>
                 <TableHead>Ürün</TableHead>
-                <TableHead>Sistemdeki Miktar</TableHead>
+                <TableHead className="font-bold text-foreground">
+                  {previousCompletedCount
+                    ? `Son Sayım (${format(new Date(previousCompletedCount.count_date), 'd MMMM', { locale: trLocale })})`
+                    : 'Sistemdeki Miktar'}
+                </TableHead>
                 <TableHead>Paket</TableHead>
                 <TableHead>Flakon</TableHead>
-                <TableHead>Son Stok</TableHead>
+                <TableHead className="font-bold text-foreground">
+                  {format(new Date(todayCount.count_date), 'd MMMM', { locale: trLocale })}
+                </TableHead>
                 {!isCompleted && <TableHead></TableHead>}
               </TableRow>
             </TableHeader>
@@ -694,6 +754,7 @@ export function DailyCountPanel() {
                 <CountItemRow
                   key={item.id}
                   item={item}
+                  baseline={getBaseline(item)}
                   readOnly={isCompleted}
                   selected={item.id === selectedItemId}
                   onSelect={setSelectedItemId}

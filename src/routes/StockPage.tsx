@@ -181,7 +181,7 @@ function QuantityCell({ product }: { product: Product }) {
     >
       {isCritical && <AlertTriangle className="size-3.5 text-destructive animate-alert-glow-red rounded-full" />}
       <Badge variant={isCritical ? 'destructive' : 'secondary'} className={cn(isCritical && 'animate-alert-glow-red')}>
-        {product.current_quantity > 0 ? `${product.current_quantity} ${product.unit}` : '—'}
+        {product.current_quantity > 0 ? `${product.current_quantity} Paket` : '—'}
       </Badge>
     </button>
   )
@@ -1036,7 +1036,7 @@ export function StockPage() {
               columns={[
                 { header: 'Ürün', value: (p) => p.name },
                 { header: 'Kategori', value: (p) => p.category ?? '' },
-                { header: 'Paket', value: (p) => `${p.current_quantity} ${p.unit}` },
+                { header: 'Paket', value: (p) => `${p.current_quantity} Paket` },
                 { header: 'Flakon', value: (p) => p.flakon_quantity },
                 {
                   header: 'Güncel Stok Durumu',

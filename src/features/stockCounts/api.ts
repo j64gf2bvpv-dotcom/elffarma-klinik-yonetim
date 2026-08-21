@@ -108,41 +108,81 @@ export async function updateCountItemFlakon(id: string, counted_quantity_flakon:
 }
 
 /**
- * "Sistemdeki Miktar" salt okunur — sayım başladığındaki donmuş bir anlık
- * görüntü değil, HER ZAMAN products.current_quantity/flakon_quantity'nin
- * canlı halini gösterir (bkz. fetchCountItems'ın products join'i).
- *
- * Paket/Flakon Sayımı kutusu bir YENİDEN SAYIM (recount) değil, o gün
- * EKLENEN miktarı ifade eder — "Son Stok" = Sistemdeki + Sayım (bkz.
- * DailyCountPanel'deki aynı toplama mantığı). Bu yüzden Sayımı Tamamla,
- * girilen her pozitif değeri doğrudan bir 'in' (giriş) hareketi olarak
- * kaydeder — eski sürümdeki "sayılanla sistemdeki arasındaki farkı uygula"
- * mantığı (recount semantiği) artık geçerli değil.
+ * "Sistemdeki Miktar" artık canlı products stoğu değil, bir önceki
+ * TAMAMLANMIŞ sayımın Son Stok değeri (kullanıcı isteğiyle, 2026-08-22) —
+ * "en son sayım yaptığımız" rakam baz alınıyor. Paket/Flakon kutusu YENİDEN
+ * bir tam sayım (recount) ifade ediyor: bugün girilen sayı önceki sayımla
+ * aynıysa hiçbir hareket kaydedilmiyor ("eklemeden yaz"), farklıysa SADECE
+ * aradaki fark (+/-) bir stok hareketi olarak uygulanıyor. Önceki sayım
+ * yoksa (ilk sayım / yeni eklenen ürün) canlı products stoğuna düşülüyor —
+ * başka anlamlı bir taban yok.
  */
 export async function completeCount(stockCountId: string): Promise<void> {
   const items = await fetchCountItems(stockCountId)
-  for (const item of items) {
-    if (item.counted_quantity != null && item.counted_quantity > 0) {
-      await recordStockMovement({
-        product_id: item.product_id,
-        movement_type: 'in',
-        quantity: item.counted_quantity,
-        reason: 'Günlük sayım',
-        note: `Paket eklendi — Sistemdeki: ${item.products.current_quantity}, Eklenen: ${item.counted_quantity}`,
-        unit_kind: 'paket',
-      })
-    }
-    if (item.counted_quantity_flakon != null && item.counted_quantity_flakon > 0) {
-      await recordStockMovement({
-        product_id: item.product_id,
-        movement_type: 'in',
-        quantity: item.counted_quantity_flakon,
-        reason: 'Günlük sayım',
-        note: `Flakon eklendi — Sistemdeki: ${item.products.flakon_quantity}, Eklenen: ${item.counted_quantity_flakon}`,
-        unit_kind: 'flakon',
+
+  const { data: currentCount, error: currentCountError } = await supabase
+    .from('stock_counts')
+    .select('count_date')
+    .eq('id', stockCountId)
+    .single()
+  if (currentCountError) throw currentCountError
+
+  const { data: previousCounts, error: previousCountsError } = await supabase
+    .from('stock_counts')
+    .select('id')
+    .eq('status', 'completed')
+    .lt('count_date', currentCount.count_date)
+    .order('count_date', { ascending: false })
+    .limit(1)
+  if (previousCountsError) throw previousCountsError
+  const previousCountId = previousCounts?.[0]?.id ?? null
+
+  const baselineByProduct = new Map<string, { paket: number; flakon: number }>()
+  if (previousCountId) {
+    const previousItems = await fetchCountItems(previousCountId)
+    for (const item of previousItems) {
+      baselineByProduct.set(item.product_id, {
+        paket: item.expected_quantity + (item.counted_quantity ?? 0),
+        flakon: item.expected_quantity_flakon + (item.counted_quantity_flakon ?? 0),
       })
     }
   }
+
+  for (const item of items) {
+    const baseline = baselineByProduct.get(item.product_id) ?? {
+      paket: item.products.current_quantity,
+      flakon: item.products.flakon_quantity,
+    }
+
+    if (item.counted_quantity != null) {
+      const delta = item.counted_quantity - baseline.paket
+      if (delta !== 0) {
+        await recordStockMovement({
+          product_id: item.product_id,
+          movement_type: delta > 0 ? 'in' : 'out',
+          quantity: Math.abs(delta),
+          reason: 'Günlük sayım',
+          note: `Önceki sayım: ${baseline.paket}, Bugünkü sayım: ${item.counted_quantity}`,
+          unit_kind: 'paket',
+        })
+      }
+    }
+
+    if (item.counted_quantity_flakon != null) {
+      const deltaFlakon = item.counted_quantity_flakon - baseline.flakon
+      if (deltaFlakon !== 0) {
+        await recordStockMovement({
+          product_id: item.product_id,
+          movement_type: deltaFlakon > 0 ? 'in' : 'out',
+          quantity: Math.abs(deltaFlakon),
+          reason: 'Günlük sayım',
+          note: `Önceki sayım: ${baseline.flakon}, Bugünkü sayım: ${item.counted_quantity_flakon}`,
+          unit_kind: 'flakon',
+        })
+      }
+    }
+  }
+
   await offlineUpdate(
     'stock_counts',
     stockCountId,

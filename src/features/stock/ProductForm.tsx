@@ -62,7 +62,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
       name: product?.name ?? '',
       sku: product?.sku ?? '',
       category: product?.category ?? '',
-      unit: product?.unit ?? 'adet',
+      unit: product?.unit ?? 'Paket',
       critical_stock_threshold: product?.critical_stock_threshold ?? 5,
       flakon_per_package: product?.flakon_per_package ?? undefined,
       unit_cost: product?.unit_cost ?? undefined,
@@ -171,7 +171,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
                   <FormItem>
                     <FormLabel>Birim</FormLabel>
                     <FormControl>
-                      <Input placeholder="adet, ml, kutu" {...field} />
+                      <Input placeholder="Paket, ml, kutu" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

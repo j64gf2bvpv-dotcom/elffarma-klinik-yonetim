@@ -401,7 +401,7 @@ export function StockCardPanel() {
                 <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                   <IdCard className="size-3.5" />
                   Kod: {product.sku ?? '—'} {product.barcode ? `· Barkod: ${product.barcode}` : ''} · Stokta:{' '}
-                  {product.current_quantity > 0 ? `${product.current_quantity} ${product.unit}` : '—'}
+                  {product.current_quantity > 0 ? `${product.current_quantity} Paket` : '—'}
                 </span>
               )}
             </>

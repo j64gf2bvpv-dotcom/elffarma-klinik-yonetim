@@ -22,7 +22,7 @@ export const PRODUCT_IMPORT_SAMPLE_ROWS = [
     Ürün: 'Botoks 100u',
     SKU: 'BTX-100',
     Kategori: 'Botoks',
-    Birim: 'adet',
+    Birim: 'Paket',
     'Kritik Stok Eşiği': 5,
     'Birim Maliyet': 800,
     'Satış Fiyatı': 1200,
@@ -35,7 +35,7 @@ export const PRODUCT_IMPORT_SAMPLE_ROWS = [
 ]
 
 export const PRODUCT_IMPORT_FIELD_HINTS: Record<string, string> = {
-  Birim: 'ör. "adet", "kutu" — yoksa "adet" yaz',
+  Birim: 'ör. "Paket", "kutu" — yoksa "Paket" yaz',
   'Kritik Stok Eşiği': 'sayı, yoksa 5 yaz',
   'Ürün Hattı': '"Dermakor" veya "Swiss", yoksa boş',
   'Son Kullanım Tarihi': 'YYYY-AA-GG formatında, yoksa boş',
@@ -137,7 +137,7 @@ export async function importProductRows(
         name,
         sku,
         category: readCell(row, 'Kategori') || null,
-        unit: readCell(row, 'Birim') || 'adet',
+        unit: readCell(row, 'Birim') || 'Paket',
         critical_stock_threshold: criticalStock,
         unit_cost: Number.isFinite(unitCostNum) ? unitCostNum : null,
         unit_price: Number.isFinite(unitPriceNum) ? unitPriceNum : null,

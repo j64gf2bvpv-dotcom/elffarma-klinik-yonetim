@@ -100,7 +100,7 @@ export function DailyMovementImportButton() {
       let product = productsList.find((p) => p.name.toLocaleLowerCase('tr') === productName.toLocaleLowerCase('tr'))
       if (!product) {
         try {
-          product = await createProduct({ name: productName, unit: 'adet', critical_stock_threshold: 5 })
+          product = await createProduct({ name: productName, unit: 'Paket', critical_stock_threshold: 5 })
           productsList.push(product)
         } catch (err) {
           summary.errors.push(

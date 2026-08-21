@@ -220,7 +220,7 @@ export function StockMovementDialog({
           <p className="text-sm text-muted-foreground -mt-2">
             Mevcut stok:{' '}
             <span className="font-medium text-foreground">
-              {activeProduct.current_quantity > 0 ? `${activeProduct.current_quantity} ${activeProduct.unit}` : '—'}
+              {activeProduct.current_quantity > 0 ? `${activeProduct.current_quantity} Paket` : '—'}
             </span>
             {hasFlakonTracking && (
               <>
@@ -363,7 +363,7 @@ export function StockMovementDialog({
                       <SelectItem value={NO_LOT}>Lot takibi yok</SelectItem>
                       {lots.map((lot) => (
                         <SelectItem key={`lot-${lot.id}`} value={lot.id}>
-                          {lot.lot_no ?? 'Lot'} {lot.expiry_date ? `— SKT: ${format(new Date(lot.expiry_date), 'd MMM yyyy', { locale: trLocale })}` : ''} ({lot.quantity} adet)
+                          {lot.lot_no ?? 'Lot'} {lot.expiry_date ? `— SKT: ${format(new Date(lot.expiry_date), 'd MMM yyyy', { locale: trLocale })}` : ''} ({lot.quantity} Paket)
                         </SelectItem>
                       ))}
                       <SelectItem value={NEW_LOT}>
