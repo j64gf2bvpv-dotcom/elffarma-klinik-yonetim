@@ -37,6 +37,7 @@ import {
   useUtilityBills,
 } from '@/features/bills/hooks'
 import type { UtilityBill, UtilityBillCategory, UtilityBillTemplate } from '@/types/database'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -308,9 +309,10 @@ function TemplateFormDialog({ template }: { template?: UtilityBillTemplate }) {
 function TemplateRow({ template }: { template: UtilityBillTemplate }) {
   const activeMutation = useUpdateUtilityBillTemplateActive()
   const deleteMutation = useDeleteUtilityBillTemplate()
+  const { confirm, dialog } = useConfirmDialog()
 
-  function handleDelete() {
-    if (!confirm('Bu tekrarlayan fatura şablonu silinsin mi? Daha önce oluşturulmuş faturalar silinmez.')) return
+  async function handleDelete() {
+    if (!(await confirm('Bu tekrarlayan fatura şablonu silinsin mi? Daha önce oluşturulmuş faturalar silinmez.'))) return
     deleteMutation.mutate(template.id)
   }
 
@@ -340,6 +342,7 @@ function TemplateRow({ template }: { template: UtilityBillTemplate }) {
           <Trash2 className="size-4 text-destructive" />
         </Button>
       </div>
+      {dialog}
     </div>
   )
 }
@@ -396,9 +399,11 @@ function SubscriptionGroupRow({ group }: { group: SubscriptionGroup }) {
   const [open, setOpen] = React.useState(true)
   const deleteMutation = useDeleteUtilityBill()
   const paidMutation = useUpdateUtilityBillPaid()
+  const { confirm, dialog } = useConfirmDialog()
 
-  function handleDelete(bill: UtilityBill) {
-    if (!confirm(`${UTILITY_BILL_CATEGORY_LABELS[bill.category]} faturası silinsin mi? Bağlı hatırlatma da silinir.`)) return
+  async function handleDelete(bill: UtilityBill) {
+    if (!(await confirm(`${UTILITY_BILL_CATEGORY_LABELS[bill.category]} faturası silinsin mi? Bağlı hatırlatma da silinir.`)))
+      return
     deleteMutation.mutate({ id: bill.id, reminderId: bill.reminder_id })
   }
 
@@ -475,6 +480,7 @@ function SubscriptionGroupRow({ group }: { group: SubscriptionGroup }) {
           </TableBody>
         </Table>
       )}
+      {dialog}
     </div>
   )
 }

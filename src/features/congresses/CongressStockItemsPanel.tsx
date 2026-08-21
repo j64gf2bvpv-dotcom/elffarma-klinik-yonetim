@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Loader2, Package, Trash2, Boxes, CheckCircle2, Undo2 } from 'lucide-react'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -213,6 +214,7 @@ export function CongressStockItemsPanel({
   const updateStatusMutation = useUpdateCongressStockItemStatus()
   const deleteMutation = useDeleteCongressStockItem()
   const recordMovementMutation = useRecordStockMovement()
+  const { confirm, dialog } = useConfirmDialog()
 
   async function handleStatusChange(item: CongressStockItem, newStatus: CongressStockItemStatus) {
     if (newStatus === item.status) return
@@ -242,7 +244,7 @@ export function CongressStockItemsPanel({
   }
 
   async function handleDelete(item: CongressStockItem) {
-    if (!confirm(`${item.product_name} (${item.quantity} adet) silinsin mi?`)) return
+    if (!(await confirm(`${item.product_name} (${item.quantity} adet) silinsin mi?`))) return
     // Stok hâlâ dışarıdaysa (geri dönmemişse) silmeden önce stoğa iade et,
     // aksi halde kayıt silinir ama ürün stokta bir daha görünmez.
     if (item.product_id && item.status !== 'geri_dondu') {
@@ -427,6 +429,7 @@ export function CongressStockItemsPanel({
           </CardContent>
         </Card>
       </div>
+      {dialog}
     </div>
   )
 }

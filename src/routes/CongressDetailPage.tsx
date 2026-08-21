@@ -30,6 +30,7 @@ import { ConsumablesPanel } from '@/features/congresses/ConsumablesPanel'
 import { useCongress, useDeleteCongress, useDeleteParticipantProduct, useParticipants } from '@/features/congresses/hooks'
 import { useProducts, useRecordStockMovement } from '@/features/stock/hooks'
 import type { AttendanceStatus, CongressParticipantProduct } from '@/types/database'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 const attendanceLabels: Record<AttendanceStatus, string> = {
   registered: 'Kayıtlı',
@@ -56,6 +57,7 @@ export function CongressDetailPage() {
   const deleteProductMutation = useDeleteParticipantProduct()
   const { data: products = [] } = useProducts('')
   const recordMovementMutation = useRecordStockMovement()
+  const { confirm, dialog } = useConfirmDialog()
 
   if (isLoading) {
     return (
@@ -101,7 +103,7 @@ export function CongressDetailPage() {
   const repSales = Array.from(salesByRep.values()).sort((a, b) => b.total - a.total)
 
   async function handleDeleteCongress() {
-    if (!confirm(`${congress!.name} silinsin mi? Tüm doktor ve ürün kayıtları da silinecek.`)) return
+    if (!(await confirm(`${congress!.name} silinsin mi? Tüm doktor ve ürün kayıtları da silinecek.`))) return
     await deleteCongressMutation.mutateAsync(congress!.id)
     navigate('/kongreler')
   }
@@ -112,7 +114,7 @@ export function CongressDetailPage() {
   // kayıt silme akışlarındaki (CongressStockItemsPanel, SalesPage) "stoğu
   // geri al + onay iste" deseniyle tutarlı olsun diye.
   async function handleDeleteProduct(product: CongressParticipantProduct) {
-    if (!confirm(`${product.product_name} (${product.quantity} adet) silinsin mi?`)) return
+    if (!(await confirm(`${product.product_name} (${product.quantity} adet) silinsin mi?`))) return
     const matchedProduct = products.find((p) => p.name === product.product_name)
     if (matchedProduct) {
       await recordMovementMutation.mutateAsync({
@@ -478,6 +480,7 @@ export function CongressDetailPage() {
       <ChecklistPanel congressId={congress.id} />
 
       <AttachmentsPanel ownerType="congress" ownerId={congress.id} />
+      {dialog}
     </div>
   )
 }

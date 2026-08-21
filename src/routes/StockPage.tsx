@@ -70,6 +70,7 @@ import {
 } from '@/features/stock/importProducts'
 import type { ImportSummary } from '@/lib/importData'
 import type { BrandLine, Product, ProductCatalog } from '@/types/database'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 const ALL_BRANDS = 'all'
 /** Kategorisi/hattı olmayan ya da artık geçerli bir katalogda bulunmayan
@@ -755,6 +756,7 @@ function CatalogRow({ catalog }: { catalog: ProductCatalog }) {
   const [showDocs, setShowDocs] = React.useState(false)
   const updateMutation = useUpdateProductCatalog()
   const deleteMutation = useDeleteProductCatalog()
+  const { confirm, dialog } = useConfirmDialog()
 
   function commitName() {
     setEditing(false)
@@ -766,11 +768,11 @@ function CatalogRow({ catalog }: { catalog: ProductCatalog }) {
     updateMutation.mutate({ id: catalog.id, name: trimmed })
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (
-      !confirm(
+      !(await confirm(
         `"${catalog.name}" kataloğu silinsin mi? Bu katalogdaki ürünler kategori bağlantısını kaybeder, ürünlerin kendisi silinmez.`,
-      )
+      ))
     )
       return
     deleteMutation.mutate(catalog.id)
@@ -825,6 +827,7 @@ function CatalogRow({ catalog }: { catalog: ProductCatalog }) {
           <AttachmentsPanel ownerType="product_catalog" ownerId={catalog.id} />
         </div>
       )}
+      {dialog}
     </div>
   )
 }
@@ -923,6 +926,7 @@ export function StockPage() {
   const deactivateMutation = useDeactivateProduct()
   const reorderMutation = useReorderProducts()
   const queryClient = useQueryClient()
+  const { confirm, dialog } = useConfirmDialog()
 
   // Ekranda o an görünen ürün satırlarının GERÇEK dikey sırası — ALL_BRANDS
   // filtresinde katalog başına bir ProductsTable (+ eşleşmeyen ürünler için
@@ -973,8 +977,9 @@ export function StockPage() {
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
   }, [orderedVisibleProducts, selectedProductId])
 
-  function handleRemove(product: Product) {
-    if (!confirm(`${product.name} kaldırılsın mı? Ürün stok listesinden kaldırılır, geçmiş hareketler saklanır.`)) return
+  async function handleRemove(product: Product) {
+    if (!(await confirm(`${product.name} kaldırılsın mı? Ürün stok listesinden kaldırılır, geçmiş hareketler saklanır.`)))
+      return
     deactivateMutation.mutate(product.id)
   }
 
@@ -1007,7 +1012,10 @@ export function StockPage() {
   async function handleBulkRemove() {
     const selected = allProducts.filter((p) => checkedIds.has(p.id))
     if (selected.length === 0) return
-    if (!confirm(`${selected.length} ürün kaldırılsın mı? Ürünler stok listesinden kaldırılır, geçmiş hareketler saklanır.`)) return
+    if (
+      !(await confirm(`${selected.length} ürün kaldırılsın mı? Ürünler stok listesinden kaldırılır, geçmiş hareketler saklanır.`))
+    )
+      return
     for (const p of selected) {
       await deactivateMutation.mutateAsync(p.id)
     }
@@ -1199,6 +1207,7 @@ export function StockPage() {
           <CargoPanel />
         </TabsContent>
       </Tabs>
+      {dialog}
     </div>
   )
 }

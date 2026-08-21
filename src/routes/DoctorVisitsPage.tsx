@@ -35,6 +35,7 @@ import { useDeleteSalesRep, useSalesReps } from '@/features/salesReps/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import type { DoctorVisit, SalesRep } from '@/types/database'
 import { ExportMenu } from '@/components/ExportMenu'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -71,6 +72,7 @@ function RepWeekSection({
   performance: RepPerformance
 }) {
   const deleteRepMutation = useDeleteSalesRep()
+  const { confirm, dialog } = useConfirmDialog()
 
   const visitsByDay = React.useMemo(() => {
     const map = new Map<string, DoctorVisit[]>()
@@ -82,12 +84,13 @@ function RepWeekSection({
     return map
   }, [visits, days])
 
-  function handleDeleteRep() {
-    if (!confirm(`${rep.name} silinsin mi? Bu temsilciye ait tüm doktor ziyaret kayıtları da silinecek.`)) return
+  async function handleDeleteRep() {
+    if (!(await confirm(`${rep.name} silinsin mi? Bu temsilciye ait tüm doktor ziyaret kayıtları da silinecek.`))) return
     deleteRepMutation.mutate(rep.id)
   }
 
   return (
+    <>
     <Card>
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2 text-base">
@@ -196,6 +199,8 @@ function RepWeekSection({
         })}
       </CardContent>
     </Card>
+    {dialog}
+    </>
   )
 }
 

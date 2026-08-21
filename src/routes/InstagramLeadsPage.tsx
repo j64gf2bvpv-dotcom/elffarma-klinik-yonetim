@@ -10,12 +10,14 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { InstagramLeadForm } from '@/features/instagramLeads/InstagramLeadForm'
 import { useInstagramLeads, useDeleteInstagramLead } from '@/features/instagramLeads/hooks'
 import type { InstagramLead } from '@/types/database'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 export function InstagramLeadsPage() {
   const [search, setSearch] = React.useState('')
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const { data: leads = [], isLoading } = useInstagramLeads()
   const deleteMutation = useDeleteInstagramLead()
+  const { confirm, dialog } = useConfirmDialog()
 
   const filtered = React.useMemo(() => {
     const q = search.trim().toLocaleLowerCase('tr')
@@ -27,8 +29,8 @@ export function InstagramLeadsPage() {
     )
   }, [leads, search])
 
-  function handleDelete(lead: InstagramLead) {
-    if (!confirm(`${lead.full_name} silinsin mi?`)) return
+  async function handleDelete(lead: InstagramLead) {
+    if (!(await confirm(`${lead.full_name} silinsin mi?`))) return
     deleteMutation.mutate(lead.id)
   }
 
@@ -159,6 +161,7 @@ export function InstagramLeadsPage() {
           </Table>
         </CardContent>
       </Card>
+      {dialog}
     </div>
   )
 }

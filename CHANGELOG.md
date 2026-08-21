@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.171] - 2026-08-22
+
+**Tüm panellerde tarayıcının çirkin onay penceresi kaldırıldı:** Silme işlemlerinde artık her yerde uygulamanın kendi "Emin misiniz?" / "Vazgeç" / "Sil" tasarımlı diyaloğu çıkıyor (Araçlar, Kargo, Kongre ürünleri, Günlük Sayım, Stok Kartı, Doktor Ziyaretleri, Kongre Detayı, Stok/Ürün Katalogları, Instagram Doktor Listesi, Satışlar, Faturalar). Ayrıca Kongre/Workshop Ürün Sevkiyatı tablosunda "Götürülen" ve "Kullanılan" sütunları da (Kapalı/Açık Dönen gibi) artık tıklanıp doğrudan elle düzenlenebiliyor — girilen farka göre stok otomatik güncelleniyor.
+
 ## [2.17.170] - 2026-08-21
 
 **Faturalar: gerçek otomatik tekrarlama eklendi ("her ayın X'inde"):** Yeni "Tekrarlayan Faturalar" yönetimi — kategori, sözleşme no, tutar ve "her ayın kaçıncı günü" belirtilen bir şablon tanımlanınca, o ayın fatura kaydı ve 7 gün önceden hatırlatması artık ELLE girmeye gerek kalmadan kendiliğinden oluşuyor. Bu, İSTEMCİ tarafında (uygulama açılınca kontrol) değil VERİTABANI tarafında (pg_cron, her gün 06:00) çalışıyor — masaüstü uygulaması o gün hiç açılmasa bile fatura oluşur. Ay daha kısaysa (ör. 31 seçilip Şubat gelirse) otomatik olarak ayın son gününe kırpılıyor; aynı ay için tekrar üretmiyor (idempotent). Şablonlar duraklatılabiliyor/tekrar etkinleştirilebiliyor/silinebiliyor (silmek geçmiş faturaları etkilemez). Canlı veritabanında cron kaydı, üretim, 7 gün önceden hatırlatma ve aynı-ay tekrar üretmeme (idempotency) testleriyle doğrulandı. Şema değişikliği: yeni `utility_bill_templates` tablosu + `generate_due_utility_bills()` fonksiyonu + pg_cron görevi (`20260821130445_...`, `20260821130621_...`).

@@ -283,6 +283,90 @@ function EditShipmentDialog({ shipment, onClose }: { shipment: CongressShipmentW
   )
 }
 
+/** Götürülen miktar için tıkla-düzenle hücre — önceki değere göre DELTA kadar stok hareketi (out/return) tetikler. */
+function TakenQtyCell({ shipment }: { shipment: CongressShipmentWithCongress }) {
+  const [editing, setEditing] = React.useState(false)
+  const [text, setText] = React.useState(String(shipment.quantity_taken))
+  const updateMutation = useUpdateCongressShipment()
+  const recordMovement = useRecordStockMovement()
+
+  React.useEffect(() => {
+    if (!editing) setText(String(shipment.quantity_taken))
+  }, [shipment.quantity_taken, editing])
+
+  async function commit() {
+    setEditing(false)
+    const next = Number(text)
+    const previous = shipment.quantity_taken
+    if (!Number.isFinite(next) || next <= 0 || Math.round(next) !== next) {
+      setText(String(previous))
+      return
+    }
+    if (next === previous) return
+    const returned = shipment.quantity_returned_sealed + shipment.quantity_returned_open
+    if (next < returned) {
+      toast.error('Götürülen miktar, kapalı + açık dönen toplamından az olamaz')
+      setText(String(previous))
+      return
+    }
+    const delta = next - previous
+    const congressName = shipment.congresses?.name ?? 'Kongre/Workshop'
+    await recordMovement.mutateAsync({
+      product_id: shipment.product_id,
+      movement_type: delta > 0 ? 'out' : 'return',
+      quantity: Math.abs(delta),
+      reason: 'Kongre/Workshop — götürülen miktar düzeltmesi',
+      note: congressName,
+    })
+    await updateMutation.mutateAsync({
+      id: shipment.id,
+      input: {
+        congress_id: shipment.congress_id,
+        product_id: shipment.product_id,
+        product_name: shipment.product_name,
+        quantity_taken: next,
+        note: shipment.note,
+      },
+    })
+  }
+
+  if (editing) {
+    return (
+      <Input
+        type="number"
+        min="1"
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit()
+          }
+          if (e.key === 'Escape') {
+            setText(String(shipment.quantity_taken))
+            setEditing(false)
+          }
+        }}
+        className="h-8 w-20"
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="-mx-1 rounded px-1 py-0.5 text-left tabular-nums hover:bg-accent"
+      title="Düzenlemek için tıklayın"
+    >
+      {shipment.quantity_taken}
+    </button>
+  )
+}
+
 /** Kapalı/açık dönen miktar için tıkla-düzenle hücre — komite değeri önceki değere göre DELTA kadar stok hareketi (return/out) tetikler. */
 function ReturnQtyCell({
   shipment,
@@ -375,6 +459,92 @@ function ReturnQtyCell({
 }
 
 /**
+ * Kullanılan miktar için tıkla-düzenle hücre — depolanmıyor, taken - sealed - open
+ * olarak hesaplanır; düzenlenince açık dönen miktar buna göre yeniden hesaplanıp
+ * DELTA kadar stok hareketi (out/return) tetiklenir.
+ */
+function UsedQtyCell({ shipment }: { shipment: CongressShipmentWithCongress }) {
+  const used = shipment.quantity_taken - shipment.quantity_returned_sealed - shipment.quantity_returned_open
+  const [editing, setEditing] = React.useState(false)
+  const [text, setText] = React.useState(String(used))
+  const updateMutation = useUpdateCongressShipmentReturns()
+  const recordMovement = useRecordStockMovement()
+
+  React.useEffect(() => {
+    if (!editing) setText(String(used))
+  }, [used, editing])
+
+  async function commit() {
+    setEditing(false)
+    const next = Number(text)
+    if (!Number.isFinite(next) || next < 0 || Math.round(next) !== next) {
+      setText(String(used))
+      return
+    }
+    if (next === used) return
+    const maxUsed = shipment.quantity_taken - shipment.quantity_returned_sealed
+    if (next > maxUsed) {
+      toast.error('Kullanılan, götürülen - kapalı dönen miktarını geçemez')
+      setText(String(used))
+      return
+    }
+    const newOpen = maxUsed - next
+    const delta = next - used
+    const congressName = shipment.congresses?.name ?? 'Kongre/Workshop'
+    await recordMovement.mutateAsync({
+      product_id: shipment.product_id,
+      movement_type: delta > 0 ? 'out' : 'return',
+      quantity: Math.abs(delta),
+      reason:
+        delta > 0
+          ? 'Kongre/Workshop — kullanılan miktar arttırıldı'
+          : 'Kongre/Workshop — kullanılan miktar azaltıldı (stoğa iade)',
+      note: congressName,
+    })
+    await updateMutation.mutateAsync({
+      id: shipment.id,
+      returns: { quantity_returned_sealed: shipment.quantity_returned_sealed, quantity_returned_open: newOpen },
+    })
+  }
+
+  if (editing) {
+    return (
+      <Input
+        type="number"
+        min="0"
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit()
+          }
+          if (e.key === 'Escape') {
+            setText(String(used))
+            setEditing(false)
+          }
+        }}
+        className="h-8 w-20"
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="-mx-1 rounded px-1 py-0.5 text-left font-medium tabular-nums hover:bg-accent"
+      title="Düzenlemek için tıklayın"
+    >
+      {used > 0 ? used : <span className="text-muted-foreground font-normal">—</span>}
+    </button>
+  )
+}
+
+/**
  * Stok sekmesinde (Kargo'dan önce) kongre/workshopa götürülen ürünleri kongre
  * bazında toplu takip eder — congress_stock_items'tan (Kongreler modülü, satır
  * başına tek durum) bilerek ayrı: burada aynı satırda parçalı geri dönüş
@@ -451,19 +621,22 @@ export function CongressShipmentsPanel() {
                 </TableRow>
               )}
               {shipments.map((s) => {
-                const used = s.quantity_taken - s.quantity_returned_sealed - s.quantity_returned_open
                 return (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{s.congresses?.name ?? '—'}</TableCell>
                     <TableCell>{s.product_name}</TableCell>
-                    <TableCell className="tabular-nums">{s.quantity_taken}</TableCell>
+                    <TableCell>
+                      <TakenQtyCell shipment={s} />
+                    </TableCell>
                     <TableCell>
                       <ReturnQtyCell shipment={s} field="quantity_returned_sealed" otherValue={s.quantity_returned_open} />
                     </TableCell>
                     <TableCell>
                       <ReturnQtyCell shipment={s} field="quantity_returned_open" otherValue={s.quantity_returned_sealed} />
                     </TableCell>
-                    <TableCell className="font-medium tabular-nums">{used > 0 ? used : '—'}</TableCell>
+                    <TableCell>
+                      <UsedQtyCell shipment={s} />
+                    </TableCell>
                     <TableCell className="text-muted-foreground max-w-40 truncate" title={s.note ?? undefined}>
                       {s.note ?? '—'}
                     </TableCell>

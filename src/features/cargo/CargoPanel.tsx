@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useProducts } from '@/features/stock/hooks'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import { CargoForm } from './CargoForm'
 import { useCargoShipments, useUpdateCargoStatus, useDeleteCargoShipment } from './hooks'
 import type { CargoShipment, CargoStatus } from '@/types/database'
@@ -36,9 +37,10 @@ export function CargoPanel() {
   const updateStatus = useUpdateCargoStatus()
   const deleteMutation = useDeleteCargoShipment()
   const productById = React.useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
+  const { confirm, dialog } = useConfirmDialog()
 
-  function handleDelete(shipment: CargoShipment) {
-    if (!confirm(`${shipment.recipient_name} için kargo kaydı silinsin mi?`)) return
+  async function handleDelete(shipment: CargoShipment) {
+    if (!(await confirm(`${shipment.recipient_name} için kargo kaydı silinsin mi?`))) return
     deleteMutation.mutate(shipment)
   }
 
@@ -141,6 +143,7 @@ export function CargoPanel() {
           </Table>
         </CardContent>
       </Card>
+      {dialog}
     </div>
   )
 }

@@ -50,6 +50,7 @@ import {
   STOCK_CARD_IMPORT_FIELD_HINTS,
 } from './importStockCard'
 import type { MovementType, Product } from '@/types/database'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 type ReportMode = 'single' | 'all'
 
@@ -281,13 +282,17 @@ export function StockCardPanel() {
     [allProducts],
   )
 
-  function handleDeleteMovement(row: StockCardRow) {
-    if (!confirm(`${formatDateTime(row.date)} tarihli hareket silinsin mi? Ürünün güncel stoğu buna göre geri alınır.`)) return
+  const { confirm, dialog } = useConfirmDialog()
+
+  async function handleDeleteMovement(row: StockCardRow) {
+    if (!(await confirm(`${formatDateTime(row.date)} tarihli hareket silinsin mi? Ürünün güncel stoğu buna göre geri alınır.`)))
+      return
     deleteMovementMutation.mutate(row.id)
   }
 
-  function handleDeleteProduct(row: StockCardRow) {
-    if (!confirm(`${row.productName} kaldırılsın mı? Ürün stok listesinden kaldırılır, geçmiş hareketler saklanır.`)) return
+  async function handleDeleteProduct(row: StockCardRow) {
+    if (!(await confirm(`${row.productName} kaldırılsın mı? Ürün stok listesinden kaldırılır, geçmiş hareketler saklanır.`)))
+      return
     deactivateProductMutation.mutate(row.productId)
     if (mode === 'single' && row.productId === productId) {
       setProductId(undefined)
@@ -622,6 +627,7 @@ export function StockCardPanel() {
           </Card>
         </>
       )}
+      {dialog}
     </div>
   )
 }

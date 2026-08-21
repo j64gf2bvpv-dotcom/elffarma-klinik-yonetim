@@ -12,6 +12,7 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { VehicleDialog } from '@/features/vehicles/VehicleDialog'
 import { FuelLogDialog } from '@/features/vehicles/FuelLogDialog'
 import { useVehicles, useDeleteVehicle, useAllVehicleFuelLogs, useDeleteVehicleFuelLog } from '@/features/vehicles/hooks'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 function currency(n: number | null) {
   if (n == null) return '—'
@@ -28,14 +29,16 @@ export function VehiclesPage() {
 
   const vehicleById = React.useMemo(() => new Map(vehicles.map((v) => [v.id, v])), [vehicles])
   const recentFuelLogs = fuelLogs.slice(0, 15)
+  const { confirm, dialog } = useConfirmDialog()
 
-  function handleDeleteVehicle(v: (typeof vehicles)[number]) {
-    if (!confirm(`${v.brand_model}${v.plate_number ? ` (${v.plate_number})` : ''} silinsin mi? Bu araca ait yakıt kayıtları da silinecek.`)) return
+  async function handleDeleteVehicle(v: (typeof vehicles)[number]) {
+    if (!(await confirm(`${v.brand_model}${v.plate_number ? ` (${v.plate_number})` : ''} silinsin mi? Bu araca ait yakıt kayıtları da silinecek.`)))
+      return
     deleteMutation.mutate(v.id)
   }
 
-  function handleDeleteFuelLog(logId: string) {
-    if (!confirm('Bu yakıt kaydı silinsin mi?')) return
+  async function handleDeleteFuelLog(logId: string) {
+    if (!(await confirm('Bu yakıt kaydı silinsin mi?'))) return
     deleteFuelMutation.mutate(logId)
   }
 
@@ -192,6 +195,7 @@ export function VehiclesPage() {
           </Table>
         </CardContent>
       </Card>
+      {dialog}
     </div>
   )
 }

@@ -57,6 +57,7 @@ import type { StockCountItemWithProduct } from './api'
 import type { SaleWithRelations } from '@/features/sales/api'
 import type { StockCount } from '@/types/database'
 import { cn } from '@/lib/utils'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 const NO_REP = '__none__'
 
@@ -96,12 +97,13 @@ function SalesActivityRow({ sale, repRoleLabel }: { sale: SaleWithRelations; rep
   const updateRepMutation = useUpdateSaleRep()
   const recordMovement = useRecordStockMovement()
   const deleteMutation = useDeleteSale()
+  const { confirm, dialog } = useConfirmDialog()
 
   async function handleCancel() {
     if (
-      !confirm(
+      !(await confirm(
         `${sale.product_name} (${sale.quantity} adet) ${sale.type === 'sale' ? 'satış' : 'iade'} kaydı iptal edilsin mi? Stok buna göre düzeltilecek.`,
-      )
+      ))
     )
       return
     if (sale.product_id) {
@@ -149,6 +151,7 @@ function SalesActivityRow({ sale, repRoleLabel }: { sale: SaleWithRelations; rep
           <Trash2 className="size-3.5 text-destructive" />
         </Button>
       </div>
+      {dialog}
     </div>
   )
 }
@@ -580,8 +583,10 @@ export function DailyCountPanel() {
     return baselineByProduct.get(item.product_id) ?? { paket: item.products.current_quantity, flakon: item.products.flakon_quantity }
   }
 
-  function handleDeleteItem(item: StockCountItemWithProduct) {
-    if (!confirm(`${item.products.name} bu sayımdan çıkarılsın mı?`)) return
+  const { confirm, dialog } = useConfirmDialog()
+
+  async function handleDeleteItem(item: StockCountItemWithProduct) {
+    if (!(await confirm(`${item.products.name} bu sayımdan çıkarılsın mı?`))) return
     deleteItemMutation.mutate(item.id)
   }
 
@@ -863,6 +868,7 @@ export function DailyCountPanel() {
           </CardContent>
         </Card>
       )}
+      {dialog}
     </div>
   )
 }

@@ -22,6 +22,7 @@ import { useExpenses } from '@/features/expenses/hooks'
 import { useRecordStockMovement } from '@/features/stock/hooks'
 import { cn } from '@/lib/utils'
 import type { SaleWithRelations } from '@/features/sales/api'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -54,11 +55,15 @@ function SalesTab({
   const deleteMutation = useDeleteSale()
   const recordMovement = useRecordStockMovement()
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
+  const { confirm, dialog } = useConfirmDialog()
 
   const sales = React.useMemo(() => filterSalesByDate(allSales, from, to), [allSales, from, to])
 
   async function handleDelete(sale: SaleWithRelations) {
-    if (!confirm(`${sale.product_name} (${sale.quantity} adet) ${sale.type === 'sale' ? 'satış' : 'iade'} kaydı silinsin mi?`)) return
+    if (
+      !(await confirm(`${sale.product_name} (${sale.quantity} adet) ${sale.type === 'sale' ? 'satış' : 'iade'} kaydı silinsin mi?`))
+    )
+      return
     // Satış/iade silinince stoktaki etkisi de tersine çevrilmeli, aksi halde
     // kayıt silinir ama current_quantity yanlış kalır (kongre ürün panelindeki
     // aynı desen — bkz. CongressStockItemsPanel.handleDelete).
@@ -169,6 +174,7 @@ function SalesTab({
           )}
         </CardContent>
       </Card>
+      {dialog}
     </div>
   )
 }
