@@ -262,6 +262,7 @@ function CountItemRow({
   onSavePaket,
   onSaveFlakon,
   onDelete,
+  nextItemId,
 }: {
   item: StockCountItemWithProduct
   baseline: { paket: number; flakon: number }
@@ -271,6 +272,10 @@ function CountItemRow({
   onSavePaket: (id: string, value: number | null) => void
   onSaveFlakon: (id: string, value: number | null) => void
   onDelete: (item: StockCountItemWithProduct) => void
+  /** Enter'la aşağı satıra geçebilmek için (kullanıcı isteği, 2026-08-22) —
+   * Paket→Flakon→bir sonraki satırın Paket'i, StockMovementDialog'daki aynı
+   * Enter-ile-ilerleme deseni (bkz. o dosyadaki quantityInputRef). */
+  nextItemId?: string
 }) {
   const [paketValue, setPaketValue] = React.useState(item.counted_quantity?.toString() ?? '')
   const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
@@ -297,6 +302,7 @@ function CountItemRow({
           <span>{item.counted_quantity != null ? `${item.counted_quantity} Paket` : '—'}</span>
         ) : (
           <Input
+            id={`count-paket-${item.id}`}
             type="number"
             min="0"
             className="w-20"
@@ -304,6 +310,12 @@ function CountItemRow({
             value={paketValue}
             onChange={(e) => setPaketValue(e.target.value)}
             onBlur={() => onSavePaket(item.id, paketValue === '' ? null : Number(paketValue))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                document.getElementById(`count-flakon-${item.id}`)?.focus()
+              }
+            }}
           />
         )}
       </TableCell>
@@ -312,6 +324,7 @@ function CountItemRow({
           <span>{item.counted_quantity_flakon != null ? `${item.counted_quantity_flakon} Flakon` : '—'}</span>
         ) : (
           <Input
+            id={`count-flakon-${item.id}`}
             type="number"
             min="0"
             className="w-20"
@@ -319,6 +332,12 @@ function CountItemRow({
             value={flakonValue}
             onChange={(e) => setFlakonValue(e.target.value)}
             onBlur={() => onSaveFlakon(item.id, flakonValue === '' ? null : Number(flakonValue))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                if (nextItemId) document.getElementById(`count-paket-${nextItemId}`)?.focus()
+              }
+            }}
           />
         )}
       </TableCell>
@@ -773,7 +792,7 @@ export function DailyCountPanel() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => (
+              {items.map((item, index) => (
                 <CountItemRow
                   key={item.id}
                   item={item}
@@ -784,6 +803,7 @@ export function DailyCountPanel() {
                   onSavePaket={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
                   onSaveFlakon={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
                   onDelete={handleDeleteItem}
+                  nextItemId={items[index + 1]?.id}
                 />
               ))}
             </TableBody>
