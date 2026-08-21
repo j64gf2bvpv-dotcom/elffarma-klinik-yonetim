@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { toast } from 'sonner'
-import { ImageDown, IdCard, ArrowLeftRight, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { ImageDown, IdCard, ArrowLeftRight, Pencil, Trash2, PackageX, Loader2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -27,12 +27,19 @@ import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { ProductMultiCombobox } from '@/features/stock/ProductMultiCombobox'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
+import { ResetAllStockDialog } from '@/features/stock/ResetAllStockDialog'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
 import { useSales } from '@/features/sales/hooks'
 import { useSampleRequests } from '@/features/samples/hooks'
 import { useCustomers } from '@/features/customers/hooks'
-import { useAllStockMovements, useDeleteStockMovement, useProducts, useUpdateStockMovement } from '@/features/stock/hooks'
+import {
+  useAllStockMovements,
+  useDeactivateProduct,
+  useDeleteStockMovement,
+  useProducts,
+  useUpdateStockMovement,
+} from '@/features/stock/hooks'
 import { tr } from '@/i18n/tr'
 import { buildStockLedger, summarizeStockLedger, type StockCardRow } from './stockCardReport'
 import { exportStockCardImage } from './exportStockCardImage'
@@ -253,6 +260,8 @@ export function StockCardPanel() {
   const [selectedRowId, setSelectedRowId] = React.useState<string | null>(null)
 
   const queryClient = useQueryClient()
+  const { staff } = useAuth()
+  const isAdmin = staff?.role === 'admin'
   const { data: movements = [] } = useAllStockMovements()
   const { data: sales = [] } = useSales()
   const { data: sampleRequests = [] } = useSampleRequests()
@@ -260,12 +269,23 @@ export function StockCardPanel() {
   const { data: allProducts = [] } = useProducts('')
   const deleteMovementMutation = useDeleteStockMovement()
   const updateMovementMutation = useUpdateStockMovement()
+  const deactivateProductMutation = useDeactivateProduct()
 
   const productById = React.useMemo(() => new Map(allProducts.map((p) => [p.id, p])), [allProducts])
+  const resetAffectedCount = allProducts.filter((p) => p.current_quantity > 0 || p.flakon_quantity > 0).length
 
   function handleDeleteMovement(row: StockCardRow) {
     if (!confirm(`${formatDateTime(row.date)} tarihli hareket silinsin mi? Ürünün güncel stoğu buna göre geri alınır.`)) return
     deleteMovementMutation.mutate(row.id)
+  }
+
+  function handleDeleteProduct(row: StockCardRow) {
+    if (!confirm(`${row.productName} kaldırılsın mı? Ürün stok listesinden kaldırılır, geçmiş hareketler saklanır.`)) return
+    deactivateProductMutation.mutate(row.productId)
+    if (mode === 'single' && row.productId === productId) {
+      setProductId(undefined)
+      setProduct(null)
+    }
   }
 
   /**
@@ -371,7 +391,7 @@ export function StockCardPanel() {
                 <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                   <IdCard className="size-3.5" />
                   Kod: {product.sku ?? '—'} {product.barcode ? `· Barkod: ${product.barcode}` : ''} · Stokta:{' '}
-                  {product.current_quantity} {product.unit}
+                  {product.current_quantity > 0 ? `${product.current_quantity} ${product.unit}` : '—'}
                 </span>
               )}
             </>
@@ -415,7 +435,9 @@ export function StockCardPanel() {
                 <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
                   {mode === 'single' ? 'Güncel Stok' : 'Toplam Güncel Stok'}
                 </p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums">{summary.currentStock}</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums">
+                  {summary.currentStock > 0 ? summary.currentStock : '—'}
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -438,6 +460,7 @@ export function StockCardPanel() {
                 }
               />
               {mode === 'single' && product && <DeleteAllMovementsDialog product={product} />}
+              <ResetAllStockDialog affectedCount={resetAffectedCount} />
               <ExportMenu<StockCardRow>
                 title={mode === 'single' ? `Stok Kartı — ${product?.name}` : 'Stok Kartı — Tüm Ürünler'}
                 filename={mode === 'single' ? `stok-karti-${product?.sku ?? product?.name}` : 'stok-karti-tum-urunler'}
@@ -451,7 +474,17 @@ export function StockCardPanel() {
                   { header: 'Sebep / Not', value: (r) => r.reason ?? r.note ?? '' },
                   { header: 'Giriş', value: (r) => r.inQty || '' },
                   { header: 'Çıkış', value: (r) => r.outQty || '' },
-                  { header: 'Güncel Stok', value: (r) => (r.unitKind === 'flakon' ? `${r.flakonBalance} flakon` : r.balance) },
+                  {
+                    header: 'Güncel Stok',
+                    value: (r) =>
+                      r.unitKind === 'flakon'
+                        ? r.flakonBalance > 0
+                          ? `${r.flakonBalance} flakon`
+                          : '—'
+                        : r.balance > 0
+                          ? r.balance
+                          : '—',
+                  },
                 ]}
               />
               <Button
@@ -525,7 +558,13 @@ export function StockCardPanel() {
                         <InlineQtyCell value={row.outQty} onCommit={(next) => handleInlineQtyChange(row, 'out', next)} />
                       </TableCell>
                       <TableCell className="font-medium tabular-nums">
-                        {row.unitKind === 'flakon' ? `${row.flakonBalance} flakon` : row.balance}
+                        {row.unitKind === 'flakon'
+                          ? row.flakonBalance > 0
+                            ? `${row.flakonBalance} flakon`
+                            : '—'
+                          : row.balance > 0
+                            ? row.balance
+                            : '—'}
                       </TableCell>
                       <TableCell className="bg-card sticky right-0 shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
                         <div className="flex justify-end gap-1">
@@ -550,6 +589,16 @@ export function StockCardPanel() {
                           <Button variant="ghost" size="icon" title="Hareketi sil" onClick={() => handleDeleteMovement(row)}>
                             <Trash2 className="size-4 text-destructive" />
                           </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Ürünü kaldır"
+                              onClick={() => handleDeleteProduct(row)}
+                            >
+                              <PackageX className="size-4 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

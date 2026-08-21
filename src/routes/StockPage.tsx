@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import {
   Search,
   AlertTriangle,
@@ -8,7 +7,6 @@ import {
   CalendarClock,
   TrendingUp,
   PackageSearch,
-  RotateCcw,
   Loader2,
   Check,
   GripVertical,
@@ -17,7 +15,6 @@ import {
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -51,11 +48,11 @@ import {
 } from '@/features/stock/hooks'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
+import { ResetAllStockDialog } from '@/features/stock/ResetAllStockDialog'
 import { CargoPanel } from '@/features/cargo/CargoPanel'
 import { SafeThumbnail } from '@/components/SafeThumbnail'
 import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
-import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/lib/auth'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
@@ -184,7 +181,7 @@ function QuantityCell({ product }: { product: Product }) {
     >
       {isCritical && <AlertTriangle className="size-3.5 text-destructive animate-alert-glow-red rounded-full" />}
       <Badge variant={isCritical ? 'destructive' : 'secondary'} className={cn(isCritical && 'animate-alert-glow-red')}>
-        {product.current_quantity} {product.unit}
+        {product.current_quantity > 0 ? `${product.current_quantity} ${product.unit}` : '—'}
       </Badge>
     </button>
   )
@@ -260,7 +257,7 @@ function FlakonQuantityCell({ product }: { product: Product }) {
       title="Flakon adedini düzenlemek için tıklayın"
       className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent"
     >
-      <Badge variant="secondary">{product.flakon_quantity} flakon</Badge>
+      <Badge variant="secondary">{product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}</Badge>
     </button>
   )
 }
@@ -687,9 +684,9 @@ function ProductsTable({
                     <div className="flex items-center gap-1.5 text-sm">
                       {isCritical && <AlertTriangle className="size-3.5 text-destructive animate-alert-glow-red" />}
                       <span className={cn('flex items-center gap-1.5', isCritical && 'font-medium text-destructive')}>
-                        <span>{product.current_quantity} paket</span>
+                        <span>{product.current_quantity > 0 ? `${product.current_quantity} paket` : '—'}</span>
                         <span className="text-border">|</span>
-                        <span>{product.flakon_quantity} flakon</span>
+                        <span>{product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}</span>
                       </span>
                     </div>
                   </TableCell>
@@ -737,113 +734,6 @@ function ProductsTable({
         </Table>
       </CardContent>
     </Card>
-  )
-}
-
-/**
- * "Tüm Ürünleri Sıfırla" — sadece yönetici, iki adımlı onay: (1) etkilenecek
- * ürün sayısının önizlemesi + zorunlu bir gerekçe metni, (2) ürün sayısını
- * elle yazarak kesin onay. Gönderildiğinde `reset_all_stock` RPC'sini TEK
- * seferde çağırır — RPC sunucu tarafında hem paket hem flakon sayaçlarını
- * tek bir transaction içinde sıfırlar (ya hepsi ya hiçbiri).
- */
-function ResetAllStockDialog({ affectedCount }: { affectedCount: number }) {
-  const { staff } = useAuth()
-  const queryClient = useQueryClient()
-  const [open, setOpen] = React.useState(false)
-  const [step, setStep] = React.useState<1 | 2>(1)
-  const [reason, setReason] = React.useState('')
-  const [confirmText, setConfirmText] = React.useState('')
-  const [submitting, setSubmitting] = React.useState(false)
-
-  if (staff?.role !== 'admin') return null
-
-  function handleOpenChange(next: boolean) {
-    setOpen(next)
-    if (!next) {
-      setStep(1)
-      setReason('')
-      setConfirmText('')
-    }
-  }
-
-  async function handleConfirm() {
-    setSubmitting(true)
-    try {
-      const { data, error } = await supabase.rpc('reset_all_stock', { p_reason: reason.trim() })
-      if (error) throw error
-      await queryClient.invalidateQueries({ queryKey: ['products'] })
-      toast.success(`${data ?? affectedCount} ürünün stoğu (paket + flakon) sıfırlandı`)
-      handleOpenChange(false)
-    } catch (error) {
-      toast.error('Sıfırlanamadı', { description: error instanceof Error ? error.message : String(error) })
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <Button
-        variant="outline"
-        className="text-destructive hover:text-destructive"
-        onClick={() => setOpen(true)}
-        disabled={affectedCount === 0}
-        title="Tüm ürünlerin paket ve flakon stok miktarını 0'a çeker (denetim kaydı olarak işlenir)"
-      >
-        <RotateCcw />
-        Tüm Ürünleri Sıfırla
-      </Button>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Tüm Ürünleri Sıfırla</DialogTitle>
-          <DialogDescription>
-            {step === 1
-              ? `${affectedCount} ürünün stoğu (paket + flakon) SIFIRLANACAK. Bu işlem her ürün için "çıkış" hareketi olarak denetim kaydına işlenir ve geri alınamaz.`
-              : 'Son onay: devam etmek için etkilenecek ürün sayısını aşağıya yazın.'}
-          </DialogDescription>
-        </DialogHeader>
-        {step === 1 ? (
-          <div className="grid gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="reset-reason">Gerekçe (zorunlu)</Label>
-              <Textarea
-                id="reset-reason"
-                rows={3}
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Ör. yıl sonu fiziksel sayım sonrası toplu sıfırlama..."
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-1.5">
-            <Label htmlFor="reset-confirm">Onaylamak için "{affectedCount}" yazın</Label>
-            <Input id="reset-confirm" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoFocus />
-          </div>
-        )}
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-            Vazgeç
-          </Button>
-          {step === 1 ? (
-            <Button type="button" variant="destructive" disabled={!reason.trim()} onClick={() => setStep(2)}>
-              Devam Et
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={confirmText.trim() !== String(affectedCount) || submitting}
-              onClick={handleConfirm}
-            >
-              {submitting && <Loader2 className="animate-spin" />}
-              Sıfırla
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 

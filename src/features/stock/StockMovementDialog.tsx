@@ -213,12 +213,14 @@ export function StockMovementDialog({
           <p className="text-sm text-muted-foreground -mt-2">
             Mevcut stok:{' '}
             <span className="font-medium text-foreground">
-              {activeProduct.current_quantity} {activeProduct.unit}
+              {activeProduct.current_quantity > 0 ? `${activeProduct.current_quantity} ${activeProduct.unit}` : '—'}
             </span>
             {hasFlakonTracking && (
               <>
                 {' · '}
-                <span className="font-medium text-foreground">{activeProduct.flakon_quantity} flakon</span>
+                <span className="font-medium text-foreground">
+                  {activeProduct.flakon_quantity > 0 ? `${activeProduct.flakon_quantity} flakon` : '—'}
+                </span>
               </>
             )}
           </p>

@@ -63,7 +63,7 @@ export function ProductCombobox({ value, onChange, placeholder }: ProductCombobo
                           })
                         : 'Fiyat yok'}
                       {' · '}
-                      Stok: {product.current_quantity} {product.unit}
+                      Stok: {product.current_quantity > 0 ? `${product.current_quantity} ${product.unit}` : '—'}
                     </p>
                   </div>
                 </CommandItem>

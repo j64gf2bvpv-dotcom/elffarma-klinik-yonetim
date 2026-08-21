@@ -3,6 +3,14 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.158] - 2026-08-21
+
+**Stok Kartı Hareket Dökümü'nde ürün silme eklendi:** Hem tek ürün hem Tüm Ürünler modunda, İşlemler sütununda artık her satırda o satırın ürününü doğrudan kaldırabilen bir buton var (admin, Ürünler listesindeki kaldırma ile aynı davranış — ürün stok listesinden kaldırılır, geçmiş hareketler saklanır).
+
+**"Tüm Ürünleri Sıfırla" artık Stok Kartı'nda da var:** Daha önce sadece Ürünler sekmesinde bulunan bu işlem (admin, iki adımlı onay) artık Stok Kartı'nda hem tek ürün hem Tüm Ürünler modunda da erişilebilir — ortak bileşene taşındı (`ResetAllStockDialog`).
+
+**Stokla ilgili hiçbir yerde artık "0 paket"/"0 flakon" yazmıyor:** Ürünler listesi, Stok Kartı, hareket ekleme diyaloğu, ürün seçim kutuları ve özet kartlarındaki (Güncel Stok) tüm paket/flakon miktarı gösterimleri, değer 0 olduğunda sadece "—" gösteriyor artık — Günlük Sayım'da daha önce yapılan aynı düzenleme, stokla ilgili tüm ekranlara yayıldı.
+
 ## [2.17.157] - 2026-08-21
 
 **Hareket Dökümü'nde Giriş/Çıkış ile Güncel Stok'un tutmaması kök nedeniyle düzeltildi:** Bir hareket düzenlenip/silinip sonucun negatife düşeceği durumlarda veritabanı stoğu 0'a kırpıyor (kullanıcı onayıyla eklenen davranış), ama "Hareket Dökümü" tablosundaki bakiye bunu hesaba katmadan ham toplamı gösteriyordu — geçmişte bir kez kırpma yaşanmış bir üründe bu satır kalıcı olarak gerçek stoktan sapıyor, hatta negatif görünebiliyordu. Artık defter de her adımda aynı şekilde 0'a kırpıyor. Canlı veritabanındaki 18 aktif ürünün tamamında test edilip doğrulandı (önceden 5 üründe fark vardı, şimdi hepsi tutuyor). Şema değişikliği yok — sadece istemci tarafı hesaplama düzeltmesi.
