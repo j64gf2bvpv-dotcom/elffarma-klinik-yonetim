@@ -114,8 +114,11 @@ port = 54324
 
 [storage]
 enabled = true
-# The maximum file size allowed (e.g. "5MB", "500KB").
-file_size_limit = "50MiB"
+# The maximum file size allowed (e.g. "5MB", "500KB"). Kullanıcı isteğiyle
+# (2026-08-22) büyük PDF'ler "Belgeler" sekmelerine (doktor/klinik/kongre/
+# workshop/ürün) yüklenirken 50MB sınırına takılıp hata veriyordu — pratikte
+# sınırsız sayılacak kadar yüksek bir değere çıkarıldı.
+file_size_limit = "1GiB"
 
 # Uncomment to configure local storage buckets
 # [storage.buckets.images]
