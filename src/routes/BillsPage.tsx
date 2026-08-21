@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Plus, Trash2, Pencil, Zap, CheckCircle2, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Pencil, Zap, CheckCircle2, ChevronDown, Repeat, Pause, Play } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -25,12 +26,17 @@ import { cn } from '@/lib/utils'
 import { UTILITY_BILL_CATEGORY_LABELS } from '@/features/bills/api'
 import {
   useCreateUtilityBill,
+  useCreateUtilityBillTemplate,
   useDeleteUtilityBill,
+  useDeleteUtilityBillTemplate,
   useUpdateUtilityBill,
   useUpdateUtilityBillPaid,
+  useUpdateUtilityBillTemplate,
+  useUpdateUtilityBillTemplateActive,
+  useUtilityBillTemplates,
   useUtilityBills,
 } from '@/features/bills/hooks'
-import type { UtilityBill, UtilityBillCategory } from '@/types/database'
+import type { UtilityBill, UtilityBillCategory, UtilityBillTemplate } from '@/types/database'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -161,6 +167,210 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
             Kaydet
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface TemplateFormState {
+  category: UtilityBillCategory
+  contract_number: string
+  amount: number
+  day_of_month: number
+  note: string
+}
+
+function emptyTemplateForm(): TemplateFormState {
+  return { category: 'elektrik', contract_number: '', amount: 0, day_of_month: 1, note: '' }
+}
+
+/**
+ * Tekrarlayan fatura şablonu formu — kullanıcı isteğiyle (2026-08-21): her
+ * ay elle girmek yerine "her ayın X'inde" bir şablon tanımlanır, sistem
+ * VERİTABANI TARAFINDA (pg_cron, günlük 06:00) o ayın faturasını + 7 gün
+ * önceden hatırlatmasını OTOMATİK oluşturur (generate_due_utility_bills()).
+ * İstemci tarafında bir kontrol YOK — uygulama hiç açılmasa bile çalışır.
+ */
+function TemplateFormDialog({ template }: { template?: UtilityBillTemplate }) {
+  const isEdit = !!template
+  const [open, setOpen] = React.useState(false)
+  const [form, setForm] = React.useState<TemplateFormState>(
+    template
+      ? {
+          category: template.category,
+          contract_number: template.contract_number ?? '',
+          amount: Number(template.amount),
+          day_of_month: template.day_of_month,
+          note: template.note ?? '',
+        }
+      : emptyTemplateForm(),
+  )
+  const createMutation = useCreateUtilityBillTemplate()
+  const updateMutation = useUpdateUtilityBillTemplate()
+
+  async function handleSubmit() {
+    if (form.day_of_month < 1 || form.day_of_month > 31 || form.amount < 0) return
+    const input = {
+      category: form.category,
+      contract_number: form.contract_number.trim() || null,
+      amount: form.amount,
+      day_of_month: form.day_of_month,
+      note: form.note.trim() || null,
+    }
+    if (isEdit) {
+      await updateMutation.mutateAsync({ id: template.id, input })
+    } else {
+      await createMutation.mutateAsync(input)
+      setForm(emptyTemplateForm())
+    }
+    setOpen(false)
+  }
+
+  const submitting = createMutation.isPending || updateMutation.isPending
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {isEdit ? (
+          <Button variant="ghost" size="icon" title="Düzenle">
+            <Pencil className="size-4" />
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm">
+            <Plus className="size-3.5" /> Yeni Tekrarlayan Fatura
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isEdit ? 'Tekrarlayan Faturayı Düzenle' : 'Yeni Tekrarlayan Fatura'}</DialogTitle>
+          <DialogDescription>
+            Her ayın seçtiğiniz gününde fatura kaydı ve 7 gün önceden hatırlatması otomatik oluşturulur.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-1.5">
+            <Label>Kategori</Label>
+            <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v as UtilityBillCategory }))}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORY_ORDER.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {UTILITY_BILL_CATEGORY_LABELS[c]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Sözleşme Numarası (opsiyonel)</Label>
+            <Input
+              value={form.contract_number}
+              onChange={(e) => setForm((f) => ({ ...f, contract_number: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label>Tutar</Label>
+              <CurrencyInput value={form.amount} onChange={(v) => setForm((f) => ({ ...f, amount: v ?? 0 }))} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Her Ayın Kaçıncı Günü</Label>
+              <Input
+                type="number"
+                min="1"
+                max="31"
+                value={form.day_of_month}
+                onChange={(e) => setForm((f) => ({ ...f, day_of_month: Number(e.target.value) }))}
+              />
+            </div>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Not (opsiyonel)</Label>
+            <Input value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Vazgeç
+          </Button>
+          <Button type="button" onClick={handleSubmit} disabled={submitting}>
+            Kaydet
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function TemplateRow({ template }: { template: UtilityBillTemplate }) {
+  const activeMutation = useUpdateUtilityBillTemplateActive()
+  const deleteMutation = useDeleteUtilityBillTemplate()
+
+  function handleDelete() {
+    if (!confirm('Bu tekrarlayan fatura şablonu silinsin mi? Daha önce oluşturulmuş faturalar silinmez.')) return
+    deleteMutation.mutate(template.id)
+  }
+
+  return (
+    <div className={cn('flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3', !template.is_active && 'opacity-60')}>
+      <div>
+        <p className="font-medium">
+          {UTILITY_BILL_CATEGORY_LABELS[template.category]}
+          {template.contract_number ? ` — ${template.contract_number}` : ''}
+          {!template.is_active && <span className="text-muted-foreground text-xs"> (duraklatıldı)</span>}
+        </p>
+        <p className="text-muted-foreground text-xs">
+          Her ayın {template.day_of_month}. günü · {currency(Number(template.amount))}
+        </p>
+      </div>
+      <div className="flex items-center gap-1">
+        <TemplateFormDialog template={template} />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => activeMutation.mutate({ id: template.id, isActive: !template.is_active })}
+          title={template.is_active ? 'Duraklat' : 'Etkinleştir'}
+        >
+          {template.is_active ? <Pause className="size-4" /> : <Play className="size-4" />}
+        </Button>
+        <Button variant="ghost" size="icon" onClick={handleDelete} title="Sil">
+          <Trash2 className="size-4 text-destructive" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function TemplatesManagerDialog() {
+  const { data: templates = [] } = useUtilityBillTemplates()
+  const [open, setOpen] = React.useState(false)
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <Repeat className="size-3.5" /> Tekrarlayan Faturalar
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Tekrarlayan Faturalar</DialogTitle>
+          <DialogDescription>
+            Her ayın belirlediğiniz gününde fatura kaydı ve hatırlatması otomatik oluşturulur — elle girmenize gerek kalmaz.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-2">
+          {templates.length === 0 && <p className="text-muted-foreground text-sm">Henüz tekrarlayan fatura yok.</p>}
+          {templates.map((t) => (
+            <TemplateRow key={t.id} template={t} />
+          ))}
+        </div>
+        <div className="flex justify-end">
+          <TemplateFormDialog />
+        </div>
       </DialogContent>
     </Dialog>
   )
@@ -323,6 +533,7 @@ export function BillsPage() {
                 { header: 'Durum', value: (b) => (b.is_paid ? 'Ödendi' : 'Bekliyor') },
               ]}
             />
+            <TemplatesManagerDialog />
             <BillFormDialog />
           </div>
         }

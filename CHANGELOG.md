@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.170] - 2026-08-21
+
+**Faturalar: gerçek otomatik tekrarlama eklendi ("her ayın X'inde"):** Yeni "Tekrarlayan Faturalar" yönetimi — kategori, sözleşme no, tutar ve "her ayın kaçıncı günü" belirtilen bir şablon tanımlanınca, o ayın fatura kaydı ve 7 gün önceden hatırlatması artık ELLE girmeye gerek kalmadan kendiliğinden oluşuyor. Bu, İSTEMCİ tarafında (uygulama açılınca kontrol) değil VERİTABANI tarafında (pg_cron, her gün 06:00) çalışıyor — masaüstü uygulaması o gün hiç açılmasa bile fatura oluşur. Ay daha kısaysa (ör. 31 seçilip Şubat gelirse) otomatik olarak ayın son gününe kırpılıyor; aynı ay için tekrar üretmiyor (idempotent). Şablonlar duraklatılabiliyor/tekrar etkinleştirilebiliyor/silinebiliyor (silmek geçmiş faturaları etkilemez). Canlı veritabanında cron kaydı, üretim, 7 gün önceden hatırlatma ve aynı-ay tekrar üretmeme (idempotency) testleriyle doğrulandı. Şema değişikliği: yeni `utility_bill_templates` tablosu + `generate_due_utility_bills()` fonksiyonu + pg_cron görevi (`20260821130445_...`, `20260821130621_...`).
+
 ## [2.17.169] - 2026-08-21
 
 **Faturalar: sözleşme numarasına göre gruplama, hatırlatma 1 hafta önceden:** Aynı sözleşme numarasına ait birden fazla fatura/borç artık tek başlık altında (kaç borç, toplam tutar) gruplanıp listeleniyor — açılır/kapanır, varsayılan açık. Sözleşme numarası olmayan faturalar kendi tekil grubunda kalıyor. Ayrıca: otomatik oluşturulan hatırlatma artık son ödeme tarihinin KENDİSİNDE değil, bir hafta ÖNCESİNDE düşüyor — ödemeye yetişecek zaman kalsın diye.

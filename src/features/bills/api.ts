@@ -3,7 +3,7 @@ import { tr as trLocale } from 'date-fns/locale/tr'
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
 import { createReminder, updateReminder, deleteReminder } from '@/features/reminders/api'
-import type { UtilityBill, UtilityBillCategory } from '@/types/database'
+import type { UtilityBill, UtilityBillCategory, UtilityBillTemplate } from '@/types/database'
 
 export const UTILITY_BILL_CATEGORY_LABELS: Record<UtilityBillCategory, string> = {
   elektrik: 'Elektrik',
@@ -86,4 +86,44 @@ export async function deleteUtilityBill(id: string, reminderId: string | null): 
     await deleteReminder(reminderId)
   }
   return offlineDelete('utility_bills', id, 'Fatura silme')
+}
+
+export interface UtilityBillTemplateInput {
+  category: UtilityBillCategory
+  contract_number?: string | null
+  amount: number
+  day_of_month: number
+  note?: string | null
+}
+
+export async function fetchUtilityBillTemplates(): Promise<UtilityBillTemplate[]> {
+  const { data, error } = await supabase.from('utility_bill_templates').select('*').order('day_of_month', { ascending: true })
+  if (error) throw error
+  return data as UtilityBillTemplate[]
+}
+
+export async function createUtilityBillTemplate(input: UtilityBillTemplateInput): Promise<UtilityBillTemplate> {
+  const createdBy = await getCurrentUserId()
+  return offlineInsert<UtilityBillTemplate>(
+    'utility_bill_templates',
+    { ...input, created_by: createdBy },
+    `Tekrarlayan fatura: ${UTILITY_BILL_CATEGORY_LABELS[input.category]}`,
+  )
+}
+
+export async function updateUtilityBillTemplate(id: string, input: UtilityBillTemplateInput): Promise<UtilityBillTemplate> {
+  return offlineUpdate<UtilityBillTemplate>(
+    'utility_bill_templates',
+    id,
+    { ...input },
+    `Tekrarlayan fatura güncelleme: ${UTILITY_BILL_CATEGORY_LABELS[input.category]}`,
+  )
+}
+
+export async function updateUtilityBillTemplateActive(id: string, isActive: boolean): Promise<UtilityBillTemplate> {
+  return offlineUpdate<UtilityBillTemplate>('utility_bill_templates', id, { is_active: isActive }, 'Tekrarlayan fatura durumu güncelleme')
+}
+
+export async function deleteUtilityBillTemplate(id: string): Promise<void> {
+  return offlineDelete('utility_bill_templates', id, 'Tekrarlayan fatura şablonu silme')
 }

@@ -508,6 +508,20 @@ export interface UtilityBill {
   is_paid: boolean
   note: string | null
   reminder_id: string | null
+  template_id: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface UtilityBillTemplate {
+  id: string
+  category: UtilityBillCategory
+  contract_number: string | null
+  amount: number
+  day_of_month: number
+  note: string | null
+  is_active: boolean
   created_by: string | null
   created_at: string
   updated_at: string
