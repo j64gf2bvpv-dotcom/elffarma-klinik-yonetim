@@ -77,7 +77,7 @@ function currency(n: number) {
  * olsa (o satırda boş görünse) bile tıklanabilir kalır, çünkü boş taraf
  * üzerinden de yeni bir adet eklenebilmeli — bkz. handleInlineQtyChange.
  */
-function InlineQtyCell({ value, onCommit }: { value: number; onCommit: (next: number) => void }) {
+function InlineQtyCell({ value, unitLabel, onCommit }: { value: number; unitLabel?: string; onCommit: (next: number) => void }) {
   const [editing, setEditing] = React.useState(false)
   const [text, setText] = React.useState(value > 0 ? String(value) : '')
 
@@ -128,7 +128,7 @@ function InlineQtyCell({ value, onCommit }: { value: number; onCommit: (next: nu
       title={value > 0 ? 'Adedi düzenlemek için tıklayın' : 'Eklemek için tıklayın'}
       className="min-w-6 rounded px-1 py-0.5 text-left hover:bg-accent"
     >
-      {value > 0 ? value : <span className="text-muted-foreground">—</span>}
+      {value > 0 ? (unitLabel ? `${value} ${unitLabel}` : value) : <span className="text-muted-foreground">—</span>}
     </button>
   )
 }
@@ -344,7 +344,7 @@ export function StockCardPanel() {
 
   const summaryLine =
     mode === 'single'
-      ? `${summary.inQty} giriş · ${summary.outQty} çıkış · Güncel Stok: ${summary.currentStock} ${product?.unit ?? ''} · ${summary.doctorCount} doktor`
+      ? `${summary.inQty} giriş · ${summary.outQty} çıkış · Güncel Stok: ${summary.currentStock} Paket · ${summary.doctorCount} doktor`
       : `${summary.productCount} ürün · ${summary.inQty} giriş · ${summary.outQty} çıkış · Toplam Güncel Stok: ${summary.currentStock} · ${summary.doctorCount} doktor`
 
   async function handleImport(rawRows: Record<string, unknown>[]) {
@@ -487,17 +487,17 @@ export function StockCardPanel() {
                   { header: 'Tür', value: (r) => tr.movementType[r.kind] },
                   { header: 'Fiyat', value: (r) => (r.unitPrice != null ? r.unitPrice : '') },
                   { header: 'Sebep / Not', value: (r) => r.reason ?? r.note ?? '' },
-                  { header: 'Giriş', value: (r) => r.inQty || '' },
-                  { header: 'Çıkış', value: (r) => r.outQty || '' },
+                  { header: 'Giriş', value: (r) => (r.inQty ? `${r.inQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Paket'}` : '') },
+                  { header: 'Çıkış', value: (r) => (r.outQty ? `${r.outQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Paket'}` : '') },
                   {
                     header: 'Güncel Stok',
                     value: (r) =>
                       r.unitKind === 'flakon'
                         ? r.flakonBalance > 0
-                          ? `${r.flakonBalance} flakon`
+                          ? `${r.flakonBalance} Flakon`
                           : '—'
                         : r.balance > 0
-                          ? r.balance
+                          ? `${r.balance} Paket`
                           : '—',
                   },
                 ]}
@@ -570,18 +570,26 @@ export function StockCardPanel() {
                         {row.reason ?? row.note ?? '—'}
                       </TableCell>
                       <TableCell className="text-success tabular-nums">
-                        <InlineQtyCell value={row.inQty} onCommit={(next) => handleInlineQtyChange(row, 'in', next)} />
+                        <InlineQtyCell
+                          value={row.inQty}
+                          unitLabel={row.unitKind === 'flakon' ? 'Flakon' : 'Paket'}
+                          onCommit={(next) => handleInlineQtyChange(row, 'in', next)}
+                        />
                       </TableCell>
                       <TableCell className="text-destructive tabular-nums">
-                        <InlineQtyCell value={row.outQty} onCommit={(next) => handleInlineQtyChange(row, 'out', next)} />
+                        <InlineQtyCell
+                          value={row.outQty}
+                          unitLabel={row.unitKind === 'flakon' ? 'Flakon' : 'Paket'}
+                          onCommit={(next) => handleInlineQtyChange(row, 'out', next)}
+                        />
                       </TableCell>
                       <TableCell className="font-medium tabular-nums">
                         {row.unitKind === 'flakon'
                           ? row.flakonBalance > 0
-                            ? `${row.flakonBalance} flakon`
+                            ? `${row.flakonBalance} Flakon`
                             : '—'
                           : row.balance > 0
-                            ? row.balance
+                            ? `${row.balance} Paket`
                             : '—'}
                       </TableCell>
                       <TableCell className="bg-card sticky right-0 shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">

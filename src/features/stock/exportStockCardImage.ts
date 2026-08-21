@@ -21,7 +21,7 @@ export function exportStockCardImage(
   rows: StockCardRow[],
   showProduct: boolean,
 ) {
-  const width = showProduct ? 920 : 820
+  const width = showProduct ? 1000 : 900
   const rowHeight = 30
   const headerHeight = 92
   const summaryHeight = 40
@@ -65,8 +65,8 @@ export function exportStockCardImage(
         { label: 'DOKTOR', x: 328, key: 'doctor' as const },
         { label: 'TÜR', x: 488, key: 'kind' as const },
         { label: 'FİYAT', x: 588, key: 'price' as const },
-        { label: 'GİRİŞ', x: 718, key: 'in' as const },
-        { label: 'ÇIKIŞ', x: 788, key: 'out' as const },
+        { label: 'GİRİŞ', x: 698, key: 'in' as const },
+        { label: 'ÇIKIŞ', x: 778, key: 'out' as const },
         { label: 'GÜNCEL STOK', x: 858, key: 'balance' as const },
       ]
     : [
@@ -74,8 +74,8 @@ export function exportStockCardImage(
         { label: 'DOKTOR', x: 148, key: 'doctor' as const },
         { label: 'TÜR', x: 328, key: 'kind' as const },
         { label: 'FİYAT', x: 428, key: 'price' as const },
-        { label: 'GİRİŞ', x: 558, key: 'in' as const },
-        { label: 'ÇIKIŞ', x: 628, key: 'out' as const },
+        { label: 'GİRİŞ', x: 538, key: 'in' as const },
+        { label: 'ÇIKIŞ', x: 618, key: 'out' as const },
         { label: 'GÜNCEL STOK', x: 698, key: 'balance' as const },
       ]
 
@@ -96,9 +96,9 @@ export function exportStockCardImage(
     doctor: (r) => (r.doctorName ?? '—').slice(0, 26),
     kind: (r) => tr.movementType[r.kind],
     price: (r) => (r.unitPrice != null ? currency(r.unitPrice) : '—'),
-    in: (r) => (r.inQty ? String(r.inQty) : ''),
-    out: (r) => (r.outQty ? String(r.outQty) : ''),
-    balance: (r) => (r.unitKind === 'flakon' ? `${r.flakonBalance} flakon` : String(r.balance)),
+    in: (r) => (r.inQty ? `${r.inQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Paket'}` : ''),
+    out: (r) => (r.outQty ? `${r.outQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Paket'}` : ''),
+    balance: (r) => (r.unitKind === 'flakon' ? `${r.flakonBalance} Flakon` : `${r.balance} Paket`),
   }
 
   const kindColor: Record<StockCardRow['kind'], string> = {
