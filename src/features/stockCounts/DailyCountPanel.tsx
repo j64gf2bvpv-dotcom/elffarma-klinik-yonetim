@@ -322,7 +322,21 @@ function CountItemRow({
           />
         )}
       </TableCell>
-      <TableCell className="font-medium">{finalStockLabel(finalPaket, finalFlakon)}</TableCell>
+      <TableCell className="font-medium">
+        <span className="inline-flex items-center gap-1.5">
+          {finalStockLabel(finalPaket, finalFlakon)}
+          {(item.counted_quantity != null || item.counted_quantity_flakon != null) &&
+            (finalPaket === baseline.paket && finalFlakon === baseline.flakon ? (
+              <span title="Son sayımla aynı">
+                <CheckCircle2 className="size-4 text-success" />
+              </span>
+            ) : (
+              <span title="Son sayımdan farklı">
+                <AlertTriangle className="size-4 text-destructive" />
+              </span>
+            ))}
+        </span>
+      </TableCell>
       {!readOnly && (
         <TableCell>
           <Button
@@ -439,9 +453,12 @@ function RecentStockComparison({ recentCounts }: { recentCounts: StockCount[] })
  * Geçmiş bir sayım için "Sistemdeki Miktar"/"Son Stok" bilerek CANLI ürün
  * stoğu değil, o sayımın kendi expected_quantity anlık görüntüsü + o gün
  * girilen değer üzerinden hesaplanır — aksi halde aradan geçen zamanda olan
- * başka hareketler yüzünden o günkü gerçek son stok yanlış görünürdü.
+ * başka hareketler yüzünden o günkü gerçek son stok yanlış görünürdü. Sütun
+ * başlıkları da bugünkü Sayım tablosuyla aynı desende: "O Günkü Stok" yerine
+ * bir önceki sayımın tarihi, "Son Stok" yerine bu sayımın kendi tarihi
+ * (kullanıcı isteği, 2026-08-22).
  */
-function PastCountRow({ count }: { count: StockCount }) {
+function PastCountRow({ count, previousCount }: { count: StockCount; previousCount?: StockCount }) {
   const [open, setOpen] = React.useState(false)
   const { data: items = [], isLoading } = useCountItems(open ? count.id : undefined)
 
@@ -469,17 +486,23 @@ function PastCountRow({ count }: { count: StockCount }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Ürün</TableHead>
-                  <TableHead>O Günkü Stok</TableHead>
+                  <TableHead className="font-bold text-foreground">
+                    {previousCount
+                      ? `Son Sayım (${format(new Date(previousCount.count_date), 'd MMMM', { locale: trLocale })})`
+                      : 'O Günkü Stok'}
+                  </TableHead>
                   <TableHead>Paket</TableHead>
                   <TableHead>Flakon</TableHead>
-                  <TableHead>Son Stok</TableHead>
+                  <TableHead className="font-bold text-foreground">
+                    {format(new Date(count.count_date), 'd MMMM', { locale: trLocale })} — O Günkü Stok
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((i) => (
                   <TableRow key={i.id}>
                     <TableCell className="font-medium">{i.products.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="font-bold text-foreground">
                       {paketLabel(i.expected_quantity)}
                       {i.expected_quantity_flakon > 0 && `, ${i.expected_quantity_flakon} Flakon`}
                     </TableCell>
@@ -744,7 +767,7 @@ export function DailyCountPanel() {
                 <TableHead>Paket</TableHead>
                 <TableHead>Flakon</TableHead>
                 <TableHead className="font-bold text-foreground">
-                  {format(new Date(todayCount.count_date), 'd MMMM', { locale: trLocale })}
+                  {format(new Date(todayCount.count_date), 'd MMMM', { locale: trLocale })} — Bugünkü Stok
                 </TableHead>
                 {!isCompleted && <TableHead></TableHead>}
               </TableRow>
@@ -810,7 +833,11 @@ export function DailyCountPanel() {
             {pastCounts
               .filter((c) => c.id !== todayCount.id)
               .map((c) => (
-                <PastCountRow key={c.id} count={c} />
+                <PastCountRow
+                  key={c.id}
+                  count={c}
+                  previousCount={pastCounts.find((p) => p.status === 'completed' && p.count_date < c.count_date)}
+                />
               ))}
           </CardContent>
         </Card>
