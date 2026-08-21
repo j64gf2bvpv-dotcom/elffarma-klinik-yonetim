@@ -617,8 +617,7 @@ export function DailyCountPanel() {
   const recentCounts = otherPastCounts.filter((c) => c.status === 'completed').slice(0, 3)
   const todayOutgoingSales = allSales.filter((s) => s.sale_date === todayCount.count_date && s.type === 'sale')
 
-  const countDateLabel = format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })
-  const countDayLabel = format(new Date(todayCount.count_date), 'EEEE', { locale: trLocale })
+  const countDateLabel = format(new Date(todayCount.count_date), 'd MMMM yyyy (EEEE)', { locale: trLocale })
 
   // "Değişecek" — bugün girilen sayı taban (önceki sayım) ile FARKLIYSA
   // sayılıyor; aynıysa (kullanıcı isteğiyle) hiçbir hareket kaydedilmeyeceği
@@ -646,10 +645,11 @@ export function DailyCountPanel() {
   const swissItems = items.filter((i) => i.products.brand_line === 'swiss')
   const otherItems = items.filter((i) => i.products.brand_line !== 'dermakor' && i.products.brand_line !== 'swiss')
 
-  // Sadece tarih/gün başlığı + ürünler Dermakor/Swiss diye ayrılmış liste —
-  // toplam/fark gibi ayrı hesaplanan özet rakamları YOK.
+  // Sadece ürünler Dermakor/Swiss diye ayrılmış liste — toplam/fark gibi
+  // ayrı hesaplanan özet rakamları YOK. Tarih satırı kaldırıldı (kullanıcı
+  // isteğiyle, 2026-08-22) — dışa aktarımın kendi başlığında zaten var,
+  // burada tekrar yazmak gereksizdi.
   const summaryRows: { metrik: string; deger: string | number }[] = [
-    { metrik: `Tarih: ${countDateLabel} (${countDayLabel})`, deger: '' },
     { metrik: '— DERMAKOR —', deger: '' },
     ...dermakorItems.map(productLine),
     { metrik: '— SWISS —', deger: '' },
