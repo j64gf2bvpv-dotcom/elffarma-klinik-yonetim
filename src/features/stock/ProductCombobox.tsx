@@ -12,9 +12,11 @@ interface ProductComboboxProps {
   value: string | undefined
   onChange: (product: Product) => void
   placeholder?: string
+  /** Ürün seçilip popover kapandıktan hemen sonra çağrılır — formda bir sonraki alana (ör. Miktar) odağı taşımak için kullanılır. */
+  onSelectComplete?: () => void
 }
 
-export function ProductCombobox({ value, onChange, placeholder }: ProductComboboxProps) {
+export function ProductCombobox({ value, onChange, placeholder, onSelectComplete }: ProductComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
   const { data: products = [] } = useProducts(search)
@@ -50,6 +52,13 @@ export function ProductCombobox({ value, onChange, placeholder }: ProductCombobo
                   onSelect={() => {
                     onChange(product)
                     setOpen(false)
+                    if (onSelectComplete) {
+                      // Popover kapanışı Radix'te bir sonraki tick'te odağı
+                      // tetikleyiciye (Button) geri döndürüyor — bizim odak
+                      // taşımamızın ondan SONRA çalışması gerekiyor, aksi
+                      // halde Radix'in kendi odak yönetimi bizimkini eziyor.
+                      requestAnimationFrame(() => onSelectComplete())
+                    }
                   }}
                 >
                   <Check className={cn('size-4', value === product.id ? 'opacity-100' : 'opacity-0')} />

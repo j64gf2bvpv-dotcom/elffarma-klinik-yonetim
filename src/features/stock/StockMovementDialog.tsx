@@ -77,6 +77,12 @@ export function StockMovementDialog({
   const [open, setOpen] = React.useState(false)
   const [pickedProduct, setPickedProduct] = React.useState<Product | null>(null)
   const [newLot, setNewLot] = React.useState({ lot_no: '', expiry_date: '', warehouse: '', shelf: '' })
+  // Ürün seçilince (ProductCombobox) ve Miktar/Birim Fiyat'ta Enter'a basılınca
+  // odağı sıradaki alana taşımak için — kullanıcı isteğiyle (2026-08-21),
+  // Tab yerine Enter ile aşağı doğru ilerleyebilsin diye.
+  const quantityInputRef = React.useRef<HTMLInputElement>(null)
+  const reasonInputRef = React.useRef<HTMLInputElement>(null)
+  const noteInputRef = React.useRef<HTMLTextAreaElement>(null)
   const recordMutation = useRecordStockMovement()
   const updateMutation = useUpdateStockMovement()
   const createLotMutation = useCreateProductLot()
@@ -206,6 +212,7 @@ export function StockMovementDialog({
               value={pickedProduct?.id}
               onChange={setPickedProduct}
               placeholder="Hareket eklenecek ürünü seçin"
+              onSelectComplete={() => quantityInputRef.current?.focus()}
             />
           </div>
         )}
@@ -268,7 +275,22 @@ export function StockMovementDialog({
                   <FormItem>
                     <FormLabel>Miktar</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" {...field} value={field.value as number | string} />
+                      <Input
+                        type="number"
+                        min="1"
+                        {...field}
+                        ref={(el) => {
+                          field.ref(el)
+                          quantityInputRef.current = el
+                        }}
+                        value={field.value as number | string}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            document.getElementById('stock-movement-unit-price')?.focus()
+                          }
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -309,7 +331,17 @@ export function StockMovementDialog({
                 <FormItem>
                   <FormLabel>Birim Fiyat (opsiyonel)</FormLabel>
                   <FormControl>
-                    <CurrencyInput value={field.value} onChange={field.onChange} />
+                    <CurrencyInput
+                      id="stock-movement-unit-price"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          reasonInputRef.current?.focus()
+                        }
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -380,7 +412,20 @@ export function StockMovementDialog({
                 <FormItem>
                   <FormLabel>Sebep (opsiyonel)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Satın alma, kullanım, sayım düzeltmesi..." {...field} />
+                    <Input
+                      placeholder="Satın alma, kullanım, sayım düzeltmesi..."
+                      {...field}
+                      ref={(el) => {
+                        field.ref(el)
+                        reasonInputRef.current = el
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          noteInputRef.current?.focus()
+                        }
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -393,7 +438,14 @@ export function StockMovementDialog({
                 <FormItem>
                   <FormLabel>Not (opsiyonel)</FormLabel>
                   <FormControl>
-                    <Textarea rows={2} {...field} />
+                    <Textarea
+                      rows={2}
+                      {...field}
+                      ref={(el) => {
+                        field.ref(el)
+                        noteInputRef.current = el
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

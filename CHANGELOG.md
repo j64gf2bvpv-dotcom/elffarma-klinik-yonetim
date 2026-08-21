@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.166] - 2026-08-21
+
+**Giriş / Çıkış Ekle formunda Enter ile sıradaki alana geçme eklendi:** Ürün seçilince otomatik olarak Miktar alanına odaklanıyor; Miktar → Enter → Birim Fiyat → Enter → Sebep → Enter → Not şeklinde klavyeden elini kaldırmadan ilerlenebiliyor. Tab'a basmaya gerek kalmıyor.
+
 ## [2.17.165] - 2026-08-21
 
 **"Tüm Ürünleri Sıfırla" sonrası Günlük Sayım/Stok Kartı eski miktarları göstermeye devam etme sorunu düzeltildi:** Sıfırlama veritabanında doğru şekilde gerçekleşiyordu (canlı veritabanında doğrulandı) ama sadece ürün listesinin önbelleği tazeleniyordu — Günlük Sayım ve Stok Kartı, ürün verisini kendi sorgularına gömülü olarak ayrıca önbellekte tuttuğu için sıfırlama sonrası hâlâ eski (sıfırlanmamış) miktarları gösteriyordu. Artık bu ekranların önbelleği de tazeleniyor. Şema değişikliği yok.

@@ -8,6 +8,7 @@ interface CurrencyInputProps {
   placeholder?: string
   id?: string
   className?: string
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>
 }
 
 function formatDisplay(raw: string): string {
@@ -32,7 +33,7 @@ function numberToRaw(value: unknown): string {
   return Number.isInteger(num) ? String(num) : num.toFixed(2).replace('.', ',')
 }
 
-export function CurrencyInput({ value, onChange, suffix = '₺', placeholder, id, className }: CurrencyInputProps) {
+export function CurrencyInput({ value, onChange, suffix = '₺', placeholder, id, className, onKeyDown }: CurrencyInputProps) {
   const [raw, setRaw] = React.useState<string>(() => numberToRaw(value))
   const [focused, setFocused] = React.useState(false)
 
@@ -64,6 +65,7 @@ export function CurrencyInput({ value, onChange, suffix = '₺', placeholder, id
         onChange={handleChange}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
+        onKeyDown={onKeyDown}
         className="flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 pr-9 text-sm shadow-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
       />
       <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-muted-foreground">
