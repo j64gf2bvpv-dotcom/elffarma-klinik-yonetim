@@ -2,7 +2,7 @@ import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { toast } from 'sonner'
-import { Plus, Trash2, Boxes } from 'lucide-react'
+import { Plus, Trash2, Boxes, Pencil } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -26,6 +26,7 @@ import {
   useCongressShipments,
   useCreateCongressShipment,
   useDeleteCongressShipment,
+  useUpdateCongressShipment,
   useUpdateCongressShipmentReturns,
 } from './hooks'
 import type { CongressShipmentWithCongress } from './api'
@@ -126,6 +127,151 @@ function AddShipmentDialog() {
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Vazgeç
+          </Button>
+          <Button type="button" onClick={handleSubmit} disabled={submitting}>
+            Kaydet
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * Yanlış girilen kongre/ürün/miktarı düzeltmek için (kullanıcı isteğiyle,
+ * 2026-08-22) — AddShipmentDialog ile aynı form, farkla açılıyor ve kaydedince
+ * stok farkını (eski ürün/miktar → yeni ürün/miktar) düzeltiyor. İade zaten
+ * girildiyse (quantity_returned_sealed/open > 0) ürün değiştirme engelleniyor
+ * — o iadeler hangi ürüne ait olduğunu artık belirsizleştirir, bu durumda
+ * önce kaydı silip yeniden girmek gerekir.
+ */
+function EditShipmentDialog({ shipment, onClose }: { shipment: CongressShipmentWithCongress; onClose: () => void }) {
+  const [congressId, setCongressId] = React.useState(shipment.congress_id)
+  const [productId, setProductId] = React.useState(shipment.product_id)
+  const [productName, setProductName] = React.useState(shipment.product_name)
+  const [quantity, setQuantity] = React.useState(String(shipment.quantity_taken))
+  const [note, setNote] = React.useState(shipment.note ?? '')
+
+  const { data: congresses = [] } = useCongresses()
+  const updateMutation = useUpdateCongressShipment()
+  const recordMovement = useRecordStockMovement()
+
+  const hasReturns = shipment.quantity_returned_sealed > 0 || shipment.quantity_returned_open > 0
+
+  const sortedCongresses = React.useMemo(
+    () => [...congresses].sort((a, b) => (b.start_date ?? '').localeCompare(a.start_date ?? '')),
+    [congresses],
+  )
+
+  async function handleSubmit() {
+    const qty = Number(quantity)
+    if (!congressId || !productId || !Number.isFinite(qty) || qty <= 0) {
+      toast.error('Kongre, ürün ve geçerli bir miktar seçin')
+      return
+    }
+    const productChanged = productId !== shipment.product_id
+    if (productChanged && hasReturns) {
+      toast.error('Bu sevkiyatta iade girildiği için ürün değiştirilemez', {
+        description: 'Önce kaydı silip yeniden girin.',
+      })
+      return
+    }
+    const congressName = congresses.find((c) => c.id === congressId)?.name ?? 'Kongre/Workshop'
+
+    if (productChanged) {
+      await recordMovement.mutateAsync({
+        product_id: shipment.product_id,
+        movement_type: 'return',
+        quantity: shipment.quantity_taken,
+        reason: 'Kongre/Workshop sevkiyatı düzenlendi — eski ürün iptal edildi',
+        note: congressName,
+      })
+      await recordMovement.mutateAsync({
+        product_id: productId,
+        movement_type: 'out',
+        quantity: qty,
+        reason: 'Kongre/Workshop sevkiyatı düzenlendi — yeni ürün',
+        note: congressName,
+      })
+    } else if (qty !== shipment.quantity_taken) {
+      const delta = qty - shipment.quantity_taken
+      await recordMovement.mutateAsync({
+        product_id: productId,
+        movement_type: delta > 0 ? 'out' : 'return',
+        quantity: Math.abs(delta),
+        reason: 'Kongre/Workshop sevkiyatı düzenlendi — miktar farkı',
+        note: congressName,
+      })
+    }
+
+    await updateMutation.mutateAsync({
+      id: shipment.id,
+      input: {
+        congress_id: congressId,
+        product_id: productId,
+        product_name: productName,
+        quantity_taken: qty,
+        note: note.trim() || null,
+      },
+    })
+    onClose()
+  }
+
+  const submitting = updateMutation.isPending || recordMovement.isPending
+
+  return (
+    <Dialog open onOpenChange={(next) => !next && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Sevkiyatı Düzenle</DialogTitle>
+          <DialogDescription>
+            {hasReturns
+              ? 'Bu sevkiyatta iade zaten girildiği için ürün değiştirilemez — kongre, miktar ve not düzenlenebilir.'
+              : 'Yanlış girilen kongre, ürün veya miktarı düzeltin.'}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-1.5">
+            <Label>Kongre / Workshop</Label>
+            <Select value={congressId} onValueChange={setCongressId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Kongre/workshop seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortedCongresses.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                    {c.start_date ? ` — ${format(new Date(c.start_date), 'd MMM yyyy', { locale: trLocale })}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Ürün (Stoktan Seç)</Label>
+            <ProductCombobox
+              value={productId}
+              onChange={(p: Product) => {
+                setProductId(p.id)
+                setProductName(p.name)
+              }}
+            />
+            {hasReturns && (
+              <p className="text-muted-foreground text-xs">İade girildiği için ürün değişikliği kaydedilmeyecek.</p>
+            )}
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Götürülen Miktar</Label>
+            <Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Not (opsiyonel)</Label>
+            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Örn. stand vitrini için" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
             Vazgeç
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={submitting}>
@@ -239,9 +385,16 @@ export function CongressShipmentsPanel() {
   const { data: shipments = [], isLoading } = useCongressShipments()
   const deleteMutation = useDeleteCongressShipment()
   const recordMovement = useRecordStockMovement()
+  // Native confirm() yerine (kullanıcı isteğiyle, 2026-08-22 — tarayıcının
+  // stilsiz onay penceresi rahatsız ediciydi) uygulamanın kendi Dialog'uyla
+  // "İptal Et" / "Sil" onayı.
+  const [pendingDelete, setPendingDelete] = React.useState<CongressShipmentWithCongress | null>(null)
+  const [editingShipment, setEditingShipment] = React.useState<CongressShipmentWithCongress | null>(null)
 
-  async function handleDelete(shipment: CongressShipmentWithCongress) {
-    if (!confirm(`${shipment.product_name} (${shipment.quantity_taken} adet) sevkiyat kaydı silinsin mi?`)) return
+  async function confirmDelete() {
+    const shipment = pendingDelete
+    if (!shipment) return
+    setPendingDelete(null)
     const remaining =
       shipment.quantity_taken - shipment.quantity_returned_sealed - shipment.quantity_returned_open
     // Henüz dönmemiş (kullanılan sayılan) kısım hâlâ stoktan dışarıda görünüyor —
@@ -316,7 +469,10 @@ export function CongressShipmentsPanel() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end">
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(s)} title="Sil">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingShipment(s)} title="Düzenle">
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setPendingDelete(s)} title="Sil">
                           <Trash2 className="size-4 text-destructive" />
                         </Button>
                       </div>
@@ -328,6 +484,27 @@ export function CongressShipmentsPanel() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={!!pendingDelete} onOpenChange={(next) => !next && setPendingDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sevkiyat Kaydı Silinsin mi?</DialogTitle>
+            <DialogDescription>
+              {pendingDelete && `${pendingDelete.product_name} (${pendingDelete.quantity_taken} adet) sevkiyat kaydı silinecek.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setPendingDelete(null)}>
+              İptal Et
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDelete}>
+              Sil
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {editingShipment && <EditShipmentDialog shipment={editingShipment} onClose={() => setEditingShipment(null)} />}
     </div>
   )
 }

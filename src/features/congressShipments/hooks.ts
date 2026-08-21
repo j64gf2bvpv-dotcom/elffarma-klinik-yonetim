@@ -4,6 +4,7 @@ import {
   createCongressShipment,
   deleteCongressShipment,
   fetchCongressShipments,
+  updateCongressShipment,
   updateCongressShipmentReturns,
   type CongressShipmentInput,
 } from './api'
@@ -37,6 +38,18 @@ export function useUpdateCongressShipmentReturns() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['congress_shipments'] })
       toast.success('Dönüş miktarı güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateCongressShipment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: CongressShipmentInput }) => updateCongressShipment(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['congress_shipments'] })
+      toast.success('Sevkiyat kaydı güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
   })

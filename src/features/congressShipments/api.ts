@@ -39,6 +39,15 @@ export async function updateCongressShipmentReturns(
   return offlineUpdate<CongressShipment>('congress_shipments', id, returns, 'Kongre/workshop dönüş miktarı güncelleme')
 }
 
+export async function updateCongressShipment(id: string, input: CongressShipmentInput): Promise<CongressShipment> {
+  return offlineUpdate<CongressShipment>(
+    'congress_shipments',
+    id,
+    { ...input },
+    `Kongre/workshop sevkiyatı düzenleme: ${input.product_name}`,
+  )
+}
+
 export async function deleteCongressShipment(id: string): Promise<void> {
   return offlineDelete('congress_shipments', id, 'Kongre/workshop sevkiyat kaydı silme')
 }
