@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.155] - 2026-08-21
+
+**Personel artık Stok listesinde ürün adını ve kategorisini düzenleyebiliyor:** Daha önce bu iki alan da (diğer ürün alanları gibi) sadece yöneticiye açıktı; kullanıcı isteğiyle gevşetildi. Güvenlik veritabanı seviyesinde: `products` tablosunun UPDATE kuralı personele açıldı ama yeni bir `products_staff_editable_columns_guard` tetikleyicisi, admin olmayan biri ad/kategori dışında herhangi bir sütunu (fiyat, stok miktarı, barkod vb.) değiştirmeye çalışırsa işlemi reddediyor — yani arayüzde gizlemekle kalınmadı, kural veritabanında da zorunlu kılındı. Kategori zaten satır-içi düzenlenebiliyordu; ürün adı için de aynı tıkla-düzenle davranışı eklendi (yönetici hâlâ isme tıklayınca tüm bilgileri düzenleyebildiği eski diyaloğu görüyor). Şema değişikliği: yeni migration `20260821083430_allow_staff_edit_product_name_category.sql`.
+
 ## [2.17.154] - 2026-08-20
 
 **Günlük Sayım'da Son Stok formatı ve sıfır gösterimi netleştirildi:** "Son Stok" artık paket ve flakon ikisi de varsa "(paket - flakon)" biçiminde parantez içinde gösteriliyor; flakon yoksa sade paket miktarı, paket de 0 ise tek başına "—" yazıyor. "Sistemdeki Miktar"/"O Günkü Stok" kolonlarında da paket miktarı 0 ise "0 adet" yerine "—" gösteriliyor. Aynı format Günlük Özet dışa aktarma (Excel/Word/PDF/Görsel PNG) çıktılarına da yansıdı. Şema değişikliği yok.

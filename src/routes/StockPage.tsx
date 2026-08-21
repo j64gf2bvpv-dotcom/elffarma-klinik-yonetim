@@ -46,6 +46,7 @@ import {
   useReorderProducts,
   useUpdateProductCampaign,
   useUpdateProductCategory,
+  useUpdateProductName,
   useUpdateProductPrice,
 } from '@/features/stock/hooks'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
@@ -422,8 +423,6 @@ function PriceCell({ product }: { product: Product }) {
 
 /** Kategoriye tıklayınca yerinde düzenlenebilir hale gelir — sadece category alanını günceller. */
 function CategoryCell({ product }: { product: Product }) {
-  const { staff } = useAuth()
-  const isAdmin = staff?.role === 'admin'
   const [editing, setEditing] = React.useState(false)
   const [value, setValue] = React.useState(product.category ?? '')
   const mutation = useUpdateProductCategory()
@@ -437,10 +436,6 @@ function CategoryCell({ product }: { product: Product }) {
     const trimmed = value.trim()
     if (trimmed === (product.category ?? '')) return
     mutation.mutate({ id: product.id, category: trimmed || null })
-  }
-
-  if (!isAdmin) {
-    return <span className="text-muted-foreground">{product.category || '—'}</span>
   }
 
   if (editing) {
@@ -478,6 +473,68 @@ function CategoryCell({ product }: { product: Product }) {
       className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-muted-foreground hover:bg-accent"
     >
       {product.category ?? '—'}
+    </button>
+  )
+}
+
+/** Sadece ürün adını düzenleyebilen sade satır-içi hücre — admin olmayan personel
+ * için: tam ProductForm'u (fiyat, stok vb. dahil) açmak yerine sadece adı
+ * değiştirebilsinler (bkz. products_staff_editable_columns_guard trigger'ı,
+ * diğer sütunları personelde zaten reddediyor). */
+function NameCell({ product }: { product: Product }) {
+  const [editing, setEditing] = React.useState(false)
+  const [value, setValue] = React.useState(product.name)
+  const mutation = useUpdateProductName()
+
+  React.useEffect(() => {
+    if (!editing) setValue(product.name)
+  }, [product.name, editing])
+
+  function commit() {
+    setEditing(false)
+    const trimmed = value.trim()
+    if (!trimmed || trimmed === product.name) {
+      setValue(product.name)
+      return
+    }
+    mutation.mutate({ id: product.id, name: trimmed })
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onFocus={(e) => e.currentTarget.select()}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit()
+            }
+            if (e.key === 'Escape') {
+              setValue(product.name)
+              setEditing(false)
+            }
+          }}
+          className="h-8 w-40"
+        />
+        <SaveButton onCommit={commit} />
+      </div>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      title="Ürün adını düzenlemek için tıklayın"
+      className="-mx-1 block rounded-md px-1 py-0.5 text-left hover:bg-accent"
+    >
+      {product.name}
+      {product.barcode && <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>}
     </button>
   )
 }
@@ -614,12 +671,7 @@ function ProductsTable({
                         }
                       />
                     ) : (
-                      <div>
-                        {product.name}
-                        {product.barcode && (
-                          <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>
-                        )}
-                      </div>
+                      <NameCell product={product} />
                     )}
                   </TableCell>
                   <TableCell>

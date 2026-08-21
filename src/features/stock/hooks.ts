@@ -17,6 +17,7 @@ import {
   updateProduct,
   updateProductCampaign,
   updateProductCategory,
+  updateProductName,
   updateProductPrice,
   updateStockMovement,
   type ProductInput,
@@ -116,6 +117,21 @@ export function useUpdateProductCategory() {
       )
       queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success('Kategori güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateProductName() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => updateProductName(id, name),
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) =>
+        old?.map((p) => (p.id === id ? { ...p, ...updated } : p)),
+      )
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Ürün adı güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
   })
