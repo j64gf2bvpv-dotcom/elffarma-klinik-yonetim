@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.163] - 2026-08-21
+
+**Stok'a "Kongre/Workshop" sekmesi eklendi (Kargo'dan önce):** Mevcut bir kongre/workshop kaydı + ürün seçilip götürülen miktar girildiğinde gerçek stoktan düşülüyor. Kapalı dönen ve açık dönen miktarlar ayrı ayrı, satır üzerinde tıkla-düzenle ile girilebiliyor — her ikisi de gerçek stoğa geri ekleniyor, "Kullanılan" (götürülen − kapalı − açık) otomatik hesaplanıyor, ayrıca saklanmıyor. Bilerek Kongreler modülündeki mevcut ürün takibinden (congress_stock_items, satır başına tek durum) ayrı bir tablo (congress_shipments) — burada aynı satırda parçalı geri dönüş tutulabiliyor, iki sistem birbirine karışmıyor. Dönüş miktarı sonradan düzeltilirse (azaltılırsa) fazladan eklenen stok geri alınıyor; kayıt silinirse henüz dönmemiş kalan miktar stoğa iade ediliyor. Tüm senaryolar (götürme, kısmi dönüş, düzeltme, silme) canlı veritabanında uçtan uca test edilip net stok etkisinin sıfıra döndüğü doğrulandı. Şema değişikliği: yeni migration `20260821111928_add_congress_shipments.sql`.
+
 ## [2.17.162] - 2026-08-21
 
 **Örnek veri sistemleri tek bir yerde birleştirildi, gerçek bir bug düzeltildi:** Bir önceki sürümde Stok sekmesine eklenen küçük "Örnek Veri Ekle/Temizle" menüsü kaldırıldı — meğerse Ayarlar'da çok daha kapsamlı bir Örnek Veri sistemi (ürünler, müşteriler, satışlar, kongreler, giderler ve daha fazlasını kapsayan) zaten varmış. O sistemin "temizle" adımında gerçek bir hata bulundu: ürünleri kalıcı olarak silmeye çalışıyordu, bu da bir örnek ürün daha önce bir numune talebinden referans almışsa yabancı anahtar hatasıyla reddedilip temizliği yarım bırakıyordu. Artık Stok Kartı'ndaki "Ürünü kaldır" ile aynı yumuşak silme yöntemini kullanıyor — bu risk tamamen ortadan kalktı. Tek, doğru çalışan sistem kaldı. Şema değişikliği yok.

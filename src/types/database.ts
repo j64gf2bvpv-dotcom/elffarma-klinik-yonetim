@@ -476,6 +476,20 @@ export interface CongressStockItem {
   updated_at: string
 }
 
+export interface CongressShipment {
+  id: string
+  congress_id: string
+  product_id: string
+  product_name: string
+  quantity_taken: number
+  quantity_returned_sealed: number
+  quantity_returned_open: number
+  note: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface CongressConsumable {
   id: string
   congress_id: string

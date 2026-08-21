@@ -50,6 +50,7 @@ import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
 import { ResetAllStockDialog } from '@/features/stock/ResetAllStockDialog'
 import { CargoPanel } from '@/features/cargo/CargoPanel'
+import { CongressShipmentsPanel } from '@/features/congressShipments/CongressShipmentsPanel'
 import { SafeThumbnail } from '@/components/SafeThumbnail'
 import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
@@ -991,6 +992,7 @@ export function StockPage() {
           <TabsTrigger value="products">Ürünler</TabsTrigger>
           <TabsTrigger value="count">Günlük Sayım</TabsTrigger>
           <TabsTrigger value="card">Stok Kartı</TabsTrigger>
+          <TabsTrigger value="congress">Kongre/Workshop</TabsTrigger>
           <TabsTrigger value="cargo">Kargo</TabsTrigger>
         </TabsList>
 
@@ -1101,6 +1103,10 @@ export function StockPage() {
 
         <TabsContent value="card">
           <StockCardPanel />
+        </TabsContent>
+
+        <TabsContent value="congress">
+          <CongressShipmentsPanel />
         </TabsContent>
 
         <TabsContent value="cargo">
