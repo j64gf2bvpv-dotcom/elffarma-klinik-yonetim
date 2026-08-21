@@ -490,6 +490,22 @@ export interface CongressShipment {
   updated_at: string
 }
 
+export type UtilityBillCategory = 'elektrik' | 'dogalgaz' | 'su' | 'internet' | 'telefon' | 'diger'
+
+export interface UtilityBill {
+  id: string
+  category: UtilityBillCategory
+  contract_number: string | null
+  amount: number
+  due_date: string
+  is_paid: boolean
+  note: string | null
+  reminder_id: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface CongressConsumable {
   id: string
   congress_id: string

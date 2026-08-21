@@ -19,6 +19,7 @@ export const tr = {
     agenda: 'Ajanda',
     vehicles: 'Araçlar',
     teamPerformance: 'Ekip Performansı',
+    bills: 'Faturalar',
     settings: 'Ayarlar',
   },
   movementType: {

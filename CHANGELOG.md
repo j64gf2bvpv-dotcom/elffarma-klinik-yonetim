@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.164] - 2026-08-21
+
+**Yeni modül: Faturalar:** Elektrik, doğalgaz, su, internet, telefon gibi sabit faturaları (kategori, sözleşme numarası, tutar, son ödeme tarihi, not) kaydetmek için yeni bir "Faturalar" sekmesi ve nav girişi eklendi. Her fatura eklendiğinde son ödeme tarihinde otomatik bir Hatırlatma oluşturuluyor — ayrı bir bildirim sistemi kurulmadı, mevcut bildirim zili + Hatırlatmalar sayfası + Ajanda takvimi bunu otomatik gösteriyor. Ödendi işaretlenince bağlı hatırlatma da tamamlanmış sayılıyor (geri alınırsa o da geri açılıyor); fatura silinince bağlı hatırlatma da temizleniyor. Kategoriye göre filtrelenebiliyor, dışa aktarılabiliyor. Canlı veritabanında uçtan uca (ekleme → hatırlatma oluşturma → ödendi işaretleme → silme) test edilip doğrulandı. Şema değişikliği: yeni migration `20260821114345_add_utility_bills.sql`.
+
 ## [2.17.163] - 2026-08-21
 
 **Stok'a "Kongre/Workshop" sekmesi eklendi (Kargo'dan önce):** Mevcut bir kongre/workshop kaydı + ürün seçilip götürülen miktar girildiğinde gerçek stoktan düşülüyor. Kapalı dönen ve açık dönen miktarlar ayrı ayrı, satır üzerinde tıkla-düzenle ile girilebiliyor — her ikisi de gerçek stoğa geri ekleniyor, "Kullanılan" (götürülen − kapalı − açık) otomatik hesaplanıyor, ayrıca saklanmıyor. Bilerek Kongreler modülündeki mevcut ürün takibinden (congress_stock_items, satır başına tek durum) ayrı bir tablo (congress_shipments) — burada aynı satırda parçalı geri dönüş tutulabiliyor, iki sistem birbirine karışmıyor. Dönüş miktarı sonradan düzeltilirse (azaltılırsa) fazladan eklenen stok geri alınıyor; kayıt silinirse henüz dönmemiş kalan miktar stoğa iade ediliyor. Tüm senaryolar (götürme, kısmi dönüş, düzeltme, silme) canlı veritabanında uçtan uca test edilip net stok etkisinin sıfıra döndüğü doğrulandı. Şema değişikliği: yeni migration `20260821111928_add_congress_shipments.sql`.

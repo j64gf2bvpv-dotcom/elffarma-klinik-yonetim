@@ -27,6 +27,7 @@ import { TasksPage } from '@/routes/TasksPage'
 import { AgendaPage } from '@/routes/AgendaPage'
 import { VehiclesPage } from '@/routes/VehiclesPage'
 import { TeamPerformancePage } from '@/routes/TeamPerformancePage'
+import { BillsPage } from '@/routes/BillsPage'
 import { SettingsPage } from '@/routes/SettingsPage'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -79,6 +80,7 @@ function App() {
             <Route path="ajanda" element={<AgendaPage />} />
             <Route path="araclar" element={<VehiclesPage />} />
             <Route path="ekip-performansi" element={<TeamPerformancePage />} />
+            <Route path="faturalar" element={<BillsPage />} />
             <Route path="ayarlar" element={<SettingsPage />} />
           </Route>
         </Route>

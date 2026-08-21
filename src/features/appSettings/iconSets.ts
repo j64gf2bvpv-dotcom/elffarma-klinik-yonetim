@@ -74,6 +74,7 @@ import {
   Activity,
   BarChart3,
   Radar,
+  Zap,
 } from 'lucide-react'
 
 export type NavKey =
@@ -96,6 +97,7 @@ export type NavKey =
   | 'agenda'
   | 'vehicles'
   | 'teamPerformance'
+  | 'bills'
   | 'settings'
 
 export type IconVariant = 'outline' | 'bold' | '3d' | 'duotone' | 'thin'
@@ -134,6 +136,7 @@ export const iconSets: IconSet[] = [
       agenda: CalendarDays,
       vehicles: Car,
       teamPerformance: Activity,
+      bills: Zap,
       settings: SlidersHorizontal,
     },
   },
@@ -162,6 +165,7 @@ export const iconSets: IconSet[] = [
       agenda: CalendarDays,
       vehicles: Car,
       teamPerformance: BarChart3,
+      bills: Zap,
       settings: Settings2,
     },
   },
@@ -190,6 +194,7 @@ export const iconSets: IconSet[] = [
       agenda: CalendarDays,
       vehicles: Car,
       teamPerformance: Radar,
+      bills: Zap,
       settings: Settings,
     },
   },
@@ -218,6 +223,7 @@ export const iconSets: IconSet[] = [
       agenda: CalendarDays,
       vehicles: Car,
       teamPerformance: TrendingUp,
+      bills: Zap,
       settings: Cog,
     },
   },
@@ -246,6 +252,7 @@ export const iconSets: IconSet[] = [
       agenda: Calendar,
       vehicles: Car,
       teamPerformance: LineChart,
+      bills: Zap,
       settings: Settings,
     },
   },
