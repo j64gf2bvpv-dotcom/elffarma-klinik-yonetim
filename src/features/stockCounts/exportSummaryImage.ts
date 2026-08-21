@@ -8,7 +8,7 @@ export function exportDailySummaryImage(
   stats: { label: string; value: string }[],
   items: { label: string; value: string }[],
 ) {
-  const width = 640
+  const width = 760
   const rowHeight = 30
   const headerHeight = 100
   const statsHeight = stats.length > 0 ? 80 : 0
@@ -56,17 +56,25 @@ export function exportDailySummaryImage(
   }
 
   if (items.length > 0) {
+    // Değer sütunu artık "(148 Paket - 1 Flakon)" gibi uzun metinler
+    // içerebiliyor (kullanıcı isteğiyle "adet" yerine Paket/Flakon yazması,
+    // 2026-08-22) — sabit bir x'ten değil sağa hizalı çiziliyor ki hücre
+    // dışına taşıp kırpılmasın (canvas metni sarmıyor, taşan kısım kesiliyordu).
     ctx.fillStyle = '#a8a2b3'
     ctx.font = 'bold 13px "Segoe UI", sans-serif'
     ctx.fillText('ÜRÜN', 32, y)
-    ctx.fillText('SON STOK', width - 140, y)
+    ctx.textAlign = 'right'
+    ctx.fillText('SON STOK', width - 32, y)
+    ctx.textAlign = 'left'
     y += itemsHeaderHeight
 
     for (const item of items) {
       ctx.fillStyle = '#ffffff'
       ctx.font = '15px "Segoe UI", sans-serif'
       ctx.fillText(item.label, 32, y)
-      ctx.fillText(item.value, width - 140, y)
+      ctx.textAlign = 'right'
+      ctx.fillText(item.value, width - 32, y)
+      ctx.textAlign = 'left'
       ctx.strokeStyle = '#25212b'
       ctx.beginPath()
       ctx.moveTo(32, y + 10)
