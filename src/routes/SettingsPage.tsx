@@ -571,8 +571,9 @@ export function SettingsPage() {
     }
   }
 
+  // Kullanıcı isteğiyle (2026-08-22) native confirm() sorusu kaldırıldı —
+  // "Örnek Verileri Sil" doğrudan siliyor, ayrı bir onay sorulmuyor.
   async function handleClearDemoData() {
-    if (!confirm('Tüm örnek veriler (örnek cariler, ürünler, temsilciler, hatırlatmalar, kongreler, ziyaretler, giderler, klinikler, araçlar, Instagram doktorları ve bunlara bağlı tahsilat/satış/numune/CRM/yakıt kayıtları) kalıcı olarak silinsin mi?')) return
     setClearing(true)
     try {
       const result = await clearDemoData()

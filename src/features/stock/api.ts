@@ -96,6 +96,15 @@ export async function deactivateProduct(id: string): Promise<void> {
   await offlineUpdate('products', id, { is_active: false }, 'Ürün kaldırma')
 }
 
+/** deactivateProduct'ın tersi + verilen alanları güncelliyor — örnek veri
+ * "Sil" sonrası "Ekle" yeniden çalıştırıldığında products.sku UNIQUE kısıtı
+ * yüzünden (aynı SKU ile INSERT) hata verip TÜM ekleme işlemini durduruyordu
+ * (kullanıcı isteğiyle bulundu, 2026-08-22) — artık aynı SKU'lu deaktif bir
+ * ürün varsa yeniden AKTİF edilip alanları tazeleniyor, yeni satır açılmıyor. */
+export async function reactivateProduct(id: string, input: ProductInput): Promise<Product> {
+  return offlineUpdate<Product>('products', id, { ...input, is_active: true }, `Ürün yeniden aktif etme: ${input.name}`)
+}
+
 export type StockMovementWithStaff = StockMovement & {
   staff: { full_name: string } | null
   customers: { full_name: string } | null

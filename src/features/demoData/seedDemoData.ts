@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { createCustomer, deleteCustomer } from '@/features/customers/api'
-import { createProduct, deactivateProduct } from '@/features/stock/api'
+import { createProduct, deactivateProduct, reactivateProduct } from '@/features/stock/api'
 import { recordStockMovement } from '@/features/stock/api'
 import { createSale } from '@/features/sales/api'
 import { createPayment } from '@/features/payments/api'
@@ -218,15 +218,24 @@ export async function seedDemoData(): Promise<SeedResult> {
 
   const createdProducts: Product[] = []
   for (const [i, p] of DEMO_PRODUCTS.entries()) {
-    const created = await createProduct({
+    const productInput = {
       name: p.name,
       sku: p.sku,
-      unit: 'adet',
+      unit: 'Paket',
       critical_stock_threshold: 5,
       unit_cost: p.unit_cost,
       unit_price: p.unit_price,
       image_url: iconImageDataUri(p.icon, p.tone),
-    })
+    }
+    // "Örnek Verileri Sil" ürünleri gerçekten SİLMİYOR, deaktive ediyor
+    // (stock_movements/sales gibi tablolardan FK ile referanslanabildikleri
+    // için) — bu yüzden yeniden "Ekle" çalıştırılınca aynı SKU ile INSERT
+    // denemek products_sku_key UNIQUE kısıtını ihlal edip TÜM eklemeyi
+    // durduruyordu (kullanıcı isteğiyle bulundu, 2026-08-22). Önce aynı
+    // SKU'lu (aktif/deaktif fark etmeksizin) bir ürün var mı bakılıyor;
+    // varsa yeniden aktif edilip alanları tazeleniyor, yoksa yeni oluşturuluyor.
+    const { data: existing } = await supabase.from('products').select('id').eq('sku', p.sku).maybeSingle()
+    const created = existing ? await reactivateProduct(existing.id, productInput) : await createProduct(productInput)
     await recordStockMovement({
       product_id: created.id,
       movement_type: 'in',
