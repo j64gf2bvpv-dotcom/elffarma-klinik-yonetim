@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.161] - 2026-08-21
+
+**Stok'ta test verisi aracı eklendi (admin):** Ürünler sekmesinin araç çubuğuna yeni bir menü eklendi — "Örnek Veri Ekle" 3 test ürünü (biri flakon takipli) + birkaç giriş hareketiyle birlikte oluşturuyor, "Örnek Verileri Temizle" bunları (ve daha önce sistemde kalmış aynı "[Örnek] " önekli eski demo ürünleri) kaldırıyor. Temizleme, gerçek ürünlerdeki "Ürünü kaldır" ile aynı yumuşak silme (is_active=false) yöntemini kullanıyor — kalıcı silme denendi ama bazı ürünlerin numune talepleri gibi başka tablolardan referansı olabildiği için güvenilir değildi, yumuşak silme bu riski tamamen ortadan kaldırıyor. Gerçek ürün/hareket verilerine kesinlikle dokunmuyor — canlı veritabanında admin hesabıyla uçtan uca test edilip doğrulandı. Şema değişikliği yok.
+
 ## [2.17.160] - 2026-08-21
 
 **Hareket Dökümü'nde Tür sütunu ve Çıkış hücresi düzeltildi:** "Paket"/"Flakon" etiketi artık Giriş/Çıkış rozetinin altına kaymadan hemen yanında, aynı satırda gösteriliyor (paket hareketlerinde de artık "Paket" etiketi görünüyor, önceden sadece flakon'da bir etiket vardı). Giriş/Çıkış hücrelerindeki tıkla-düzenle düğmesinin taşmaya sebep olabilecek negatif kenar boşluğu kaldırıldı.

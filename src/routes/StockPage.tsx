@@ -11,6 +11,7 @@ import {
   Check,
   GripVertical,
   Plus,
+  FlaskConical,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -27,6 +28,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -35,12 +37,15 @@ import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
 import { ProductLotsDialog } from '@/features/stock/ProductLotsDialog'
 import {
+  useClearSampleStockData,
   useCreateProductCatalog,
   useDeactivateProduct,
   useProductCatalogs,
   useProducts,
   useRecordStockMovement,
   useReorderProducts,
+  useSampleProducts,
+  useSeedSampleStockData,
   useUpdateProductCampaign,
   useUpdateProductCategory,
   useUpdateProductName,
@@ -790,6 +795,46 @@ function AddCatalogDialog({ existingNames }: { existingNames: string[] }) {
   )
 }
 
+/**
+ * Kullanıcı isteğiyle (2026-08-21) — hızlıca test verisi doldurup iş bitince tek
+ * tıkla temizlemek için. Eklenen ürünler "[Örnek] " önekiyle işaretleniyor,
+ * temizleme SADECE bu önekli ürünleri (ve kaskad silinen hareketlerini) siler —
+ * gerçek verilere asla dokunmaz.
+ */
+function SampleDataMenu() {
+  const { data: sampleProducts = [] } = useSampleProducts()
+  const seedMutation = useSeedSampleStockData()
+  const clearMutation = useClearSampleStockData()
+
+  function handleClear() {
+    if (!confirm(`${sampleProducts.length} örnek ürün ve tüm hareketleri kalıcı olarak silinsin mi?`)) return
+    clearMutation.mutate()
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="icon" title="Test verisi araçları">
+          <FlaskConical className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => seedMutation.mutate()} disabled={seedMutation.isPending}>
+          <Plus className="text-success" /> Örnek Veri Ekle
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={handleClear}
+          disabled={sampleProducts.length === 0 || clearMutation.isPending}
+          className="text-destructive"
+        >
+          <Trash2 className="text-destructive" />
+          Örnek Verileri Temizle{sampleProducts.length > 0 ? ` (${sampleProducts.length})` : ''}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export function StockPage() {
   const { staff } = useAuth()
   const isAdmin = staff?.role === 'admin'
@@ -951,6 +996,7 @@ export function StockPage() {
                 />
                 <DailyMovementImportButton />
                 <ResetAllStockDialog affectedCount={resetAffectedCount} />
+                <SampleDataMenu />
                 <ProductForm />
               </>
             )}

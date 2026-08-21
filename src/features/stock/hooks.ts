@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  clearSampleStockData,
   createProduct,
   createProductCatalog,
   createProductLot,
@@ -11,9 +12,11 @@ import {
   fetchProductCatalogs,
   fetchProductLots,
   fetchProducts,
+  fetchSampleProducts,
   fetchStockMovements,
   recordStockMovement,
   reorderProducts,
+  seedSampleStockData,
   updateProduct,
   updateProductCampaign,
   updateProductCategory,
@@ -273,5 +276,35 @@ export function useCreateProductLot() {
       toast.success('Lot eklendi')
     },
     onError: (error: Error) => toast.error('Lot eklenemedi', { description: error.message }),
+  })
+}
+
+export function useSampleProducts() {
+  return useQuery({ queryKey: ['products', 'sample'], queryFn: fetchSampleProducts })
+}
+
+export function useSeedSampleStockData() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: seedSampleStockData,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
+      toast.success('Örnek veri eklendi')
+    },
+    onError: (error: Error) => toast.error('Örnek veri eklenemedi', { description: error.message }),
+  })
+}
+
+export function useClearSampleStockData() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: clearSampleStockData,
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
+      toast.success(`${count} örnek ürün temizlendi`)
+    },
+    onError: (error: Error) => toast.error('Temizlenemedi', { description: error.message }),
   })
 }
