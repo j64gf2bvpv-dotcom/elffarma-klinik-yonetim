@@ -273,6 +273,13 @@ export function StockCardPanel() {
 
   const productById = React.useMemo(() => new Map(allProducts.map((p) => [p.id, p])), [allProducts])
   const resetAffectedCount = allProducts.filter((p) => p.current_quantity > 0 || p.flakon_quantity > 0).length
+  const productQuantities = React.useMemo(
+    () =>
+      new Map(
+        allProducts.map((p) => [p.id, { current_quantity: p.current_quantity, flakon_quantity: p.flakon_quantity }]),
+      ),
+    [allProducts],
+  )
 
   function handleDeleteMovement(row: StockCardRow) {
     if (!confirm(`${formatDateTime(row.date)} tarihli hareket silinsin mi? Ürünün güncel stoğu buna göre geri alınır.`)) return
@@ -312,11 +319,14 @@ export function StockCardPanel() {
   }
 
   const singleRows = React.useMemo<StockCardRow[]>(
-    () => (productId ? buildStockLedger(movements, productId) : []),
-    [productId, movements],
+    () => (productId ? buildStockLedger(movements, productQuantities, productId) : []),
+    [productId, movements, productQuantities],
   )
 
-  const allRows = React.useMemo<StockCardRow[]>(() => buildStockLedger(movements), [movements])
+  const allRows = React.useMemo<StockCardRow[]>(
+    () => buildStockLedger(movements, productQuantities),
+    [movements, productQuantities],
+  )
   const filteredAllRows = React.useMemo(() => {
     if (allProductIds.length === 0) return allRows
     const idSet = new Set(allProductIds)

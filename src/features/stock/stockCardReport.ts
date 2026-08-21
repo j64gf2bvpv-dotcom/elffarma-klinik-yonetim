@@ -28,15 +28,30 @@ const INCREASES_STOCK: ReadonlySet<MovementType> = new Set(['in', 'return', 'adj
 /**
  * "Stok Kartı" — gerçek `stock_movements` denetim kaydından, ürün başına
  * kronolojik Giriş/Çıkış/Güncel Stok defteri kurar. Her ürünün kendi hareketleri
- * tarihe göre artan sırayla gezilip bakiye 0'dan biriktirilir — ürünler her
- * zaman `record_stock_movement` RPC'siyle 0 stokla oluşturulduğu için (bkz.
- * `createProduct`) bu, ürünün en son hareketindeki bakiyeyi `products.
- * current_quantity` ile birebir eşleştirir (yani rapor gerçekten "stokla
- * entegre"). `productId` verilmezse tüm ürünler için (toplu rapor), verilirse
- * sadece o ürün için döner — ama bakiye her zaman o ürünün TÜM geçmişinden
- * hesaplanır, filtre bakiyeyi etkilemez.
+ * tarihe göre artan sırayla gezilip bakiye 0'dan biriktirilir. `productId`
+ * verilmezse tüm ürünler için (toplu rapor), verilirse sadece o ürün için
+ * döner — ama bakiye her zaman o ürünün TÜM geçmişinden hesaplanır, filtre
+ * bakiyeyi etkilemez.
+ *
+ * ÖNEMLİ — `productQuantities`: bir hareket düzenlenip/silinip sonuç negatife
+ * düşecekse veritabanı o ANKİ current_quantity/flakon_quantity üzerinden
+ * kırpıyor (greatest(0,...)), bu ANLIK bir işlem — hangi satırın "üzerine"
+ * uygulandığı, o satırın created_at'ine göre kronolojik sırada YENİDEN
+ * OYNATILDIĞINDA aynı sonucu vermeyebilir (satırlar arası düzenleme/silme
+ * geçmişi stock_movements'ta saklanmıyor, sadece son hâl var). Yani bu
+ * fonksiyonun kendi kronolojik-kırpmalı toplamı ürünün GERÇEK güncel
+ * stoğundan sapabilir. Bunu telafi etmek için: her ürünün PAKET ve FLAKON
+ * için en son (en yeni created_at'li) satırının bakiyesi, hesaplanan değer
+ * ne olursa olsun, `productQuantities`'teki gerçek `products.current_quantity`/
+ * `flakon_quantity` ile DEĞİŞTİRİLİYOR — "Güncel Stok" asla veritabanından
+ * sapmasın diye (daha eski satırlar en iyi çaba tahminidir, tam bir geçmiş
+ * denetim izni olmadan mükemmel yeniden üretilemez).
  */
-export function buildStockLedger(movements: StockMovementWithProduct[], productId?: string): StockCardRow[] {
+export function buildStockLedger(
+  movements: StockMovementWithProduct[],
+  productQuantities: Map<string, { current_quantity: number; flakon_quantity: number }>,
+  productId?: string,
+): StockCardRow[] {
   const byProduct = new Map<string, StockMovementWithProduct[]>()
   for (const m of movements) {
     const list = byProduct.get(m.product_id)
@@ -50,6 +65,9 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
     const sorted = [...list].sort((a, b) => a.created_at.localeCompare(b.created_at))
     let balance = 0
     let flakonBalance = 0
+    const productRows: StockCardRow[] = []
+    let lastPaketRow: StockCardRow | null = null
+    let lastFlakonRow: StockCardRow | null = null
     for (const m of sorted) {
       // Bakiye (current_quantity/paket) yalnızca paket birimli hareketlerle ilerler —
       // flakon birimli hareketler ayrı bir sayacı (flakon_quantity, flakonBalance)
@@ -70,7 +88,7 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
       const isIn = INCREASES_STOCK.has(m.movement_type)
       if (isFlakon) flakonBalance = Math.max(0, flakonBalance + (isIn ? m.quantity : -m.quantity))
       else balance = Math.max(0, balance + (isIn ? m.quantity : -m.quantity))
-      rows.push({
+      const row: StockCardRow = {
         id: m.id,
         date: m.created_at,
         productId: m.product_id,
@@ -89,8 +107,18 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
         outQty: !isIn ? m.quantity : 0,
         balance,
         flakonBalance,
-      })
+      }
+      productRows.push(row)
+      if (isFlakon) lastFlakonRow = row
+      else lastPaketRow = row
     }
+
+    const real = productQuantities.get(pid)
+    if (real) {
+      if (lastPaketRow) lastPaketRow.balance = real.current_quantity
+      if (lastFlakonRow) lastFlakonRow.flakonBalance = real.flakon_quantity
+    }
+    rows.push(...productRows)
   }
 
   return rows.sort((a, b) => b.date.localeCompare(a.date))
