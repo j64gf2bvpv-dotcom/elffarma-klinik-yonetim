@@ -54,7 +54,15 @@ export function ResetAllStockDialog({ affectedCount }: { affectedCount: number }
     try {
       const { data, error } = await supabase.rpc('reset_all_stock', { p_reason: reason.trim() })
       if (error) throw error
+      // Sadece ['products'] invalidate etmek yetmiyordu — Günlük Sayım
+      // (['stock_count_items', ...]) ve Stok Kartı (['stock_movements'])
+      // ürün verisini KENDİ sorgularına GÖMÜLÜ olarak (join ile) önceden
+      // çekip ayrı önbelleklerde tutuyor; bu anahtarlar ayrıca invalidate
+      // edilmezse sıfırlama veritabanında gerçekleşir ama o ekranlar eski
+      // (sıfırlanmamış) miktarları göstermeye devam eder.
       await queryClient.invalidateQueries({ queryKey: ['products'] })
+      await queryClient.invalidateQueries({ queryKey: ['stock_count_items'] })
+      await queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       toast.success(`${data ?? affectedCount} ürünün stoğu (paket + flakon) sıfırlandı`)
       handleOpenChange(false)
     } catch (error) {

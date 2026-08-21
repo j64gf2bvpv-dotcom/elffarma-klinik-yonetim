@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.165] - 2026-08-21
+
+**"Tüm Ürünleri Sıfırla" sonrası Günlük Sayım/Stok Kartı eski miktarları göstermeye devam etme sorunu düzeltildi:** Sıfırlama veritabanında doğru şekilde gerçekleşiyordu (canlı veritabanında doğrulandı) ama sadece ürün listesinin önbelleği tazeleniyordu — Günlük Sayım ve Stok Kartı, ürün verisini kendi sorgularına gömülü olarak ayrıca önbellekte tuttuğu için sıfırlama sonrası hâlâ eski (sıfırlanmamış) miktarları gösteriyordu. Artık bu ekranların önbelleği de tazeleniyor. Şema değişikliği yok.
+
 ## [2.17.164] - 2026-08-21
 
 **Yeni modül: Faturalar:** Elektrik, doğalgaz, su, internet, telefon gibi sabit faturaları (kategori, sözleşme numarası, tutar, son ödeme tarihi, not) kaydetmek için yeni bir "Faturalar" sekmesi ve nav girişi eklendi. Her fatura eklendiğinde son ödeme tarihinde otomatik bir Hatırlatma oluşturuluyor — ayrı bir bildirim sistemi kurulmadı, mevcut bildirim zili + Hatırlatmalar sayfası + Ajanda takvimi bunu otomatik gösteriyor. Ödendi işaretlenince bağlı hatırlatma da tamamlanmış sayılıyor (geri alınırsa o da geri açılıyor); fatura silinince bağlı hatırlatma da temizleniyor. Kategoriye göre filtrelenebiliyor, dışa aktarılabiliyor. Canlı veritabanında uçtan uca (ekleme → hatırlatma oluşturma → ödendi işaretleme → silme) test edilip doğrulandı. Şema değişikliği: yeni migration `20260821114345_add_utility_bills.sql`.
