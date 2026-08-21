@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.157] - 2026-08-21
+
+**Hareket Dökümü'nde Giriş/Çıkış ile Güncel Stok'un tutmaması kök nedeniyle düzeltildi:** Bir hareket düzenlenip/silinip sonucun negatife düşeceği durumlarda veritabanı stoğu 0'a kırpıyor (kullanıcı onayıyla eklenen davranış), ama "Hareket Dökümü" tablosundaki bakiye bunu hesaba katmadan ham toplamı gösteriyordu — geçmişte bir kez kırpma yaşanmış bir üründe bu satır kalıcı olarak gerçek stoktan sapıyor, hatta negatif görünebiliyordu. Artık defter de her adımda aynı şekilde 0'a kırpıyor. Canlı veritabanındaki 18 aktif ürünün tamamında test edilip doğrulandı (önceden 5 üründe fark vardı, şimdi hepsi tutuyor). Şema değişikliği yok — sadece istemci tarafı hesaplama düzeltmesi.
+
 ## [2.17.156] - 2026-08-21
 
 **ACİL DÜZELTME — personel için stok hareketleri (satış, sayım, düzenleme) hatayla başarısız oluyordu:** Bir önceki sürümde (2.17.155) eklenen "personel ürün adı/kategori düzenleyebilsin" tetikleyicisi, `products` tablosuna yapılan HER güncellemede çalışıyordu — sadece istemcinin doğrudan düzenlemesini değil, `record_stock_movement`/`update_stock_movement`/`delete_stock_movement` RPC'lerinin İÇİNDEKİ stok miktarı güncellemelerini de "Bu alanı düzenleme yetkiniz yok" diyerek reddediyordu. Sonuç: admin olmayan personel Sayımı Tamamla, satış/iade kaydı, hareket düzenleme/silme gibi zaten izinli işlemleri yapamaz oldu. Düzeltildi — bu üç RPC artık kendi güncellemesinden önce bir bayrak set ederek tetikleyiciyi bilerek atlıyor; personelin ürün tablosuna DOĞRUDAN (RPC dışı) yapacağı yetkisiz değişiklikler hâlâ engelleniyor, ad/kategori hâlâ serbest. Canlı veritabanında personel hesabıyla uçtan uca test edilip doğrulandı. Şema değişikliği: `20260821085455_fix_products_guard_trigger_blocking_rpcs.sql`.

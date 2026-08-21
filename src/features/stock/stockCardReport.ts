@@ -60,10 +60,16 @@ export function buildStockLedger(movements: StockMovementWithProduct[], productI
       // düzenlemenin (handleInlineQtyChange) yön tespitini (rowIsInSide =
       // row.inQty > 0) flakon satırlarında hep "false" gösterip yanlışlıkla
       // giriş↔çıkış yönünü çevirmesine yol açıyordu.
+      // `update_stock_movement`/`delete_stock_movement` bir düzenleme/silme
+      // sonucu miktarı negatife düşürecekse veritabanında `greatest(0, ...)`
+      // ile 0'a kırpıyor (bkz. clamp_negative_stock_on_edit_delete migration'ı)
+      // — burada da HER adımda aynı kırpmayı uygulamazsak (sadece toplamda
+      // değil), geçmişte bir kırpma yaşanmış bir üründe bu defter kalıcı
+      // olarak products.current_quantity'den sapar (negatif de gösterebilir).
       const isFlakon = m.unit_kind === 'flakon'
       const isIn = INCREASES_STOCK.has(m.movement_type)
-      if (isFlakon) flakonBalance += isIn ? m.quantity : -m.quantity
-      else balance += isIn ? m.quantity : -m.quantity
+      if (isFlakon) flakonBalance = Math.max(0, flakonBalance + (isIn ? m.quantity : -m.quantity))
+      else balance = Math.max(0, balance + (isIn ? m.quantity : -m.quantity))
       rows.push({
         id: m.id,
         date: m.created_at,
