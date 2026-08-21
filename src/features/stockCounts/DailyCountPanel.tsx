@@ -70,11 +70,12 @@ function paketLabel(qty: number): string {
   return qty > 0 ? `${qty} Paket` : '—'
 }
 
-/** Son Stok: paket 0 ise tek başına "—"; flakon varsa "(6 Paket - 4 Flakon)", yoksa sade paket miktarı —
- * kullanıcı isteğiyle (2026-08-22) ürünün genel "adet" birimi yerine her zaman Paket/Flakon yazıyor. */
+/** Son Stok: paket 0 ise tek başına "—"; flakon varsa "6 Paket - 4 Flakon", yoksa sade paket miktarı —
+ * kullanıcı isteğiyle (2026-08-22) ürünün genel "adet" birimi yerine her zaman Paket/Flakon yazıyor,
+ * parantez kullanılmıyor. */
 function finalStockLabel(paket: number, flakon: number): string {
   if (paket <= 0) return '—'
-  return flakon > 0 ? `(${paket} Paket - ${flakon} Flakon)` : `${paket} Paket`
+  return flakon > 0 ? `${paket} Paket - ${flakon} Flakon` : `${paket} Paket`
 }
 
 /** Bugün girilen tam sayım varsa onu, yoksa (henüz sayılmadı) tabanı (önceki
