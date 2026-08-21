@@ -486,7 +486,9 @@ export function StockCardPanel() {
                     <TableHead>Giriş</TableHead>
                     <TableHead>Çıkış</TableHead>
                     <TableHead>Güncel Stok</TableHead>
-                    <TableHead className="text-right">İşlemler</TableHead>
+                    <TableHead className="bg-card sticky right-0 text-right shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
+                      İşlemler
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -525,7 +527,7 @@ export function StockCardPanel() {
                       <TableCell className="font-medium tabular-nums">
                         {row.unitKind === 'flakon' ? `${row.flakonBalance} flakon` : row.balance}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="bg-card sticky right-0 shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
                         <div className="flex justify-end gap-1">
                           <StockMovementDialog
                             product={productById.get(row.productId)}

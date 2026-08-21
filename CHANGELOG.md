@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.156] - 2026-08-21
+
+**ACİL DÜZELTME — personel için stok hareketleri (satış, sayım, düzenleme) hatayla başarısız oluyordu:** Bir önceki sürümde (2.17.155) eklenen "personel ürün adı/kategori düzenleyebilsin" tetikleyicisi, `products` tablosuna yapılan HER güncellemede çalışıyordu — sadece istemcinin doğrudan düzenlemesini değil, `record_stock_movement`/`update_stock_movement`/`delete_stock_movement` RPC'lerinin İÇİNDEKİ stok miktarı güncellemelerini de "Bu alanı düzenleme yetkiniz yok" diyerek reddediyordu. Sonuç: admin olmayan personel Sayımı Tamamla, satış/iade kaydı, hareket düzenleme/silme gibi zaten izinli işlemleri yapamaz oldu. Düzeltildi — bu üç RPC artık kendi güncellemesinden önce bir bayrak set ederek tetikleyiciyi bilerek atlıyor; personelin ürün tablosuna DOĞRUDAN (RPC dışı) yapacağı yetkisiz değişiklikler hâlâ engelleniyor, ad/kategori hâlâ serbest. Canlı veritabanında personel hesabıyla uçtan uca test edilip doğrulandı. Şema değişikliği: `20260821085455_fix_products_guard_trigger_blocking_rpcs.sql`.
+
+**Stok Kartı Hareket Dökümü'nde "İşlemler" sütunu sabitlendi:** Tablo pencereden taştığında (çok sütun olduğunda) İşlemler sütunu artık sağda sabit kalıyor — yatay kaydırma yapılsa da düzenle/sil butonları her zaman görünür ve tıklanabilir, kesilmiş görünmüyor.
+
 ## [2.17.155] - 2026-08-21
 
 **Personel artık Stok listesinde ürün adını ve kategorisini düzenleyebiliyor:** Daha önce bu iki alan da (diğer ürün alanları gibi) sadece yöneticiye açıktı; kullanıcı isteğiyle gevşetildi. Güvenlik veritabanı seviyesinde: `products` tablosunun UPDATE kuralı personele açıldı ama yeni bir `products_staff_editable_columns_guard` tetikleyicisi, admin olmayan biri ad/kategori dışında herhangi bir sütunu (fiyat, stok miktarı, barkod vb.) değiştirmeye çalışırsa işlemi reddediyor — yani arayüzde gizlemekle kalınmadı, kural veritabanında da zorunlu kılındı. Kategori zaten satır-içi düzenlenebiliyordu; ürün adı için de aynı tıkla-düzenle davranışı eklendi (yönetici hâlâ isme tıklayınca tüm bilgileri düzenleyebildiği eski diyaloğu görüyor). Şema değişikliği: yeni migration `20260821083430_allow_staff_edit_product_name_category.sql`.
