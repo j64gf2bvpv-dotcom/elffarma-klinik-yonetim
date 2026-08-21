@@ -125,7 +125,7 @@ function InlineQtyCell({ value, onCommit }: { value: number; onCommit: (next: nu
       type="button"
       onClick={() => setEditing(true)}
       title={value > 0 ? 'Adedi düzenlemek için tıklayın' : 'Eklemek için tıklayın'}
-      className="-mx-1 min-w-6 rounded px-1 py-0.5 text-left hover:bg-accent"
+      className="min-w-6 rounded px-1 py-0.5 text-left hover:bg-accent"
     >
       {value > 0 ? value : <span className="text-muted-foreground">—</span>}
     </button>
@@ -548,13 +548,16 @@ export function StockCardPanel() {
                       {mode === 'all' && <TableCell className="text-muted-foreground">{row.productName}</TableCell>}
                       <TableCell className="font-medium">{row.doctorName ?? '—'}</TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap items-center gap-1">
+                        <div className="flex items-center gap-1 whitespace-nowrap">
                           <Badge variant={KIND_BADGE_VARIANT[row.kind]}>{tr.movementType[row.kind]}</Badge>
-                          {row.unitKind === 'flakon' && (
-                            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
-                              Flakon
-                            </Badge>
-                          )}
+                          <Badge
+                            variant="outline"
+                            className={
+                              row.unitKind === 'flakon' ? 'border-primary/30 bg-primary/10 text-primary' : 'text-muted-foreground'
+                            }
+                          >
+                            {row.unitKind === 'flakon' ? 'Flakon' : 'Paket'}
+                          </Badge>
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{row.unitPrice != null ? currency(row.unitPrice) : '—'}</TableCell>

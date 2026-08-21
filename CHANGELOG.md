@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.160] - 2026-08-21
+
+**Hareket Dökümü'nde Tür sütunu ve Çıkış hücresi düzeltildi:** "Paket"/"Flakon" etiketi artık Giriş/Çıkış rozetinin altına kaymadan hemen yanında, aynı satırda gösteriliyor (paket hareketlerinde de artık "Paket" etiketi görünüyor, önceden sadece flakon'da bir etiket vardı). Giriş/Çıkış hücrelerindeki tıkla-düzenle düğmesinin taşmaya sebep olabilecek negatif kenar boşluğu kaldırıldı.
+
 ## [2.17.159] - 2026-08-21
 
 **Güncel Stok'un veritabanıyla her zaman birebir eşleşmesi garanti altına alındı:** Bir önceki düzeltme (kronolojik kırpma) çoğu durumda doğruydu ama tam kanıtlanabilir değildi — bir hareket düzenlenip/silinip kırpma birden fazla kez, farklı zamanlarda yaşanmışsa (ör. ELISIR COL'da canlı veride tespit edildi: hesaplanan 1, gerçek 3), sadece hareket satırlarından geriye dönük yeniden oynatma teorik olarak sapabiliyordu — çünkü düzenleme geçmişi ayrıca saklanmıyor. Artık her ürünün PAKET ve FLAKON için en son satırının bakiyesi, hesaplama ne olursa olsun, doğrudan `products` tablosundaki gerçek değerle değiştiriliyor — "Güncel Stok" (özet kartı ve en son hareket satırı) artık HER ZAMAN veritabanıyla birebir aynı, matematiksel olarak garanti. Canlı veritabanındaki tüm aktif ürünlerde doğrulandı. Şema değişikliği yok.
