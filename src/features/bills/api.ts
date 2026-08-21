@@ -1,3 +1,5 @@
+import { subDays, format } from 'date-fns'
+import { tr as trLocale } from 'date-fns/locale/tr'
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
 import { createReminder, updateReminder, deleteReminder } from '@/features/reminders/api'
@@ -20,12 +22,18 @@ export interface UtilityBillInput {
   note?: string | null
 }
 
+/** Hatırlatma, son ödeme tarihinin KENDİSİNDE değil bir hafta ÖNCESİNDE düşsün diye (kullanıcı isteğiyle, 2026-08-21) — ödemeye yetişecek zaman kalsın. */
+function reminderDueDate(dueDate: string): string {
+  return format(subDays(new Date(dueDate), 7), 'yyyy-MM-dd')
+}
+
 function reminderTitle(input: UtilityBillInput): string {
-  return `${UTILITY_BILL_CATEGORY_LABELS[input.category]} Faturası — Son Ödeme`
+  return `${UTILITY_BILL_CATEGORY_LABELS[input.category]} Faturası — Son Ödeme Yaklaşıyor`
 }
 
 function reminderNote(input: UtilityBillInput): string {
   const parts = [
+    `Son ödeme tarihi: ${format(new Date(input.due_date), 'd MMMM yyyy', { locale: trLocale })}`,
     input.contract_number ? `Sözleşme No: ${input.contract_number}` : null,
     `Tutar: ${input.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}`,
     input.note?.trim() || null,
@@ -44,7 +52,7 @@ export async function createUtilityBill(input: UtilityBillInput): Promise<Utilit
   const reminder = await createReminder({
     title: reminderTitle(input),
     note: reminderNote(input),
-    due_date: input.due_date,
+    due_date: reminderDueDate(input.due_date),
   })
   const createdBy = await getCurrentUserId()
   return offlineInsert<UtilityBill>(
@@ -56,7 +64,11 @@ export async function createUtilityBill(input: UtilityBillInput): Promise<Utilit
 
 export async function updateUtilityBill(id: string, input: UtilityBillInput, reminderId: string | null): Promise<UtilityBill> {
   if (reminderId) {
-    await updateReminder(reminderId, { title: reminderTitle(input), note: reminderNote(input), due_date: input.due_date })
+    await updateReminder(reminderId, {
+      title: reminderTitle(input),
+      note: reminderNote(input),
+      due_date: reminderDueDate(input.due_date),
+    })
   }
   return offlineUpdate<UtilityBill>('utility_bills', id, { ...input }, `Fatura güncelleme: ${UTILITY_BILL_CATEGORY_LABELS[input.category]}`)
 }

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Plus, Trash2, Pencil, Zap, CheckCircle2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, Zap, CheckCircle2, ChevronDown } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { ExportMenu } from '@/components/ExportMenu'
+import { cn } from '@/lib/utils'
 import { UTILITY_BILL_CATEGORY_LABELS } from '@/features/bills/api'
 import {
   useCreateUtilityBill,
@@ -165,10 +166,111 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
   )
 }
 
-export function BillsPage() {
-  const { data: bills = [], isLoading } = useUtilityBills()
+interface SubscriptionGroup {
+  key: string
+  contractNumber: string | null
+  category: UtilityBillCategory
+  bills: UtilityBill[]
+  unpaidTotal: number
+  unpaidCount: number
+}
+
+/**
+ * Sözleşme numarasına göre gruplanan bir abonelik satırı — aynı sözleşmeye
+ * ait birden fazla borç (geçmiş + güncel) tek başlık altında, kaç tanesinin
+ * bekleyen olduğu ve toplam tutarı görünsün diye (kullanıcı isteğiyle,
+ * 2026-08-21). Varsayılan açık — kaç borç olduğunu görmek için tıklamaya
+ * gerek kalmasın.
+ */
+function SubscriptionGroupRow({ group }: { group: SubscriptionGroup }) {
+  const [open, setOpen] = React.useState(true)
   const deleteMutation = useDeleteUtilityBill()
   const paidMutation = useUpdateUtilityBillPaid()
+
+  function handleDelete(bill: UtilityBill) {
+    if (!confirm(`${UTILITY_BILL_CATEGORY_LABELS[bill.category]} faturası silinsin mi? Bağlı hatırlatma da silinir.`)) return
+    deleteMutation.mutate({ id: bill.id, reminderId: bill.reminder_id })
+  }
+
+  return (
+    <div className="border-b last:border-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-accent/40"
+      >
+        <span className="flex items-center gap-2">
+          <ChevronDown className={cn('size-4 text-muted-foreground transition-transform', open && 'rotate-180')} />
+          <span className="font-medium">{UTILITY_BILL_CATEGORY_LABELS[group.category]}</span>
+          <span className="text-muted-foreground text-sm">
+            {group.contractNumber ? `Sözleşme No: ${group.contractNumber}` : 'Sözleşme numarası yok'}
+          </span>
+        </span>
+        <span className="flex items-center gap-2">
+          {group.unpaidCount > 0 ? (
+            <Badge variant="outline" className="border-destructive/30 text-destructive">
+              {group.unpaidCount} borç · {currency(group.unpaidTotal)}
+            </Badge>
+          ) : (
+            <Badge variant="success">
+              <CheckCircle2 className="size-3" /> Hepsi ödendi
+            </Badge>
+          )}
+        </span>
+      </button>
+      {open && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Son Ödeme Tarihi</TableHead>
+              <TableHead>Tutar</TableHead>
+              <TableHead>Durum</TableHead>
+              <TableHead>Not</TableHead>
+              <TableHead className="text-right">İşlemler</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {group.bills.map((b) => (
+              <TableRow key={b.id}>
+                <TableCell>{format(new Date(b.due_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
+                <TableCell className="font-medium">{currency(Number(b.amount))}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={b.is_paid ? 'success' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => paidMutation.mutate({ id: b.id, isPaid: !b.is_paid, reminderId: b.reminder_id })}
+                  >
+                    {b.is_paid ? (
+                      <>
+                        <CheckCircle2 className="size-3" /> Ödendi
+                      </>
+                    ) : (
+                      'Bekliyor'
+                    )}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground max-w-40 truncate" title={b.note ?? undefined}>
+                  {b.note ?? '—'}
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-1">
+                    <BillFormDialog bill={b} />
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(b)} title="Sil">
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  )
+}
+
+export function BillsPage() {
+  const { data: bills = [], isLoading } = useUtilityBills()
   const [categoryFilter, setCategoryFilter] = React.useState<string>(ALL_CATEGORIES)
 
   const filtered = categoryFilter === ALL_CATEGORIES ? bills : bills.filter((b) => b.category === categoryFilter)
@@ -179,10 +281,28 @@ export function BillsPage() {
     .filter((b) => b.due_date.slice(0, 7) === todayDate().slice(0, 7))
     .reduce((sum, b) => sum + Number(b.amount), 0)
 
-  function handleDelete(bill: UtilityBill) {
-    if (!confirm(`${UTILITY_BILL_CATEGORY_LABELS[bill.category]} faturası silinsin mi? Bağlı hatırlatma da silinir.`)) return
-    deleteMutation.mutate({ id: bill.id, reminderId: bill.reminder_id })
-  }
+  // Aynı sözleşme numarasına ait faturalar tek grup altında toplanıyor —
+  // sözleşme numarası olmayanlar birbirine karışmasın diye HER BİRİ kendi
+  // (tek elemanlı) grubunda kalıyor.
+  const groups = React.useMemo<SubscriptionGroup[]>(() => {
+    const map = new Map<string, SubscriptionGroup>()
+    for (const b of filtered) {
+      const key = b.contract_number?.trim() ? `c:${b.contract_number.trim()}` : `b:${b.id}`
+      let group = map.get(key)
+      if (!group) {
+        group = { key, contractNumber: b.contract_number, category: b.category, bills: [], unpaidTotal: 0, unpaidCount: 0 }
+        map.set(key, group)
+      }
+      group.bills.push(b)
+      if (!b.is_paid) {
+        group.unpaidTotal += Number(b.amount)
+        group.unpaidCount += 1
+      }
+    }
+    return Array.from(map.values())
+      .map((g) => ({ ...g, bills: g.bills.sort((a, b) => a.due_date.localeCompare(b.due_date)) }))
+      .sort((a, b) => b.unpaidTotal - a.unpaidTotal)
+  }, [filtered])
 
   return (
     <div>
@@ -255,60 +375,10 @@ export function BillsPage() {
       <Card>
         <CardContent className="p-0">
           {isLoading && <p className="text-muted-foreground p-6">Yükleniyor...</p>}
-          {!isLoading && filtered.length === 0 && <p className="text-muted-foreground p-6">Henüz fatura kaydı yok.</p>}
-          {filtered.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead>Sözleşme No</TableHead>
-                  <TableHead>Son Ödeme Tarihi</TableHead>
-                  <TableHead>Tutar</TableHead>
-                  <TableHead>Durum</TableHead>
-                  <TableHead>Not</TableHead>
-                  <TableHead className="text-right">İşlemler</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((b) => (
-                  <TableRow key={b.id}>
-                    <TableCell className="font-medium">{UTILITY_BILL_CATEGORY_LABELS[b.category]}</TableCell>
-                    <TableCell className="text-muted-foreground">{b.contract_number ?? '—'}</TableCell>
-                    <TableCell>{format(new Date(b.due_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
-                    <TableCell className="font-medium">{currency(Number(b.amount))}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={b.is_paid ? 'success' : 'outline'}
-                        className="cursor-pointer"
-                        onClick={() =>
-                          paidMutation.mutate({ id: b.id, isPaid: !b.is_paid, reminderId: b.reminder_id })
-                        }
-                      >
-                        {b.is_paid ? (
-                          <>
-                            <CheckCircle2 className="size-3" /> Ödendi
-                          </>
-                        ) : (
-                          'Bekliyor'
-                        )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground max-w-40 truncate" title={b.note ?? undefined}>
-                      {b.note ?? '—'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <BillFormDialog bill={b} />
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(b)} title="Sil">
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          {!isLoading && groups.length === 0 && <p className="text-muted-foreground p-6">Henüz fatura kaydı yok.</p>}
+          {groups.map((g) => (
+            <SubscriptionGroupRow key={g.key} group={g} />
+          ))}
         </CardContent>
       </Card>
     </div>

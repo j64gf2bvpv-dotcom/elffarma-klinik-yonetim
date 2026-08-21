@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.169] - 2026-08-21
+
+**Faturalar: sözleşme numarasına göre gruplama, hatırlatma 1 hafta önceden:** Aynı sözleşme numarasına ait birden fazla fatura/borç artık tek başlık altında (kaç borç, toplam tutar) gruplanıp listeleniyor — açılır/kapanır, varsayılan açık. Sözleşme numarası olmayan faturalar kendi tekil grubunda kalıyor. Ayrıca: otomatik oluşturulan hatırlatma artık son ödeme tarihinin KENDİSİNDE değil, bir hafta ÖNCESİNDE düşüyor — ödemeye yetişecek zaman kalsın diye.
+
 ## [2.17.168] - 2026-08-21
 
 **Ürün katalogları (marka/hat grupları) artık düzenlenip belge eklenebiliyor:** Ürünler sekmesindeki "Yeni Katalog" butonunun yanına "Katalogları Yönet" eklendi (admin) — mevcut kataloglar (Dermakor/Swiss vb.) yeniden adlandırılabiliyor (o katalogtaki ürünler otomatik güncelleniyor), PDF/resim belgesi eklenip silinebiliyor, katalog tamamen kaldırılabiliyor (ürünler silinmez, sadece kategori bağlantısını kaybeder). Daha önce `product_catalogs` tablosunda güncelleme (rename) izni hiç tanımlanmamıştı — bu da eklendi. Canlı veritabanında yeniden adlandırma/kaskad, silme/kaskad ve yetkisiz erişim engelleri test edilip doğrulandı. Şema değişikliği: `20260821124003_add_catalog_attachments_and_update_policy.sql`.
