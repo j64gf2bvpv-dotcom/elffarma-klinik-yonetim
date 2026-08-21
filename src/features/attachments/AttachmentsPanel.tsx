@@ -18,11 +18,11 @@ interface AttachmentsPanelProps {
 
 export function AttachmentsPanel({ ownerType, ownerId }: AttachmentsPanelProps) {
   const { staff } = useAuth()
-  // "product" belgeleri sadece yönetici ekleyip/silebiliyor (bkz. attachments
-  // RLS politikaları) — personelde deneme, RLS'in sessizce reddedip yükleme
-  // butonunun görünüşte çalışmıyormuş gibi durmasına yol açıyordu; en baştan
-  // gizlemek daha net.
-  const canManage = ownerType !== 'product' || staff?.role === 'admin'
+  // "product" ve "product_catalog" belgeleri sadece yönetici ekleyip/silebiliyor
+  // (bkz. attachments RLS politikaları) — personelde deneme, RLS'in sessizce
+  // reddedip yükleme butonunun görünüşte çalışmıyormuş gibi durmasına yol
+  // açıyordu; en baştan gizlemek daha net.
+  const canManage = (ownerType !== 'product' && ownerType !== 'product_catalog') || staff?.role === 'admin'
   const { data: attachments = [], isLoading } = useAttachments(ownerType, ownerId)
   const uploadMutation = useUploadAttachment(ownerType, ownerId)
   const deleteMutation = useDeleteAttachment(ownerType, ownerId)

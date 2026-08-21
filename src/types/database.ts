@@ -327,7 +327,14 @@ export interface Clinic {
   updated_at: string
 }
 
-export type AttachmentOwnerType = 'customer' | 'clinic' | 'congress' | 'workshop' | 'doctor_visit' | 'product'
+export type AttachmentOwnerType =
+  | 'customer'
+  | 'clinic'
+  | 'congress'
+  | 'workshop'
+  | 'doctor_visit'
+  | 'product'
+  | 'product_catalog'
 
 export interface Attachment {
   id: string

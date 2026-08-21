@@ -5,12 +5,12 @@ import {
   AlertTriangle,
   Trash2,
   CalendarClock,
-  TrendingUp,
-  PackageSearch,
   Loader2,
   Check,
   GripVertical,
   Plus,
+  ChevronDown,
+  Settings2,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -31,17 +31,20 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ProductForm } from '@/features/stock/ProductForm'
+import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
 import { ProductLotsDialog } from '@/features/stock/ProductLotsDialog'
 import {
   useCreateProductCatalog,
   useDeactivateProduct,
+  useDeleteProductCatalog,
   useProductCatalogs,
   useProducts,
   useRecordStockMovement,
   useReorderProducts,
   useUpdateProductCampaign,
+  useUpdateProductCatalog,
   useUpdateProductCategory,
   useUpdateProductName,
   useUpdateProductPrice,
@@ -66,7 +69,7 @@ import {
   PRODUCT_IMPORT_FIELD_HINTS,
 } from '@/features/stock/importProducts'
 import type { ImportSummary } from '@/lib/importData'
-import type { BrandLine, Product } from '@/types/database'
+import type { BrandLine, Product, ProductCatalog } from '@/types/database'
 
 const ALL_BRANDS = 'all'
 /** Kategorisi/hattı olmayan ya da artık geçerli bir katalogda bulunmayan
@@ -82,10 +85,6 @@ function catalogLabel(name: string) {
   if (name === 'dermakor') return 'Dermakor'
   if (name === 'swiss') return 'Swiss'
   return name
-}
-
-function currency(n: number) {
-  return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
 }
 
 /**
@@ -741,6 +740,124 @@ function ProductsTable({
 /** Kullanıcı isteğiyle (2026-08-17) — Dermakor/Swiss'e sınırlı kalmasın diye
  * admin buradan yeni bir katalog/ürün hattı ekleyebiliyor; personel sadece
  * mevcut katalogları görür/filtreler, ekleme butonu admin'e özel. */
+/**
+ * Katalog adı satır-içi düzenlenebilir (tıkla-düzenle), altında açılıp
+ * kapanan bölümde o kataloğa ait PDF/resim belgeleri (AttachmentsPanel,
+ * ownerType='product_catalog') var. brand_line → product_catalogs.name FK'i
+ * `on update cascade` olduğu için isim değişince ürünlerin brand_line'ı
+ * otomatik güncelleniyor, ekstra bir senkron gerekmiyor. Silme ise
+ * `on delete set null` — katalog silinince o katalogdaki ürünler kategori
+ * bağlantısını kaybeder ama kendileri silinmez.
+ */
+function CatalogRow({ catalog }: { catalog: ProductCatalog }) {
+  const [editing, setEditing] = React.useState(false)
+  const [name, setName] = React.useState(catalog.name)
+  const [showDocs, setShowDocs] = React.useState(false)
+  const updateMutation = useUpdateProductCatalog()
+  const deleteMutation = useDeleteProductCatalog()
+
+  function commitName() {
+    setEditing(false)
+    const trimmed = name.trim()
+    if (!trimmed || trimmed === catalog.name) {
+      setName(catalog.name)
+      return
+    }
+    updateMutation.mutate({ id: catalog.id, name: trimmed })
+  }
+
+  function handleDelete() {
+    if (
+      !confirm(
+        `"${catalog.name}" kataloğu silinsin mi? Bu katalogdaki ürünler kategori bağlantısını kaybeder, ürünlerin kendisi silinmez.`,
+      )
+    )
+      return
+    deleteMutation.mutate(catalog.id)
+  }
+
+  return (
+    <div className="rounded-lg border p-3">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowDocs((v) => !v)}
+          title="Belgeleri göster/gizle"
+          className="shrink-0 rounded p-1 hover:bg-accent"
+        >
+          <ChevronDown className={cn('size-4 text-muted-foreground transition-transform', showDocs && 'rotate-180')} />
+        </button>
+        {editing ? (
+          <Input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={commitName}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                commitName()
+              }
+              if (e.key === 'Escape') {
+                setName(catalog.name)
+                setEditing(false)
+              }
+            }}
+            className="h-8 flex-1"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            title="Adı düzenlemek için tıklayın"
+            className="flex-1 rounded px-1 py-0.5 text-left text-sm font-medium hover:bg-accent"
+          >
+            {catalog.name}
+          </button>
+        )}
+        <Button variant="ghost" size="icon" onClick={handleDelete} title="Kataloğu sil">
+          <Trash2 className="size-4 text-destructive" />
+        </Button>
+      </div>
+      {showDocs && (
+        <div className="mt-3 border-t pt-3">
+          <AttachmentsPanel ownerType="product_catalog" ownerId={catalog.id} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ManageCatalogsDialog({ catalogs }: { catalogs: ProductCatalog[] }) {
+  const { staff } = useAuth()
+  const [open, setOpen] = React.useState(false)
+
+  if (staff?.role !== 'admin') return null
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Settings2 className="size-3.5" /> Katalogları Yönet
+      </Button>
+      <DialogContent className="max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Katalogları Yönet</DialogTitle>
+          <DialogDescription>
+            İsimlendirmeyi değiştirin, PDF/resim belgesi ekleyin ya da katalog silin.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-2">
+          {catalogs.length === 0 && <p className="text-muted-foreground text-sm">Henüz katalog yok.</p>}
+          {catalogs.map((c) => (
+            <CatalogRow key={c.id} catalog={c} />
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function AddCatalogDialog({ existingNames }: { existingNames: string[] }) {
   const { staff } = useAuth()
   const createCatalog = useCreateProductCatalog()
@@ -905,10 +1022,6 @@ export function StockPage() {
     return summary
   }
 
-  const totalCostValue = allProducts.reduce((sum, p) => sum + p.current_quantity * Number(p.unit_cost ?? 0), 0)
-  const totalRetailValue = allProducts.reduce((sum, p) => sum + p.current_quantity * Number(p.unit_price ?? 0), 0)
-  const criticalCount = allProducts.filter((p) => p.current_quantity <= p.critical_stock_threshold).length
-
   return (
     <div>
       <PageHeader
@@ -959,34 +1072,6 @@ export function StockPage() {
         }
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
-              <TrendingUp className="size-5" />
-            </span>
-            <div>
-              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Stok Değeri (Satış)</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(totalRetailValue)}</p>
-              <p className="text-muted-foreground text-xs">
-                Potansiyel kâr: {currency(totalRetailValue - totalCostValue)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive">
-              <PackageSearch className="size-5" />
-            </span>
-            <div>
-              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Kritik Stok</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{criticalCount}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <Tabs defaultValue="products">
         <TabsList className="mb-4">
           <TabsTrigger value="products">Ürünler</TabsTrigger>
@@ -1018,6 +1103,7 @@ export function StockPage() {
               </TabsList>
             </Tabs>
             {isAdmin && <AddCatalogDialog existingNames={catalogs.map((c) => c.name)} />}
+            {isAdmin && <ManageCatalogsDialog catalogs={catalogs} />}
           </div>
 
           {checkedIds.size > 0 && (

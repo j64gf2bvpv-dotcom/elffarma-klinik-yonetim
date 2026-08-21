@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { offlineInsert, offlineUpdate, offlineRpc } from '@/lib/offlineMutation'
+import { offlineInsert, offlineUpdate, offlineDelete, offlineRpc } from '@/lib/offlineMutation'
 import type { BrandLine, MovementType, Product, ProductCatalog, ProductLot, StockMovement, StockUnitKind } from '@/types/database'
 
 export async function fetchProductCatalogs(): Promise<ProductCatalog[]> {
@@ -10,6 +10,14 @@ export async function fetchProductCatalogs(): Promise<ProductCatalog[]> {
 
 export async function createProductCatalog(name: string, sortOrder: number): Promise<ProductCatalog> {
   return offlineInsert<ProductCatalog>('product_catalogs', { name, sort_order: sortOrder }, `Katalog: ${name}`)
+}
+
+export async function updateProductCatalog(id: string, name: string): Promise<ProductCatalog> {
+  return offlineUpdate<ProductCatalog>('product_catalogs', id, { name }, `Katalog güncelleme: ${name}`)
+}
+
+export async function deleteProductCatalog(id: string): Promise<void> {
+  return offlineDelete('product_catalogs', id, 'Katalog silme')
 }
 
 export interface ProductInput {

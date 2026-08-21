@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.168] - 2026-08-21
+
+**Ürün katalogları (marka/hat grupları) artık düzenlenip belge eklenebiliyor:** Ürünler sekmesindeki "Yeni Katalog" butonunun yanına "Katalogları Yönet" eklendi (admin) — mevcut kataloglar (Dermakor/Swiss vb.) yeniden adlandırılabiliyor (o katalogtaki ürünler otomatik güncelleniyor), PDF/resim belgesi eklenip silinebiliyor, katalog tamamen kaldırılabiliyor (ürünler silinmez, sadece kategori bağlantısını kaybeder). Daha önce `product_catalogs` tablosunda güncelleme (rename) izni hiç tanımlanmamıştı — bu da eklendi. Canlı veritabanında yeniden adlandırma/kaskad, silme/kaskad ve yetkisiz erişim engelleri test edilip doğrulandı. Şema değişikliği: `20260821124003_add_catalog_attachments_and_update_policy.sql`.
+
+**Stok > Ürünler'deki "Stok Değeri (Satış)" ve "Kritik Stok" özet kartları kaldırıldı.**
+
 ## [2.17.167] - 2026-08-21
 
 **Günlük Sayım'a "Son Günlerin Stoğu" karşılaştırma tablosu eklendi:** Son 3 tamamlanmış sayımın Son Stok değerini ürün başına, tarih tarih yan yana gösteren salt-okunur bir tablo — bugünkü sayımı girerken son günlerin stoğuna bakıp ona göre ekleme/çıkarma kararı verilebilsin diye. Sayım tablosunun hemen üzerinde duruyor. Sadece tamamlanmış sayımlar dikkate alınıyor — yarım kalmış (açık) bir sayımın eksik verisi yanıltıcı olmasın diye. Şema değişikliği yok.

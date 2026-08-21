@@ -5,6 +5,7 @@ import {
   createProductCatalog,
   createProductLot,
   deactivateProduct,
+  deleteProductCatalog,
   deleteStockMovement,
   fetchAllProductLots,
   fetchAllStockMovements,
@@ -16,6 +17,7 @@ import {
   reorderProducts,
   updateProduct,
   updateProductCampaign,
+  updateProductCatalog,
   updateProductCategory,
   updateProductName,
   updateProductPrice,
@@ -49,6 +51,32 @@ export function useCreateProductCatalog() {
       toast.success('Katalog eklendi')
     },
     onError: (error: Error) => toast.error('Katalog eklenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateProductCatalog() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => updateProductCatalog(id, name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['product_catalogs'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Katalog güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useDeleteProductCatalog() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteProductCatalog(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['product_catalogs'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Katalog silindi')
+    },
+    onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
   })
 }
 
