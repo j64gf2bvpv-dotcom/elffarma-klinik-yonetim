@@ -192,7 +192,7 @@ export function RemindersPage() {
                   to="/stok"
                   icon={AlertTriangle}
                   title={p.name}
-                  subtitle={`Kritik stok seviyesinde (${p.current_quantity} ${p.unit})`}
+                  subtitle={`Kritik stok seviyesinde (${p.current_quantity} Paket)`}
                 />
               ))}
               {visibleExpiringProducts.map((p) => (

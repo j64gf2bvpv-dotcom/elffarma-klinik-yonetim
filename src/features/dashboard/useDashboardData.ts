@@ -266,7 +266,7 @@ export function useDashboardData() {
         icon: AlertTriangle,
         tone: 'destructive',
         title: `Düşük stok uyarısı: ${p.name}`,
-        subtitle: `Mevcut stok: ${p.current_quantity} ${p.unit}`,
+        subtitle: `Mevcut stok: ${p.current_quantity} Paket`,
         to: '/stok',
         createdAt: p.created_at,
         imageUrl: p.image_url,

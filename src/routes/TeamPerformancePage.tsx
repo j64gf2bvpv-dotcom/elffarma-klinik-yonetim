@@ -184,6 +184,10 @@ export function TeamPerformancePage() {
     },
     staleTime: 15 * 60 * 1000,
     retry: false,
+    // Bu kart kendi "Yapay zeka sağlayıcısına ulaşılamadı" mesajını zaten
+    // gösteriyor — genel queryClient toast'ı ham sağlayıcı hatasını (ör.
+    // Gemini'nin JSON gövdesini) tekrar göstermesin diye kapatılıyor.
+    meta: { suppressErrorToast: true },
   })
 
   return (

@@ -123,7 +123,7 @@ export function CargoForm() {
           </div>
           {product && (
             <p className="text-muted-foreground text-xs">
-              Stokta: {product.current_quantity} {product.unit}
+              Stokta: {product.current_quantity} Paket
               {Number(quantity) > product.current_quantity && (
                 <span className="text-destructive font-medium"> — yetersiz stok</span>
               )}

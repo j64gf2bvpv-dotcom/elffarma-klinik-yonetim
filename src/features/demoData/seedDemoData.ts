@@ -453,7 +453,12 @@ export async function seedDemoData(): Promise<SeedResult> {
       category: e.category,
       amount: e.amount,
       description: e.description,
-      expense_date: dateDaysAgo(randomInt(1, 60)),
+      // expense_date bir timestamptz (diğer örnek tarihlerin aksine) — bare
+      // "YYYY-MM-DD" doğrudan verilirse UTC gece yarısı sayılıp Türkiye
+      // saatinde "03:00" gibi anlamsız bir saatle görünüyordu (QA taramasında
+      // bulundu, 2026-08-23); yerel öğlen saati verip gerçek formdaki
+      // datetime-local davranışıyla tutarlı hale getiriliyor.
+      expense_date: new Date(`${dateDaysAgo(randomInt(1, 60))}T12:00`).toISOString(),
     })
     expensesCount++
   }

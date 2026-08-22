@@ -490,7 +490,7 @@ function TopBar({ mode, toggleColorMode }: { mode: 'light' | 'dark'; toggleColor
                 <Link to="/stok" className="flex items-start gap-2">
                   <NotifIcon icon={AlertTriangle} />
                   <span className="text-xs">
-                    <span className="font-medium">{p.name}</span> kritik stok seviyesinde ({p.current_quantity} {p.unit})
+                    <span className="font-medium">{p.name}</span> kritik stok seviyesinde ({p.current_quantity} Paket)
                   </span>
                 </Link>
               </DropdownMenuItem>

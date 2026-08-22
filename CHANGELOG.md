@@ -3,6 +3,14 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.179] - 2026-08-23
+
+**Baştan sona canlı QA taraması yapıldı, bulunan gerçek hatalar düzeltildi:**
+- Kritik stok uyarılarında (Hatırlatmalar sayfası + üstteki zil menüsü + Ana Panel) hâlâ "adet" yazan yerler "Paket" olarak düzeltildi (Kongre ürün seçici ve Kargo formundaki stok gösterimi dahil) — daha önceki "hiçbir yerde adet yazmasın" isteği bu ekranlarda unutulmuştu.
+- Yapay Zeka önerileri (Ekip Performansı sayfası) sağlayıcıdan hata dönünce artık ekranda zaten gösterdiği düzgün "sağlayıcıya ulaşılamadı" mesajının üzerine, ham/teknik sağlayıcı hatasını (ör. Gemini'nin JSON gövdesini) tekrar bir bildirimle göstermiyor.
+- Otomatik buluta yedekleme: Supabase'e yedek başarılı ama Google Drive kopyası (etkinse) başarısız olduğunda artık "tamamlandı" değil, ayrı bir uyarı gösteriliyor — önceden Drive'ın sessizce aylarca bozuk kalması fark edilmeyebilirdi.
+- Örnek veri: Gider tarihleri (timestamptz alan) artık gerçek formdaki gibi yerel öğlen saatiyle kaydediliyor — önceden bare tarih UTC gece yarısı sayılıp listede anlamsız "03:00" gibi bir saatle görünüyordu.
+
 ## [2.17.178] - 2026-08-23
 
 **Stok'ta yeni eklenen kataloglar artık "Tümü/Dermakor/Swiss" sekme sırasını kalabalıklaştırmıyor:** Bu üç sekme sabit kaldı; admin'in ekleyeceği yeni kataloglar (ör. "Bvrs PL") yanlarında ayrı bir "Diğer Kataloglar" açılır listesinde gösteriliyor.

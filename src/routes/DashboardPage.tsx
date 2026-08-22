@@ -771,7 +771,7 @@ export function DashboardPage() {
         key: `stock-${p.id}`,
         icon: AlertTriangle,
         title: p.name,
-        subtitle: `Kritik stok (${p.current_quantity} ${p.unit})`,
+        subtitle: `Kritik stok (${p.current_quantity} Paket)`,
         to: '/stok',
       })
     }

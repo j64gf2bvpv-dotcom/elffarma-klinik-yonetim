@@ -38,17 +38,30 @@ export function useAutoBackupOnLaunch(isAdmin: boolean) {
         await saveAppSetting<BackupSettings>(BACKUP_SETTINGS_KEY, { lastBackupAt: new Date().toISOString() })
 
         const driveConfig = await fetchAdminSecret<GoogleDriveBackupConfig>(GOOGLE_DRIVE_CONFIG_KEY)
+        let driveFailed = false
         if (driveConfig?.enabled) {
           try {
             await uploadBackupToGoogleDrive(driveConfig, DRIVE_BACKUP_FILENAME, result.json)
           } catch (err) {
+            driveFailed = true
             console.error('Otomatik Google Drive yedeklemesi başarısız', err)
           }
         }
 
-        toast.success('Otomatik buluta yedekleme tamamlandı', {
-          description: 'Ayarlar > Yedekleme\'den geçmiş yedekleri görebilirsiniz.',
-        })
+        // Google Drive etkinse ve başarısız olduysa bunu sessizce geçmiyoruz —
+        // kullanıcı Drive'ı özellikle açtıysa, o kopyanın aylarca sessizce
+        // birikmemiş olabileceğini fark etmeden dolaşmasın diye genel
+        // "tamamlandı" mesajı yerine uyarı gösteriliyor (kullanıcı isteğiyle
+        // yapılan bir QA taramasında bulundu, 2026-08-23).
+        if (driveFailed) {
+          toast.warning('Buluta yedekleme tamamlandı, ancak Google Drive kopyası başarısız oldu', {
+            description: 'Ayarlar > Yedekleme\'den Google Drive bağlantısını kontrol edin.',
+          })
+        } else {
+          toast.success('Otomatik buluta yedekleme tamamlandı', {
+            description: 'Ayarlar > Yedekleme\'den geçmiş yedekleri görebilirsiniz.',
+          })
+        }
       } catch (err) {
         console.error('Otomatik yedekleme başarısız', err)
       }

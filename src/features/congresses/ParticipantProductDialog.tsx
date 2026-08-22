@@ -72,7 +72,7 @@ function ProductChecklistPopover({
                     <div className="flex-1">
                       <p>{product.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        Stok: {product.current_quantity} {product.unit}
+                        Stok: {product.current_quantity} Paket
                       </p>
                     </div>
                   </CommandItem>
