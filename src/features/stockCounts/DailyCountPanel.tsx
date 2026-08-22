@@ -66,16 +66,23 @@ const NO_REP = '__none__'
  * modda da okunaklı 3 semantik renk (marka/başarı/uyarı). */
 const DAY_COLOR_CLASSES = ['text-primary', 'text-success', 'text-warning']
 
-/** 0 paket için "0 Paket" yerine sade "—" — sıfır sayıların ekranda gürültü yapmaması için. */
-function paketLabel(qty: number): string {
-  return qty > 0 ? `${qty} Paket` : '—'
+/** "Sistemdeki Miktar" / "Son Sayım" / "O Günkü Stok" gibi taban hücreleri için —
+ * paket ve flakon ikisi de 0 ise "—"; sadece biri 0 olan tarafta o taraf hiç
+ * yazılmaz (kullanıcı isteğiyle, 2026-08-23 — "0 olanlar hiç yazmasın", önceden
+ * paket 0 olduğunda "—, 1 Flakon" gibi gereksiz bir "—" görünüyordu). */
+function baselineLabel(paket: number, flakon: number): string {
+  if (paket <= 0 && flakon <= 0) return '—'
+  if (paket <= 0) return `${flakon} Flakon`
+  return flakon > 0 ? `${paket} Paket, ${flakon} Flakon` : `${paket} Paket`
 }
 
-/** Son Stok: paket 0 ise tek başına "—"; flakon varsa "6 Paket - 4 Flakon", yoksa sade paket miktarı —
- * kullanıcı isteğiyle (2026-08-22) ürünün genel "adet" birimi yerine her zaman Paket/Flakon yazıyor,
- * parantez kullanılmıyor. */
+/** Son Stok: paket ve flakon ikisi de 0 ise "—"; sadece biri 0 olan tarafta o taraf
+ * hiç yazılmaz (kullanıcı isteğiyle, 2026-08-23 — "0 olanlar hiç yazmasın", önceden
+ * paket 0 olduğunda tüm hücre "—" oluyor, flakon miktarı hiç görünmüyordu). İkisi
+ * de doluysa "6 Paket - 4 Flakon", parantez kullanılmıyor. */
 function finalStockLabel(paket: number, flakon: number): string {
-  if (paket <= 0) return '—'
+  if (paket <= 0 && flakon <= 0) return '—'
+  if (paket <= 0) return `${flakon} Flakon`
   return flakon > 0 ? `${paket} Paket - ${flakon} Flakon` : `${paket} Paket`
 }
 
@@ -332,8 +339,7 @@ function CountItemRow({
     <TableRow onClick={() => onSelect(item.id)} selected={selected}>
       <TableCell className="font-medium">{item.products.name}</TableCell>
       <TableCell className="font-bold text-foreground">
-        {paketLabel(baseline.paket)}
-        {baseline.flakon > 0 && `, ${baseline.flakon} Flakon`}
+        {baselineLabel(baseline.paket, baseline.flakon)}
       </TableCell>
       <TableCell>
         {readOnly ? (
@@ -561,8 +567,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                   <TableRow key={i.id}>
                     <TableCell className="font-medium">{i.products.name}</TableCell>
                     <TableCell className="font-bold text-foreground">
-                      {paketLabel(i.expected_quantity)}
-                      {i.expected_quantity_flakon > 0 && `, ${i.expected_quantity_flakon} Flakon`}
+                      {baselineLabel(i.expected_quantity, i.expected_quantity_flakon)}
                     </TableCell>
                     <TableCell>{i.counted_quantity ? `${i.counted_quantity} Paket` : '—'}</TableCell>
                     <TableCell>{i.counted_quantity_flakon ? `${i.counted_quantity_flakon} Flakon` : '—'}</TableCell>
