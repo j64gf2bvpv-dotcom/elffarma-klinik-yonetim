@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.176] - 2026-08-23
+
+**Klavye tık sesi iPhone'daki klavye tıklama sesine benzeyecek şekilde değiştirildi:** Önceki sürüm saf bir "bip" tonuydu; şimdi filtrelenmiş gürültü patlaması + kısa alçak "tok" gövdesinden oluşan, gerçek bir mekanik tık karakteri taşıyan bir ses (yine dosyasız, Web Audio API ile sentezleniyor).
+
 ## [2.17.175] - 2026-08-23
 
 **Günlük Sayım'da paket veya flakon 0 olduğunda o taraf artık hiç yazılmıyor:** Önceden ör. sadece flakonu olan bir üründe "—, 1 Flakon" gibi gereksiz bir "—" görünüyordu; artık sadece "1 Flakon" yazıyor (Sistemdeki Miktar/Son Sayım, Son Günlerin Stoğu ve geçmiş sayım ekranlarının hepsinde).
