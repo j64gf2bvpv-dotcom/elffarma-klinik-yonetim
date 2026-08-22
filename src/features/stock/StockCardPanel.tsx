@@ -534,9 +534,7 @@ export function StockCardPanel() {
                     <TableHead>Giriş</TableHead>
                     <TableHead>Çıkış</TableHead>
                     <TableHead>Güncel Stok</TableHead>
-                    <TableHead className="bg-card sticky right-0 text-right shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
-                      İşlemler
-                    </TableHead>
+                    <TableHead className="text-right">İşlemler</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -552,21 +550,11 @@ export function StockCardPanel() {
                       <TableCell className="whitespace-nowrap">{formatDateTime(row.date)}</TableCell>
                       {mode === 'all' && <TableCell className="text-muted-foreground">{row.productName}</TableCell>}
                       <TableCell className="font-medium">{row.doctorName ?? '—'}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 whitespace-nowrap">
-                          <Badge variant={KIND_BADGE_VARIANT[row.kind]}>{tr.movementType[row.kind]}</Badge>
-                          <Badge
-                            variant="outline"
-                            className={
-                              row.unitKind === 'flakon' ? 'border-primary/30 bg-primary/10 text-primary' : 'text-muted-foreground'
-                            }
-                          >
-                            {row.unitKind === 'flakon' ? 'Flakon' : 'Paket'}
-                          </Badge>
-                        </div>
+                      <TableCell className="whitespace-nowrap">
+                        <Badge variant={KIND_BADGE_VARIANT[row.kind]}>{tr.movementType[row.kind]}</Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{row.unitPrice != null ? currency(row.unitPrice) : '—'}</TableCell>
-                      <TableCell className="text-muted-foreground max-w-56 truncate" title={row.reason ?? row.note ?? undefined}>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{row.unitPrice != null ? currency(row.unitPrice) : '—'}</TableCell>
+                      <TableCell className="text-muted-foreground max-w-40 truncate" title={row.reason ?? row.note ?? undefined}>
                         {row.reason ?? row.note ?? '—'}
                       </TableCell>
                       <TableCell className="text-success tabular-nums">
@@ -592,7 +580,7 @@ export function StockCardPanel() {
                             ? `${row.balance} Paket`
                             : '—'}
                       </TableCell>
-                      <TableCell className="bg-card sticky right-0 shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
+                      <TableCell>
                         <div className="flex justify-end gap-1">
                           <StockMovementDialog
                             product={productById.get(row.productId)}
