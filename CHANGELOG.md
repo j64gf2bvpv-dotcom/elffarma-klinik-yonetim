@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.178] - 2026-08-23
+
+**Stok'ta yeni eklenen kataloglar artık "Tümü/Dermakor/Swiss" sekme sırasını kalabalıklaştırmıyor:** Bu üç sekme sabit kaldı; admin'in ekleyeceği yeni kataloglar (ör. "Bvrs PL") yanlarında ayrı bir "Diğer Kataloglar" açılır listesinde gösteriliyor.
+
 ## [2.17.177] - 2026-08-23
 
 **Klavye tık sesi daha yumuşak/kaliteli hale getirildi:** Gürültü bileşeninin tepe seviyesi düşürüldü, ani başlangıç yerine yumuşak bir atak eklendi, ek bir alçak geçiren filtreyle sert/tiz uçlar yuvarlatıldı — bir önceki sürüm hâlâ biraz sert/dijital duruyordu.

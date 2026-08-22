@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ProductForm } from '@/features/stock/ProductForm'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
@@ -923,6 +924,13 @@ export function StockPage() {
   const { data: products = [], isLoading } = useProducts(search, brandFilter === ALL_BRANDS ? undefined : brandFilter)
   const { data: allProducts = [] } = useProducts('')
   const { data: catalogs = [] } = useProductCatalogs()
+  // Tümü/Dermakor/Swiss sekme sırası sabit kalsın diye (kullanıcı isteğiyle,
+  // 2026-08-23 — sonradan eklenen kataloglar o sırayı kalabalıklaştırmasın)
+  // — admin'in ekleyeceği yeni kataloglar ayrı bir "Diğer Kataloglar"
+  // açılır listesinde gösteriliyor, "Tümü" görünümündeki gruplu listeleme
+  // hâlâ TÜM katalogları (pinned + diğer) kapsıyor.
+  const pinnedCatalogs = React.useMemo(() => catalogs.filter((c) => c.name === 'dermakor' || c.name === 'swiss'), [catalogs])
+  const otherCatalogs = React.useMemo(() => catalogs.filter((c) => c.name !== 'dermakor' && c.name !== 'swiss'), [catalogs])
   const deactivateMutation = useDeactivateProduct()
   const reorderMutation = useReorderProducts()
   const queryClient = useQueryClient()
@@ -1103,13 +1111,30 @@ export function StockPage() {
             <Tabs value={brandFilter} onValueChange={(v) => setBrandFilter(v as typeof brandFilter)}>
               <TabsList>
                 <TabsTrigger value={ALL_BRANDS}>Tümü</TabsTrigger>
-                {catalogs.map((c) => (
+                {pinnedCatalogs.map((c) => (
                   <TabsTrigger key={c.id} value={c.name}>
                     {catalogLabel(c.name)}
                   </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
+            {otherCatalogs.length > 0 && (
+              <Select
+                value={otherCatalogs.some((c) => c.name === brandFilter) ? brandFilter : ''}
+                onValueChange={(v) => setBrandFilter(v as typeof brandFilter)}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder="Diğer Kataloglar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {otherCatalogs.map((c) => (
+                    <SelectItem key={c.id} value={c.name}>
+                      {catalogLabel(c.name)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {isAdmin && <AddCatalogDialog existingNames={catalogs.map((c) => c.name)} />}
             {isAdmin && <ManageCatalogsDialog catalogs={catalogs} />}
           </div>
