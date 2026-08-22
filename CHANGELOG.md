@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.173] - 2026-08-23
+
+**Kongre/Workshop sevkiyatında Kapalı Dönen / Açık Dönen artık "Sevkiyat Ekle" ekranında da girilebiliyor** (Kullanılan otomatik hesaplanıp canlı gösteriliyor) — önceden sadece sevkiyat kaydedildikten sonra tabloya tıklayarak girilebiliyordu. **Günlük Sayım'da dünkü sayımdan az bir miktar girilirse artık uyarı çıkıyor:** "Dikkat — ... dünkü sayımdan az. Devam edilsin mi?" (Vazgeç / Tamam, Devam Et) — yanlışlıkla eksik girilen sayımları yakalamak için.
+
 ## [2.17.172] - 2026-08-22
 
 **Stok Kartı hareket dökümünde Giriş/Çıkış/Güncel Stok artık Paket mi Flakon mu girildiğini yazıyor** (ekranda, dışa aktarımda ve PNG görselinde) — önceden sadece "Tür" rozetinde görünüyordu. Ayrıca canlı ortamda gerçek bir test yapıldı: bir ürüne art arda 3 Giriş + 2 Çıkış hareketi girilip Güncel Stok'un net +1 arttığı hem ekranda hem veritabanında doğrulandı (test kaydı sonra silindi).

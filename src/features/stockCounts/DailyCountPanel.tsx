@@ -285,6 +285,40 @@ function CountItemRow({
   const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
   const finalPaket = resolveCounted(baseline.paket, paketValue === '' ? null : Number(paketValue))
   const finalFlakon = resolveCounted(baseline.flakon, flakonValue === '' ? null : Number(flakonValue))
+  const { confirm: confirmLowCount, dialog: lowCountDialog } = useConfirmDialog()
+
+  // Dünkü sayımdan (baseline) daha az girilirse — yanlışlıkla eksik yazılmış
+  // olabilir diye — "Tamam, Devam Et" onayı istiyoruz (kullanıcı isteği,
+  // 2026-08-23). Onaylanmazsa girilen değer eski hâline geri alınır.
+  async function handleBlurPaket() {
+    const next = paketValue === '' ? null : Number(paketValue)
+    if (next != null && next < baseline.paket) {
+      const ok = await confirmLowCount(
+        `${item.products.name} için girilen paket miktarı (${next}) dünkü sayımdan (${baseline.paket}) az. Devam edilsin mi?`,
+        { title: 'Dikkat', confirmLabel: 'Tamam, Devam Et', variant: 'default' },
+      )
+      if (!ok) {
+        setPaketValue(item.counted_quantity?.toString() ?? '')
+        return
+      }
+    }
+    onSavePaket(item.id, next)
+  }
+
+  async function handleBlurFlakon() {
+    const next = flakonValue === '' ? null : Number(flakonValue)
+    if (next != null && next < baseline.flakon) {
+      const ok = await confirmLowCount(
+        `${item.products.name} için girilen flakon miktarı (${next}) dünkü sayımdan (${baseline.flakon}) az. Devam edilsin mi?`,
+        { title: 'Dikkat', confirmLabel: 'Tamam, Devam Et', variant: 'default' },
+      )
+      if (!ok) {
+        setFlakonValue(item.counted_quantity_flakon?.toString() ?? '')
+        return
+      }
+    }
+    onSaveFlakon(item.id, next)
+  }
 
   React.useEffect(() => {
     setPaketValue(item.counted_quantity?.toString() ?? '')
@@ -313,7 +347,7 @@ function CountItemRow({
             placeholder={String(baseline.paket)}
             value={paketValue}
             onChange={(e) => setPaketValue(e.target.value)}
-            onBlur={() => onSavePaket(item.id, paketValue === '' ? null : Number(paketValue))}
+            onBlur={handleBlurPaket}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -335,7 +369,7 @@ function CountItemRow({
             placeholder={String(baseline.flakon)}
             value={flakonValue}
             onChange={(e) => setFlakonValue(e.target.value)}
-            onBlur={() => onSaveFlakon(item.id, flakonValue === '' ? null : Number(flakonValue))}
+            onBlur={handleBlurFlakon}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -376,6 +410,7 @@ function CountItemRow({
           </Button>
         </TableCell>
       )}
+      {lowCountDialog}
     </TableRow>
   )
 }

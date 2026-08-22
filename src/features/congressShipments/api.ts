@@ -20,6 +20,8 @@ export interface CongressShipmentInput {
   product_id: string
   product_name: string
   quantity_taken: number
+  quantity_returned_sealed?: number
+  quantity_returned_open?: number
   note?: string | null
 }
 

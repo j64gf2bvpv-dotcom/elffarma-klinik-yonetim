@@ -38,6 +38,8 @@ function AddShipmentDialog() {
   const [congressId, setCongressId] = React.useState('')
   const [product, setProduct] = React.useState<Product | null>(null)
   const [quantity, setQuantity] = React.useState('1')
+  const [sealedQty, setSealedQty] = React.useState('0')
+  const [openQty, setOpenQty] = React.useState('0')
   const [note, setNote] = React.useState('')
 
   const { data: congresses = [] } = useCongresses()
@@ -49,10 +51,17 @@ function AddShipmentDialog() {
     [congresses],
   )
 
+  const takenNum = Number(quantity) || 0
+  const sealedNum = Number(sealedQty) || 0
+  const openNum = Number(openQty) || 0
+  const usedPreview = Math.max(0, takenNum - sealedNum - openNum)
+
   function reset() {
     setCongressId('')
     setProduct(null)
     setQuantity('1')
+    setSealedQty('0')
+    setOpenQty('0')
     setNote('')
   }
 
@@ -62,14 +71,27 @@ function AddShipmentDialog() {
       toast.error('Kongre, ürün ve geçerli bir miktar seçin')
       return
     }
+    if (!Number.isFinite(sealedNum) || !Number.isFinite(openNum) || sealedNum < 0 || openNum < 0) {
+      toast.error('Kapalı/açık dönen için geçerli bir miktar girin')
+      return
+    }
+    if (sealedNum + openNum > qty) {
+      toast.error('Kapalı + açık dönen, götürülen miktarı geçemez')
+      return
+    }
     const congressName = congresses.find((c) => c.id === congressId)?.name ?? 'Kongre/Workshop'
     await createMutation.mutateAsync({
       congress_id: congressId,
       product_id: product.id,
       product_name: product.name,
       quantity_taken: qty,
+      quantity_returned_sealed: sealedNum,
+      quantity_returned_open: openNum,
       note: note.trim() || null,
     })
+    // Tüm götürülen miktar önce stoktan çıkar, sonra o an için zaten dönmüş
+    // (kapalı+açık) kısım geri iade edilir — net etki (kullanılan) kadar
+    // stoğun dışarıda kalması, tek tek girildikten sonraki hâliyle aynı.
     await recordMovement.mutateAsync({
       product_id: product.id,
       movement_type: 'out',
@@ -77,6 +99,15 @@ function AddShipmentDialog() {
       reason: 'Kongre/Workshop sevkiyatı',
       note: congressName,
     })
+    if (sealedNum + openNum > 0) {
+      await recordMovement.mutateAsync({
+        product_id: product.id,
+        movement_type: 'return',
+        quantity: sealedNum + openNum,
+        reason: 'Kongre/Workshop — sevkiyatla birlikte girilen dönüş',
+        note: congressName,
+      })
+    }
     reset()
     setOpen(false)
   }
@@ -120,6 +151,17 @@ function AddShipmentDialog() {
             <Label>Götürülen Miktar</Label>
             <Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label>Kapalı Dönen (opsiyonel)</Label>
+              <Input type="number" min="0" value={sealedQty} onChange={(e) => setSealedQty(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Açık Dönen (opsiyonel)</Label>
+              <Input type="number" min="0" value={openQty} onChange={(e) => setOpenQty(e.target.value)} />
+            </div>
+          </div>
+          <p className="text-muted-foreground -mt-2 text-xs">Kullanılan (otomatik hesaplanır): {usedPreview}</p>
           <div className="grid gap-1.5">
             <Label>Not (opsiyonel)</Label>
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Örn. stand vitrini için" />
