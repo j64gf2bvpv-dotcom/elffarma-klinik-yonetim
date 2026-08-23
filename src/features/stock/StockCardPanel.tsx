@@ -141,24 +141,27 @@ function InlineQtyCell({ value, unitLabel, onCommit }: { value: number; unitLabe
  * ResetAllStockDialog ile aynı iki adımlı desen). Silme sonrası ürünün
  * paket/flakon stoğu 0'a çekilir — boş bir defterle tutarlı tek değer bu.
  */
+/**
+ * Bu ürüne ait TÜM geçmiş hareketleri kalıcı olarak siler — önceden gerekçe
+ * girişi + ürün adını yazarak onaylama olmak üzere iki ayrı adımdı; kullanıcı
+ * isteğiyle (2026-08-24 — "bu şekilde ekran hiçbirinde çıkmasın Sil veya
+ * İptal Et çıkmalı") uygulamanın geri kalanındaki tek adımlı Vazgeç/Sil
+ * deseniyle tutarlı olsun diye tek adıma indirildi. Gerekçe alanı kaldırılmadı
+ * (RPC'nin kendisi denetim kaydı için zorunlu bir gerekçe istiyor), sadece
+ * ekstra "ürün adını yazarak onayla" adımı kaldırıldı.
+ */
 function DeleteAllMovementsDialog({ product }: { product: Product }) {
   const { staff } = useAuth()
   const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
-  const [step, setStep] = React.useState<1 | 2>(1)
   const [reason, setReason] = React.useState('')
-  const [confirmText, setConfirmText] = React.useState('')
   const [submitting, setSubmitting] = React.useState(false)
 
   if (staff?.role !== 'admin') return null
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
-    if (!next) {
-      setStep(1)
-      setReason('')
-      setConfirmText('')
-    }
+    if (!next) setReason('')
   }
 
   async function handleConfirm() {
@@ -195,47 +198,28 @@ function DeleteAllMovementsDialog({ product }: { product: Product }) {
         <DialogHeader>
           <DialogTitle>{product.name} — Tüm Hareketleri Sil</DialogTitle>
           <DialogDescription>
-            {step === 1
-              ? 'Bu ürüne ait TÜM geçmiş giriş/çıkış hareketleri kalıcı olarak silinecek ve stok (paket + flakon) 0\'a çekilecek. Bu işlem geri alınamaz.'
-              : 'Son onay: devam etmek için ürün adını aşağıya yazın.'}
+            Bu ürüne ait TÜM geçmiş giriş/çıkış hareketleri kalıcı olarak silinecek ve stok (paket + flakon) 0'a
+            çekilecek. Bu işlem geri alınamaz.
           </DialogDescription>
         </DialogHeader>
-        {step === 1 ? (
-          <div className="grid gap-1.5">
-            <Label htmlFor="delete-all-reason">Gerekçe (zorunlu)</Label>
-            <Textarea
-              id="delete-all-reason"
-              rows={3}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Ör. hatalı toplu içe aktarma sonrası geçmişi temizleme..."
-            />
-          </div>
-        ) : (
-          <div className="grid gap-1.5">
-            <Label htmlFor="delete-all-confirm">Onaylamak için "{product.name}" yazın</Label>
-            <Input id="delete-all-confirm" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoFocus />
-          </div>
-        )}
+        <div className="grid gap-1.5">
+          <Label htmlFor="delete-all-reason">Gerekçe (zorunlu)</Label>
+          <Textarea
+            id="delete-all-reason"
+            rows={3}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Ör. hatalı toplu içe aktarma sonrası geçmişi temizleme..."
+          />
+        </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-            Vazgeç
+            İptal Et
           </Button>
-          {step === 1 ? (
-            <Button type="button" variant="destructive" disabled={!reason.trim()} onClick={() => setStep(2)}>
-              Devam Et
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={confirmText.trim() !== product.name || submitting}
-              onClick={handleConfirm}
-            >
-              {submitting && <Loader2 className="animate-spin" />}
-              Kalıcı Olarak Sil
-            </Button>
-          )}
+          <Button type="button" variant="destructive" disabled={!reason.trim() || submitting} onClick={handleConfirm}>
+            {submitting && <Loader2 className="animate-spin" />}
+            Sil
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.182] - 2026-08-24
+
+**"Tüm Ürünleri Sıfırla" ve "Tüm Hareketleri Sil" artık tek adımda İptal Et/Sil ile onaylanıyor** — önceden gerekçe girip "Devam Et"e basıp ardından ürün adını/sayısını yeniden yazarak onaylamak gereken iki adımlı bir akıştı; uygulamanın geri kalanındaki sade İptal Et/Sil deseniyle tutarlı olsun diye tek adıma indirildi (zorunlu gerekçe alanı kaldı).
+
 ## [2.17.181] - 2026-08-24
 
 **Stok > Kargo bölümüne düzenleme eklendi** — her kargo kaydının yanına bir "Düzenle" düğmesi geldi; alıcı, telefon, adres, ürün, miktar, gönderim tarihi ve not düzenlenebiliyor. Kayıt zaten "Gönderildi" işaretliyse ve ürün/miktar değiştirilirse, stok farkı otomatik (eski ürünün stoğa iadesi + yeni ürünün/miktarın düşülmesi şeklinde) düzeltiliyor.
