@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.180] - 2026-08-24
+
+**Stok Kartı'ndaki "Stokta: X" yazısı artık Güncel Stok ile her zaman aynı sayıyı gösteriyor** — önceden ürün seçim anındaki bir anlık görüntüde donup kalıyordu, bir hareket eklenip/silinip gerçek stok değişince eski (yanlış) sayıyı göstermeye devam ediyor, Güncel Stok kartıyla çelişiyordu. **Çıkış/imha/numune girişinde artık yeterli stok yoksa engelleniyor:** "Yetersiz stok — [Ürün] için stokta X var, Y girilemez" uyarısıyla, kayıt oluşturulmuyor. Ayrıca Stok > Ürünler listesindeki "Lot" düğmesi kaldırıldı.
+
 ## [2.17.179] - 2026-08-23
 
 **Baştan sona canlı QA taraması yapıldı, bulunan gerçek hatalar düzeltildi:**

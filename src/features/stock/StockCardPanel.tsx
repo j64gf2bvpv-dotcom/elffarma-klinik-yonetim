@@ -273,6 +273,11 @@ export function StockCardPanel() {
   const deactivateProductMutation = useDeactivateProduct()
 
   const productById = React.useMemo(() => new Map(allProducts.map((p) => [p.id, p])), [allProducts])
+  // `product` seçim anındaki bir anlık görüntü (stale) — current_quantity/
+  // flakon_quantity değişse bile güncellenmiyor. Stok miktarına duyarlı her
+  // yerde (canlı stok gösterimi, yetersiz-stok kontrolü) bunun yerine bu
+  // canlı sürüm kullanılmalı (QA'da bulundu, 2026-08-24).
+  const liveProduct = product ? (productById.get(product.id) ?? product) : null
   const resetAffectedCount = allProducts.filter((p) => p.current_quantity > 0 || p.flakon_quantity > 0).length
   const productQuantities = React.useMemo(
     () =>
@@ -406,7 +411,7 @@ export function StockCardPanel() {
                 <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                   <IdCard className="size-3.5" />
                   Kod: {product.sku ?? '—'} {product.barcode ? `· Barkod: ${product.barcode}` : ''} · Stokta:{' '}
-                  {product.current_quantity > 0 ? `${product.current_quantity} Paket` : '—'}
+                  {(liveProduct?.current_quantity ?? 0) > 0 ? `${liveProduct?.current_quantity} Paket` : '—'}
                 </span>
               )}
             </>
@@ -467,7 +472,7 @@ export function StockCardPanel() {
             <h3 className="text-sm font-semibold">Hareket Dökümü</h3>
             <div className="flex items-center gap-2">
               <StockMovementDialog
-                product={mode === 'single' ? (product ?? undefined) : undefined}
+                product={mode === 'single' ? (liveProduct ?? undefined) : undefined}
                 trigger={
                   <Button variant="outline" size="sm">
                     <ArrowLeftRight className="size-3.5" /> Giriş / Çıkış Ekle

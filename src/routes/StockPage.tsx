@@ -35,7 +35,6 @@ import { ProductForm } from '@/features/stock/ProductForm'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
 import { StockHistoryDialog } from '@/features/stock/StockHistoryDialog'
-import { ProductLotsDialog } from '@/features/stock/ProductLotsDialog'
 import {
   useCreateProductCatalog,
   useDeactivateProduct,
@@ -717,7 +716,6 @@ function ProductsTable({
                   <TableCell>
                     <div className="flex justify-end gap-2">
                       <StockHistoryDialog product={product} />
-                      <ProductLotsDialog product={product} />
                       <StockMovementDialog product={product} />
                       {isAdmin && (
                         <>

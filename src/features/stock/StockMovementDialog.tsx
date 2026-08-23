@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { ArrowLeftRight, Loader2, Pencil, Plus } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -30,6 +31,9 @@ const NO_LOT = '__none__'
 const NEW_LOT = '__new__'
 
 const MANUAL_MOVEMENT_TYPES = ['in', 'out', 'adjustment', 'return', 'disposal'] as const
+
+/** Stoktan düşüren hareket türleri — yeterli stok yoksa engelleniyor (bkz. onSubmit). */
+const DECREASING_TYPES: ReadonlySet<MovementType> = new Set(['out', 'disposal', 'sample'])
 
 const schema = z.object({
   movement_type: z.enum(['in', 'out', 'adjustment', 'return', 'disposal', 'sample']),
@@ -143,6 +147,25 @@ export function StockMovementDialog({
 
   async function onSubmit(values: FormOutput) {
     if (!activeProduct) return
+
+    // Çıkış/imha/numune stoktan gerçekten düşer — yeterli stok yoksa
+    // engellenmeli (kullanıcı isteğiyle, 2026-08-24: "çıkış yaparken yeterli
+    // stok yoksa uyarı vermeli ve yapmamalı"). Düzenleme modunda, düzenlenen
+    // kaydın KENDİ eski miktarı zaten stoktan düşülmüş sayıldığından, o kadarı
+    // mevcut stoğa geri eklenip müsaitlik öyle hesaplanıyor.
+    if (DECREASING_TYPES.has(values.movement_type)) {
+      let available = values.unit_kind === 'flakon' ? activeProduct.flakon_quantity : activeProduct.current_quantity
+      if (movement && movement.unit_kind === values.unit_kind && DECREASING_TYPES.has(movement.movement_type)) {
+        available += movement.quantity
+      }
+      if (values.quantity > available) {
+        toast.error('Yetersiz stok', {
+          description: `${activeProduct.name} için stokta ${available} ${values.unit_kind === 'flakon' ? 'Flakon' : 'Paket'} var, ${values.quantity} ${values.unit_kind === 'flakon' ? 'Flakon' : 'Paket'} çıkış girilemez.`,
+        })
+        return
+      }
+    }
+
     let lotId: string | null = values.lot_id && values.lot_id !== NO_LOT ? values.lot_id : null
     if (values.lot_id === NEW_LOT) {
       const created = await createLotMutation.mutateAsync({
