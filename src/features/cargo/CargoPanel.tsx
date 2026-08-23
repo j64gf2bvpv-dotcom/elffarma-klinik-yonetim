@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useProducts } from '@/features/stock/hooks'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
-import { CargoForm } from './CargoForm'
+import { CargoForm, EditCargoDialog } from './CargoForm'
 import { useCargoShipments, useUpdateCargoStatus, useDeleteCargoShipment } from './hooks'
 import type { CargoShipment, CargoStatus } from '@/types/database'
 
@@ -132,9 +132,12 @@ export function CargoPanel() {
                       {shipment.ship_date ? format(new Date(shipment.ship_date), 'd MMM yyyy', { locale: trLocale }) : '—'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(shipment)}>
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
+                      <div className="flex justify-end">
+                        <EditCargoDialog shipment={shipment} />
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(shipment)}>
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
