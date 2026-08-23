@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.183] - 2026-08-24
+
+**AI Asistan (sağ alttaki yüzen sohbet) yanıt veremeyince artık sessizce kaybolan bir bildirimle kalmıyor** — hata mesajı sohbetin içinde kalıcı bir balon olarak da görünüyor, böylece bildirim kaybolduktan sonra bile "neden cevap gelmedi" sorusu cevapsız kalmıyor.
+
 ## [2.17.182] - 2026-08-24
 
 **"Tüm Ürünleri Sıfırla" ve "Tüm Hareketleri Sil" artık tek adımda İptal Et/Sil ile onaylanıyor** — önceden gerekçe girip "Devam Et"e basıp ardından ürün adını/sayısını yeniden yazarak onaylamak gereken iki adımlı bir akıştı; uygulamanın geri kalanındaki sade İptal Et/Sil deseniyle tutarlı olsun diye tek adıma indirildi (zorunlu gerekçe alanı kaldı).

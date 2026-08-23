@@ -247,6 +247,7 @@ export function AIChatWidget() {
   const [draft, setDraft] = React.useState('')
   const [attachments, setAttachments] = React.useState<PendingAttachment[]>([])
   const [streamingText, setStreamingText] = React.useState('')
+  const [sendError, setSendError] = React.useState<string | null>(null)
   const [sending, setSending] = React.useState(false)
   const [listening, setListening] = React.useState(false)
   const scrollRef = React.useRef<HTMLDivElement>(null)
@@ -478,6 +479,7 @@ export function AIChatWidget() {
     setDraft('')
     setAttachments([])
     setStreamingText('')
+    setSendError(null)
 
     let hadImages = false
     try {
@@ -530,6 +532,10 @@ export function AIChatWidget() {
           ? ' (Yerel Ollama modeli resim analiz edemeyebilir — Gemini/OpenAI/Claude gibi bir bulut sağlayıcıya geçmeyi deneyin.)'
           : ''
       toast.error('AI yanıt veremedi', { description: message + hint })
+      // Toast birkaç saniyede kayboluyor — kullanıcı geç fark ederse "neden
+      // cevap gelmedi" diye kafası karışabiliyordu (QA'da bulundu, 2026-08-24).
+      // Sohbet içinde kalıcı bir hata balonu göstererek bunu telafi ediyoruz.
+      setSendError(message + hint)
       setStreamingText('')
     } finally {
       setSending(false)
@@ -657,6 +663,14 @@ export function AIChatWidget() {
                 {streamingText}
                 <span className="animate-pulse">▍</span>
               </p>
+            </div>
+          )}
+          {sendError && !sending && (
+            <div className="animate-in fade-in flex items-start gap-2 text-sm duration-200">
+              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+                <X className="size-3.5" />
+              </span>
+              <p className="text-destructive max-w-[85%] leading-relaxed whitespace-pre-wrap">{sendError}</p>
             </div>
           )}
         </div>
