@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.186] - 2026-08-24
+
+**Günlük Sayım'da "Sayımı Tamamla" artık asla hata vermiyor ve kaydedince otomatik bir sonraki güne geçiyor:** İki ayrı sorun düzeltildi. (1) Bir önceki tamamlanmış sayımın "son stok" değeri yanlış hesaplanıyordu (taban + girilen sayı toplanıyordu, oysa girilen sayı zaten tam/nihai sayım değeriydi) — bu, gerçekte olmayan bir "eksi stoğa düşme" denemesine ve "Yeterli flakon stoğu yok" hatasına yol açabiliyordu. Artık sayım tamamlanırken uygulanacak stok hareketi her zaman canlı ürün stoğuna göre hesaplanıyor, böylece fiziksel sayım her koşulda otoriter kabul ediliyor ve bu hata hiç oluşamıyor. (2) Sayım tamamlandığında artık gerçek takvim tarihinin ilerlemesi beklenmeden hemen bir sonraki günün boş sayımı otomatik başlatılıyor. Ayrıca bu hatanın önceki denemelerde bir üründe (MIXO LIGHT) yol açtığı 60 paketlik fazla stok, düzeltme hareketiyle geri alındı.
+
 ## [2.17.185] - 2026-08-24
 
 **Stok/ürün verisi artık gerçek zamanlı, tüm kullanıcılar arasında anında senkron:** Daha önce ürün/stok verisi tek bir paylaşımlı veritabanında tutuluyordu ama istemci tarafında önbelleğe alınıyordu (30sn) — bir kullanıcının değişikliği, o an ekranı açık başka bir kullanıcıda ancak pencereye odaklanma veya sayfa değiştirme gibi doğal bir tetikleyiciyle görünüyordu. `products`/`stock_movements`/`stock_count_items`/`stock_counts` tabloları artık Supabase Realtime'a bağlı — herhangi bir kullanıcının yaptığı değişiklik (ekleme/güncelleme/silme), TÜM açık istemcilere anında yayılıp ilgili ekranları otomatik tazeliyor. Canlı ortamda gerçek bir kimlik doğrulanmış oturumla uçtan uca test edilip doğrulandı. Şema değişikliği: `20260824121802_enable_realtime_for_stock_tables.sql`.

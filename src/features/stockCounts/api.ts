@@ -13,11 +13,25 @@ function todayDate() {
   return d.toISOString().slice(0, 10)
 }
 
+function addDaysToDateString(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
+
+/**
+ * "Bugünkü sayım" artık gerçek takvim tarihine değil, o an AÇIK olan sayıma
+ * bağlı (kullanıcı isteğiyle, 2026-08-24: sayım tamamlanınca hemen YARINKİ
+ * sayım — gerçek tarihi bir gün öndeki — başlatılıyor, bkz. completeCount).
+ * Açık birden fazla sayım olması beklenmez ama olursa en güncel tarihli
+ * olan gösterilir.
+ */
 export async function fetchTodayCount(): Promise<StockCount | null> {
   const { data, error } = await supabase
     .from('stock_counts')
     .select('*')
-    .eq('count_date', todayDate())
+    .eq('status', 'open')
+    .order('count_date', { ascending: false })
+    .limit(1)
     .maybeSingle()
   if (error) throw error
   return data as StockCount | null
@@ -43,11 +57,10 @@ export async function fetchCountItems(stockCountId: string): Promise<StockCountI
   return data as unknown as StockCountItemWithProduct[]
 }
 
-export async function startTodayCount(): Promise<StockCount> {
-  const createdBy = await getCurrentUserId()
+async function createCountForDate(countDate: string, createdBy: string | null | undefined): Promise<StockCount> {
   const count = await offlineInsert<StockCount>(
     'stock_counts',
-    { count_date: todayDate(), created_by: createdBy },
+    { count_date: countDate, created_by: createdBy },
     'Günlük sayım başlatma',
   )
 
@@ -72,6 +85,11 @@ export async function startTodayCount(): Promise<StockCount> {
   }
 
   return count
+}
+
+export async function startTodayCount(): Promise<StockCount> {
+  const createdBy = await getCurrentUserId()
+  return createCountForDate(todayDate(), createdBy)
 }
 
 /** Sayım başladıktan sonra unutulan/yanlışlıkla dahil edilmiş (ör. örnek/demo
@@ -141,42 +159,56 @@ export async function completeCount(stockCountId: string): Promise<void> {
   if (previousCountId) {
     const previousItems = await fetchCountItems(previousCountId)
     for (const item of previousItems) {
+      // counted_quantity, o günün TAM sayım rakamı (taban + eklenen değil) —
+      // bkz. dosya başı yorumu. Önceden burada yanlışlıkla expected+counted
+      // toplanıyordu, bu da tabanı şişirip gerçekte olmayan bir "eksi stok"
+      // hareketi denenmesine (Yeterli flakon stoğu yok hatası) yol açıyordu.
       baselineByProduct.set(item.product_id, {
-        paket: item.expected_quantity + (item.counted_quantity ?? 0),
-        flakon: item.expected_quantity_flakon + (item.counted_quantity_flakon ?? 0),
+        paket: item.counted_quantity ?? item.expected_quantity,
+        flakon: item.counted_quantity_flakon ?? item.expected_quantity_flakon,
       })
     }
   }
 
   for (const item of items) {
-    const baseline = baselineByProduct.get(item.product_id) ?? {
+    // "Önceki sayım" (baseline) sadece not metninde gösterge amaçlı — asıl
+    // uygulanacak hareket HER ZAMAN canlı products stoğuna göre hesaplanır.
+    // Bir önceki TAMAMLANMIŞ sayımdan bu yana satış/başka bir hareket olmuşsa
+    // baseline canlı stoktan sapmış olabilir; fiziksel sayım (counted_quantity)
+    // her zaman otoriter kabul edilip canlı stok doğrudan ona eşitlenir — bu
+    // yüzden "Yeterli stok yok" hatası burada asla oluşamaz (kullanıcı isteği,
+    // 2026-08-24: "burası hata vermemeli kaydetmeli"). Ayrıca bu tasarım,
+    // yarıda kalıp tekrar denenen bir tamamlamayı da doğal olarak idempotent
+    // yapar: ikinci denemede canlı stok zaten counted'a eşit olduğundan fark
+    // sıfır çıkar, aynı hareket bir daha uygulanmaz.
+    const displayBaseline = baselineByProduct.get(item.product_id) ?? {
       paket: item.products.current_quantity,
       flakon: item.products.flakon_quantity,
     }
 
     if (item.counted_quantity != null) {
-      const delta = item.counted_quantity - baseline.paket
+      const delta = item.counted_quantity - item.products.current_quantity
       if (delta !== 0) {
         await recordStockMovement({
           product_id: item.product_id,
           movement_type: delta > 0 ? 'in' : 'out',
           quantity: Math.abs(delta),
           reason: 'Günlük sayım',
-          note: `Önceki sayım: ${baseline.paket}, Bugünkü sayım: ${item.counted_quantity}`,
+          note: `Önceki sayım: ${displayBaseline.paket}, Bugünkü sayım: ${item.counted_quantity}`,
           unit_kind: 'paket',
         })
       }
     }
 
     if (item.counted_quantity_flakon != null) {
-      const deltaFlakon = item.counted_quantity_flakon - baseline.flakon
+      const deltaFlakon = item.counted_quantity_flakon - item.products.flakon_quantity
       if (deltaFlakon !== 0) {
         await recordStockMovement({
           product_id: item.product_id,
           movement_type: deltaFlakon > 0 ? 'in' : 'out',
           quantity: Math.abs(deltaFlakon),
           reason: 'Günlük sayım',
-          note: `Önceki sayım: ${baseline.flakon}, Bugünkü sayım: ${item.counted_quantity_flakon}`,
+          note: `Önceki sayım: ${displayBaseline.flakon}, Bugünkü sayım: ${item.counted_quantity_flakon}`,
           unit_kind: 'flakon',
         })
       }
@@ -189,6 +221,21 @@ export async function completeCount(stockCountId: string): Promise<void> {
     { status: 'completed', completed_at: new Date().toISOString() },
     'Sayımı tamamlama',
   )
+
+  // Kaydedince hemen bir sonraki günün sayımını başlat, boş giriş için hazır
+  // olsun (kullanıcı isteği, 2026-08-24) — gerçek takvim tarihinin ilerlemesi
+  // beklenmiyor, bkz. fetchTodayCount'taki "en güncel açık sayım" mantığı.
+  const nextDate = addDaysToDateString(currentCount.count_date, 1)
+  const { data: existingNext, error: existingNextError } = await supabase
+    .from('stock_counts')
+    .select('id')
+    .eq('count_date', nextDate)
+    .maybeSingle()
+  if (existingNextError) throw existingNextError
+  if (!existingNext) {
+    const createdBy = await getCurrentUserId()
+    await createCountForDate(nextDate, createdBy)
+  }
 }
 
 export async function reopenCount(stockCountId: string): Promise<void> {

@@ -497,8 +497,8 @@ function RecentStockComparison({ recentCounts }: { recentCounts: StockCount[] })
                   <TableCell key={i} className={cn('border-l font-medium', DAY_COLOR_CLASSES[i % DAY_COLOR_CLASSES.length])}>
                     {item
                       ? finalStockLabel(
-                          item.expected_quantity + (item.counted_quantity ?? 0),
-                          item.expected_quantity_flakon + (item.counted_quantity_flakon ?? 0),
+                          resolveCounted(item.expected_quantity, item.counted_quantity),
+                          resolveCounted(item.expected_quantity_flakon, item.counted_quantity_flakon),
                         )
                       : '—'}
                   </TableCell>
@@ -573,8 +573,8 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     <TableCell>{i.counted_quantity_flakon ? `${i.counted_quantity_flakon} Flakon` : '—'}</TableCell>
                     <TableCell className="font-medium">
                       {finalStockLabel(
-                        i.expected_quantity + (i.counted_quantity ?? 0),
-                        i.expected_quantity_flakon + (i.counted_quantity_flakon ?? 0),
+                        resolveCounted(i.expected_quantity, i.counted_quantity),
+                        resolveCounted(i.expected_quantity_flakon, i.counted_quantity_flakon),
                       )}
                     </TableCell>
                   </TableRow>
@@ -613,8 +613,8 @@ export function DailyCountPanel() {
     const map = new Map<string, { paket: number; flakon: number }>()
     for (const item of previousItems) {
       map.set(item.product_id, {
-        paket: item.expected_quantity + (item.counted_quantity ?? 0),
-        flakon: item.expected_quantity_flakon + (item.counted_quantity_flakon ?? 0),
+        paket: resolveCounted(item.expected_quantity, item.counted_quantity),
+        flakon: resolveCounted(item.expected_quantity_flakon, item.counted_quantity_flakon),
       })
     }
     return map
