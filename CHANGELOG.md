@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.185] - 2026-08-24
+
+**Stok/ürün verisi artık gerçek zamanlı, tüm kullanıcılar arasında anında senkron:** Daha önce ürün/stok verisi tek bir paylaşımlı veritabanında tutuluyordu ama istemci tarafında önbelleğe alınıyordu (30sn) — bir kullanıcının değişikliği, o an ekranı açık başka bir kullanıcıda ancak pencereye odaklanma veya sayfa değiştirme gibi doğal bir tetikleyiciyle görünüyordu. `products`/`stock_movements`/`stock_count_items`/`stock_counts` tabloları artık Supabase Realtime'a bağlı — herhangi bir kullanıcının yaptığı değişiklik (ekleme/güncelleme/silme), TÜM açık istemcilere anında yayılıp ilgili ekranları otomatik tazeliyor. Canlı ortamda gerçek bir kimlik doğrulanmış oturumla uçtan uca test edilip doğrulandı. Şema değişikliği: `20260824121802_enable_realtime_for_stock_tables.sql`.
+
 ## [2.17.184] - 2026-08-24
 
 **Günlük Sayım'da "Bugünkü Stok" sütun başlığı dikkat çeksin diye yanıp sönüyor:** Sayım tablosundaki "{tarih} — Bugünkü Stok" başlığı artık kalın ve kırmızı renkte, yanıp sönen bir animasyonla gösteriliyor.

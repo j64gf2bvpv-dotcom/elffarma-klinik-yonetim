@@ -44,6 +44,7 @@ import { useAutoBackupOnLaunch } from '@/features/backup/useAutoBackupOnLaunch'
 import { useWhatsNewNotification } from '@/features/appUpdate/useWhatsNewNotification'
 import { AIChatWidget } from '@/features/ai/AIChatWidget'
 import { PresenceProvider, useOnlineStaff } from '@/features/presence/PresenceProvider'
+import { useStockRealtimeSync } from '@/features/stock/useStockRealtimeSync'
 import { useUpdateStaff } from '@/features/staff/hooks'
 import { useKeyboardSound } from '@/features/soundSettings/useKeyboardSound'
 import { useNotificationSound } from '@/features/soundSettings/useNotificationSound'
@@ -651,6 +652,7 @@ export function AppShell() {
   useKeyboardSound()
   useNotificationSound()
   useBackgroundMusic()
+  useStockRealtimeSync()
   const { mode, toggle: toggleColorMode } = useColorMode()
   const { data: iconSetId } = useAppSetting<string>('sidebar_icon_set')
   const iconSet = getIconSet(iconSetId)
