@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.189] - 2026-08-24
+
+**Haftalık Satış Temsilcisi Raporu'na "Görsel (PNG)" olarak dışa aktarma eklendi:** Bu rapor tablo değil kart tabanlı bir görünüm olduğu için, paylaşılan Dışa Aktar menüsüne genel bir "Görsel (PNG)" seçeneği eklendi — ekrandaki kartların kendisini (avatar, renk, düzen dahil) olduğu gibi bir PNG dosyasına dönüştürüp indiriyor. Aynı mekanizma ileride benzer kart tabanlı sayfalara da eklenebilir.
+
 ## [2.17.188] - 2026-08-24
 
 **Günlük Sayım'da "Bugünkü Stok" artık gün içindeki satış/iade hareketlerini de yansıtıyor:** Henüz elle sayım girilmemiş bir üründe bu sütun, bir önceki tamamlanmış sayımın (dondurulmuş, eski) değerini değil, canlı ürün stoğunu gösteriyordu — bu yüzden "Günün Satış/İade Hareketleri"nden o gün girilen bir satış ya da iade burada hiç görünmüyordu. "Son Sayım" sütunu (geçmişle karşılaştırma amaçlı) ve "dünkü sayımdan az" uyarısı değişmedi, sadece asıl "Bugünkü Stok" değeri artık canlı stoktan hesaplanıyor.

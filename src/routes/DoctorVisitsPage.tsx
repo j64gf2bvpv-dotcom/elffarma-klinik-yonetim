@@ -206,6 +206,7 @@ function RepWeekSection({
 
 export function DoctorVisitsPage() {
   const { data: salesReps = [] } = useSalesReps()
+  const reportRef = React.useRef<HTMLDivElement>(null)
 
   const [weekStart, setWeekStart] = React.useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
   const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 })
@@ -268,6 +269,7 @@ export function DoctorVisitsPage() {
               title={`Haftalık Satış Temsilcisi Raporu (${format(weekStart, 'd MMM', { locale: trLocale })} – ${format(weekEnd, 'd MMM yyyy', { locale: trLocale })})`}
               filename={`satis-temsilcisi-raporu-${format(weekStart, 'yyyy-MM-dd')}`}
               rows={exportRows}
+              imageTarget={reportRef}
               columns={[
                 { header: 'Tarih', value: (v) => format(new Date(v.visit_date), 'd MMM yyyy', { locale: trLocale }) },
                 { header: 'Temsilci', value: (v) => v.repName },
@@ -288,7 +290,7 @@ export function DoctorVisitsPage() {
         </p>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div ref={reportRef} className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {activeReps.map((rep) => (
           <RepWeekSection
             key={rep.id}

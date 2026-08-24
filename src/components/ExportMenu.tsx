@@ -1,4 +1,4 @@
-import { FileSpreadsheet, FileText, Download, FileType, Printer, Mail } from 'lucide-react'
+import { FileSpreadsheet, FileText, Download, FileType, Printer, Mail, ImageDown } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -19,9 +19,15 @@ interface ExportMenuProps<T> {
   rows: T[]
   /** Tetikleyici butonun metni — varsayılan "Dışa Aktar". Aynı sayfada birden fazla ExportMenu varsa ayırt etmek için kullanılır. */
   triggerLabel?: string
+  /** Verilirse menüye "Görsel (PNG)" seçeneği eklenir — satır/sütun verisi
+   * değil, bu ref'in gösterdiği DOM alanının kendisi (kartlar, avatarlar,
+   * renkler dahil olduğu gibi) html2canvas ile görüntüye dönüştürülüp
+   * indirilir. Haftalık Satış Temsilcisi Raporu gibi tablo olarak ifade
+   * edilemeyen, kart tabanlı görünümler için (kullanıcı isteği, 2026-08-24). */
+  imageTarget?: React.RefObject<HTMLElement | null>
 }
 
-export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = 'Dışa Aktar' }: ExportMenuProps<T>) {
+export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = 'Dışa Aktar', imageTarget }: ExportMenuProps<T>) {
   function handleExcel() {
     if (rows.length === 0) {
       toast.error('Dışa aktarılacak veri yok')
@@ -52,6 +58,25 @@ export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = '
       return
     }
     printRows(title, columns, rows)
+  }
+
+  async function handlePng() {
+    const node = imageTarget?.current
+    if (!node) return
+    const { default: html2canvas } = await import('html2canvas-pro')
+    const canvas = await html2canvas(node, {
+      backgroundColor: getComputedStyle(document.body).backgroundColor,
+      useCORS: true,
+    })
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${filename}.png`
+      a.click()
+      URL.revokeObjectURL(url)
+    }, 'image/png')
   }
 
   function handleMail() {
@@ -88,6 +113,11 @@ export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = '
         <DropdownMenuItem onSelect={handlePdf}>
           <FileType className="text-destructive" /> PDF (.pdf)
         </DropdownMenuItem>
+        {imageTarget && (
+          <DropdownMenuItem onSelect={handlePng}>
+            <ImageDown className="text-primary" /> Görsel (PNG)
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handlePrint}>
           <Printer className="text-muted-foreground" /> Yazdır
