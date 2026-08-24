@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.184] - 2026-08-24
+
+**Günlük Sayım'da "Bugünkü Stok" sütun başlığı dikkat çeksin diye yanıp sönüyor:** Sayım tablosundaki "{tarih} — Bugünkü Stok" başlığı artık kalın ve kırmızı renkte, yanıp sönen bir animasyonla gösteriliyor.
+
 ## [2.17.183] - 2026-08-24
 
 **AI Asistan (sağ alttaki yüzen sohbet) yanıt veremeyince artık sessizce kaybolan bir bildirimle kalmıyor** — hata mesajı sohbetin içinde kalıcı bir balon olarak da görünüyor, böylece bildirim kaybolduktan sonra bile "neden cevap gelmedi" sorusu cevapsız kalmıyor.

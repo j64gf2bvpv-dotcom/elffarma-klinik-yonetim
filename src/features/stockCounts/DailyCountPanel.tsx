@@ -831,7 +831,7 @@ export function DailyCountPanel() {
                 </TableHead>
                 <TableHead>Paket</TableHead>
                 <TableHead>Flakon</TableHead>
-                <TableHead className="font-bold text-foreground">
+                <TableHead className="animate-text-blink font-bold text-destructive">
                   {format(new Date(todayCount.count_date), 'd MMMM', { locale: trLocale })} — Bugünkü Stok
                 </TableHead>
                 {!isCompleted && <TableHead></TableHead>}
