@@ -8,11 +8,12 @@ import {
   fetchPastCounts,
   fetchTodayCount,
   reopenCount,
+  setCountStatusManually,
   startTodayCount,
   updateCountItem,
   updateCountItemFlakon,
 } from './api'
-import type { Product } from '@/types/database'
+import type { Product, StockCount } from '@/types/database'
 
 export function useTodayCount() {
   return useQuery({ queryKey: ['stock_counts', 'today'], queryFn: fetchTodayCount })
@@ -114,5 +115,18 @@ export function useReopenCount() {
       toast.success('Sayım yeniden açıldı')
     },
     onError: (error: Error) => toast.error('Açılamadı', { description: error.message }),
+  })
+}
+
+export function useSetCountStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ stockCountId, status }: { stockCountId: string; status: StockCount['status'] }) =>
+      setCountStatusManually(stockCountId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_counts'] })
+      toast.success('Sayım durumu güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
   })
 }

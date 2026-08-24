@@ -85,6 +85,32 @@ export async function updateCargoShipmentStatus(id: string, status: CargoStatus)
   return offlineUpdate<CargoShipment>('cargo_shipments', id, { status }, 'Kargo durumu güncelleme')
 }
 
+/**
+ * "Gönderildi" durumundan geri dönüş (ör. yanlışlıkla işaretlenmiş) — ürün
+ * bağlıysa markCargoShipped'de düşülen stok bir 'return' hareketiyle geri
+ * eklenir, sadece durum alanını değiştirmek stoğu kalıcı olarak eksik
+ * bırakırdı (kullanıcı isteği, 2026-08-24: "durumu değiştirme düzenleme
+ * olsun" — sadece ileri değil, geri de alınabilmeli).
+ */
+export async function revertCargoShipped(shipment: CargoShipment, status: CargoStatus): Promise<CargoShipment> {
+  if (shipment.product_id) {
+    await recordStockMovement({
+      product_id: shipment.product_id,
+      movement_type: 'return',
+      quantity: shipment.quantity,
+      reason: 'Kargo durumu geri alındı',
+      customer_id: shipment.customer_id,
+      note: `${shipment.recipient_name} — "Gönderildi" işareti kaldırıldı`,
+    })
+  }
+  return offlineUpdate<CargoShipment>(
+    'cargo_shipments',
+    shipment.id,
+    { status, shipped_at: null },
+    'Kargo durumu geri alma',
+  )
+}
+
 export async function deleteCargoShipment(shipment: CargoShipment): Promise<void> {
   if (shipment.reminder_id) {
     await deleteReminder(shipment.reminder_id).catch(() => {})

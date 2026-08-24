@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.187] - 2026-08-24
+
+**Kargo bölümü: durum artık her yöne serbestçe değiştirilebiliyor, aynı alıcıya birden fazla ürün eklenebiliyor:** Önceden durum sadece ileri yönde (Bekletiliyor → Gönderilecek → Gönderildi) küçük ikonlarla değiştirilebiliyordu, "Gönderildi"ye geldikten sonra geri dönüş yoktu. Artık her satırda tüm durumları listeleyen bir seçim kutusu var; "Gönderildi"den geri dönülürse daha önce düşülen stok otomatik iade ediliyor. Ayrıca "Yeni Kargo" formuna aynı alıcı için birden fazla ürün satırı eklenebiliyor (tek seferde kaydediliyor). Günlük Sayım'da Geçmiş Sayımlar listesindeki "Açık"/"Tamamlandı" durumu da artık elle değiştirilebiliyor (yalnızca etiketi değiştirir, stok hareketi uygulamaz) — eskiden yarım kalmış sayımları temizlemek için.
+
 ## [2.17.186] - 2026-08-24
 
 **Günlük Sayım'da "Sayımı Tamamla" artık asla hata vermiyor ve kaydedince otomatik bir sonraki güne geçiyor:** İki ayrı sorun düzeltildi. (1) Bir önceki tamamlanmış sayımın "son stok" değeri yanlış hesaplanıyordu (taban + girilen sayı toplanıyordu, oysa girilen sayı zaten tam/nihai sayım değeriydi) — bu, gerçekte olmayan bir "eksi stoğa düşme" denemesine ve "Yeterli flakon stoğu yok" hatasına yol açabiliyordu. Artık sayım tamamlanırken uygulanacak stok hareketi her zaman canlı ürün stoğuna göre hesaplanıyor, böylece fiziksel sayım her koşulda otoriter kabul ediliyor ve bu hata hiç oluşamıyor. (2) Sayım tamamlandığında artık gerçek takvim tarihinin ilerlemesi beklenmeden hemen bir sonraki günün boş sayımı otomatik başlatılıyor. Ayrıca bu hatanın önceki denemelerde bir üründe (MIXO LIGHT) yol açtığı 60 paketlik fazla stok, düzeltme hareketiyle geri alındı.

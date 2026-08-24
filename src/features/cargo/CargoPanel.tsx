@@ -1,12 +1,13 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Trash2, PackageCheck, Clock } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useProducts } from '@/features/stock/hooks'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import { CargoForm, EditCargoDialog } from './CargoForm'
@@ -19,17 +20,23 @@ const statusLabel: Record<CargoStatus, string> = {
   gonderildi: 'Gönderildi',
 }
 
-const statusBadgeVariant: Record<CargoStatus, 'secondary' | 'warning' | 'success'> = {
-  bekletiliyor: 'secondary',
-  gonderilecek: 'warning',
-  gonderildi: 'success',
+const statusOptions: CargoStatus[] = ['bekletiliyor', 'gonderilecek', 'gonderildi']
+
+const statusTriggerClass: Record<CargoStatus, string> = {
+  bekletiliyor: 'border-secondary/40 bg-secondary/40 text-secondary-foreground',
+  gonderilecek: 'border-warning/40 bg-warning/10 text-warning-foreground',
+  gonderildi: 'border-success/40 bg-success/10 text-success-foreground',
 }
 
 /**
  * Stok Yönetimi > Kargo — hoca/müşteri, ürün ve gönderim tarihi bilgisiyle
  * kargo takibi. "Stok Durumu" o an products.current_quantity'ye bakılarak
  * CANLI hesaplanır (kaydedilmiş bir alan değil) — bkz. useProducts('') join'i.
- * "Gönderildi" işaretlemek gerçek bir stok çıkışı tetikler (bkz. hooks.ts).
+ * "Durum" bir Select ile HER yöne serbestçe değiştirilebilir (kullanıcı
+ * isteği, 2026-08-24 — önceden sadece ileri yönde, ok/onay ikonlarıyla
+ * değiştirilebiliyordu, "Gönderildi"ye geldikten sonra geri dönüş hiç yoktu).
+ * "Gönderildi"ye geçmek gerçek bir stok çıkışı, geri dönmek ise bir iade
+ * hareketi tetikler (bkz. hooks.ts/api.ts).
  */
 export function CargoPanel() {
   const { data: shipments = [], isLoading } = useCargoShipments()
@@ -104,29 +111,22 @@ export function CargoPanel() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <Badge variant={statusBadgeVariant[shipment.status]}>{statusLabel[shipment.status]}</Badge>
-                        {shipment.status === 'bekletiliyor' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Gönderilecek olarak işaretle"
-                            onClick={() => updateStatus.mutate({ shipment, status: 'gonderilecek' })}
-                          >
-                            <Clock className="size-4" />
-                          </Button>
-                        )}
-                        {shipment.status !== 'gonderildi' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Gönderildi olarak işaretle (stoktan düşer)"
-                            onClick={() => updateStatus.mutate({ shipment, status: 'gonderildi' })}
-                          >
-                            <PackageCheck className="size-4 text-success" />
-                          </Button>
-                        )}
-                      </div>
+                      <Select
+                        value={shipment.status}
+                        onValueChange={(value) => updateStatus.mutate({ shipment, status: value as CargoStatus })}
+                        disabled={updateStatus.isPending}
+                      >
+                        <SelectTrigger className={`h-8 w-40 font-medium ${statusTriggerClass[shipment.status]}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {statusLabel[s]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {shipment.ship_date ? format(new Date(shipment.ship_date), 'd MMM yyyy', { locale: trLocale }) : '—'}

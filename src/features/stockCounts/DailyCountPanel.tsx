@@ -46,6 +46,7 @@ import {
   useDeleteCountItem,
   usePastCounts,
   useReopenCount,
+  useSetCountStatus,
   useStartTodayCount,
   useTodayCount,
   useUpdateCountItem,
@@ -525,22 +526,42 @@ function RecentStockComparison({ recentCounts }: { recentCounts: StockCount[] })
 function PastCountRow({ count, previousCount }: { count: StockCount; previousCount?: StockCount }) {
   const [open, setOpen] = React.useState(false)
   const { data: items = [], isLoading } = useCountItems(open ? count.id : undefined)
+  const setStatus = useSetCountStatus()
 
   return (
     <div className="rounded-md border">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent/40"
-      >
-        <span className="flex items-center gap-2">
+      <div className="flex w-full items-center justify-between px-3 py-2 text-sm">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex flex-1 items-center gap-2 text-left hover:text-foreground"
+        >
           <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
           {format(new Date(count.count_date), 'd MMMM yyyy', { locale: trLocale })}
-        </span>
-        <Badge variant={count.status === 'completed' ? 'success' : 'secondary'}>
-          {count.status === 'completed' ? 'Tamamlandı' : 'Açık'}
-        </Badge>
-      </button>
+        </button>
+        {/* Durum elle değiştirilebilir (kullanıcı isteği, 2026-08-24) — sadece
+            etiketi değiştirir, stok hareketi UYGULAMAZ (bkz. api.ts). */}
+        <Select
+          value={count.status}
+          onValueChange={(value) => setStatus.mutate({ stockCountId: count.id, status: value as StockCount['status'] })}
+          disabled={setStatus.isPending}
+        >
+          <SelectTrigger
+            className={cn(
+              'h-7 w-32',
+              count.status === 'completed'
+                ? 'border-success/40 bg-success/10 text-success-foreground'
+                : 'border-secondary/40 bg-secondary/40 text-secondary-foreground',
+            )}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="open">Açık</SelectItem>
+            <SelectItem value="completed">Tamamlandı</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       {open && (
         <div className="border-t">
           {isLoading && <p className="text-muted-foreground p-3 text-sm">Yükleniyor...</p>}

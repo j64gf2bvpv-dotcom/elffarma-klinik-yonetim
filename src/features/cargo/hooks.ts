@@ -6,6 +6,7 @@ import {
   updateCargoShipment,
   updateCargoShipmentStatus,
   markCargoShipped,
+  revertCargoShipped,
   deleteCargoShipment,
   type CargoShipmentInput,
 } from './api'
@@ -51,16 +52,17 @@ export function useUpdateCargoStatus() {
       // "gonderildi" durumuna geçiş ayrı bir fonksiyon (markCargoShipped) —
       // stok düşümünü de tetikliyor. Zaten gönderilmiş bir kaydı tekrar
       // "gönderildi" yapmaya çalışmak stoktan ikinci kez düşürmesin diye
-      // burada engelleniyor.
-      if (status === 'gonderildi') {
-        if (shipment.status === 'gonderildi') return Promise.resolve(shipment)
-        return markCargoShipped(shipment)
-      }
+      // burada engelleniyor. "gonderildi"den GERİ dönüş de ayrı bir fonksiyon
+      // (revertCargoShipped) — düşülen stoğu geri ekler (kullanıcı isteği,
+      // 2026-08-24: durum her yöne serbestçe değiştirilebilmeli).
+      if (status === shipment.status) return Promise.resolve(shipment)
+      if (status === 'gonderildi') return markCargoShipped(shipment)
+      if (shipment.status === 'gonderildi') return revertCargoShipped(shipment, status)
       return updateCargoShipmentStatus(shipment.id, status)
     },
-    onSuccess: (_data, { status }) => {
+    onSuccess: () => {
       invalidateCargo(queryClient)
-      if (status === 'gonderildi') queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success('Kargo durumu güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),

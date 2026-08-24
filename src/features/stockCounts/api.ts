@@ -241,3 +241,19 @@ export async function completeCount(stockCountId: string): Promise<void> {
 export async function reopenCount(stockCountId: string): Promise<void> {
   await offlineUpdate('stock_counts', stockCountId, { status: 'open', completed_at: null }, 'Sayımı yeniden açma')
 }
+
+/**
+ * Geçmiş Sayımlar listesindeki "Açık"/"Tamamlandı" durumunu doğrudan elle
+ * değiştirir — completeCount'un aksine stok hareketi UYGULAMAZ, sadece etiket
+ * değişir (kullanıcı isteği, 2026-08-24: geçmişte yarım kalmış eski sayımları
+ * temizlemek için salt bir durum düzeltmesi, gerçek bir "tamamlama işlemi"
+ * değil).
+ */
+export async function setCountStatusManually(stockCountId: string, status: StockCount['status']): Promise<void> {
+  await offlineUpdate(
+    'stock_counts',
+    stockCountId,
+    { status, completed_at: status === 'completed' ? new Date().toISOString() : null },
+    'Sayım durumunu elle değiştirme',
+  )
+}

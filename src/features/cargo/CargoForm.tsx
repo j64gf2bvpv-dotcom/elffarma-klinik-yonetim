@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Plus, Loader2, Pencil } from 'lucide-react'
+import { Plus, Loader2, Pencil, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -21,12 +21,31 @@ import { useRecordStockMovement } from '@/features/stock/hooks'
 import { useCreateCargoShipment, useUpdateCargoShipment } from './hooks'
 import type { CargoShipment, Product } from '@/types/database'
 
+let rowIdCounter = 0
+function nextRowId() {
+  rowIdCounter += 1
+  return `row-${rowIdCounter}`
+}
+
+interface ProductRow {
+  id: string
+  product: Product | undefined
+  quantity: string
+}
+
+function emptyRow(): ProductRow {
+  return { id: nextRowId(), product: undefined, quantity: '1' }
+}
+
 /**
  * Yeni kargo kaydı — bir doktor/müşteri seçilirse alıcı adı/telefon/adres
  * otomatik dolduruluyor ama hepsi elle de değiştirilebiliyor (ör. farklı bir
- * teslimat adresi). Ürün seçilince stok bağlantısı kurulur — "Gönderildi"
- * işaretlenince bu ürün üzerinden gerçek bir stok çıkışı yapılır (bkz.
- * api.ts markCargoShipped).
+ * teslimat adresi). Aynı alıcıya birden fazla ürün eklenebilir (kullanıcı
+ * isteği, 2026-08-24) — her satır ayrı bir kargo kaydı olarak kaydedilir
+ * (aynı alıcı/adres/tarih bilgisiyle), tablo ve durum/stok mantığı zaten
+ * ürün başına çalıştığı için şema değişikliği gerekmiyor. Her ürün seçilince
+ * kendi stok bağlantısı kurulur — "Gönderildi" işaretlenince o ürün üzerinden
+ * gerçek bir stok çıkışı yapılır (bkz. api.ts markCargoShipped).
  */
 export function CargoForm() {
   const [open, setOpen] = React.useState(false)
@@ -34,8 +53,7 @@ export function CargoForm() {
   const [recipientName, setRecipientName] = React.useState('')
   const [phone, setPhone] = React.useState('')
   const [address, setAddress] = React.useState('')
-  const [product, setProduct] = React.useState<Product | undefined>(undefined)
-  const [quantity, setQuantity] = React.useState('1')
+  const [rows, setRows] = React.useState<ProductRow[]>([emptyRow()])
   const [shipDate, setShipDate] = React.useState('')
   const [note, setNote] = React.useState('')
   const { data: customer } = useCustomer(customerId)
@@ -53,28 +71,33 @@ export function CargoForm() {
     setRecipientName('')
     setPhone('')
     setAddress('')
-    setProduct(undefined)
-    setQuantity('1')
+    setRows([emptyRow()])
     setShipDate('')
     setNote('')
   }
 
+  function updateRow(id: string, patch: Partial<ProductRow>) {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+  }
+
+  const validRows = rows.filter((r): r is ProductRow & { product: Product } => !!r.product && Number(r.quantity) > 0)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!recipientName.trim() || !product) return
-    const qty = Number(quantity)
-    if (!Number.isFinite(qty) || qty <= 0) return
-    await createMutation.mutateAsync({
-      customer_id: customerId ?? null,
-      recipient_name: recipientName.trim(),
-      phone: phone.trim() || null,
-      address: address.trim() || null,
-      product_id: product.id,
-      product_name: product.name,
-      quantity: qty,
-      ship_date: shipDate || null,
-      note: note.trim() || null,
-    })
+    if (!recipientName.trim() || validRows.length === 0) return
+    for (const row of validRows) {
+      await createMutation.mutateAsync({
+        customer_id: customerId ?? null,
+        recipient_name: recipientName.trim(),
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+        product_id: row.product.id,
+        product_name: row.product.name,
+        quantity: Number(row.quantity),
+        ship_date: shipDate || null,
+        note: note.trim() || null,
+      })
+    }
     reset()
     setOpen(false)
   }
@@ -113,24 +136,46 @@ export function CargoForm() {
             <Label>Adres</Label>
             <Textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
-          <div className="grid grid-cols-[1fr_auto] gap-4">
-            <div className="grid gap-1.5">
-              <Label>Ürün</Label>
-              <ProductCombobox value={product?.id} onChange={setProduct} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Miktar</Label>
-              <Input type="number" min="1" className="w-20" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-            </div>
+          <div className="grid gap-2">
+            <Label>Ürünler</Label>
+            {rows.map((row) => (
+              <div key={row.id} className="grid grid-cols-[1fr_auto_auto] items-start gap-2">
+                <div className="grid gap-1">
+                  <ProductCombobox value={row.product?.id} onChange={(p) => updateRow(row.id, { product: p })} />
+                  {row.product && Number(row.quantity) > row.product.current_quantity && (
+                    <p className="text-destructive text-xs">
+                      Stokta {row.product.current_quantity} Paket var — yetersiz stok
+                    </p>
+                  )}
+                </div>
+                <Input
+                  type="number"
+                  min="1"
+                  className="w-20"
+                  value={row.quantity}
+                  onChange={(e) => updateRow(row.id, { quantity: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={rows.length === 1}
+                  onClick={() => setRows((prev) => prev.filter((r) => r.id !== row.id))}
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="justify-self-start"
+              onClick={() => setRows((prev) => [...prev, emptyRow()])}
+            >
+              <Plus className="size-3.5" /> Ürün Ekle
+            </Button>
           </div>
-          {product && (
-            <p className="text-muted-foreground text-xs">
-              Stokta: {product.current_quantity} Paket
-              {Number(quantity) > product.current_quantity && (
-                <span className="text-destructive font-medium"> — yetersiz stok</span>
-              )}
-            </p>
-          )}
           <div className="grid gap-1.5">
             <Label>Not (opsiyonel)</Label>
             <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -139,7 +184,7 @@ export function CargoForm() {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Vazgeç
             </Button>
-            <Button type="submit" disabled={createMutation.isPending || !recipientName.trim() || !product}>
+            <Button type="submit" disabled={createMutation.isPending || !recipientName.trim() || validRows.length === 0}>
               {createMutation.isPending && <Loader2 className="animate-spin" />}
               Kaydet
             </Button>
