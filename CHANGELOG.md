@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.188] - 2026-08-24
+
+**Günlük Sayım'da "Bugünkü Stok" artık gün içindeki satış/iade hareketlerini de yansıtıyor:** Henüz elle sayım girilmemiş bir üründe bu sütun, bir önceki tamamlanmış sayımın (dondurulmuş, eski) değerini değil, canlı ürün stoğunu gösteriyordu — bu yüzden "Günün Satış/İade Hareketleri"nden o gün girilen bir satış ya da iade burada hiç görünmüyordu. "Son Sayım" sütunu (geçmişle karşılaştırma amaçlı) ve "dünkü sayımdan az" uyarısı değişmedi, sadece asıl "Bugünkü Stok" değeri artık canlı stoktan hesaplanıyor.
+
 ## [2.17.187] - 2026-08-24
 
 **Kargo bölümü: durum artık her yöne serbestçe değiştirilebiliyor, aynı alıcıya birden fazla ürün eklenebiliyor:** Önceden durum sadece ileri yönde (Bekletiliyor → Gönderilecek → Gönderildi) küçük ikonlarla değiştirilebiliyordu, "Gönderildi"ye geldikten sonra geri dönüş yoktu. Artık her satırda tüm durumları listeleyen bir seçim kutusu var; "Gönderildi"den geri dönülürse daha önce düşülen stok otomatik iade ediliyor. Ayrıca "Yeni Kargo" formuna aynı alıcı için birden fazla ürün satırı eklenebiliyor (tek seferde kaydediliyor). Günlük Sayım'da Geçmiş Sayımlar listesindeki "Açık"/"Tamamlandı" durumu da artık elle değiştirilebiliyor (yalnızca etiketi değiştirir, stok hareketi uygulamaz) — eskiden yarım kalmış sayımları temizlemek için.

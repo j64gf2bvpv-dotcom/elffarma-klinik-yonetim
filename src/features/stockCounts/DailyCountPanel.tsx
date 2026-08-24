@@ -291,8 +291,15 @@ function CountItemRow({
 }) {
   const [paketValue, setPaketValue] = React.useState(item.counted_quantity?.toString() ?? '')
   const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
-  const finalPaket = resolveCounted(baseline.paket, paketValue === '' ? null : Number(paketValue))
-  const finalFlakon = resolveCounted(baseline.flakon, flakonValue === '' ? null : Number(flakonValue))
+  // "Bugünkü Stok" henüz elle sayılmadıysa geçmiş sayımın (baseline) değil,
+  // CANLI ürün stoğunun karşılığı olmalı — aksi halde gün içinde "Günün
+  // Satış/İade Hareketleri"nden girilen bir satış/iade burada hiç
+  // görünmüyordu (kullanıcı isteği, 2026-08-24: "girilen ya da çıkılan ürün
+  // güncel son stoktan düşmüyor/eklenmiyor"). "Son Sayım" sütunu ve aşağıdaki
+  // "dünkü sayımdan az" uyarısı bilerek hâlâ baseline (geçmiş sayım) kullanıyor
+  // — o, ayrı bir karşılaştırma amacı taşıyor.
+  const finalPaket = resolveCounted(item.products.current_quantity, paketValue === '' ? null : Number(paketValue))
+  const finalFlakon = resolveCounted(item.products.flakon_quantity, flakonValue === '' ? null : Number(flakonValue))
   const { confirm: confirmLowCount, dialog: lowCountDialog } = useConfirmDialog()
 
   // Dünkü sayımdan (baseline) daha az girilirse — yanlışlıkla eksik yazılmış
@@ -351,7 +358,7 @@ function CountItemRow({
             type="number"
             min="0"
             className="w-20"
-            placeholder={String(baseline.paket)}
+            placeholder={String(item.products.current_quantity)}
             value={paketValue}
             onChange={(e) => setPaketValue(e.target.value)}
             onBlur={handleBlurPaket}
@@ -373,7 +380,7 @@ function CountItemRow({
             type="number"
             min="0"
             className="w-20"
-            placeholder={String(baseline.flakon)}
+            placeholder={String(item.products.flakon_quantity)}
             value={flakonValue}
             onChange={(e) => setFlakonValue(e.target.value)}
             onBlur={handleBlurFlakon}
@@ -699,9 +706,11 @@ export function DailyCountPanel() {
   // — Sayımı Tamamla sonrası depoya yansıyacak gerçek son değer bu (bkz.
   // completeCount()'taki aynı fark mantığı).
   function productLine(i: StockCountItemWithProduct): { metrik: string; deger: string | number } {
-    const baseline = getBaseline(i)
-    const finalPaket = resolveCounted(baseline.paket, i.counted_quantity)
-    const finalFlakon = resolveCounted(baseline.flakon, i.counted_quantity_flakon)
+    // CountItemRow'daki gibi canlı stoktan taban alınır (bkz. oradaki yorum) —
+    // Günlük Özet'in "Son Stok" sütunu, sayım tamamlandığında gerçekte
+    // uygulanacak değerle (completeCount) tutarlı olsun diye.
+    const finalPaket = resolveCounted(i.products.current_quantity, i.counted_quantity)
+    const finalFlakon = resolveCounted(i.products.flakon_quantity, i.counted_quantity_flakon)
     return {
       metrik: i.products.name,
       deger: finalStockLabel(finalPaket, finalFlakon),
