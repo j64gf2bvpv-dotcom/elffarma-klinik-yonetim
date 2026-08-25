@@ -85,6 +85,13 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Node 22'nin varsayılan npm'i (10.x), package-lock.json'ın üretildiği
+      # yerel npm (11.x) ile bazı optional/peer bağımlılık girişlerini farklı
+      # yorumluyor — "npm ci" burada "Missing: typescript@5.9.3 from lock
+      # file" hatasıyla başarısız oluyordu, oysa aynı kilit dosyası yerelde
+      # (npm 11.x) sorunsuz kuruluyordu. Kilit dosyasını üreten npm sürümüyle
+      # eşleştirip tutarlı hale getiriyoruz.
+      - run: npm install -g npm@11
       - run: npm ci
 
       - name: Kurulum paketini derle, imzala/notarize et ve GitHub Release'e yükle
