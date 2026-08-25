@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { getCurrentUserId } from '@/lib/offlineMutation'
-import type { AIConversation, AIMessageRow, AIMessageRole, AIUsageLog, StaffAIKeys } from '@/types/database'
+import type { AIConversation, AIMessageRow, AIMessageRole, AIUsageLog, SharedAIKeys, StaffAIKeys } from '@/types/database'
 
 export async function fetchConversations(): Promise<AIConversation[]> {
   const { data, error } = await supabase
@@ -61,6 +61,18 @@ export async function appendMessage(input: {
   return data as AIMessageRow
 }
 
+/** Tek bir geçmiş mesajı siler (kullanıcı isteği, 2026-08-25 — "önceden yazdıklarını ... sil"). */
+export async function deleteMessage(id: string): Promise<void> {
+  const { error } = await supabase.from('ai_messages').delete().eq('id', id)
+  if (error) throw error
+}
+
+/** Konuşmayı silmeden tüm mesajlarını temizler (kullanıcı isteği, 2026-08-25 — "konuşmanın tamamını temizle"). */
+export async function clearMessages(conversationId: string): Promise<void> {
+  const { error } = await supabase.from('ai_messages').delete().eq('conversation_id', conversationId)
+  if (error) throw error
+}
+
 export async function logUsage(input: {
   provider: string
   model: string
@@ -118,4 +130,30 @@ export async function saveMyAIKeys(input: {
     .single()
   if (error) throw error
   return data as StaffAIKeys
+}
+
+/**
+ * Kişisel bir anahtarı olmayan personel için — herhangi bir aktif personel
+ * okuyabilir (RLS), sadece yönetici yazabilir (kullanıcı isteği, 2026-08-25:
+ * "yapay zeka kısmı tüm kullanıcılarda çalışmalı", bkz. migration
+ * 20260825122400_add_shared_ai_keys.sql).
+ */
+export async function fetchSharedAIKeys(): Promise<SharedAIKeys | null> {
+  const { data, error } = await supabase.from('ai_shared_keys').select('*').maybeSingle()
+  if (error) throw error
+  return data as SharedAIKeys | null
+}
+
+export async function saveSharedAIKeys(input: {
+  openai_api_key?: string | null
+  gemini_api_key?: string | null
+  anthropic_api_key?: string | null
+}): Promise<SharedAIKeys> {
+  const { data, error } = await supabase
+    .from('ai_shared_keys')
+    .upsert({ id: true, ...input, updated_at: new Date().toISOString() })
+    .select()
+    .single()
+  if (error) throw error
+  return data as SharedAIKeys
 }

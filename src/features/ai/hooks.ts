@@ -5,17 +5,21 @@ import type { AISettings } from './types'
 import { defaultAISettings } from './config'
 import {
   appendMessage,
+  clearMessages,
   createConversation,
   deleteConversation,
+  deleteMessage,
   fetchConversations,
   fetchMessages,
   fetchMyAIKeys,
+  fetchSharedAIKeys,
   fetchUsageLogs,
   renameConversation,
   saveMyAIKeys,
+  saveSharedAIKeys,
   touchConversation,
 } from './api'
-import type { AIConversation, AIMessageRow, AIMessageRole, StaffAIKeys } from '@/types/database'
+import type { AIConversation, AIMessageRow, AIMessageRole, SharedAIKeys, StaffAIKeys } from '@/types/database'
 
 const AI_SETTINGS_KEY = 'ai_settings'
 
@@ -88,6 +92,31 @@ export function useAppendAIMessage() {
   })
 }
 
+/** Tek bir geçmiş mesajı siler (kullanıcı isteği, 2026-08-25). */
+export function useDeleteAIMessage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id }: { id: string; conversationId: string }) => deleteMessage(id),
+    onSuccess: (_data, { id, conversationId }) => {
+      queryClient.setQueryData<AIMessageRow[]>(['ai_messages', conversationId], (old) => old?.filter((m) => m.id !== id))
+    },
+    onError: (error: Error) => toast.error('Mesaj silinemedi', { description: error.message }),
+  })
+}
+
+/** Konuşmayı silmeden tüm mesajlarını temizler (kullanıcı isteği, 2026-08-25). */
+export function useClearAIMessages() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (conversationId: string) => clearMessages(conversationId),
+    onSuccess: (_data, conversationId) => {
+      queryClient.setQueryData<AIMessageRow[]>(['ai_messages', conversationId], [])
+      toast.success('Konuşma temizlendi')
+    },
+    onError: (error: Error) => toast.error('Temizlenemedi', { description: error.message }),
+  })
+}
+
 export function useAIUsageLogs() {
   return useQuery({ queryKey: ['ai_usage_logs'], queryFn: () => fetchUsageLogs() })
 }
@@ -104,5 +133,21 @@ export function useSaveMyAIKeys() {
       saveMyAIKeys(input),
     onSuccess: (saved) => queryClient.setQueryData(['staff_ai_keys', 'me'], saved),
     onError: (error: Error) => toast.error('API anahtarı kaydedilemedi', { description: error.message }),
+  })
+}
+
+/** Herhangi bir aktif personelin okuyabildiği paylaşılan bulut AI anahtarları — kişisel anahtarı olmayan personel için yedek (kullanıcı isteği, 2026-08-25). */
+export function useSharedAIKeys() {
+  return useQuery({ queryKey: ['ai_shared_keys'], queryFn: fetchSharedAIKeys })
+}
+
+/** Sadece yönetici yazabilir (RLS) — Yapay Zeka ayarlarındaki "Paylaşılan API Anahtarı" alanı. */
+export function useSaveSharedAIKeys() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: Partial<Pick<SharedAIKeys, 'openai_api_key' | 'gemini_api_key' | 'anthropic_api_key'>>) =>
+      saveSharedAIKeys(input),
+    onSuccess: (saved) => queryClient.setQueryData(['ai_shared_keys'], saved),
+    onError: (error: Error) => toast.error('Paylaşılan API anahtarı kaydedilemedi', { description: error.message }),
   })
 }

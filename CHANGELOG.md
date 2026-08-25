@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.192] - 2026-08-25
+
+**Yapay Zekâ Asistanı artık tüm personelde çalışabiliyor, mesaj düzenleme/silme ve gerçek "sohbeti temizle" eklendi:** Önceden bir bulut sağlayıcı (Gemini/OpenAI/Claude) API anahtarı ya kişiye özeldi ya da paket zamanında gömülen `.env`'e bağlıydı — kendi anahtarını girmemiş bir personel için ikisi de yoksa yapay zekâ her zaman hata veriyordu. Yönetici artık Ayarlar > Yapay Zekâ'dan tüm personelin otomatik kullanacağı "Paylaşılan API Anahtarı" tanımlayabiliyor. Sohbette artık her kullanıcı mesajının üzerine gelince Düzenle (metni tekrar yazma kutusuna yükler) ve Sil butonları çıkıyor; asistan mesajları da tek tek silinebiliyor. Üstteki çöp kutusu düğmesi artık konuşmayı tamamen silmek yerine (onay isteyerek) tüm mesajları temizliyor.
+
 ## [2.17.191] - 2026-08-25
 
 **"Tümünü Sil" (Satışlar) artık gerçekten çalışıyor:** `delete_all_sales` veritabanı fonksiyonu, Supabase'in "WHERE'siz DELETE yasak" güvenlik kuralına takılıp "DELETE requires a WHERE clause" hatasıyla başarısız oluyordu — düzeltildi.

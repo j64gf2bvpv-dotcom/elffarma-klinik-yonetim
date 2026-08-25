@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAISettings, useSaveAISettings, useMyAIKeys, useSaveMyAIKeys } from './hooks'
+import { useAISettings, useSaveAISettings, useMyAIKeys, useSaveMyAIKeys, useSharedAIKeys, useSaveSharedAIKeys } from './hooks'
 import { providerDefaults, providerLabels, getApiKeyForProvider, personalKeyFieldForProvider } from './config'
 import { AIService } from './AIService'
 import { useAuth } from '@/lib/auth'
@@ -21,6 +21,8 @@ export function AIProviderSettings() {
   const saveMutation = useSaveAISettings()
   const { data: myKeys } = useMyAIKeys()
   const saveKeyMutation = useSaveMyAIKeys()
+  const { data: sharedKeys } = useSharedAIKeys()
+  const saveSharedKeyMutation = useSaveSharedAIKeys()
 
   const [provider, setProvider] = React.useState<AIProviderId>(settings.provider)
   const [baseUrl, setBaseUrl] = React.useState(settings.baseUrl)
@@ -28,6 +30,7 @@ export function AIProviderSettings() {
   const [testing, setTesting] = React.useState(false)
   const [testResult, setTestResult] = React.useState<AIConnectionTestResult | null>(null)
   const [apiKeyDraft, setApiKeyDraft] = React.useState('')
+  const [sharedKeyDraft, setSharedKeyDraft] = React.useState('')
 
   React.useEffect(() => {
     setProvider(settings.provider)
@@ -40,6 +43,10 @@ export function AIProviderSettings() {
   React.useEffect(() => {
     setApiKeyDraft((keyField && myKeys?.[keyField]) || '')
   }, [keyField, myKeys])
+
+  React.useEffect(() => {
+    setSharedKeyDraft((keyField && sharedKeys?.[keyField]) || '')
+  }, [keyField, sharedKeys])
 
   function handleProviderChange(next: AIProviderId) {
     setProvider(next)
@@ -61,7 +68,14 @@ export function AIProviderSettings() {
     setTestResult(null)
   }
 
-  const effectiveApiKey = apiKeyDraft.trim() || getApiKeyForProvider(provider)
+  async function handleSaveSharedApiKey() {
+    if (!keyField) return
+    await saveSharedKeyMutation.mutateAsync({ [keyField]: sharedKeyDraft.trim() || null })
+    toast.success('Paylaşılan API anahtarı kaydedildi — kişisel anahtarı olmayan tüm personel bunu kullanır')
+    setTestResult(null)
+  }
+
+  const effectiveApiKey = apiKeyDraft.trim() || sharedKeyDraft.trim() || getApiKeyForProvider(provider)
 
   async function handleTestConnection() {
     setTesting(true)
@@ -79,7 +93,9 @@ export function AIProviderSettings() {
 
   const hasApiKey = !!effectiveApiKey
   const keyDirty = apiKeyDraft.trim() !== ((keyField && myKeys?.[keyField]) || '')
+  const sharedKeyDirty = sharedKeyDraft.trim() !== ((keyField && sharedKeys?.[keyField]) || '')
   const dirty = provider !== settings.provider || baseUrl !== settings.baseUrl || model !== settings.model
+  const activeKeySource = apiKeyDraft.trim() ? 'kişisel' : sharedKeyDraft.trim() ? 'paylaşılan' : '.env (ortak)'
 
   return (
     <CollapsibleCard
@@ -166,13 +182,46 @@ export function AIProviderSettings() {
             </div>
             <p className="text-xs">
               {hasApiKey ? (
-                <span className="text-success">
-                  Aktif bir anahtar var ({apiKeyDraft.trim() ? 'kişisel' : '.env (ortak)'}).
-                </span>
+                <span className="text-success">Aktif bir anahtar var ({activeKeySource}).</span>
               ) : (
                 <span className="text-destructive">Tanımlı bir anahtar yok.</span>
               )}
             </p>
+          </div>
+        )}
+
+        {isAdmin && provider !== 'ollama' && keyField && (
+          <div className="grid gap-1.5 rounded-lg border p-3">
+            <Label htmlFor="ai-shared-key" className="flex items-center gap-2">
+              <KeyRound className="size-3.5" /> Paylaşılan API Anahtarı (Tüm Personel İçin)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Buraya girdiğiniz anahtar, kendi kişisel anahtarını girmemiş TÜM personel tarafından kullanılır —
+              böylece yapay zekâ, herkesin kendi API anahtarı almasına gerek kalmadan çalışır. Sadece siz
+              (yönetici) bu alanı değiştirebilirsiniz (kullanıcı isteği, 2026-08-25: "yapay zeka kısmı tüm
+              kullanıcılarda çalışmalı").
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                id="ai-shared-key"
+                type="password"
+                autoComplete="off"
+                value={sharedKeyDraft}
+                onChange={(e) => setSharedKeyDraft(e.target.value)}
+                placeholder="Paylaşılan API anahtarını yapıştırın"
+                className="max-w-sm"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSaveSharedApiKey}
+                disabled={!sharedKeyDirty || saveSharedKeyMutation.isPending}
+              >
+                {saveSharedKeyMutation.isPending && <Loader2 className="animate-spin" />}
+                Anahtarı Kaydet
+              </Button>
+            </div>
           </div>
         )}
 

@@ -1,11 +1,12 @@
 import * as React from 'react'
-import { Send, Loader2, X, Trash2, Mic, MicOff, Paperclip, Image as ImageIcon, FileSpreadsheet } from 'lucide-react'
+import { Send, Loader2, X, Trash2, Pencil, Mic, MicOff, Paperclip, Image as ImageIcon, FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { extractFileContent } from '@/features/smartImport/extractFileContent'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import { useAIService } from './useAIService'
 import { useAIChatOpen } from './useAIChatOpen'
 import { useBusinessSnapshot } from './useBusinessSnapshot'
@@ -16,7 +17,8 @@ import {
   useCreateAIConversation,
   useAIMessages,
   useAppendAIMessage,
-  useDeleteAIConversation,
+  useDeleteAIMessage,
+  useClearAIMessages,
 } from './hooks'
 import { AIServiceError, type AIMessage, type AIContentPart } from './types'
 
@@ -239,7 +241,9 @@ export function AIChatWidget() {
   const { data: conversations = [] } = useAIConversations()
   const createConversationMutation = useCreateAIConversation()
   const appendMessageMutation = useAppendAIMessage()
-  const deleteConversationMutation = useDeleteAIConversation()
+  const deleteMessageMutation = useDeleteAIMessage()
+  const clearMessagesMutation = useClearAIMessages()
+  const { confirm, dialog: confirmDialog } = useConfirmDialog()
 
   const [open, setOpen] = useAIChatOpen()
   const [conversationId, setConversationId] = React.useState<string | undefined>(undefined)
@@ -542,12 +546,28 @@ export function AIChatWidget() {
     }
   }
 
-  async function handleDeleteConversation() {
+  // "Sohbeti Temizle" — konuşma kaydını (sağlayıcı/model bilgisiyle) silmez,
+  // sadece TÜM mesajları temizler (kullanıcı isteği, 2026-08-25: "konuşmanın
+  // tamamını temizle olmalı"). Önceden bu buton konuşmayı tamamen siliyordu
+  // ve hiç onay istemiyordu — yanlışlıkla tek tıkla tüm geçmiş kaybolabiliyordu.
+  async function handleClearConversation() {
+    if (!(await confirm('Bu konuşmadaki TÜM mesajlar silinecek. Emin misiniz?', { title: 'Sohbeti Temizle', confirmLabel: 'Temizle' })))
+      return
     setStreamingText('')
+    setSendError(null)
     if (conversationId) {
-      await deleteConversationMutation.mutateAsync(conversationId)
+      await clearMessagesMutation.mutateAsync(conversationId)
     }
-    setConversationId(undefined)
+  }
+
+  async function handleDeleteMessage(id: string) {
+    if (!conversationId) return
+    if (!(await confirm('Bu mesaj silinsin mi?'))) return
+    deleteMessageMutation.mutate({ id, conversationId })
+  }
+
+  function handleEditMessage(content: string) {
+    setDraft(content)
   }
 
   return (
@@ -597,7 +617,7 @@ export function AIChatWidget() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="size-7 rounded-full" onClick={handleDeleteConversation} title="Sohbeti Sil">
+            <Button variant="ghost" size="icon" className="size-7 rounded-full" onClick={handleClearConversation} title="Sohbeti Temizle">
               <Trash2 className="size-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="size-7 rounded-full" onClick={() => setOpen(false)} title="Kapat">
@@ -621,7 +641,7 @@ export function AIChatWidget() {
             <div
               key={m.id}
               className={cn(
-                'animate-in fade-in slide-in-from-bottom-1 flex gap-2 text-sm duration-300',
+                'animate-in fade-in slide-in-from-bottom-1 group flex items-end gap-1 text-sm duration-300',
                 m.role === 'user' ? 'justify-end' : 'justify-start',
               )}
             >
@@ -629,6 +649,32 @@ export function AIChatWidget() {
                 <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full">
                   <AiSparkleIcon className="size-4" animated />
                 </span>
+              )}
+              {/* Önceki mesajları düzenleme/silme (kullanıcı isteği, 2026-08-25)
+                  — sadece üzerine gelince görünür, sohbeti kalabalıklaştırmasın.
+                  "Düzenle" mesajı yerinde değiştirmiyor, metni girdi kutusuna
+                  geri yükleyip düzeltilip yeniden gönderilmesini sağlıyor. */}
+              {m.role === 'user' && (
+                <div className="mb-1 flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-6 rounded-full"
+                    onClick={() => handleEditMessage(m.content)}
+                    title="Düzenle"
+                  >
+                    <Pencil className="size-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-6 rounded-full"
+                    onClick={() => handleDeleteMessage(m.id)}
+                    title="Sil"
+                  >
+                    <Trash2 className="size-3" />
+                  </Button>
+                </div>
               )}
               <p
                 className={cn(
@@ -640,6 +686,17 @@ export function AIChatWidget() {
               >
                 {m.content}
               </p>
+              {m.role === 'assistant' && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="mb-1 size-6 shrink-0 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={() => handleDeleteMessage(m.id)}
+                  title="Sil"
+                >
+                  <Trash2 className="size-3" />
+                </Button>
+              )}
             </div>
           ))}
           {sending && !streamingText && (
@@ -750,7 +807,7 @@ export function AIChatWidget() {
           </div>
         </div>
       </div>
-
+      {confirmDialog}
     </>
   )
 }

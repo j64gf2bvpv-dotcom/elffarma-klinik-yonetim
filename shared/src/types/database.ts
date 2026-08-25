@@ -665,6 +665,15 @@ export interface StaffAIKeys {
   updated_at: string
 }
 
+/** Tüm personelin okuyabildiği, sadece yöneticinin yazabildiği tek satırlık paylaşılan API anahtarları — kişisel anahtarı olmayan personel bunu kullanır. */
+export interface SharedAIKeys {
+  id: true
+  openai_api_key: string | null
+  gemini_api_key: string | null
+  anthropic_api_key: string | null
+  updated_at: string
+}
+
 export interface Vehicle {
   id: string
   brand_model: string
