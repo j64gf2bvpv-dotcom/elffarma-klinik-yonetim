@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.194] - 2026-08-25
+
+**Cari Kart listesine doğrudan "Düzenle" butonu eklendi:** Önceden bir doktoru düzenlemek için önce ismine tıklayıp detay sayfasına girmek gerekiyordu. Artık listedeki her satırda, Sil butonunun yanında bir Düzenle (kalem) ikonu var — doğrudan oradan açılıp kaydedilebiliyor.
+
 ## [2.17.193] - 2026-08-25
 
 **Kurulum paketi yayınlama hattındaki bozukluk düzeltildi:** Sürüm yayınlama iş akışı, `npm ci` bir npm sürüm uyuşmazlığı yüzünden başarısız olduğu için art arda birkaç kez hiç kurulum dosyası üretmeden düşüyordu. Yayınlama sunucusundaki npm sürümü, kilit dosyasını üreten sürümle eşleştirildi.

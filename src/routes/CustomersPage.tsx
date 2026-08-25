@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Search, Phone, Tag, ReceiptText, MapPin, Building2, User, CalendarClock, FileSpreadsheet, Trash2, Loader2, Star } from 'lucide-react'
+import { Search, Phone, Tag, ReceiptText, MapPin, Building2, User, CalendarClock, FileSpreadsheet, Trash2, Loader2, Star, Pencil } from 'lucide-react'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -361,7 +361,22 @@ export function CustomersPage() {
                         customerName={customer.full_name}
                         customerPhone={customer.phone}
                       />
-                      <Button variant="ghost" size="icon" onClick={() => setCustomerToDelete(customer)}>
+                      <CustomerForm
+                        customer={customer}
+                        trigger={
+                          <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                            <Pencil className="size-4" />
+                          </Button>
+                        }
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setCustomerToDelete(customer)
+                        }}
+                      >
                         <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </div>
