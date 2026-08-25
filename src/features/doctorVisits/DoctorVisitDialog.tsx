@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
@@ -41,6 +41,34 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+const bulkSchema = z.object({
+  visits: z
+    .array(
+      z.object({
+        doctor_name: z.string().min(2, 'Doktor adı gerekli'),
+        customer_id: z.string().nullable().optional(),
+        phone: z.string().optional(),
+        notes: z.string().optional(),
+      }),
+    )
+    .min(1),
+})
+
+type BulkFormValues = z.infer<typeof bulkSchema>
+
+const emptyBulkRow = { doctor_name: '', customer_id: null as string | null, phone: '', notes: '' }
+
+/**
+ * Yeni doktor eklerken artık bir listeye birden fazla doktor eklenip TEK
+ * "Kaydet" ile hepsi birden kaydedilebiliyor (kullanıcı isteği, 2026-08-25:
+ * "listenin tamamını girdikten sonra da kaydet olsun") — önceden her doktor
+ * için ayrı ayrı "Doktor Ekle" açıp kaydetmek gerekiyordu. Check-in/check-out,
+ * imza, tahsilat/numune formu ve ekler gibi TEK bir ziyarete özgü zengin
+ * alanlar bilerek bu toplu ekleme moduna taşınmadı (bunlar anlık/canlı
+ * bilgiler, birden fazla kayıt için aynı anda doldurulması anlamsız) —
+ * kaydedilen bir doktora sonradan bu detayları eklemek için satırdaki kalem
+ * ikonuyla (mevcut tek-kayıt düzenleme formu, değişmedi) açıp doldurulabilir.
+ */
 export function DoctorVisitDialog({
   visitDate,
   salesRepId,
@@ -74,6 +102,12 @@ export function DoctorVisitDialog({
       next_visit_date: visit?.next_visit_date ?? '',
     },
   })
+
+  const bulkForm = useForm<BulkFormValues>({
+    resolver: zodResolver(bulkSchema),
+    defaultValues: { visits: [emptyBulkRow] },
+  })
+  const bulkFields = useFieldArray({ control: bulkForm.control, name: 'visits' })
 
   const customerId = form.watch('customer_id')
 
@@ -113,27 +147,32 @@ export function DoctorVisitDialog({
       check_in_lng: checkInLng,
       signature_data: signature,
     }
-    if (visit) {
-      await updateMutation.mutateAsync({ id: visit.id, input })
-    } else {
-      await createMutation.mutateAsync(input)
-      form.reset({
-        doctor_name: '',
-        customer_id: null,
-        phone: '',
-        email: '',
-        social_media: '',
-        notes: '',
-        discussed_products: '',
-        competitor_products: '',
-        next_visit_date: '',
+    await updateMutation.mutateAsync({ id: visit!.id, input })
+    setOpen(false)
+  }
+
+  async function onSubmitBulk(values: BulkFormValues) {
+    for (const v of values.visits) {
+      await createMutation.mutateAsync({
+        visit_date: visitDate,
+        sales_rep_id: salesRepId,
+        doctor_name: v.doctor_name,
+        customer_id: v.customer_id || null,
+        phone: v.phone || null,
+        email: null,
+        social_media: null,
+        notes: v.notes || null,
+        discussed_products: null,
+        competitor_products: null,
+        next_visit_date: null,
+        check_in_at: null,
+        check_out_at: null,
+        check_in_lat: null,
+        check_in_lng: null,
+        signature_data: null,
       })
-      setCheckInAt(null)
-      setCheckOutAt(null)
-      setCheckInLat(null)
-      setCheckInLng(null)
-      setSignature(null)
     }
+    bulkForm.reset({ visits: [{ ...emptyBulkRow }] })
     setOpen(false)
   }
 
@@ -145,22 +184,129 @@ export function DoctorVisitDialog({
 
   const submitting = createMutation.isPending || updateMutation.isPending
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {visit ? (
-          <Button variant="ghost" size="icon">
-            <Pencil className="size-3.5" />
-          </Button>
-        ) : (
+  if (!visit) {
+    return (
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next)
+          if (!next) bulkForm.reset({ visits: [{ ...emptyBulkRow }] })
+        }}
+      >
+        <DialogTrigger asChild>
           <Button variant="outline" size="sm">
             <Plus className="size-3.5" /> Doktor Ekle
           </Button>
-        )}
+        </DialogTrigger>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Yeni Doktor(lar)</DialogTitle>
+          </DialogHeader>
+          <Form {...bulkForm}>
+            <form onSubmit={bulkForm.handleSubmit(onSubmitBulk)} className="grid gap-3">
+              {bulkFields.fields.map((field, index) => (
+                <div key={field.id} className="grid gap-2 rounded-md border p-2.5">
+                  <div className="flex items-start gap-2">
+                    <div className="grid flex-1 gap-2">
+                      <FormField
+                        control={bulkForm.control}
+                        name={`visits.${index}.doctor_name`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Adı Soyadı</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Dr. Ayşe Yılmaz" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={bulkForm.control}
+                        name={`visits.${index}.customer_id`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Cari Karta Bağla (opsiyonel)</FormLabel>
+                            <FormControl>
+                              <CustomerCombobox value={field.value ?? undefined} onChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField
+                          control={bulkForm.control}
+                          name={`visits.${index}.phone`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Telefon (opsiyonel)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="0532 123 45 67" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={bulkForm.control}
+                          name={`visits.${index}.notes`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Not (opsiyonel)</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                    {bulkFields.fields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => bulkFields.remove(index)}
+                      >
+                        <Trash2 className="size-3.5 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => bulkFields.append({ ...emptyBulkRow })}
+              >
+                <Plus className="size-3.5" /> Başka Doktor Ekle
+              </Button>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  Vazgeç
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting && <Loader2 className="animate-spin" />}
+                  Kaydet
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <Pencil className="size-3.5" />
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{visit ? 'Doktor Bilgilerini Düzenle' : 'Yeni Doktor'}</DialogTitle>
+          <DialogTitle>Doktor Bilgilerini Düzenle</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
@@ -331,23 +477,17 @@ export function DoctorVisitDialog({
 
             <SignaturePad value={signature} onChange={setSignature} />
 
-            {visit && (
-              <AttachmentsPanel ownerType="doctor_visit" ownerId={visit.id} />
-            )}
+            <AttachmentsPanel ownerType="doctor_visit" ownerId={visit.id} />
 
             <DialogFooter className="sm:justify-between">
-              {visit ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
-                  onClick={handleDelete}
-                >
-                  <Trash2 /> Sil
-                </Button>
-              ) : (
-                <span />
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+                onClick={handleDelete}
+              >
+                <Trash2 /> Sil
+              </Button>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Vazgeç

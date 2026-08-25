@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.195] - 2026-08-25
+
+**Haftalık Satış Temsilcisi Raporu — "Doktor Ekle" artık toplu (liste halinde) çalışıyor:** Önceden her doktor için ayrı ayrı pencere açıp tek tek kaydetmek gerekiyordu. Artık bir pencerede birden fazla doktor satırı eklenip (Adı Soyadı, Cari Kart, Telefon, Not) TEK "Kaydet" ile hepsi birden kaydediliyor. Check-in/check-out, imza, tahsilat/numune gibi tek bir ziyarete özgü detaylar, kaydedilen bir doktora sonradan kalem ikonuyla açılan mevcut düzenleme formundan eklenmeye devam ediyor.
+
 ## [2.17.194] - 2026-08-25
 
 **Cari Kart listesine doğrudan "Düzenle" butonu eklendi:** Önceden bir doktoru düzenlemek için önce ismine tıklayıp detay sayfasına girmek gerekiyordu. Artık listedeki her satırda, Sil butonunun yanında bir Düzenle (kalem) ikonu var — doğrudan oradan açılıp kaydedilebiliyor.
