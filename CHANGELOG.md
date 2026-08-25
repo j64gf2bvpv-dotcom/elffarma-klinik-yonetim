@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.191] - 2026-08-25
+
+**"Tümünü Sil" (Satışlar) artık gerçekten çalışıyor:** `delete_all_sales` veritabanı fonksiyonu, Supabase'in "WHERE'siz DELETE yasak" güvenlik kuralına takılıp "DELETE requires a WHERE clause" hatasıyla başarısız oluyordu — düzeltildi.
+
 ## [2.17.190] - 2026-08-25
 
 **Satışlar/İadeler artık gerçekten stoğa bağlı, silme asla "yetersiz stok" hatası vermiyor, toplu "Tümünü Sil" eklendi:** Bir satış stoktan düşer, bir iade stoğa geri eklenir — bu mantık artık tek bir merkezi yerden (kayıt oluşturma) çalışıyor. Bir satış/iade kaydı silinirken stok etkisi tersine çevriliyor; önceden bu tersine çevirme aradan geçen zamanda stok başka hareketlerle tükenmişse "Yeterli stok yok" diye reddedilebiliyordu — artık asla reddedilmiyor (0'a kenetleniyor). Satışlar sayfasına "Tümünü Sil" eklendi.
