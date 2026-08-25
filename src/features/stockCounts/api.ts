@@ -243,6 +243,15 @@ export async function reopenCount(stockCountId: string): Promise<void> {
 }
 
 /**
+ * Bir sayımın tarihini elle öne/arkaya alır (kullanıcı isteği, 2026-08-25) —
+ * ör. yanlış tarihe düşmüş/kaydırılması gereken bir sayımı düzeltmek için.
+ * Sadece count_date alanını değiştirir, kalemlere veya stoğa dokunmaz.
+ */
+export async function updateCountDate(stockCountId: string, countDate: string): Promise<void> {
+  await offlineUpdate('stock_counts', stockCountId, { count_date: countDate }, 'Sayım tarihini değiştirme')
+}
+
+/**
  * Geçmiş Sayımlar listesindeki "Açık"/"Tamamlandı" durumunu doğrudan elle
  * değiştirir — completeCount'un aksine stok hareketi UYGULAMAZ, sadece etiket
  * değişir (kullanıcı isteği, 2026-08-24: geçmişte yarım kalmış eski sayımları

@@ -3,6 +3,14 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.190] - 2026-08-25
+
+**Satışlar/İadeler artık gerçekten stoğa bağlı, silme asla "yetersiz stok" hatası vermiyor, toplu "Tümünü Sil" eklendi:** Bir satış stoktan düşer, bir iade stoğa geri eklenir — bu mantık artık tek bir merkezi yerden (kayıt oluşturma) çalışıyor. Bir satış/iade kaydı silinirken stok etkisi tersine çevriliyor; önceden bu tersine çevirme aradan geçen zamanda stok başka hareketlerle tükenmişse "Yeterli stok yok" diye reddedilebiliyordu — artık asla reddedilmiyor (0'a kenetleniyor). Satışlar sayfasına "Tümünü Sil" eklendi.
+
+**Günlük Sayım: geçmiş bir gün yeniden açılınca artık gerçekten düzenlenebiliyor, tarihi elle değiştirilebiliyor:** Önceden "Açık" işaretlenen geçmiş bir sayım hâlâ salt okunurdu. Artık açık bir geçmiş sayım, bugünkü sayımla birebir aynı şekilde ürün ekleme/çıkarma, Paket/Flakon girme ve "Sayımı Tamamla" imkânı sunuyor. Her sayımın tarihi de elle öne/arkaya alınabiliyor.
+
+**"Tüm Ürünleri Sıfırla" artık herkese açık ve tek adımda onaylanıyor:** Önceden sadece yöneticiye kilitliydi ve zorunlu bir gerekçe metni yazmak gerekiyordu; artık her aktif personel kullanabiliyor ve tek bir Onayla/Vazgeç ekranıyla tamamlanıyor.
+
 ## [2.17.189] - 2026-08-24
 
 **Haftalık Satış Temsilcisi Raporu'na "Görsel (PNG)" olarak dışa aktarma eklendi:** Bu rapor tablo değil kart tabanlı bir görünüm olduğu için, paylaşılan Dışa Aktar menüsüne genel bir "Görsel (PNG)" seçeneği eklendi — ekrandaki kartların kendisini (avatar, renk, düzen dahil) olduğu gibi bir PNG dosyasına dönüştürüp indiriyor. Aynı mekanizma ileride benzer kart tabanlı sayfalara da eklenebilir.

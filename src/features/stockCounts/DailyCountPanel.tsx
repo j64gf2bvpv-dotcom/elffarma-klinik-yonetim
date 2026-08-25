@@ -37,7 +37,6 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { useSales, useUpdateSaleRep, useDeleteSale } from '@/features/sales/hooks'
 import { SaleForm } from '@/features/sales/SaleForm'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
-import { useRecordStockMovement } from '@/features/stock/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import {
   useAddCountItem,
@@ -49,6 +48,7 @@ import {
   useSetCountStatus,
   useStartTodayCount,
   useTodayCount,
+  useUpdateCountDate,
   useUpdateCountItem,
   useUpdateCountItemFlakon,
 } from './hooks'
@@ -103,10 +103,11 @@ function resolveCounted(baseline: number, counted: number | null): number {
 function SalesActivityRow({ sale, repRoleLabel }: { sale: SaleWithRelations; repRoleLabel: string }) {
   const { data: salesReps = [] } = useSalesReps()
   const updateRepMutation = useUpdateSaleRep()
-  const recordMovement = useRecordStockMovement()
   const deleteMutation = useDeleteSale()
   const { confirm, dialog } = useConfirmDialog()
 
+  // Stok etkisi delete_sale RPC'si tarafında tersine çevriliyor (bkz.
+  // SalesPage.tsx'teki aynı desen) — burada ayrıca çağırmaya gerek yok.
   async function handleCancel() {
     if (
       !(await confirm(
@@ -114,15 +115,6 @@ function SalesActivityRow({ sale, repRoleLabel }: { sale: SaleWithRelations; rep
       ))
     )
       return
-    if (sale.product_id) {
-      await recordMovement.mutateAsync({
-        product_id: sale.product_id,
-        movement_type: sale.type === 'sale' ? 'in' : 'out',
-        quantity: sale.quantity,
-        reason: `${sale.type === 'sale' ? 'Satış' : 'İade'} kaydı iptal edildi — stok düzeltmesi`,
-        note: sale.product_name,
-      })
-    }
     deleteMutation.mutate(sale.id)
   }
 
@@ -533,11 +525,41 @@ function RecentStockComparison({ recentCounts }: { recentCounts: StockCount[] })
 function PastCountRow({ count, previousCount }: { count: StockCount; previousCount?: StockCount }) {
   const [open, setOpen] = React.useState(false)
   const { data: items = [], isLoading } = useCountItems(open ? count.id : undefined)
+  const { data: previousItems = [] } = useCountItems(open ? previousCount?.id : undefined)
   const setStatus = useSetCountStatus()
+  const updateDateMutation = useUpdateCountDate()
+  const completeMutation = useCompleteCount()
+  const updateItemMutation = useUpdateCountItem(count.id)
+  const updateItemFlakonMutation = useUpdateCountItemFlakon(count.id)
+  const addItemMutation = useAddCountItem(count.id)
+  const deleteItemMutation = useDeleteCountItem(count.id)
+  const [selectedItemId, setSelectedItemId] = React.useState<string | null>(null)
+  const { confirm, dialog } = useConfirmDialog()
+
+  const isOpenCount = count.status === 'open'
+
+  const baselineByProduct = React.useMemo(() => {
+    const map = new Map<string, { paket: number; flakon: number }>()
+    for (const item of previousItems) {
+      map.set(item.product_id, {
+        paket: resolveCounted(item.expected_quantity, item.counted_quantity),
+        flakon: resolveCounted(item.expected_quantity_flakon, item.counted_quantity_flakon),
+      })
+    }
+    return map
+  }, [previousItems])
+  function getBaseline(item: StockCountItemWithProduct) {
+    return baselineByProduct.get(item.product_id) ?? { paket: item.products.current_quantity, flakon: item.products.flakon_quantity }
+  }
+
+  async function handleDeleteItem(item: StockCountItemWithProduct) {
+    if (!(await confirm(`${item.products.name} bu sayımdan çıkarılsın mı?`))) return
+    deleteItemMutation.mutate(item.id)
+  }
 
   return (
     <div className="rounded-md border">
-      <div className="flex w-full items-center justify-between px-3 py-2 text-sm">
+      <div className="flex w-full flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -546,34 +568,111 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
           <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
           {format(new Date(count.count_date), 'd MMMM yyyy', { locale: trLocale })}
         </button>
-        {/* Durum elle değiştirilebilir (kullanıcı isteği, 2026-08-24) — sadece
-            etiketi değiştirir, stok hareketi UYGULAMAZ (bkz. api.ts). */}
-        <Select
-          value={count.status}
-          onValueChange={(value) => setStatus.mutate({ stockCountId: count.id, status: value as StockCount['status'] })}
-          disabled={setStatus.isPending}
-        >
-          <SelectTrigger
-            className={cn(
-              'h-7 w-32',
-              count.status === 'completed'
-                ? 'border-success/40 bg-success/10 text-success-foreground'
-                : 'border-secondary/40 bg-secondary/40 text-secondary-foreground',
-            )}
+        <div className="flex items-center gap-2">
+          {/* Tarih elle öne/arkaya alınabilir (kullanıcı isteği, 2026-08-25) —
+              ör. yanlış güne düşmüş bir sayımı düzeltmek için. */}
+          <Input
+            type="date"
+            className="h-7 w-36"
+            value={count.count_date}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => e.target.value && updateDateMutation.mutate({ stockCountId: count.id, countDate: e.target.value })}
+            disabled={updateDateMutation.isPending}
+          />
+          {/* Durum elle değiştirilebilir (kullanıcı isteği, 2026-08-24) — sadece
+              etiketi değiştirir, stok hareketi UYGULAMAZ (bkz. api.ts). */}
+          <Select
+            value={count.status}
+            onValueChange={(value) => setStatus.mutate({ stockCountId: count.id, status: value as StockCount['status'] })}
+            disabled={setStatus.isPending}
           >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="open">Açık</SelectItem>
-            <SelectItem value="completed">Tamamlandı</SelectItem>
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              className={cn(
+                'h-7 w-32',
+                count.status === 'completed'
+                  ? 'border-success/40 bg-success/10 text-success-foreground'
+                  : 'border-secondary/40 bg-secondary/40 text-secondary-foreground',
+              )}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open">Açık</SelectItem>
+              <SelectItem value="completed">Tamamlandı</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       {open && (
         <div className="border-t">
           {isLoading && <p className="text-muted-foreground p-3 text-sm">Yükleniyor...</p>}
           {!isLoading && items.length === 0 && <p className="text-muted-foreground p-3 text-sm">Kalem yok</p>}
-          {!isLoading && items.length > 0 && (
+          {/* Açık bir geçmiş sayım, bugünkü sayım paneliyle AYNI şekilde elle
+              düzenlenebilir (kullanıcı isteği, 2026-08-25: "önceki günleri
+              yeniden açıp düzenlemeler yapabilmeliyim") — sadece bugünün
+              sayımı değil, İSTENEN herhangi bir gün tamamlanabilir/güncellenebilir. */}
+          {!isLoading && items.length > 0 && isOpenCount && (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ürün</TableHead>
+                    <TableHead className="font-bold text-foreground">
+                      {previousCount
+                        ? `Son Sayım (${format(new Date(previousCount.count_date), 'd MMMM', { locale: trLocale })})`
+                        : 'Sistemdeki Miktar'}
+                    </TableHead>
+                    <TableHead>Paket</TableHead>
+                    <TableHead>Flakon</TableHead>
+                    <TableHead className="font-bold text-foreground">
+                      {format(new Date(count.count_date), 'd MMMM', { locale: trLocale })} — O Günkü Stok
+                    </TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item, index) => (
+                    <CountItemRow
+                      key={item.id}
+                      item={item}
+                      baseline={getBaseline(item)}
+                      readOnly={false}
+                      selected={item.id === selectedItemId}
+                      onSelect={setSelectedItemId}
+                      onSavePaket={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
+                      onSaveFlakon={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
+                      onDelete={handleDeleteItem}
+                      nextItemId={items[index + 1]?.id}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="flex items-center justify-between gap-2 p-3">
+                <div className="w-64">
+                  <ProductCombobox
+                    value={undefined}
+                    placeholder="Sayıma ürün ekle..."
+                    onChange={(product) => {
+                      if (items.some((i) => i.product_id === product.id)) {
+                        toast.info('Bu ürün zaten sayımda')
+                        return
+                      }
+                      addItemMutation.mutate(product)
+                    }}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => completeMutation.mutate(count.id)}
+                  disabled={completeMutation.isPending}
+                >
+                  {completeMutation.isPending && <Loader2 className="animate-spin" />}
+                  Sayımı Tamamla ve Stoğu Güncelle
+                </Button>
+              </div>
+            </>
+          )}
+          {!isLoading && items.length > 0 && !isOpenCount && (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -612,6 +711,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
           )}
         </div>
       )}
+      {dialog}
     </div>
   )
 }

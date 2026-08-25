@@ -22,7 +22,6 @@ import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
-import { useRecordStockMovement } from '@/features/stock/hooks'
 import { useCreateSale } from './hooks'
 import type { Product } from '@/types/database'
 
@@ -52,7 +51,6 @@ type FormOutput = z.output<typeof schema>
 export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateSale()
-  const recordMovement = useRecordStockMovement()
   const { data: doctors = [] } = useCustomers('')
   const { data: salesReps = [] } = useSalesReps()
 
@@ -81,6 +79,9 @@ export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) 
 
   async function onSubmit(values: FormOutput) {
     const repId = values.sales_rep_id && values.sales_rep_id !== NO_REP ? values.sales_rep_id : null
+    const doctorName = doctors.find((d) => d.id === values.customer_id)?.full_name ?? 'Doktor'
+    const repName = repId ? salesReps.find((r) => r.id === repId)?.name : null
+
     await createMutation.mutateAsync({
       type: values.type,
       customer_id: values.customer_id,
@@ -91,19 +92,7 @@ export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) 
       unit_price: values.unit_price,
       sale_date: values.sale_date,
       note: values.note || null,
-    })
-
-    const doctorName = doctors.find((d) => d.id === values.customer_id)?.full_name ?? 'Doktor'
-    const repName = repId ? salesReps.find((r) => r.id === repId)?.name : null
-
-    await recordMovement.mutateAsync({
-      product_id: values.product_id,
-      movement_type: values.type === 'sale' ? 'out' : 'in',
-      quantity: values.quantity,
-      reason: values.type === 'sale' ? 'Satış' : 'İade',
-      customer_id: values.customer_id,
-      unit_price: values.unit_price,
-      note:
+      movement_note:
         values.type === 'sale'
           ? `${doctorName} için satış${repName ? ` — ${repName} tarafından elden teslim edildi` : ''}`
           : `${doctorName} tarafından iade edildi${repName ? ` — ${repName} tarafından alındı` : ''}`,
@@ -123,7 +112,7 @@ export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) 
     setOpen(false)
   }
 
-  const submitting = createMutation.isPending || recordMovement.isPending
+  const submitting = createMutation.isPending
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

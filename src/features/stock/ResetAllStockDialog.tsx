@@ -1,53 +1,47 @@
-import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { RotateCcw, Loader2 } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 /**
- * "Tüm Ürünleri Sıfırla" — sadece yönetici; zorunlu bir gerekçe metniyle tek
- * adımlı onay (önceden ayrıca "etkilenecek ürün sayısını yazarak onayla" ikinci
- * bir adımı vardı — kullanıcı isteğiyle, 2026-08-24, "sıfırlama ve silmeler bu
- * şekilde ekran çıkmasın Sil ve İptal çıksın sadece" — uygulamanın geri
- * kalanındaki tek adımlı İptal Et/Sil deseniyle tutarlı olsun diye kaldırıldı).
- * Gönderildiğinde `reset_all_stock` RPC'sini TEK seferde çağırır — RPC sunucu
- * tarafında hem paket hem flakon sayaçlarını tek bir transaction içinde
- * sıfırlar (ya hepsi ya hiçbiri). StockPage.tsx (Ürünler listesi) ve
+ * "Tüm Ürünleri Sıfırla" — artık herhangi bir aktif personel kullanabilir
+ * (kullanıcı isteği, 2026-08-25: "bütün kullanıcılara açık olsun" —
+ * `reset_all_stock` RPC'sindeki is_admin() kontrolü is_active_staff()'a
+ * indirildi, bkz. migration 20260825120853). Onay, uygulamanın geri
+ * kalanındaki paylaşılan tek adımlı İptal Et/Sil deseniyle aynı
+ * (useConfirmDialog) — önceden ayrıca zorunlu bir gerekçe metni yazmak
+ * gerekiyordu, kullanıcı isteğiyle (2026-08-25, "bu ekran çıkmasın onayla ve
+ * vazgeç çıksın sadece") kaldırıldı; RPC'nin kendisi denetim kaydı için hâlâ
+ * bir gerekçe metni istediğinden sabit bir metin otomatik gönderiliyor.
+ * Gönderildiğinde `reset_all_stock` RPC'sini TEK seferde çağırır — RPC
+ * sunucu tarafında aktif VE stoğu 0'dan büyük olan (bu yüzden "eksik/fazla
+ * ürün kalmasın" isteğiyle tutarlı — zaten stoğu 0 olan bir ürünün ayrıca
+ * sıfırlanacak bir şeyi yok) her ürünün paket + flakon sayaçlarını tek tek
+ * ama aynı çağrı içinde sıfırlar. StockPage.tsx (Ürünler listesi) ve
  * StockCardPanel.tsx (Stok Kartı, hem tek ürün hem tüm ürünler modu)
  * tarafından paylaşılıyor — StockPage → StockCardPanel zaten import ettiği
  * için bu bileşen döngüsel import olmasın diye ayrı bir dosyada.
  */
 export function ResetAllStockDialog({ affectedCount }: { affectedCount: number }) {
-  const { staff } = useAuth()
   const queryClient = useQueryClient()
-  const [open, setOpen] = React.useState(false)
-  const [reason, setReason] = React.useState('')
-  const [submitting, setSubmitting] = React.useState(false)
+  const { confirm, dialog } = useConfirmDialog()
 
-  if (staff?.role !== 'admin') return null
+  async function handleClick() {
+    if (
+      !(await confirm(
+        `${affectedCount} ürünün stoğu (paket + flakon) SIFIRLANACAK. Bu işlem her ürün için "çıkış" hareketi olarak denetim kaydına işlenir ve geri alınamaz.`,
+        { title: 'Tüm Ürünleri Sıfırla', confirmLabel: 'Onayla' },
+      ))
+    )
+      return
 
-  function handleOpenChange(next: boolean) {
-    setOpen(next)
-    if (!next) setReason('')
-  }
-
-  async function handleConfirm() {
-    setSubmitting(true)
     try {
-      const { data, error } = await supabase.rpc('reset_all_stock', { p_reason: reason.trim() })
+      const { data, error } = await supabase.rpc('reset_all_stock', {
+        p_reason: `Tüm ürünleri sıfırla (${new Date().toLocaleString('tr-TR')})`,
+      })
       if (error) throw error
       // Sadece ['products'] invalidate etmek yetmiyordu — Günlük Sayım
       // (['stock_count_items', ...]) ve Stok Kartı (['stock_movements'])
@@ -59,54 +53,24 @@ export function ResetAllStockDialog({ affectedCount }: { affectedCount: number }
       await queryClient.invalidateQueries({ queryKey: ['stock_count_items'] })
       await queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       toast.success(`${data ?? affectedCount} ürünün stoğu (paket + flakon) sıfırlandı`)
-      handleOpenChange(false)
     } catch (error) {
       toast.error('Sıfırlanamadı', { description: error instanceof Error ? error.message : String(error) })
-    } finally {
-      setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <>
       <Button
         variant="outline"
         className="text-destructive hover:text-destructive"
-        onClick={() => setOpen(true)}
+        onClick={handleClick}
         disabled={affectedCount === 0}
         title="Tüm ürünlerin paket ve flakon stok miktarını 0'a çeker (denetim kaydı olarak işlenir)"
       >
         <RotateCcw />
         Tüm Ürünleri Sıfırla
       </Button>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Tüm Ürünleri Sıfırla</DialogTitle>
-          <DialogDescription>
-            {affectedCount} ürünün stoğu (paket + flakon) SIFIRLANACAK. Bu işlem her ürün için "çıkış" hareketi olarak
-            denetim kaydına işlenir ve geri alınamaz.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-1.5">
-          <Label htmlFor="reset-reason">Gerekçe (zorunlu)</Label>
-          <Textarea
-            id="reset-reason"
-            rows={3}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Ör. yıl sonu fiziksel sayım sonrası toplu sıfırlama..."
-          />
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-            İptal Et
-          </Button>
-          <Button type="button" variant="destructive" disabled={!reason.trim() || submitting} onClick={handleConfirm}>
-            {submitting && <Loader2 className="animate-spin" />}
-            Sil
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      {dialog}
+    </>
   )
 }

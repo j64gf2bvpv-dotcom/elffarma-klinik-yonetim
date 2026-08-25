@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/form'
 import { normalizeTrPhone } from '@/features/whatsapp/normalizePhone'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
-import { useRecordStockMovement } from '@/features/stock/hooks'
 import { useCreateSale } from '@/features/sales/hooks'
 import { useCreateCustomer, useHospitalNames, useUpdateCustomer } from './hooks'
 import { ClinicCombobox } from '@/features/clinics/ClinicCombobox'
@@ -144,7 +143,6 @@ export function CustomerForm({ customer, trigger, onCreated }: CustomerFormProps
   const createMutation = useCreateCustomer()
   const updateMutation = useUpdateCustomer()
   const createSaleMutation = useCreateSale()
-  const recordMovementMutation = useRecordStockMovement()
   const { data: hospitalNames = [] } = useHospitalNames()
   const { data: salesReps = [] } = useSalesReps()
 
@@ -217,25 +215,14 @@ export function CustomerForm({ customer, trigger, onCreated }: CustomerFormProps
           quantity: product.quantity,
           unit_price: product.unit_price,
           sale_date: todayDate(),
-        })
-        await recordMovementMutation.mutateAsync({
-          product_id: product.product_id,
-          movement_type: 'out',
-          quantity: product.quantity,
-          reason: 'Satış',
-          customer_id: created.id,
-          note: `${created.full_name} için yeni kayıt satışı`,
+          movement_note: `${created.full_name} için yeni kayıt satışı`,
         })
       }
     }
     setOpen(false)
   }
 
-  const submitting =
-    createMutation.isPending ||
-    updateMutation.isPending ||
-    createSaleMutation.isPending ||
-    recordMovementMutation.isPending
+  const submitting = createMutation.isPending || updateMutation.isPending || createSaleMutation.isPending
 
   function handleSelectProduct(index: number, product: Product) {
     form.setValue(`products.${index}.product_id`, product.id, { shouldValidate: true })

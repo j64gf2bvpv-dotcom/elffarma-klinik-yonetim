@@ -14,12 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExportMenu } from '@/components/ExportMenu'
 import { RevenueChart, type RevenueChartPoint } from '@/components/charts/RevenueChart'
 import { SaleForm } from '@/features/sales/SaleForm'
-import { useSales, useDeleteSale } from '@/features/sales/hooks'
+import { useSales, useDeleteSale, useDeleteAllSales } from '@/features/sales/hooks'
 import { InvoiceForm } from '@/features/invoices/InvoiceForm'
 import { useInvoices, useDeleteInvoice } from '@/features/invoices/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useExpenses } from '@/features/expenses/hooks'
-import { useRecordStockMovement } from '@/features/stock/hooks'
 import { cn } from '@/lib/utils'
 import type { SaleWithRelations } from '@/features/sales/api'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
@@ -40,6 +39,37 @@ function filterSalesByDate<T extends { sale_date: string }>(sales: T[], from: st
   })
 }
 
+/**
+ * "Tümünü Sil" (kullanıcı isteği, 2026-08-25) — Stok'taki "Tüm Ürünleri
+ * Sıfırla" ile aynı sade Onayla/Vazgeç deseni (useConfirmDialog), gerekçe
+ * metni istemez, RPC'ye sabit bir metin otomatik gönderilir.
+ */
+function DeleteAllSalesButton({ count }: { count: number }) {
+  const deleteAllMutation = useDeleteAllSales()
+  const { confirm, dialog } = useConfirmDialog()
+
+  async function handleClick() {
+    if (
+      !(await confirm(`${count} satış/iade kaydının TÜMÜ silinecek ve stok etkileri tersine çevrilecek. Bu işlem geri alınamaz.`, {
+        title: 'Tüm Satış/İade Kayıtlarını Sil',
+        confirmLabel: 'Onayla',
+      }))
+    )
+      return
+    deleteAllMutation.mutate(`Tüm satış/iade kayıtlarını sil (${new Date().toLocaleString('tr-TR')})`)
+  }
+
+  return (
+    <>
+      <Button variant="outline" className="text-destructive hover:text-destructive" onClick={handleClick} disabled={count === 0}>
+        <Trash2 />
+        Tümünü Sil
+      </Button>
+      {dialog}
+    </>
+  )
+}
+
 function SalesTab({
   from,
   to,
@@ -53,29 +83,22 @@ function SalesTab({
 }) {
   const { data: allSales = [], isLoading } = useSales()
   const deleteMutation = useDeleteSale()
-  const recordMovement = useRecordStockMovement()
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const { confirm, dialog } = useConfirmDialog()
 
   const sales = React.useMemo(() => filterSalesByDate(allSales, from, to), [allSales, from, to])
 
+  // Silme, stoktaki etkiyi de tersine çevirir — bu artık delete_sale RPC'si
+  // (sunucu) tarafında guard'sız/kenetlenen bir hareketle yapılıyor, burada
+  // ayrıca çağırmaya gerek yok (kullanıcı isteği, 2026-08-25: "satışta iade
+  // olan kısmındaki ürünü silmiyor hata veriyor" — önceki ayrı record_stock_movement
+  // çağrısı, aradan geçen zamanda stok tükenmişse "yetersiz stok" diye
+  // reddedebiliyordu).
   async function handleDelete(sale: SaleWithRelations) {
     if (
       !(await confirm(`${sale.product_name} (${sale.quantity} adet) ${sale.type === 'sale' ? 'satış' : 'iade'} kaydı silinsin mi?`))
     )
       return
-    // Satış/iade silinince stoktaki etkisi de tersine çevrilmeli, aksi halde
-    // kayıt silinir ama current_quantity yanlış kalır (kongre ürün panelindeki
-    // aynı desen — bkz. CongressStockItemsPanel.handleDelete).
-    if (sale.product_id) {
-      await recordMovement.mutateAsync({
-        product_id: sale.product_id,
-        movement_type: sale.type === 'sale' ? 'in' : 'out',
-        quantity: sale.quantity,
-        reason: `${sale.type === 'sale' ? 'Satış' : 'İade'} kaydı silindi — stok düzeltmesi`,
-        note: sale.product_name,
-      })
-    }
     deleteMutation.mutate(sale.id)
   }
 
@@ -469,6 +492,7 @@ export function SalesPage() {
                 }))}
               />
             )}
+            {tab === 'sales' && <DeleteAllSalesButton count={allSales.length} />}
             {tab === 'sales' && <SaleForm />}
             {tab === 'invoices' && <InvoiceForm />}
           </div>

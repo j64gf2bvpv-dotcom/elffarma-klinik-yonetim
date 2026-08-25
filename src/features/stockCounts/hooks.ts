@@ -10,6 +10,7 @@ import {
   reopenCount,
   setCountStatusManually,
   startTodayCount,
+  updateCountDate,
   updateCountItem,
   updateCountItemFlakon,
 } from './api'
@@ -115,6 +116,19 @@ export function useReopenCount() {
       toast.success('Sayım yeniden açıldı')
     },
     onError: (error: Error) => toast.error('Açılamadı', { description: error.message }),
+  })
+}
+
+export function useUpdateCountDate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ stockCountId, countDate }: { stockCountId: string; countDate: string }) =>
+      updateCountDate(stockCountId, countDate),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_counts'] })
+      toast.success('Sayım tarihi güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
   })
 }
 

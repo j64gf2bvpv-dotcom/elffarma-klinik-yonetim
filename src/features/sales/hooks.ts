@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { fetchSales, createSale, updateSaleRep, deleteSale, type SaleInput, type SaleWithRelations } from './api'
+import {
+  fetchSales,
+  createSale,
+  updateSaleRep,
+  deleteSale,
+  deleteAllSales,
+  type SaleInput,
+  type SaleWithRelations,
+} from './api'
 
 export function useSales() {
   return useQuery({ queryKey: ['sales'], queryFn: () => fetchSales() })
@@ -46,7 +54,21 @@ export function useDeleteSale() {
     onSuccess: (_data, id) => {
       queryClient.setQueryData<SaleWithRelations[]>(['sales'], (old) => old?.filter((s) => s.id !== id))
       queryClient.invalidateQueries({ queryKey: ['sales'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success('Silindi')
+    },
+    onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
+  })
+}
+
+export function useDeleteAllSales() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (reason: string) => deleteAllSales(reason),
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['sales'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success(`${count} satış/iade kaydı silindi`)
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
   })
