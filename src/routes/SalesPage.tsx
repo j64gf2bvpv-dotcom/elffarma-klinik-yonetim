@@ -12,16 +12,23 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExportMenu } from '@/components/ExportMenu'
+import { ImportMenu } from '@/components/ImportMenu'
 import { RevenueChart, type RevenueChartPoint } from '@/components/charts/RevenueChart'
 import { SaleForm } from '@/features/sales/SaleForm'
 import { useSales, useDeleteSale, useDeleteAllSales } from '@/features/sales/hooks'
+import { importSaleRows, SALE_IMPORT_HEADERS, SALE_IMPORT_SAMPLE_ROWS } from '@/features/sales/importSales'
 import { InvoiceForm } from '@/features/invoices/InvoiceForm'
 import { useInvoices, useDeleteInvoice } from '@/features/invoices/hooks'
 import { usePayments } from '@/features/payments/hooks'
 import { useExpenses } from '@/features/expenses/hooks'
+import { useCustomers } from '@/features/customers/hooks'
+import { useProducts } from '@/features/stock/hooks'
+import { useSalesReps } from '@/features/salesReps/hooks'
 import { cn } from '@/lib/utils'
 import type { SaleWithRelations } from '@/features/sales/api'
+import type { ImportSummary } from '@/lib/importData'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
+import { useQueryClient } from '@tanstack/react-query'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -431,9 +438,23 @@ function InvoicesTab() {
 export function SalesPage() {
   const { data: allSales = [] } = useSales()
   const { data: invoices = [] } = useInvoices()
+  const { data: doctors = [] } = useCustomers('')
+  const { data: products = [] } = useProducts('')
+  const { data: salesReps = [] } = useSalesReps()
+  const queryClient = useQueryClient()
   const [tab, setTab] = React.useState('sales')
   const [salesFrom, setSalesFrom] = React.useState('')
   const [salesTo, setSalesTo] = React.useState('')
+
+  async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
+    const summary = await importSaleRows(rows, allSales, doctors, products, salesReps)
+    if (summary.added > 0) {
+      await queryClient.invalidateQueries({ queryKey: ['sales'] })
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+    }
+    return summary
+  }
+
   const sales = React.useMemo(
     () => filterSalesByDate(allSales, salesFrom, salesTo),
     [allSales, salesFrom, salesTo],
@@ -490,6 +511,14 @@ export function SalesPage() {
                   amount: Number(inv.amount),
                   note: inv.note ?? '',
                 }))}
+              />
+            )}
+            {tab === 'sales' && (
+              <ImportMenu
+                onImport={handleImport}
+                templateFilename="satislar-sablon"
+                templateHeaders={SALE_IMPORT_HEADERS}
+                templateSampleRows={SALE_IMPORT_SAMPLE_ROWS}
               />
             )}
             {tab === 'sales' && <DeleteAllSalesButton count={allSales.length} />}

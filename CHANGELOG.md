@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.199] - 2026-08-26
+
+**Satışlar sayfasına Excel'den içe aktarma eklendi:** Tahsilatlar'daki İçe Aktar ile aynı mekanizma — örnek şablonu indir, doldur (Tür, Doktor, Ürün, Adet, Birim Fiyat, Tarih, Satış Temsilcisi, Not), yükle. Doktor ve ürün adıyla sistemdeki kayıtla eşleştiriliyor; her satır gerçek bir satış/iade kaydı ve stok hareketi oluşturuyor.
+
 ## [2.17.198] - 2026-08-26
 
 **"Yeni Satış / İade" formuna çoklu ürün ekleme eklendi:** Önceden tek seferde sadece bir ürün seçilebiliyordu. Artık aynı doktor/tarih için birden fazla ürün satırı eklenip TEK "Kaydet" ile hepsi kaydedilebiliyor — her ürün kendi satış/stok kaydını oluşturuyor.
