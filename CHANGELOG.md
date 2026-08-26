@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.201] - 2026-08-26
+
+**KRİTİK: "Yeni Satış / İade" kaydetme hatası düzeltildi:** v2.17.199'dan beri, ürün seçilen bir satış/iade kaydedilmeye çalışılınca "Could not find the 'movement_note' column of 'sales'" hatasıyla tamamen başarısız oluyordu — hiçbir satış kaydedilemiyordu. Sebep: sadece stok hareketi notu için kullanılan bir alan yanlışlıkla veritabanına gönderilen kayda da karışıyordu.
+
 ## [2.17.200] - 2026-08-26
 
 **Haftalık Satış Temsilcisi Raporu'nda temsilci ismi düzenleme daha görünür oldu:** Düzenleme zaten vardı ama sadece küçük fotoğraf ikonuna tıklayarak açılıyordu ("Fotoğrafı düzenle" yazıyordu, oysa isim de değişiyordu) — kolayca fark edilmiyordu. Artık isim de tıklanabilir, ikisi de aynı düzenleme penceresini (isim + fotoğraf) açıyor.

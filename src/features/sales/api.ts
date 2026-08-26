@@ -52,9 +52,14 @@ export async function fetchSales(filters: SaleFilters = {}): Promise<SaleWithRel
  */
 export async function createSale(input: SaleInput): Promise<Sale> {
   const createdBy = await getCurrentUserId()
+  // movement_note istemci-tarafı bir alan — sales tablosunda karşılığı yok,
+  // insert payload'ına dahil edilmemeli (dahil edilirse "Could not find the
+  // 'movement_note' column of 'sales'" hatasıyla kayıt tamamen başarısız
+  // oluyordu, kullanıcı isteği/hata raporu, 2026-08-26).
+  const { movement_note, ...saleRow } = input
   const sale = await offlineInsert<Sale>(
     'sales',
-    { ...input, created_by: createdBy },
+    { ...saleRow, created_by: createdBy },
     `${input.type === 'sale' ? 'Satış' : 'İade'}: ${input.product_name}`,
   )
   if (input.product_id) {
@@ -65,7 +70,7 @@ export async function createSale(input: SaleInput): Promise<Sale> {
       reason: input.type === 'sale' ? 'Satış' : 'İade',
       customer_id: input.customer_id,
       unit_price: input.unit_price,
-      note: input.movement_note ?? input.product_name,
+      note: movement_note ?? input.product_name,
     })
   }
   return sale
