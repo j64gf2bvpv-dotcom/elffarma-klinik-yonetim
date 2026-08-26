@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.208] - 2026-08-26
+
+**Satışlar > İçe Aktar'ın örnek şablonu, gerçek "Satış formu" ile birebir eşleşecek şekilde güncellendi:** İndirilebilir örnek dosyanın sütun sırası artık Tarih, Doktor, Ürün, Adet, Birim Fiyat, Satış Temsilcisi, Not — "Tür" sütunu kaldırıldı (bu formla girilen satırlar hep "Satış" kabul edilir, iade elle girilir). Şema değişikliği yok.
+
 ## [2.17.207] - 2026-08-26
 
 **Satışlar > Dışa Aktar'dan "Tür" ve "Birim Fiyat" sütunları kaldırıldı.**

@@ -4,28 +4,30 @@ import { createSale, type SaleWithRelations } from './api'
 import { readCell, parseFlexibleDate, type ImportSummary } from '@/lib/importData'
 import type { Customer, Product, SalesRep, SaleType } from '@/types/database'
 
-export const SALE_IMPORT_HEADERS = ['Tür', 'Doktor', 'Ürün', 'Adet', 'Birim Fiyat', 'Tarih', 'Satış Temsilcisi', 'Not']
+// Sütun sırası ve başlıklar, kullanıcının temsilcilere dağıttığı gerçek
+// "Satış formu.xlsx" dosyasıyla birebir eşleşecek şekilde (2026-08-26)
+// ayarlandı — "Tür" sütunu bilinçli olarak yok; bu formdan gelen satırlar
+// aşağıdaki importSaleRows'ta hep "Satış" kabul edilir (İade elle girilir).
+export const SALE_IMPORT_HEADERS = ['Tarih', 'Doktor', 'Ürün', 'Adet', 'Birim Fiyat', 'Satış Temsilcisi', 'Not']
 
 export const SALE_IMPORT_SAMPLE_ROWS = [
   {
-    Tür: 'Satış',
+    Tarih: '15.03.2026',
     Doktor: 'Dr. Ayşe Yılmaz',
     Ürün: 'Fillicia',
     Adet: 1,
     'Birim Fiyat': 5000,
-    Tarih: '15.03.2026',
     'Satış Temsilcisi': '',
     Not: '',
   },
 ]
 
 export const SALE_IMPORT_FIELD_HINTS: Record<string, string> = {
-  Tür: '"Satış" veya "İade", yoksa "Satış" kabul edilir',
+  Tarih: 'GG.AA.YYYY veya YYYY-AA-GG formatında',
   Doktor: 'sistemde kayıtlı doktorun tam adı',
   Ürün: 'sistemde kayıtlı ürünün tam adı',
   Adet: 'sayı, 0’dan büyük',
   'Birim Fiyat': 'sayı, yoksa ürünün kayıtlı fiyatı kullanılır',
-  Tarih: 'GG.AA.YYYY veya YYYY-AA-GG formatında',
   'Satış Temsilcisi': 'yoksa boş bırak',
   Not: 'yoksa boş bırak',
 }
