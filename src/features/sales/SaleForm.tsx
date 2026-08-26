@@ -2,7 +2,7 @@ import * as React from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Loader2, Trash2 } from 'lucide-react'
+import { Plus, Loader2, Trash2, Pencil } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -22,7 +22,8 @@ import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
-import { useCreateSale } from './hooks'
+import { useCreateSale, useUpdateSaleFull } from './hooks'
+import type { SaleWithRelations } from './api'
 import type { Product } from '@/types/database'
 
 const NO_REP = '__none__'
@@ -56,7 +57,24 @@ type FormOutput = z.output<typeof schema>
 
 const emptyProductRow = { product_id: '', product_name: '', quantity: 1, unit_price: 0 }
 
-function defaultValues(defaultSalesRepId: string | undefined): FormInput {
+function defaultValues(defaultSalesRepId: string | undefined, sale?: SaleWithRelations): FormInput {
+  if (sale) {
+    return {
+      type: sale.type,
+      customer_id: sale.customer_id,
+      sales_rep_id: sale.sales_rep_id ?? NO_REP,
+      products: [
+        {
+          product_id: sale.product_id ?? '',
+          product_name: sale.product_name,
+          quantity: sale.quantity,
+          unit_price: Number(sale.unit_price),
+        },
+      ],
+      sale_date: sale.sale_date,
+      note: sale.note ?? '',
+    }
+  }
   return {
     type: 'sale',
     customer_id: '',
@@ -73,18 +91,32 @@ function defaultValues(defaultSalesRepId: string | undefined): FormInput {
  * CustomerForm'daki "Aldığı Ürünler" ve Kargo formundaki çoklu satır
  * deseniyle aynı: tek Kaydet, her ürün satırı için ayrı bir `sales` kaydı
  * (ve dolayısıyla ayrı bir stok hareketi) oluşturuyor.
+ *
+ * `sale` verilirse (SalesPage'deki satır düzenle ikonu) mevcut TEK bir
+ * kaydı düzenleme moduna geçer — kullanıcı isteği, 2026-08-26: "girdiğim
+ * doktoru daha sonra düzenleme yapabilmeliyim manuel". Ürün satırı
+ * eklenip/çıkarılamaz (o zaman yeni bir kayıt anlamına gelirdi); kaydedince
+ * `updateSaleFull` eski kaydı stok etkisiyle birlikte tersine çevirip yeni
+ * değerlerle yeniden oluşturuyor.
  */
-export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) {
+export function SaleForm({ defaultSalesRepId, sale }: { defaultSalesRepId?: string; sale?: SaleWithRelations }) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateSale()
+  const updateMutation = useUpdateSaleFull()
   const { data: doctors = [] } = useCustomers('')
   const { data: salesReps = [] } = useSalesReps()
+  const isEdit = !!sale
 
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues(defaultSalesRepId),
+    defaultValues: defaultValues(defaultSalesRepId, sale),
   })
   const productFields = useFieldArray({ control: form.control, name: 'products' })
+
+  React.useEffect(() => {
+    if (open) form.reset(defaultValues(defaultSalesRepId, sale))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const saleType = form.watch('type')
 
@@ -103,37 +135,62 @@ export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) 
         ? `${doctorName} için satış${repName ? ` — ${repName} tarafından elden teslim edildi` : ''}`
         : `${doctorName} tarafından iade edildi${repName ? ` — ${repName} tarafından alındı` : ''}`
 
-    for (const product of values.products) {
-      await createMutation.mutateAsync({
-        type: values.type,
-        customer_id: values.customer_id,
-        sales_rep_id: repId,
-        product_id: product.product_id,
-        product_name: product.product_name,
-        quantity: product.quantity,
-        unit_price: product.unit_price,
-        sale_date: values.sale_date,
-        note: values.note || null,
-        movement_note: movementNote,
+    if (isEdit && sale) {
+      const product = values.products[0]
+      await updateMutation.mutateAsync({
+        id: sale.id,
+        input: {
+          type: values.type,
+          customer_id: values.customer_id,
+          sales_rep_id: repId,
+          product_id: product.product_id,
+          product_name: product.product_name,
+          quantity: product.quantity,
+          unit_price: product.unit_price,
+          sale_date: values.sale_date,
+          note: values.note || null,
+          movement_note: movementNote,
+        },
       })
+    } else {
+      for (const product of values.products) {
+        await createMutation.mutateAsync({
+          type: values.type,
+          customer_id: values.customer_id,
+          sales_rep_id: repId,
+          product_id: product.product_id,
+          product_name: product.product_name,
+          quantity: product.quantity,
+          unit_price: product.unit_price,
+          sale_date: values.sale_date,
+          note: values.note || null,
+          movement_note: movementNote,
+        })
+      }
     }
 
-    form.reset(defaultValues(defaultSalesRepId))
+    form.reset(defaultValues(defaultSalesRepId, sale))
     setOpen(false)
   }
 
-  const submitting = createMutation.isPending
+  const submitting = createMutation.isPending || updateMutation.isPending
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus /> Yeni Satış / İade
-        </Button>
+        {isEdit ? (
+          <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+            <Pencil className="size-4" />
+          </Button>
+        ) : (
+          <Button>
+            <Plus /> Yeni Satış / İade
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Yeni Satış / İade</DialogTitle>
+          <DialogTitle>{isEdit ? 'Satış/İade Düzenle' : 'Yeni Satış / İade'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
@@ -175,14 +232,16 @@ export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) 
             <div className="grid gap-3 rounded-lg border p-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">Ürünler</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => productFields.append({ ...emptyProductRow })}
-                >
-                  <Plus className="size-3.5" /> Ürün Ekle
-                </Button>
+                {!isEdit && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => productFields.append({ ...emptyProductRow })}
+                  >
+                    <Plus className="size-3.5" /> Ürün Ekle
+                  </Button>
+                )}
               </div>
               {productFields.fields.map((field, index) => (
                 <div key={field.id} className="grid gap-2 rounded-md border p-2.5">
@@ -193,7 +252,7 @@ export function SaleForm({ defaultSalesRepId }: { defaultSalesRepId?: string }) 
                         onChange={(product) => handleSelectProduct(index, product)}
                       />
                     </div>
-                    {productFields.fields.length > 1 && (
+                    {!isEdit && productFields.fields.length > 1 && (
                       <Button
                         type="button"
                         variant="ghost"

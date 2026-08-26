@@ -4,6 +4,7 @@ import {
   fetchSales,
   createSale,
   updateSaleRep,
+  updateSaleFull,
   deleteSale,
   deleteAllSales,
   type SaleInput,
@@ -42,6 +43,19 @@ export function useUpdateSaleRep() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales'] })
       toast.success('Satış temsilcisi güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateSaleFull() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: SaleInput }) => updateSaleFull(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Satış/iade güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
   })

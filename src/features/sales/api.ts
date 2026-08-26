@@ -81,6 +81,19 @@ export async function updateSaleRep(id: string, salesRepId: string | null): Prom
 }
 
 /**
+ * Girilmiş bir satış/iade kaydının doktor/ürün/adet/fiyat/tarih gibi
+ * alanlarını sonradan düzenleme (kullanıcı isteği, 2026-08-26: "girdiğim
+ * doktoru daha sonra düzenleme yapabilmeliyim manuel"). Kısmi bir stok
+ * farkı hesaplamak yerine (hataya açık), eski kaydı `deleteSale` ile
+ * TERSİNE çevirip yeni değerlerle `createSale` ile yeniden oluşturuyor —
+ * ikisi de zaten stok etkisini doğru uyguluyor, tutarlılık garanti.
+ */
+export async function updateSaleFull(id: string, input: SaleInput): Promise<Sale> {
+  await deleteSale(id)
+  return createSale(input)
+}
+
+/**
  * Kaydı siler ve stok etkisini tersine çevirir — `delete_sale` RPC'si
  * (sunucu tarafında) bunu guard'sız, 0'a kenetlenen bir hareketle yapar,
  * böylece stok ARADAN GEÇEN ZAMANDA başka hareketlerle tükenmiş olsa bile

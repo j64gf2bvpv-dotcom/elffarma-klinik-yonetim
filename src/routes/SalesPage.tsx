@@ -193,9 +193,19 @@ function SalesTab({
                     <TableCell className="font-medium">{currency(s.quantity * Number(s.unit_price))}</TableCell>
                     <TableCell>{s.sales_reps?.name ?? '—'}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(s)}>
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <SaleForm sale={s} />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(s)
+                          }}
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

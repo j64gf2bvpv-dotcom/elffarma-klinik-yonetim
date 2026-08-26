@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.202] - 2026-08-26
+
+**Satışlar listesinde kayıt düzenleme eklendi:** Önceden girilmiş bir satış/iade kaydı (doktor, ürün, adet, fiyat, tarih, not) sonradan sadece silinebiliyordu. Artık her satırda Sil'in yanında bir Düzenle butonu var — stok etkisi de doğru şekilde güncelleniyor (eski hareket tersine çevrilip yeni değerlerle yeniden uygulanıyor).
+
 ## [2.17.201] - 2026-08-26
 
 **KRİTİK: "Yeni Satış / İade" kaydetme hatası düzeltildi:** v2.17.199'dan beri, ürün seçilen bir satış/iade kaydedilmeye çalışılınca "Could not find the 'movement_note' column of 'sales'" hatasıyla tamamen başarısız oluyordu — hiçbir satış kaydedilemiyordu. Sebep: sadece stok hareketi notu için kullanılan bir alan yanlışlıkla veritabanına gönderilen kayda da karışıyordu.
