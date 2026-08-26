@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.198] - 2026-08-26
+
+**"Yeni Satış / İade" formuna çoklu ürün ekleme eklendi:** Önceden tek seferde sadece bir ürün seçilebiliyordu. Artık aynı doktor/tarih için birden fazla ürün satırı eklenip TEK "Kaydet" ile hepsi kaydedilebiliyor — her ürün kendi satış/stok kaydını oluşturuyor.
+
 ## [2.17.197] - 2026-08-26
 
 **Satışlar (ve doktor seçilen her yerde) "Yeni Doktor Ekle" kökten düzeltildi:** Gerçek sebep bulundu — bu form bir açılır listenin (Popover) İÇİNDE render ediliyordu; Popover kapanınca (ki "Yeni Doktor Ekle"ye tıklamak listeyi de kapatıyordu) içindeki form da DOM'dan tamamen kaldırılıyordu, kullanıcı henüz isim yazarken form altından kayboluyordu ("isim yazıyorum eklenmiyor"). Form artık listenin dışında, bağımsız olarak açılıp kapanıyor.
