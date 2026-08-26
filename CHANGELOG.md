@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.197] - 2026-08-26
+
+**Satışlar (ve doktor seçilen her yerde) "Yeni Doktor Ekle" kökten düzeltildi:** Gerçek sebep bulundu — bu form bir açılır listenin (Popover) İÇİNDE render ediliyordu; Popover kapanınca (ki "Yeni Doktor Ekle"ye tıklamak listeyi de kapatıyordu) içindeki form da DOM'dan tamamen kaldırılıyordu, kullanıcı henüz isim yazarken form altından kayboluyordu ("isim yazıyorum eklenmiyor"). Form artık listenin dışında, bağımsız olarak açılıp kapanıyor.
+
 ## [2.17.196] - 2026-08-26
 
 **"Yeni Doktor Ekle" formunda eksik alan uyarısı eklendi:** Telefon gibi zorunlu bir alan boş/hatalı bırakılınca form daha önce sessizce hiçbir şey yapmıyordu (sadece alanın altında küçük bir kırmızı yazı vardı) — özellikle Satışlar'daki hızlı "Yeni Doktor Ekle" akışında "isim yazıyorum, eklenmiyor" şikayetine yol açıyordu. Artık gönderim geçersiz olunca hangi alanın eksik/hatalı olduğunu söyleyen bir bildirim çıkıyor.

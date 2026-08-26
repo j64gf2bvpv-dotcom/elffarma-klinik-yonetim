@@ -100,6 +100,18 @@ interface CustomerFormProps {
   trigger?: React.ReactNode
   /** Sadece yeni doktor oluşturulduğunda (düzenleme değil) çağrılır — ör. bir combobox'tan hızlıca doktor eklerken oluşturulanı otomatik seçmek için. */
   onCreated?: (customer: Customer) => void
+  /**
+   * Verilirse dialog dıştan kontrol edilir (`trigger` kullanılmaz, kendi
+   * DialogTrigger'ı render edilmez) — CustomerCombobox'ın "Yeni Doktor Ekle"
+   * akışı bunu kullanıyor: form bir Popover'ın İÇİNDE render edilirse, Radix
+   * Popover kapanınca içeriğini (formu da içeren component instance'ı)
+   * DOM'dan tamamen kaldırıyor, kullanıcı henüz doldururken form altından
+   * kayboluyordu (kullanıcı isteği, 2026-08-26: "isim yazıyorum eklenmiyor").
+   * Fix: form artık Popover'ın DIŞINDA, her zaman mount edilmiş durumda
+   * render ediliyor, açık/kapalı durumu dıştan (bu prop'larla) yönetiliyor.
+   */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 function defaultValues(customer: Customer | undefined): FormInput {
@@ -139,8 +151,11 @@ function defaultValues(customer: Customer | undefined): FormInput {
   }
 }
 
-export function CustomerForm({ customer, trigger, onCreated }: CustomerFormProps) {
-  const [open, setOpen] = React.useState(false)
+export function CustomerForm({ customer, trigger, onCreated, open: openProp, onOpenChange }: CustomerFormProps) {
+  const isControlled = openProp !== undefined
+  const [openState, setOpenState] = React.useState(false)
+  const open = isControlled ? openProp : openState
+  const setOpen = isControlled ? (onOpenChange ?? setOpenState) : setOpenState
   const createMutation = useCreateCustomer()
   const updateMutation = useUpdateCustomer()
   const createSaleMutation = useCreateSale()
@@ -251,13 +266,15 @@ export function CustomerForm({ customer, trigger, onCreated }: CustomerFormProps
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button>
-            <Plus /> Yeni Doktor
-          </Button>
-        )}
-      </DialogTrigger>
+      {(trigger || !isControlled) && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button>
+              <Plus /> Yeni Doktor
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{customer ? 'Doktoru Düzenle' : 'Yeni Doktor'}</DialogTitle>
