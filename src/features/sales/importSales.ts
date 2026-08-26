@@ -61,10 +61,10 @@ export async function importSaleRows(
     const productName = readCell(row, 'Ürün', 'Ürün Adı')
     const quantityText = readCell(row, 'Adet')
     const dateText = readCell(row, 'Tarih')
-    if (!doctorName || !productName || !quantityText || !dateText) {
-      summary.errors.push(`${rowLabel}: Doktor, Ürün, Adet veya Tarih eksik`)
-      continue
-    }
+    // Boş/yarım bırakılmış satırlar (kullanılmayan şablon satırları, elle
+    // doldururken atlanan hücreler) hata sayılmaz — sessizce atlanır, doğru
+    // dolu satırlar yine de eklenir (kullanıcı isteği, 2026-08-26).
+    if (!doctorName || !productName || !quantityText || !dateText) continue
 
     const doctorMatches = doctors.filter(
       (d) => d.full_name.toLocaleLowerCase('tr') === doctorName.toLocaleLowerCase('tr'),
