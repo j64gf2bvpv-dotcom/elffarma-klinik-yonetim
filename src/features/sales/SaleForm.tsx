@@ -22,7 +22,7 @@ import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
-import { useCreateSale, useUpdateSaleFull } from './hooks'
+import { useCreateSale, useDeleteSale } from './hooks'
 import type { SaleWithRelations } from './api'
 import type { Product } from '@/types/database'
 
@@ -92,17 +92,19 @@ function defaultValues(defaultSalesRepId: string | undefined, sale?: SaleWithRel
  * deseniyle aynı: tek Kaydet, her ürün satırı için ayrı bir `sales` kaydı
  * (ve dolayısıyla ayrı bir stok hareketi) oluşturuyor.
  *
- * `sale` verilirse (SalesPage'deki satır düzenle ikonu) mevcut TEK bir
- * kaydı düzenleme moduna geçer — kullanıcı isteği, 2026-08-26: "girdiğim
- * doktoru daha sonra düzenleme yapabilmeliyim manuel". Ürün satırı
- * eklenip/çıkarılamaz (o zaman yeni bir kayıt anlamına gelirdi); kaydedince
- * `updateSaleFull` eski kaydı stok etkisiyle birlikte tersine çevirip yeni
- * değerlerle yeniden oluşturuyor.
+ * `sale` verilirse (SalesPage'deki satır düzenle ikonu) mevcut bir kaydı
+ * düzenleme moduna geçer — kullanıcı isteği, 2026-08-26: "girdiğim doktoru
+ * daha sonra düzenleme yapabilmeliyim manuel". Düzenlemede de ürün satırı
+ * eklenip/çıkarılabiliyor (kullanıcı isteği, 2026-08-26: "manuel düzenlemede
+ * birden fazla ürün ekleme yok o da olmalı") — kaydedince eski kayıt stok
+ * etkisiyle birlikte tamamen silinip, formdaki HER ürün satırı için yeni bir
+ * kayıt oluşturuluyor (tek satırsa aynı kalır, birden fazlaysa tek kayıt
+ * birden fazla kayda dönüşür).
  */
 export function SaleForm({ defaultSalesRepId, sale }: { defaultSalesRepId?: string; sale?: SaleWithRelations }) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateSale()
-  const updateMutation = useUpdateSaleFull()
+  const deleteMutation = useDeleteSale()
   const { data: doctors = [] } = useCustomers('')
   const { data: salesReps = [] } = useSalesReps()
   const isEdit = !!sale
@@ -136,44 +138,34 @@ export function SaleForm({ defaultSalesRepId, sale }: { defaultSalesRepId?: stri
         : `${doctorName} tarafından iade edildi${repName ? ` — ${repName} tarafından alındı` : ''}`
 
     if (isEdit && sale) {
-      const product = values.products[0]
-      await updateMutation.mutateAsync({
-        id: sale.id,
-        input: {
-          type: values.type,
-          customer_id: values.customer_id,
-          sales_rep_id: repId,
-          product_id: product.product_id,
-          product_name: product.product_name,
-          quantity: product.quantity,
-          unit_price: product.unit_price,
-          sale_date: values.sale_date,
-          note: values.note || null,
-          movement_note: movementNote,
-        },
+      // Düzenlemede de birden fazla ürün eklenebilsin diye (kullanıcı
+      // isteği, 2026-08-26) eski kayıt tamamen silinip (stok etkisi
+      // tersine çevrilir) formdaki HER ürün satırı için yeni bir kayıt
+      // oluşturuluyor — tek satırla girilmiş bir kayıt aynı kalır, birden
+      // fazla satır eklenmişse tek kayıt birden fazla kayda dönüşür.
+      await deleteMutation.mutateAsync(sale.id)
+    }
+
+    for (const product of values.products) {
+      await createMutation.mutateAsync({
+        type: values.type,
+        customer_id: values.customer_id,
+        sales_rep_id: repId,
+        product_id: product.product_id,
+        product_name: product.product_name,
+        quantity: product.quantity,
+        unit_price: product.unit_price,
+        sale_date: values.sale_date,
+        note: values.note || null,
+        movement_note: movementNote,
       })
-    } else {
-      for (const product of values.products) {
-        await createMutation.mutateAsync({
-          type: values.type,
-          customer_id: values.customer_id,
-          sales_rep_id: repId,
-          product_id: product.product_id,
-          product_name: product.product_name,
-          quantity: product.quantity,
-          unit_price: product.unit_price,
-          sale_date: values.sale_date,
-          note: values.note || null,
-          movement_note: movementNote,
-        })
-      }
     }
 
     form.reset(defaultValues(defaultSalesRepId, sale))
     setOpen(false)
   }
 
-  const submitting = createMutation.isPending || updateMutation.isPending
+  const submitting = createMutation.isPending || deleteMutation.isPending
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -232,16 +224,14 @@ export function SaleForm({ defaultSalesRepId, sale }: { defaultSalesRepId?: stri
             <div className="grid gap-3 rounded-lg border p-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">Ürünler</p>
-                {!isEdit && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => productFields.append({ ...emptyProductRow })}
-                  >
-                    <Plus className="size-3.5" /> Ürün Ekle
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => productFields.append({ ...emptyProductRow })}
+                >
+                  <Plus className="size-3.5" /> Ürün Ekle
+                </Button>
               </div>
               {productFields.fields.map((field, index) => (
                 <div key={field.id} className="grid gap-2 rounded-md border p-2.5">
@@ -252,7 +242,7 @@ export function SaleForm({ defaultSalesRepId, sale }: { defaultSalesRepId?: stri
                         onChange={(product) => handleSelectProduct(index, product)}
                       />
                     </div>
-                    {!isEdit && productFields.fields.length > 1 && (
+                    {productFields.fields.length > 1 && (
                       <Button
                         type="button"
                         variant="ghost"
