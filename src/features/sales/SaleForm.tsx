@@ -122,10 +122,21 @@ export function SaleForm({ defaultSalesRepId, sale }: { defaultSalesRepId?: stri
 
   const saleType = form.watch('type')
 
+  // `form.setValue` bir satır dizisi (field array) öğesinin değerini değiştirir
+  // ama dizinin KENDİ iç takibini (useFieldArray'in `fields` anlık görüntüsü)
+  // güncellemez — bu ikisi senkronsuz kalınca, `append()` (Ürün Ekle) daha
+  // sonra çağrıldığında RHF önceki satırı KENDİ eski anlık görüntüsüyle
+  // yeniden kuruyor, seçilen ürün sıfırlanıyordu (kullanıcı isteği,
+  // 2026-08-26: "ürün eklediğimde diğerini siliyor silmesin"). Doğru yöntem,
+  // field array'in kendi `update()` metodunu kullanmak — bu, hem form
+  // değerini hem de dizinin iç anlık görüntüsünü birlikte günceller.
   function handleSelectProduct(index: number, product: Product) {
-    form.setValue(`products.${index}.product_id`, product.id, { shouldValidate: true })
-    form.setValue(`products.${index}.product_name`, product.name, { shouldValidate: true })
-    form.setValue(`products.${index}.unit_price`, product.unit_price ?? 0)
+    productFields.update(index, {
+      ...form.getValues(`products.${index}`),
+      product_id: product.id,
+      product_name: product.name,
+      unit_price: product.unit_price ?? 0,
+    })
   }
 
   async function onSubmit(values: FormOutput) {

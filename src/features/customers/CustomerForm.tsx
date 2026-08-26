@@ -240,10 +240,16 @@ export function CustomerForm({ customer, trigger, onCreated, open: openProp, onO
 
   const submitting = createMutation.isPending || updateMutation.isPending || createSaleMutation.isPending
 
+  // bkz. SaleForm.tsx'teki aynı düzeltmenin açıklaması — `setValue` yerine
+  // field array'in kendi `update()` metodu kullanılmalı, aksi halde
+  // sonradan eklenen bir satır öncekini sıfırlayabiliyor.
   function handleSelectProduct(index: number, product: Product) {
-    form.setValue(`products.${index}.product_id`, product.id, { shouldValidate: true })
-    form.setValue(`products.${index}.product_name`, product.name, { shouldValidate: true })
-    form.setValue(`products.${index}.unit_price`, product.unit_price ?? 0)
+    productFields.update(index, {
+      ...form.getValues(`products.${index}`),
+      product_id: product.id,
+      product_name: product.name,
+      unit_price: product.unit_price ?? 0,
+    })
   }
 
   /**
