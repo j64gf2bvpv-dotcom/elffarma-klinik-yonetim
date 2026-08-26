@@ -97,17 +97,17 @@ function RepWeekSection({
           <SalesRepDialog
             rep={rep}
             trigger={
-              <button type="button" title="Fotoğrafı düzenle">
+              <button type="button" title="Temsilciyi düzenle (isim/fotoğraf)" className="flex items-center gap-2">
                 <Avatar className="size-8">
                   {rep.photo_url && <AvatarImage src={rep.photo_url} alt={rep.name} />}
                   <AvatarFallback className="bg-primary/10 text-primary">
                     {getInitials(rep.name)}
                   </AvatarFallback>
                 </Avatar>
+                <span className="hover:underline">{rep.name}</span>
               </button>
             }
           />
-          {rep.name}
         </CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant="outline">{visits.length} doktor</Badge>

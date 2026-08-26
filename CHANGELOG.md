@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.200] - 2026-08-26
+
+**Haftalık Satış Temsilcisi Raporu'nda temsilci ismi düzenleme daha görünür oldu:** Düzenleme zaten vardı ama sadece küçük fotoğraf ikonuna tıklayarak açılıyordu ("Fotoğrafı düzenle" yazıyordu, oysa isim de değişiyordu) — kolayca fark edilmiyordu. Artık isim de tıklanabilir, ikisi de aynı düzenleme penceresini (isim + fotoğraf) açıyor.
+
 ## [2.17.199] - 2026-08-26
 
 **Satışlar sayfasına Excel'den içe aktarma eklendi:** Tahsilatlar'daki İçe Aktar ile aynı mekanizma — örnek şablonu indir, doldur (Tür, Doktor, Ürün, Adet, Birim Fiyat, Tarih, Satış Temsilcisi, Not), yükle. Doktor ve ürün adıyla sistemdeki kayıtla eşleştiriliyor; her satır gerçek bir satış/iade kaydı ve stok hareketi oluşturuyor.
