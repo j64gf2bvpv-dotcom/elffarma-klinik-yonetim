@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.196] - 2026-08-26
+
+**"Yeni Doktor Ekle" formunda eksik alan uyarısı eklendi:** Telefon gibi zorunlu bir alan boş/hatalı bırakılınca form daha önce sessizce hiçbir şey yapmıyordu (sadece alanın altında küçük bir kırmızı yazı vardı) — özellikle Satışlar'daki hızlı "Yeni Doktor Ekle" akışında "isim yazıyorum, eklenmiyor" şikayetine yol açıyordu. Artık gönderim geçersiz olunca hangi alanın eksik/hatalı olduğunu söyleyen bir bildirim çıkıyor.
+
 ## [2.17.195] - 2026-08-25
 
 **Haftalık Satış Temsilcisi Raporu — "Doktor Ekle" artık toplu (liste halinde) çalışıyor:** Önceden her doktor için ayrı ayrı pencere açıp tek tek kaydetmek gerekiyordu. Artık bir pencerede birden fazla doktor satırı eklenip (Adı Soyadı, Cari Kart, Telefon, Not) TEK "Kaydet" ile hepsi birden kaydediliyor. Check-in/check-out, imza, tahsilat/numune gibi tek bir ziyarete özgü detaylar, kaydedilen bir doktora sonradan kalem ikonuyla açılan mevcut düzenleme formundan eklenmeye devam ediyor.

@@ -1,8 +1,9 @@
 import * as React from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm, useFieldArray, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Loader2, Trash2, Package } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -230,6 +231,24 @@ export function CustomerForm({ customer, trigger, onCreated }: CustomerFormProps
     form.setValue(`products.${index}.unit_price`, product.unit_price ?? 0)
   }
 
+  /**
+   * Zorunlu alan (ör. Telefon) boş/hatalı bırakılınca form daha önce
+   * sessizce hiçbir şey yapmıyordu — sadece ilgili alanın altında küçük bir
+   * kırmızı yazı çıkıyordu, bu da özellikle Satışlar akışındaki "Yeni Doktor
+   * Ekle" gibi hızlı kullanımlarda "isim yazıyorum, eklenmiyor" şikayetine
+   * yol açıyordu (kullanıcı isteği, 2026-08-26). Artık gönderim geçersiz
+   * olunca hangi alanın eksik olduğunu söyleyen bir bildirim çıkıyor.
+   */
+  function onInvalidSubmit(errors: FieldErrors<FormInput>) {
+    const firstError = Object.values(errors)[0]
+    const message = firstError && typeof firstError === 'object' && 'message' in firstError
+      ? String(firstError.message)
+      : undefined
+    toast.error('Kaydedilemedi', {
+      description: message ?? 'Formda eksik veya hatalı alanlar var — kırmızı işaretli alanları kontrol edin.',
+    })
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -244,7 +263,7 @@ export function CustomerForm({ customer, trigger, onCreated }: CustomerFormProps
           <DialogTitle>{customer ? 'Doktoru Düzenle' : 'Yeni Doktor'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalidSubmit)} className="grid gap-4">
             <FormField
               control={form.control}
               name="full_name"
