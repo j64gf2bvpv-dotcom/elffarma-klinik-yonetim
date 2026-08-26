@@ -513,21 +513,17 @@ export function SalesPage() {
                 title="Satışlar"
                 columns={[
                   { header: 'Tarih', value: (r) => r.sale_date },
-                  { header: 'Tür', value: (r) => r.type },
                   { header: 'Doktor', value: (r) => r.doctor },
                   { header: 'Ürün', value: (r) => r.product_name },
                   { header: 'Adet', value: (r) => r.quantity },
-                  { header: 'Birim Fiyat', value: (r) => r.unit_price },
                   { header: 'Toplam', value: (r) => r.total },
                   { header: 'Satış Temsilcisi', value: (r) => r.sales_rep },
                 ]}
                 rows={sales.map((s) => ({
                   sale_date: s.sale_date,
-                  type: s.type === 'sale' ? 'Satış' : 'İade',
                   doctor: s.customers?.full_name ?? '',
                   product_name: s.product_name,
                   quantity: s.quantity,
-                  unit_price: Number(s.unit_price),
                   total: s.quantity * Number(s.unit_price),
                   sales_rep: s.sales_reps?.name ?? '',
                 }))}
