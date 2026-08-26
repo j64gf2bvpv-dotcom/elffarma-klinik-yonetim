@@ -180,72 +180,67 @@ function SalesTab({
             <p className="text-muted-foreground p-6">Henüz satış veya iade kaydı yok.</p>
           )}
           {sales.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tarih</TableHead>
-                  <TableHead>Tür</TableHead>
-                  <TableHead>Doktor</TableHead>
-                  <TableHead>Ürün</TableHead>
-                  <TableHead>Adet</TableHead>
-                  <TableHead>Birim Fiyat</TableHead>
-                  <TableHead>Toplam</TableHead>
-                  <TableHead>Satış Temsilcisi</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {groupSalesByDoctorDate(sales).flatMap((group) =>
-                  group.map((s, idx) => (
-                    <TableRow key={s.id} onClick={() => setSelectedId(s.id)} selected={s.id === selectedId}>
-                      {idx === 0 && (
-                        <>
-                          <TableCell rowSpan={group.length} className="align-top">
-                            {format(new Date(s.sale_date), 'd MMM yyyy', { locale: trLocale })}
-                          </TableCell>
-                          <TableCell rowSpan={group.length} className="align-top">
-                            {s.type === 'sale' ? (
-                              <Badge variant="secondary">Satış</Badge>
-                            ) : (
-                              <Badge variant="outline" className="border-destructive/30 text-destructive">
-                                İade
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell rowSpan={group.length} className="font-medium align-top">
-                            {s.customers?.full_name ?? '—'}
-                          </TableCell>
-                        </>
+            <div className="divide-y">
+              {groupSalesByDoctorDate(sales).map((group) => {
+                const first = group[0]
+                return (
+                  <div key={`${first.customer_id}-${first.sale_date}-${first.type}`} className="p-3">
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">
+                        {format(new Date(first.sale_date), 'd MMM yyyy', { locale: trLocale })}
+                      </span>
+                      {first.type === 'sale' ? (
+                        <Badge variant="secondary">Satış</Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-destructive/30 text-destructive">
+                          İade
+                        </Badge>
                       )}
-                      <TableCell>{s.product_name}</TableCell>
-                      <TableCell>{s.quantity}</TableCell>
-                      <TableCell>{currency(Number(s.unit_price))}</TableCell>
-                      <TableCell className="font-medium">{currency(s.quantity * Number(s.unit_price))}</TableCell>
-                      {idx === 0 && (
-                        <TableCell rowSpan={group.length} className="align-top">
-                          {s.sales_reps?.name ?? '—'}
-                        </TableCell>
+                      <span className="font-medium">{first.customers?.full_name ?? '—'}</span>
+                      {first.sales_reps?.name && (
+                        <span className="text-muted-foreground">· {first.sales_reps.name}</span>
                       )}
-                      <TableCell>
-                        <div className="flex justify-end gap-1">
-                          <SaleForm sale={s} />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDelete(s)
-                            }}
-                          >
-                            <Trash2 className="size-4 text-destructive" />
-                          </Button>
+                    </div>
+                    <div className="grid gap-1">
+                      {group.map((s) => (
+                        <div
+                          key={s.id}
+                          onClick={() => setSelectedId(s.id)}
+                          className={cn(
+                            'flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2 text-sm',
+                            s.id === selectedId ? 'bg-primary/10' : 'bg-muted/40',
+                          )}
+                        >
+                          <div className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-1">
+                            <span className="min-w-32 flex-1">{s.product_name}</span>
+                            <span className="text-muted-foreground w-20 text-right">{s.quantity} adet</span>
+                            <span className="text-muted-foreground w-24 text-right">
+                              {currency(Number(s.unit_price))}
+                            </span>
+                            <span className="w-28 text-right font-medium">
+                              {currency(s.quantity * Number(s.unit_price))}
+                            </span>
+                          </div>
+                          <div className="flex gap-1">
+                            <SaleForm sale={s} />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDelete(s)
+                              }}
+                            >
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  )),
-                )}
-              </TableBody>
-            </Table>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
         </CardContent>
       </Card>

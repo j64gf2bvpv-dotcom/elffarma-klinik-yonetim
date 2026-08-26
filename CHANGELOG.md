@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.206] - 2026-08-26
+
+**Satışlar listesindeki gruplama hizalama hatası düzeltildi:** Aynı doktora ait ürünleri tek grupta göstermek için kullanılan tablo hücre birleştirme (rowSpan) yöntemi kenarlıklarla çakışıp satırların sağa kaymasına yol açıyordu. Tablo yerine her doktor için bir kart, altında ürünlerin düzenli alt alta sıralandığı bir görünüme geçildi.
+
 ## [2.17.205] - 2026-08-26
 
 **"Ürün Ekle" ile ikinci bir ürün eklemek ilk seçilen ürünü sıfırlamıyor artık:** Yeni Satış/İade formunda (ve doktor kaydı sırasında ürün eklerken) ikinci bir ürün satırı ekleyince ilk satırdaki seçim "Ürün seçin"e dönüp kayboluyordu — react-hook-form'un satır dizisi (field array) senkron tuzağıydı, satır güncellemesi artık dizinin kendi yöntemiyle yapılıyor.
