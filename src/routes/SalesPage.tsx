@@ -47,6 +47,27 @@ function filterSalesByDate<T extends { sale_date: string }>(sales: T[], from: st
 }
 
 /**
+ * Aynı doktora aynı tarihte (aynı tür — satış/iade) eklenen birden fazla ürün
+ * artık listede ayrı ayrı doktor adı tekrar eden satırlar yerine TEK grup
+ * altında toplanıyor (kullanıcı isteği, 2026-08-26: "ürünleri adetleri tek
+ * kişiye eklemeliyim... tek yazmalı"). Sıra, gelen listenin (sale_date desc)
+ * sırasını korur — bir grubun ilk göründüğü noktaya yerleşir.
+ */
+function groupSalesByDoctorDate(sales: SaleWithRelations[]): SaleWithRelations[][] {
+  const map = new Map<string, SaleWithRelations[]>()
+  const order: string[] = []
+  for (const s of sales) {
+    const key = `${s.customer_id}|${s.sale_date}|${s.type}`
+    if (!map.has(key)) {
+      map.set(key, [])
+      order.push(key)
+    }
+    map.get(key)!.push(s)
+  }
+  return order.map((key) => map.get(key)!)
+}
+
+/**
  * "Tümünü Sil" (kullanıcı isteği, 2026-08-25) — Stok'taki "Tüm Ürünleri
  * Sıfırla" ile aynı sade Onayla/Vazgeç deseni (useConfirmDialog), gerekçe
  * metni istemez, RPC'ye sabit bir metin otomatik gönderilir.
@@ -174,41 +195,55 @@ function SalesTab({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sales.map((s) => (
-                  <TableRow key={s.id} onClick={() => setSelectedId(s.id)} selected={s.id === selectedId}>
-                    <TableCell>{format(new Date(s.sale_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
-                    <TableCell>
-                      {s.type === 'sale' ? (
-                        <Badge variant="secondary">Satış</Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-destructive/30 text-destructive">
-                          İade
-                        </Badge>
+                {groupSalesByDoctorDate(sales).flatMap((group) =>
+                  group.map((s, idx) => (
+                    <TableRow key={s.id} onClick={() => setSelectedId(s.id)} selected={s.id === selectedId}>
+                      {idx === 0 && (
+                        <>
+                          <TableCell rowSpan={group.length} className="align-top">
+                            {format(new Date(s.sale_date), 'd MMM yyyy', { locale: trLocale })}
+                          </TableCell>
+                          <TableCell rowSpan={group.length} className="align-top">
+                            {s.type === 'sale' ? (
+                              <Badge variant="secondary">Satış</Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-destructive/30 text-destructive">
+                                İade
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell rowSpan={group.length} className="font-medium align-top">
+                            {s.customers?.full_name ?? '—'}
+                          </TableCell>
+                        </>
                       )}
-                    </TableCell>
-                    <TableCell className="font-medium">{s.customers?.full_name ?? '—'}</TableCell>
-                    <TableCell>{s.product_name}</TableCell>
-                    <TableCell>{s.quantity}</TableCell>
-                    <TableCell>{currency(Number(s.unit_price))}</TableCell>
-                    <TableCell className="font-medium">{currency(s.quantity * Number(s.unit_price))}</TableCell>
-                    <TableCell>{s.sales_reps?.name ?? '—'}</TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <SaleForm sale={s} />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDelete(s)
-                          }}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      <TableCell>{s.product_name}</TableCell>
+                      <TableCell>{s.quantity}</TableCell>
+                      <TableCell>{currency(Number(s.unit_price))}</TableCell>
+                      <TableCell className="font-medium">{currency(s.quantity * Number(s.unit_price))}</TableCell>
+                      {idx === 0 && (
+                        <TableCell rowSpan={group.length} className="align-top">
+                          {s.sales_reps?.name ?? '—'}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <div className="flex justify-end gap-1">
+                          <SaleForm sale={s} />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDelete(s)
+                            }}
+                          >
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )),
+                )}
               </TableBody>
             </Table>
           )}
