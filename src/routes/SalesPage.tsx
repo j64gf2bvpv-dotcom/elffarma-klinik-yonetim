@@ -491,6 +491,7 @@ export function SalesPage() {
     if (summary.added > 0) {
       await queryClient.invalidateQueries({ queryKey: ['sales'] })
       await queryClient.invalidateQueries({ queryKey: ['products'] })
+      await queryClient.invalidateQueries({ queryKey: ['customers'] })
     }
     return summary
   }

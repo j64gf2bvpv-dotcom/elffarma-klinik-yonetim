@@ -47,9 +47,10 @@ export function ImportMenu({
       }
       const summary = await onImport(rows)
       const updatedText = summary.updated ? `, ${summary.updated} güncellendi` : ''
+      const createdText = summary.created ? `, ${summary.created} yeni doktor/ürün oluşturuldu` : ''
       if (summary.added > 0 || summary.updated) {
         toast.success(
-          `${summary.added} kayıt eklendi${updatedText}${summary.skipped > 0 ? `, ${summary.skipped} kayıt zaten vardı (atlandı)` : ''}`,
+          `${summary.added} kayıt eklendi${updatedText}${createdText}${summary.skipped > 0 ? `, ${summary.skipped} kayıt zaten vardı (atlandı)` : ''}`,
         )
       } else if (summary.skipped > 0) {
         toast.info(`Yeni kayıt eklenmedi — ${summary.skipped} kayıt zaten mevcuttu`)

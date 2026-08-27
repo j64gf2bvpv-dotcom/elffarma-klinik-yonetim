@@ -1,6 +1,8 @@
 import { format } from 'date-fns'
 
 import { createSale, type SaleWithRelations } from './api'
+import { createCustomer } from '@/features/customers/api'
+import { createProduct } from '@/features/stock/api'
 import { readCell, parseFlexibleDate, type ImportSummary } from '@/lib/importData'
 import type { Customer, Product, SalesRep, SaleType } from '@/types/database'
 
@@ -41,12 +43,17 @@ export const SALE_IMPORT_FIELD_HINTS: Record<string, string> = {
  *
  * Kasıtlı olarak HİÇBİR satır hata olarak raporlanmaz (kullanıcı isteği,
  * 2026-08-27: "hiçbir hata vermesin eksik olsa bile yüklesin") — eksik hücre,
- * eşleşmeyen doktor/ürün adı, geçersiz tarih/adet veya kayıt sırasında çıkan
- * bir hata, o satırı sessizce atlar; geri kalan doğru satırlar yine de
- * eklenir. Sahte/eksik bir doktor ya da ürün kaydı OLUŞTURULMAZ — bir satışın
- * gerçek bir doktora ve ürüne bağlanması zorunlu, o yüzden eşleşmeyen satır
- * atlanmak zorunda; sadece bunun kullanıcıya bir hata penceresi olarak
- * gösterilmesi kaldırıldı.
+ * geçersiz tarih/adet veya kayıt sırasında çıkan bir hata, o satırı sessizce
+ * atlar; geri kalan doğru satırlar yine de eklenir. Dosyadaki bir doktor/ürün
+ * adı sistemde YOKSA (birebir eşleşme sıfır sonuç), yine kullanıcı isteği ile
+ * (2026-08-27: "sistemde yoksa otomatik olarak yeni kayıt olarak eklensin")
+ * minimal bir yeni doktor/ürün kaydı otomatik oluşturulup satış ona bağlanır
+ * — sadece isim/ürün adı bilinir, diğer alanlar (telefon, kategori vb.) boş/
+ * varsayılan kalır, sonradan ilgili sayfadan tamamlanabilir. Aynı isim aynı
+ * dosya içinde birden fazla satırda geçiyorsa sadece İLK seferinde oluşturulur
+ * (localDoctors/localProducts önbelleği). Ad AYNI ANDA BİRDEN FAZLA kayıtla
+ * eşleşiyorsa (belirsiz) oluşturma yapılmaz, satır atlanır — hangisinin
+ * kastedildiği tahmin edilmez.
  */
 export async function importSaleRows(
   rows: Record<string, unknown>[],
@@ -61,7 +68,9 @@ export async function importSaleRows(
         `${s.type}|${s.customer_id}|${s.product_id}|${s.sale_date}|${s.quantity}|${Number(s.unit_price)}`,
     ),
   )
-  const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
+  const summary: ImportSummary = { added: 0, skipped: 0, errors: [], created: 0 }
+  const localDoctors = [...doctors]
+  const localProducts = [...products]
 
   for (const row of rows) {
     const doctorName = readCell(row, 'Doktor', 'Ad Soyad')
@@ -70,15 +79,45 @@ export async function importSaleRows(
     const dateText = readCell(row, 'Tarih')
     if (!doctorName || !productName || !quantityText || !dateText) continue
 
-    const doctorMatches = doctors.filter(
+    let doctorMatches = localDoctors.filter(
       (d) => d.full_name.toLocaleLowerCase('tr') === doctorName.toLocaleLowerCase('tr'),
     )
+    if (doctorMatches.length === 0) {
+      try {
+        const created = await createCustomer({
+          full_name: doctorName,
+          phone: '',
+          doctor_type: 'sahis',
+          tags: [],
+          is_invoiced: false,
+        })
+        localDoctors.push(created)
+        doctorMatches = [created]
+        summary.created = (summary.created ?? 0) + 1
+      } catch {
+        continue
+      }
+    }
     if (doctorMatches.length !== 1) continue
     const doctor = doctorMatches[0]
 
-    const productMatches = products.filter(
+    let productMatches = localProducts.filter(
       (p) => p.name.toLocaleLowerCase('tr') === productName.toLocaleLowerCase('tr'),
     )
+    if (productMatches.length === 0) {
+      try {
+        const created = await createProduct({
+          name: productName,
+          unit: 'Paket',
+          critical_stock_threshold: 5,
+        })
+        localProducts.push(created)
+        productMatches = [created]
+        summary.created = (summary.created ?? 0) + 1
+      } catch {
+        continue
+      }
+    }
     if (productMatches.length !== 1) continue
     const product = productMatches[0]
 

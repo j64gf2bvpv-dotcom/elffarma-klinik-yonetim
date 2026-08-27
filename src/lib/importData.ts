@@ -145,6 +145,10 @@ export interface ImportSummary {
    * stok miktarını dosyadaki değere eşitleme) — bunu desteklemeyenlerde
    * undefined kalır. */
   updated?: number
+  /** Dosyada adı geçen ama sistemde hiç bulunamadığı için otomatik minimal
+   * bir kayıt olarak (ör. yeni doktor/ürün) oluşturulan ilişkili kayıt
+   * sayısı — hata değil, bilgi amaçlı; desteklemeyen import'larda undefined. */
+  created?: number
 }
 
 /**
