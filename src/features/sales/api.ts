@@ -13,6 +13,7 @@ export interface SaleInput {
   unit_price: number
   sale_date: string
   note?: string | null
+  congress_name?: string | null
   /** Uygulanacak stok hareketinin denetim kaydındaki notu — verilmezse product_name kullanılır. */
   movement_note?: string
 }

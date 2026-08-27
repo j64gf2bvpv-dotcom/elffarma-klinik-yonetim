@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.218] - 2026-08-27
+
+**Satışlara "Kongre / Workshop" alanı eklendi:** Yeni Satış/İade formunda, doktor seçiminin hemen altında opsiyonel bir "Kongre / Workshop" metin kutusu var — satışın hangi kongre/workshop'ta yapıldığını serbest metin olarak not düşebilirsiniz. Girilirse Satışlar listesinde doktor adının yanında rozet olarak görünür. Kongreler modülündeki resmî kayıtlara bağlı değil, tamamen serbest metin. Şema değişikliği: `sales.congress_name` (nullable).
+
 ## [2.17.217] - 2026-08-27
 
 **Satış içe aktarmada otomatik doktor/ürün oluşturma kaldırıldı:** Dün eklenen bu özellik, test verileriyle Stok'un "Diğer" bölümünde ve Cari Kart'ta istenmeyen kopya kayıtlara yol açtı ("program kafasına göre ürün ekleyip silmemeli"). Artık dosyada sistemde bulunmayan bir doktor/ürün adı geçen satır yine sessizce atlanıyor ama kendiliğinden yeni kayıt açılmıyor — eşleşmeyen bir doktoru/ürünü içe aktarmak için önce ilgili sayfadan gerçek adıyla elle eklemek gerekiyor. Şema değişikliği yok.

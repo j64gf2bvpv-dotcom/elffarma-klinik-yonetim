@@ -577,6 +577,8 @@ export interface Sale {
   unit_price: number
   sale_date: string
   note: string | null
+  /** Bu satışın hangi kongre/workshop'ta yapıldığına dair serbest metin — Kongreler modülüne bağlı bir foreign key değil. */
+  congress_name: string | null
   status: SaleStatus
   created_by: string | null
   created_at: string

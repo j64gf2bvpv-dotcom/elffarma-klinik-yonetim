@@ -50,6 +50,7 @@ const schema = z.object({
     .min(1),
   sale_date: z.string().min(1),
   note: z.string().optional(),
+  congress_name: z.string().optional(),
 })
 
 type FormInput = z.input<typeof schema>
@@ -73,6 +74,7 @@ function defaultValues(defaultSalesRepId: string | undefined, sale?: SaleWithRel
       ],
       sale_date: sale.sale_date,
       note: sale.note ?? '',
+      congress_name: sale.congress_name ?? '',
     }
   }
   return {
@@ -82,6 +84,7 @@ function defaultValues(defaultSalesRepId: string | undefined, sale?: SaleWithRel
     products: [{ ...emptyProductRow }],
     sale_date: todayDate(),
     note: '',
+    congress_name: '',
   }
 }
 
@@ -168,6 +171,7 @@ export function SaleForm({ defaultSalesRepId, sale }: { defaultSalesRepId?: stri
         unit_price: product.unit_price,
         sale_date: values.sale_date,
         note: values.note || null,
+        congress_name: values.congress_name || null,
         movement_note: movementNote,
       })
     }
@@ -226,6 +230,19 @@ export function SaleForm({ defaultSalesRepId, sale }: { defaultSalesRepId?: stri
                   <FormLabel>{saleType === 'return' ? 'İadeyi Yapan Doktor' : 'Doktor'}</FormLabel>
                   <FormControl>
                     <CustomerCombobox value={field.value} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="congress_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Kongre / Workshop (opsiyonel)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="ör. İstanbul Work Shop" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
