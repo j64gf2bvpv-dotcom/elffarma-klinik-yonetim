@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.227] - 2026-08-27
+
+**Satışlar listesinde kongre/workshop etiketi artık daha belirgin:** Doktor satırındaki kongre adı rozeti önceden küçük, soluk ve normal punto (outline, muted) idi — kullanıcı isteğiyle sarı/turuncu (warning), büyük ve kalın punto yapıldı. Şema değişikliği yok.
+
 ## [2.17.226] - 2026-08-27
 
 **"Tüm Ürünler" görünümündeki "Tüm Hareketleri Sil" (tüm ürünler kapsamında) artık gerçekten çalışıyor:** `delete_all_stock_movements_bulk`, tüm ürünler seçiliyken (filtre boş) attığı WHERE'siz `DELETE`/`UPDATE` Supabase'in güvenlik kuralına takılıp "DELETE requires a WHERE clause" hatasıyla başarısız oluyordu — Satışlar'daki "Tümünü Sil" ile aynı sorun, aynı `WHERE true` düzeltmesi uygulandı. Belirli ürünler seçiliyken zaten çalışıyordu, etkilenmedi.

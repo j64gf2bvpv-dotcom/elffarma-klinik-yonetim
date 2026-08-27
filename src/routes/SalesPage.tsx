@@ -198,7 +198,7 @@ function SalesTab({
                       )}
                       <span className="font-medium">{first.customers?.full_name ?? '—'}</span>
                       {first.congress_name && (
-                        <Badge variant="outline" className="text-muted-foreground font-normal">
+                        <Badge variant="warning" className="text-sm font-bold">
                           {first.congress_name}
                         </Badge>
                       )}
