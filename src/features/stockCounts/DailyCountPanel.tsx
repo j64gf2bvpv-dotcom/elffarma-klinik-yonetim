@@ -8,8 +8,6 @@ import {
   CheckCircle2,
   Loader2,
   Undo2,
-  ShoppingCart,
-  UserRound,
   ImageDown,
   AlertTriangle,
   Trash2,
@@ -24,12 +22,12 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ExportMenu } from '@/components/ExportMenu'
-import { useSales, useUpdateSaleRep, useDeleteSale } from '@/features/sales/hooks'
-import { deleteSale } from '@/features/sales/api'
+import { ImportMenu } from '@/components/ImportMenu'
 import { SaleForm } from '@/features/sales/SaleForm'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
-import { useSalesReps } from '@/features/salesReps/hooks'
+import { ResetAllStockDialog } from '@/features/stock/ResetAllStockDialog'
+import { useProducts } from '@/features/stock/hooks'
+import { importProductRows, PRODUCT_IMPORT_HEADERS, PRODUCT_IMPORT_SAMPLE_ROWS } from '@/features/stock/importProducts'
 import {
   useAddCountItem,
   useCompleteCount,
@@ -48,17 +46,9 @@ import {
 } from './hooks'
 import { exportDailySummaryImage } from './exportSummaryImage'
 import { todayDate, type StockCountItemWithProduct } from './api'
-import type { SaleWithRelations } from '@/features/sales/api'
 import type { StockCount } from '@/types/database'
-import { cn, getErrorMessage } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
-
-const NO_REP = '__none__'
-
-/** "Son Günlerin Stoğu" tablosunda her gün ayrı bir renkle yazılsın diye
- * (kullanıcı isteği, 2026-08-22) — tema CSS değişkenlerine bağlı, karanlık
- * modda da okunaklı 3 semantik renk (marka/başarı/uyarı). */
-const DAY_COLOR_CLASSES = ['text-primary', 'text-success', 'text-warning']
 
 /** "Sistemdeki Miktar" / "Son Sayım" / "O Günkü Stok" gibi taban hücreleri için —
  * paket ve flakon ikisi de 0 ise "—"; sadece biri 0 olan tarafta o taraf hiç
@@ -85,197 +75,6 @@ function finalStockLabel(paket: number, flakon: number): string {
  * eklemeden yaz" kuralı (kullanıcı isteği, 2026-08-22). */
 function resolveCounted(baseline: number, counted: number | null): number {
   return counted ?? baseline
-}
-
-/**
- * Günün Satış/İade Hareketleri panelindeki tek bir satır — satış temsilcisini
- * (iadeyi alan / teslim eden) yerinde değiştirmeyi ve kaydı iptal etmeyi
- * (stok etkisini tersine çevirip kaydı silmeyi, bkz. SalesPage.tsx'teki aynı
- * desen) destekler.
- */
-function SalesActivityRow({ sale, repRoleLabel }: { sale: SaleWithRelations; repRoleLabel: string }) {
-  const { data: salesReps = [] } = useSalesReps()
-  const updateRepMutation = useUpdateSaleRep()
-  const deleteMutation = useDeleteSale()
-  const { confirm, dialog } = useConfirmDialog()
-
-  // Stok etkisi delete_sale RPC'si tarafında tersine çevriliyor (bkz.
-  // SalesPage.tsx'teki aynı desen) — burada ayrıca çağırmaya gerek yok.
-  async function handleCancel() {
-    if (
-      !(await confirm(
-        `${sale.product_name} (${sale.quantity} adet) ${sale.type === 'sale' ? 'satış' : 'iade'} kaydı iptal edilsin mi? Stok buna göre düzeltilecek.`,
-      ))
-    )
-      return
-    deleteMutation.mutate(sale.id)
-  }
-
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2.5 text-sm">
-      <div className="min-w-0">
-        <span className="font-medium">{sale.customers?.full_name ?? '—'}</span>
-        <span className="text-muted-foreground">
-          {' '}
-          — {sale.product_name} × {sale.quantity}
-        </span>
-      </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        <span className="text-xs text-muted-foreground">{repRoleLabel}:</span>
-        <Select
-          value={sale.sales_rep_id ?? NO_REP}
-          onValueChange={(value) => updateRepMutation.mutate({ id: sale.id, salesRepId: value === NO_REP ? null : value })}
-        >
-          <SelectTrigger className="h-7 w-36 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NO_REP}>Belirtilmedi</SelectItem>
-            {salesReps
-              .filter((r) => r.is_active)
-              .map((rep) => (
-                <SelectItem key={rep.id} value={rep.id}>
-                  {rep.name}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-        <SaleForm sale={sale} />
-        <Button variant="ghost" size="icon" className="size-7" onClick={handleCancel} title="İptal Et">
-          <Trash2 className="size-3.5 text-destructive" />
-        </Button>
-      </div>
-      {dialog}
-    </div>
-  )
-}
-
-function TodaySalesActivity({ countDate }: { countDate: string }) {
-  const { data: sales = [] } = useSales()
-  const todaySales = sales.filter((s) => s.sale_date === countDate)
-  const queryClient = useQueryClient()
-  const [deletingAll, setDeletingAll] = React.useState(false)
-  const { confirm: confirmDeleteAll, dialog: deleteAllDialog } = useConfirmDialog()
-
-  const returns = todaySales.filter((s) => s.type === 'return')
-  const outgoing = todaySales.filter((s) => s.type === 'sale')
-
-  const byRep = React.useMemo(() => {
-    const map = new Map<string, { name: string; sale: number; returnQty: number }>()
-    for (const s of todaySales) {
-      const name = s.sales_reps?.name ?? 'Belirtilmemiş'
-      const entry = map.get(name) ?? { name, sale: 0, returnQty: 0 }
-      if (s.type === 'sale') entry.sale += s.quantity
-      else entry.returnQty += s.quantity
-      map.set(name, entry)
-    }
-    return Array.from(map.values()).sort((a, b) => b.sale + b.returnQty - (a.sale + a.returnQty))
-  }, [todaySales])
-
-  // Bugüne ait TÜM satış/iade kayıtlarını tek seferde temizler (kullanıcı
-  // isteği, 2026-08-27) — her kayıt kendi delete_sale RPC'siyle (stok etkisi
-  // tersine çevrilerek) tek tek silinir; useDeleteSale hook'unu değil doğrudan
-  // api fonksiyonunu kullanıyoruz ki her satır için ayrı "Silindi" toast'ı
-  // yığılmasın, sonunda tek bir özet toast'ı gösterilsin.
-  async function handleDeleteAll() {
-    if (
-      !(await confirmDeleteAll(
-        `Bugüne (${countDate}) ait ${todaySales.length} satış/iade kaydının TÜMÜ silinsin mi? Her kayıt için stok ayrı ayrı geri düzeltilecek.`,
-        { title: 'Tümünü Sil', confirmLabel: 'Tümünü Sil', variant: 'destructive' },
-      ))
-    )
-      return
-    setDeletingAll(true)
-    try {
-      for (const s of todaySales) {
-        await deleteSale(s.id)
-      }
-      await queryClient.invalidateQueries({ queryKey: ['sales'] })
-      await queryClient.invalidateQueries({ queryKey: ['products'] })
-      toast.success(`${todaySales.length} kayıt silindi`)
-    } catch (error) {
-      toast.error('Bazı kayıtlar silinemedi', { description: getErrorMessage(error) })
-    } finally {
-      setDeletingAll(false)
-    }
-  }
-
-  if (todaySales.length === 0) {
-    return (
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle className="text-base">Günün Satış / İade Hareketleri</CardTitle>
-          <SaleForm />
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">Bugün için kayıtlı satış veya iade yok.</p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="text-base">Günün Satış / İade Hareketleri</CardTitle>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleDeleteAll} disabled={deletingAll}>
-            {deletingAll ? <Loader2 className="animate-spin" /> : <Trash2 className="text-destructive" />}
-            Tümünü Sil
-          </Button>
-          <SaleForm />
-          {deleteAllDialog}
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-4">
-        <div>
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase">
-            <Undo2 className="size-3.5" /> İade Gelenler (Doktora Göre)
-          </p>
-          <div className="grid gap-2">
-            {returns.length === 0 && <p className="text-muted-foreground text-sm">Bugün iade yok</p>}
-            {returns.map((s) => (
-              <SalesActivityRow key={s.id} sale={s} repRoleLabel="Alan" />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase">
-            <ShoppingCart className="size-3.5" /> Doktorlara Çıkanlar
-          </p>
-          <div className="grid gap-2">
-            {outgoing.length === 0 && <p className="text-muted-foreground text-sm">Bugün çıkan ürün yok</p>}
-            {outgoing.map((s) => (
-              <SalesActivityRow key={s.id} sale={s} repRoleLabel="Teslim eden" />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase">
-            <UserRound className="size-3.5" /> Satış Temsilcisi Bazında
-          </p>
-          <div className="grid gap-2">
-            {byRep.length === 0 && <p className="text-muted-foreground text-sm">Bugün hareket yok</p>}
-            {byRep.map((r) => (
-              <div key={r.name} className="flex items-center justify-between rounded-md border p-2.5 text-sm">
-                <span className="font-medium">{r.name}</span>
-                <span className="flex gap-2">
-                  {r.sale > 0 && <Badge variant="secondary">Sattığı: {r.sale}</Badge>}
-                  {r.returnQty > 0 && (
-                    <Badge variant="outline" className="border-destructive/30 text-destructive">
-                      Aldığı iade: {r.returnQty}
-                    </Badge>
-                  )}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
 }
 
 /**
@@ -450,97 +249,6 @@ function CountItemRow({
       )}
       {lowCountDialog}
     </TableRow>
-  )
-}
-
-/**
- * Son 3 tamamlanmış sayımın Son Stok değerini ürün başına yan yana (tarih
- * tarih) gösteren salt-okunur karşılaştırma tablosu — kullanıcı isteğiyle
- * (2026-08-21), bugünkü sayımı girerken son günlerin stoğuna bakıp ona göre
- * ekleme/çıkarma kararı verebilsin diye. PastCountRow ile aynı sebepten
- * (bkz. yukarıdaki yorum) CANLI ürün stoğu değil, o günün kendi
- * expected_quantity anlık görüntüsü kullanılıyor — geçmiş bir günün "o gün
- * son stok neydi" sorusunun cevabı aradan geçen zamanla değişmemeli.
- */
-function RecentStockComparison({ recentCounts }: { recentCounts: StockCount[] }) {
-  const c0 = recentCounts[0]
-  const c1 = recentCounts[1]
-  const c2 = recentCounts[2]
-  const { data: items0 = [] } = useCountItems(c0?.id)
-  const { data: items1 = [] } = useCountItems(c1?.id)
-  const { data: items2 = [] } = useCountItems(c2?.id)
-
-  if (recentCounts.length === 0) return null
-
-  const dayItems = [items0, items1, items2]
-  const productRows = new Map<
-    string,
-    { productId: string; name: string; days: (StockCountItemWithProduct | undefined)[] }
-  >()
-  recentCounts.forEach((_, dayIndex) => {
-    for (const item of dayItems[dayIndex]) {
-      if (!productRows.has(item.product_id)) {
-        productRows.set(item.product_id, {
-          productId: item.product_id,
-          name: item.products.name,
-          days: [undefined, undefined, undefined],
-        })
-      }
-      productRows.get(item.product_id)!.days[dayIndex] = item
-    }
-  })
-  // Aynı isimli iki farklı ürün olabildiği için (ör. "MIXO LIGHT") anahtar
-  // isim değil product_id — aksi halde React "duplicate key" uyarısı verip
-  // satırları çoğaltıyor/atlıyordu (fark edildi, 2026-08-22).
-  const sortedRows = Array.from(productRows.values()).sort((a, b) => a.name.localeCompare(b.name, 'tr'))
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm text-muted-foreground">Son Günlerin Stoğu</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ürün</TableHead>
-              {recentCounts.map((c, i) => (
-                <TableHead
-                  key={c.id}
-                  className={cn('border-l font-bold', DAY_COLOR_CLASSES[i % DAY_COLOR_CLASSES.length])}
-                >
-                  {format(new Date(c.count_date), 'd MMM yyyy', { locale: trLocale })}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedRows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={recentCounts.length + 1} className="text-muted-foreground py-6 text-center">
-                  Henüz geçmiş sayım verisi yok
-                </TableCell>
-              </TableRow>
-            )}
-            {sortedRows.map((row) => (
-              <TableRow key={row.productId}>
-                <TableCell className="font-medium">{row.name}</TableCell>
-                {row.days.slice(0, recentCounts.length).map((item, i) => (
-                  <TableCell key={i} className={cn('border-l font-medium', DAY_COLOR_CLASSES[i % DAY_COLOR_CLASSES.length])}>
-                    {item
-                      ? finalStockLabel(
-                          resolveCounted(item.expected_quantity, item.counted_quantity),
-                          resolveCounted(item.expected_quantity_flakon, item.counted_quantity_flakon),
-                        )
-                      : '—'}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
   )
 }
 
@@ -809,7 +517,22 @@ export function DailyCountPanel() {
   const completeMutation = useCompleteCount()
   const reopenMutation = useReopenCount()
   const undoMutation = useUndoCompleteCount()
+  const { data: allProductsForImport = [] } = useProducts('')
+  const queryClient = useQueryClient()
   const [selectedItemId, setSelectedItemId] = React.useState<string | null>(null)
+
+  const resetAffectedCount = allProductsForImport.filter((p) => p.current_quantity > 0 || p.flakon_quantity > 0).length
+
+  /**
+   * Ürün kataloğu içe aktarma — önceden Stok sayfasının en üstündeki genel
+   * başlıkta duruyordu; kullanıcı isteğiyle (2026-08-28) oradan kaldırılıp
+   * Günlük Özet'e taşındı. Mantık StockPage.tsx'teki eskisiyle birebir aynı.
+   */
+  async function handleImport(rows: Record<string, unknown>[]) {
+    const summary = await importProductRows(rows, allProductsForImport)
+    if (summary.added > 0 || (summary.updated ?? 0) > 0) await queryClient.invalidateQueries({ queryKey: ['products'] })
+    return summary
+  }
 
   // İleri/geri okları SADECE gerçekten var olan sayımlar arasında gezdirir
   // (kullanıcı isteği, 2026-08-28: "sayım günün yanına ileri geri tuşları
@@ -918,13 +641,8 @@ export function DailyCountPanel() {
   }
 
   const isCompleted = activeCount.status === 'completed'
-  const otherPastCounts = pastCounts.filter((c) => c.id !== activeCount.id)
-  // Sadece TAMAMLANMIŞ sayımlar — açık (yarım kalmış) bir sayımın kısmi/boş
-  // verisi "o günün son stoğu" gibi gösterilirse ekleme/çıkarma kararını
-  // yanlış yönlendirir.
-  const recentCounts = otherPastCounts.filter((c) => c.status === 'completed').slice(0, 3)
 
-  const countDateLabel = format(new Date(activeCount.count_date), 'd MMMM yyyy', { locale: trLocale })
+  const countDateLabel = format(new Date(activeCount.count_date), 'dd.MM.yyyy EEEE', { locale: trLocale })
 
   // "Değişecek" — bugün girilen sayı taban (önceki sayım) ile FARKLIYSA
   // sayılıyor; aynıysa (kullanıcı isteğiyle) hiçbir hareket kaydedilmeyeceği
@@ -977,24 +695,20 @@ export function DailyCountPanel() {
   // Stok" başlığı AYNI metni göstermeli (kullanıcı isteği, 2026-08-28) —
   // tek yerden üretilip ikisinde de kullanılıyor.
   const activeDateLabel =
-    format(new Date(activeCount.count_date), 'dd.MM.yyyy', { locale: trLocale }).toLocaleUpperCase('tr-TR') +
-    (activeCount.count_date === todayDate() ? ' - GÜNCEL SAYIM' : ' SAYIM')
+    format(new Date(activeCount.count_date), 'dd.MM.yyyy', { locale: trLocale }) +
+    (activeCount.count_date === todayDate() ? ' - GÜNCEL SAYIM' : '')
 
   return (
     <div className="grid gap-4">
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">Günlük Özet</CardTitle>
-          <div className="flex items-center gap-2">
-            <ExportMenu<{ metrik: string; deger: string | number }>
-              title={`${countDateLabel} — Günlük Özet`}
-              filename={`gunluk-ozet-${activeCount.count_date}`}
-              triggerLabel="Özeti Dışa Aktar"
-              rows={summaryRows}
-              columns={[
-                { header: 'Ürün', value: (r) => r.metrik },
-                { header: 'Son Stok', value: (r) => r.deger },
-              ]}
+          <div className="flex flex-wrap items-center gap-2">
+            <ImportMenu
+              onImport={handleImport}
+              templateFilename="stok-sablon"
+              templateHeaders={PRODUCT_IMPORT_HEADERS}
+              templateSampleRows={PRODUCT_IMPORT_SAMPLE_ROWS}
             />
             <Button
               type="button"
@@ -1007,8 +721,10 @@ export function DailyCountPanel() {
                 )
               }
             >
-              <ImageDown /> Görsel (PNG)
+              <ImageDown /> PNG Olarak Dışa Aktar
             </Button>
+            <ResetAllStockDialog affectedCount={resetAffectedCount} />
+            <SaleForm />
           </div>
         </CardHeader>
       </Card>
@@ -1181,10 +897,6 @@ export function DailyCountPanel() {
           )}
         </CardContent>
       </Card>
-
-      <RecentStockComparison recentCounts={recentCounts} />
-
-      <TodaySalesActivity countDate={activeCount.count_date} />
 
       {pastCounts.length > 1 && (
         <Card>

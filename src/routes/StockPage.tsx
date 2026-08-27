@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import {
   Search,
   AlertTriangle,
@@ -51,24 +50,12 @@ import {
 } from '@/features/stock/hooks'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
-import { ResetAllStockDialog } from '@/features/stock/ResetAllStockDialog'
 import { CargoPanel } from '@/features/cargo/CargoPanel'
 import { CongressShipmentsPanel } from '@/features/congressShipments/CongressShipmentsPanel'
 import { SafeThumbnail } from '@/components/SafeThumbnail'
 import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
 import { useAuth } from '@/lib/auth'
-import { ExportMenu } from '@/components/ExportMenu'
-import { ImportMenu } from '@/components/ImportMenu'
-import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
-import { DailyMovementImportButton } from '@/features/stock/DailyMovementImportButton'
-import {
-  importProductRows,
-  PRODUCT_IMPORT_HEADERS,
-  PRODUCT_IMPORT_SAMPLE_ROWS,
-  PRODUCT_IMPORT_FIELD_HINTS,
-} from '@/features/stock/importProducts'
-import type { ImportSummary } from '@/lib/importData'
 import type { BrandLine, Product, ProductCatalog } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
@@ -927,7 +914,6 @@ export function StockPage() {
   const otherCatalogs = React.useMemo(() => catalogs.filter((c) => c.name !== 'dermakor' && c.name !== 'swiss'), [catalogs])
   const deactivateMutation = useDeactivateProduct()
   const reorderMutation = useReorderProducts()
-  const queryClient = useQueryClient()
   const { confirm, dialog } = useConfirmDialog()
 
   // Ekranda o an görünen ürün satırlarının GERÇEK dikey sırası — ALL_BRANDS
@@ -1021,63 +1007,9 @@ export function StockPage() {
     setCheckedIds(new Set())
   }
 
-  const resetAffectedCount = allProducts.filter((p) => p.current_quantity > 0 || p.flakon_quantity > 0).length
-
-  async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
-    const summary = await importProductRows(rows, allProducts)
-    if (summary.added > 0 || (summary.updated ?? 0) > 0) await queryClient.invalidateQueries({ queryKey: ['products'] })
-    return summary
-  }
-
   return (
     <div>
-      <PageHeader
-        title="Stok"
-        description="Ürün kataloğunu ve stok seviyelerini yönetin"
-        actions={
-          <div className="flex gap-2">
-            <ExportMenu<Product>
-              title="Stok Listesi"
-              filename="stok"
-              rows={products}
-              columns={[
-                { header: 'Ürün', value: (p) => p.name },
-                { header: 'Kategori', value: (p) => p.category ?? '' },
-                { header: 'Paket', value: (p) => `${p.current_quantity} Paket` },
-                { header: 'Flakon', value: (p) => p.flakon_quantity },
-                {
-                  header: 'Güncel Stok Durumu',
-                  value: (p) => `${p.current_quantity} paket, ${p.flakon_quantity} flakon`,
-                },
-                { header: 'Satış Fiyatı', value: (p) => (p.unit_price ? Number(p.unit_price) : '') },
-                { header: 'Kampanya', value: (p) => p.campaign ?? '' },
-                { header: 'Barkod', value: (p) => p.barcode ?? '' },
-                { header: 'Son Kullanım Tarihi', value: (p) => p.expiry_date ?? '' },
-              ]}
-            />
-            {isAdmin && (
-              <>
-                <ImportMenu
-                  onImport={handleImport}
-                  templateFilename="stok-sablon"
-                  templateHeaders={PRODUCT_IMPORT_HEADERS}
-                  templateSampleRows={PRODUCT_IMPORT_SAMPLE_ROWS}
-                />
-                <SmartImportDialog
-                  title="Ürünleri Akıllı İçe Aktar"
-                  targetLabel="stok/ürün"
-                  fieldHeaders={PRODUCT_IMPORT_HEADERS}
-                  fieldHints={PRODUCT_IMPORT_FIELD_HINTS}
-                  onImport={handleImport}
-                />
-                <DailyMovementImportButton />
-                <ResetAllStockDialog affectedCount={resetAffectedCount} />
-                <ProductForm />
-              </>
-            )}
-          </div>
-        }
-      />
+      <PageHeader title="Stok" description="Ürün kataloğunu ve stok seviyelerini yönetin" />
 
       <Tabs defaultValue="products">
         <TabsList className="mb-4">

@@ -26,7 +26,7 @@ export function exportDailySummaryImage(
 
   ctx.fillStyle = '#ffffff'
   ctx.font = 'bold 24px "Segoe UI", sans-serif'
-  ctx.fillText(`${countDateLabel} — Günlük Özet`, 32, 46)
+  ctx.fillText(countDateLabel, 32, 46)
 
   ctx.strokeStyle = '#3a3542'
   ctx.beginPath()
@@ -89,7 +89,7 @@ export function exportDailySummaryImage(
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `gunluk-ozet-${countDateLabel}.png`
+    a.download = `gunluk-ozet-${countDateLabel.replace(/\s+/g, '-')}.png`
     a.click()
     URL.revokeObjectURL(url)
   }, 'image/png')
