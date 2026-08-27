@@ -1000,6 +1000,37 @@ export function DailyCountPanel() {
     <div className="grid gap-4">
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base">Günlük Özet</CardTitle>
+          <div className="flex items-center gap-2">
+            <ExportMenu<{ metrik: string; deger: string | number }>
+              title={`${countDateLabel} — Günlük Özet`}
+              filename={`gunluk-ozet-${activeCount.count_date}`}
+              triggerLabel="Özeti Dışa Aktar"
+              rows={summaryRows}
+              columns={[
+                { header: 'Ürün', value: (r) => r.metrik },
+                { header: 'Son Stok', value: (r) => r.deger },
+              ]}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                exportDailySummaryImage(
+                  countDateLabel,
+                  [],
+                  summaryRows.map((r) => ({ label: r.metrik, value: String(r.deger) })),
+                )
+              }
+            >
+              <ImageDown /> Görsel (PNG)
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1">
             <CardTitle className="text-base">Günlük Stok</CardTitle>
             <Button
@@ -1215,37 +1246,6 @@ export function DailyCountPanel() {
       </Card>
 
       <RecentStockComparison recentCounts={recentCounts} />
-
-      <Card>
-        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base">Günlük Özet</CardTitle>
-          <div className="flex items-center gap-2">
-            <ExportMenu<{ metrik: string; deger: string | number }>
-              title={`${countDateLabel} — Günlük Özet`}
-              filename={`gunluk-ozet-${activeCount.count_date}`}
-              triggerLabel="Özeti Dışa Aktar"
-              rows={summaryRows}
-              columns={[
-                { header: 'Ürün', value: (r) => r.metrik },
-                { header: 'Son Stok', value: (r) => r.deger },
-              ]}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                exportDailySummaryImage(
-                  countDateLabel,
-                  [],
-                  summaryRows.map((r) => ({ label: r.metrik, value: String(r.deger) })),
-                )
-              }
-            >
-              <ImageDown /> Görsel (PNG)
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
 
       <TodaySalesActivity countDate={activeCount.count_date} />
 
