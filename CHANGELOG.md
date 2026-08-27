@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.249] - 2026-08-28
+
+**Günlük Sayım'daki hiçbir tarihte artık gün adı (Salı/Çarşamba vb.) yazmıyor:** Kullanıcı isteğiyle ("hiçbir tarihte gün yazmasın, karışık gösteriyor") geri alındı — nav oku tarihi, yanıp sönen tablo başlığı, Geçmiş Sayımlar satır başlığı ve "Günlük Özet" dışa aktarım başlığı artık sade "28.08.2026" formatında. Şema değişikliği yok.
+
 ## [2.17.248] - 2026-08-28
 
 **"Günlük Özet" kartı Günlük Sayım sayfasının en üstüne taşındı.** Şema değişikliği yok.

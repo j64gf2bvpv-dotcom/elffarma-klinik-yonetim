@@ -635,7 +635,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
           className="flex flex-1 items-center gap-2 text-left hover:text-foreground"
         >
           <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
-          {format(new Date(count.count_date), 'dd.MM.yyyy EEEE', { locale: trLocale })}
+          {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
         </button>
         <div className="flex items-center gap-2">
           {/* Tarih elle öne/arkaya alınabilir (kullanıcı isteği, 2026-08-25) —
@@ -940,7 +940,7 @@ export function DailyCountPanel() {
   const recentCounts = otherPastCounts.filter((c) => c.status === 'completed').slice(0, 3)
   const todayOutgoingSales = allSales.filter((s) => s.sale_date === activeCount.count_date && s.type === 'sale')
 
-  const countDateLabel = format(new Date(activeCount.count_date), 'd MMMM yyyy (EEEE)', { locale: trLocale })
+  const countDateLabel = format(new Date(activeCount.count_date), 'd MMMM yyyy', { locale: trLocale })
 
   // "Değişecek" — bugün girilen sayı taban (önceki sayım) ile FARKLIYSA
   // sayılıyor; aynıysa (kullanıcı isteğiyle) hiçbir hareket kaydedilmeyeceği
@@ -993,7 +993,7 @@ export function DailyCountPanel() {
   // Stok" başlığı AYNI metni göstermeli (kullanıcı isteği, 2026-08-28) —
   // tek yerden üretilip ikisinde de kullanılıyor.
   const activeDateLabel =
-    format(new Date(activeCount.count_date), 'dd.MM.yyyy EEEE', { locale: trLocale }).toLocaleUpperCase('tr-TR') +
+    format(new Date(activeCount.count_date), 'dd.MM.yyyy', { locale: trLocale }).toLocaleUpperCase('tr-TR') +
     (activeCount.count_date === todayDate() ? ' - GÜNCEL SAYIM' : ' SAYIM')
 
   return (
