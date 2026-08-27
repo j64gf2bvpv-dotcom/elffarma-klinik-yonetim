@@ -1,8 +1,6 @@
 import { format } from 'date-fns'
 
 import { createSale, type SaleWithRelations } from './api'
-import { createCustomer } from '@/features/customers/api'
-import { createProduct } from '@/features/stock/api'
 import { readCell, parseFlexibleDate, type ImportSummary } from '@/lib/importData'
 import type { Customer, Product, SalesRep, SaleType } from '@/types/database'
 
@@ -52,9 +50,13 @@ export const SALE_IMPORT_FIELD_HINTS: Record<string, string> = {
  *   tarihi olmak zorunda, tahmin edilebilecek en makul değer budur).
  * - Ürün/Adet zorunlu kalır — bunlar satırdan satıra gerçekten değiştiği için
  *   tahmin edilemez, boşsa o satır atlanır.
- * - Dosyadaki bir doktor/ürün adı sistemde YOKSA (eşleşme sıfır), minimal bir
- *   yeni kayıt otomatik oluşturulur; BİRDEN FAZLA eşleşiyorsa (belirsiz) da
- *   yine hiçbir satır reddedilmesin diye ilk eşleşen kayıt kullanılır.
+ * - Dosyadaki bir doktor/ürün adı sistemde YOKSA veya BİRDEN FAZLA kayıtla
+ *   eşleşiyorsa (belirsiz), o satır atlanır. Otomatik yeni doktor/ürün kaydı
+ *   AÇILMAZ — bu kısa süre denendi (2026-08-27) ama test verileriyle Stok
+ *   sayfasının "Diğer" bölümünde ve Cari Kart'ta istenmeyen kopya kayıtlara
+ *   yol açtığı için kullanıcı isteğiyle kaldırıldı ("program kafasına göre
+ *   ürün ekleyip silmemeli"). Eşleşmeyen bir doktor/ürünü içe aktarmak için
+ *   önce ilgili sayfadan (Cari Kart / Stok) gerçek adıyla elle eklemek gerekir.
  */
 export async function importSaleRows(
   rows: Record<string, unknown>[],
@@ -69,9 +71,7 @@ export async function importSaleRows(
         `${s.type}|${s.customer_id}|${s.product_id}|${s.sale_date}|${s.quantity}|${Number(s.unit_price)}`,
     ),
   )
-  const summary: ImportSummary = { added: 0, skipped: 0, errors: [], created: 0 }
-  const localDoctors = [...doctors]
-  const localProducts = [...products]
+  const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
   let lastDoctorName = ''
 
   for (const row of rows) {
@@ -82,44 +82,16 @@ export async function importSaleRows(
     const quantityText = readCell(row, 'Adet')
     if (!doctorName || !productName || !quantityText) continue
 
-    let doctorMatches = localDoctors.filter(
+    const doctorMatches = doctors.filter(
       (d) => d.full_name.toLocaleLowerCase('tr') === doctorName.toLocaleLowerCase('tr'),
     )
-    if (doctorMatches.length === 0) {
-      try {
-        const created = await createCustomer({
-          full_name: doctorName,
-          phone: '',
-          doctor_type: 'sahis',
-          tags: [],
-          is_invoiced: false,
-        })
-        localDoctors.push(created)
-        doctorMatches = [created]
-        summary.created = (summary.created ?? 0) + 1
-      } catch {
-        continue
-      }
-    }
+    if (doctorMatches.length !== 1) continue
     const doctor = doctorMatches[0]
 
-    let productMatches = localProducts.filter(
+    const productMatches = products.filter(
       (p) => p.name.toLocaleLowerCase('tr') === productName.toLocaleLowerCase('tr'),
     )
-    if (productMatches.length === 0) {
-      try {
-        const created = await createProduct({
-          name: productName,
-          unit: 'Paket',
-          critical_stock_threshold: 5,
-        })
-        localProducts.push(created)
-        productMatches = [created]
-        summary.created = (summary.created ?? 0) + 1
-      } catch {
-        continue
-      }
-    }
+    if (productMatches.length !== 1) continue
     const product = productMatches[0]
 
     const dateText = readCell(row, 'Tarih')

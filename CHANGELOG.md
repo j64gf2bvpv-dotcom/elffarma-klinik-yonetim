@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.217] - 2026-08-27
+
+**Satış içe aktarmada otomatik doktor/ürün oluşturma kaldırıldı:** Dün eklenen bu özellik, test verileriyle Stok'un "Diğer" bölümünde ve Cari Kart'ta istenmeyen kopya kayıtlara yol açtı ("program kafasına göre ürün ekleyip silmemeli"). Artık dosyada sistemde bulunmayan bir doktor/ürün adı geçen satır yine sessizce atlanıyor ama kendiliğinden yeni kayıt açılmıyor — eşleşmeyen bir doktoru/ürünü içe aktarmak için önce ilgili sayfadan gerçek adıyla elle eklemek gerekiyor. Şema değişikliği yok.
+
 ## [2.17.216] - 2026-08-27
 
 **Günün Satış / İade Hareketleri'nde düzenleme ve toplu silme eklendi:** Her satırda artık bir düzenle (kalem) butonu var — doktor, ürün, adet gibi bilgileri değiştirebilirsiniz (stok buna göre otomatik düzeltilir: eski kayıt geri alınıp yeni haliyle yeniden uygulanır). Kart başlığına, o güne ait tüm satış/iade kayıtlarını tek seferde silen bir "Tümünü Sil" butonu eklendi (her kayıt için stok ayrı ayrı geri düzeltilir). Şema değişikliği yok.
