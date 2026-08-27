@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.230] - 2026-08-28
+
+**Satışlar'daki ayraç "·" yerine "/" oldu:** Kullanıcı isteğiyle doktor/kongre/satış danışmanı arasındaki ayraç değiştirildi (ör. "DR ZEBULLAH / mısır kongresi / erkan"). Şema değişikliği yok.
+
 ## [2.17.229] - 2026-08-28
 
 **Satışlar'da doktor/kongre/satış danışmanı arasına ayraç eklendi:** Önceden sadece satış danışmanından önce "·" vardı, doktor adı ile kongre etiketi bitişik duruyordu — artık üçü de "·" ile ayrılıyor (ör. "DR ZEBULLAH · mısır kongresi · erkan"). Şema değişikliği yok.
