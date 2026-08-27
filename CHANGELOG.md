@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.250] - 2026-08-28
+
+**Günlük Stok başlığı sadeleştirildi, tarih başlıkları güncellendi:** "Günlük Stok" kartında "Başlangıç Listesi" ve "Dışa Aktar" (Excel/Word/PDF/Yazdır) butonları kaldırıldı; "Günlük Stok" başlık yazısı kaldırıldı (sadece tarih + GÜNCEL SAYIM/SAYIM kalıyor). Ürün tablosu kartının üstündeki tarih başlığı tamamen kaldırıldı (boş bırakıldı). "Son Sayım (27 Ağustos 2026)" formatındaki sütun başlıkları artık "27.08.2026 - SON SAYIM" formatında. Şema değişikliği yok.
+
 ## [2.17.249] - 2026-08-28
 
 **Günlük Sayım'daki hiçbir tarihte artık gün adı (Salı/Çarşamba vb.) yazmıyor:** Kullanıcı isteğiyle ("hiçbir tarihte gün yazmasın, karışık gösteriyor") geri alındı — nav oku tarihi, yanıp sönen tablo başlığı, Geçmiş Sayımlar satır başlığı ve "Günlük Özet" dışa aktarım başlığı artık sade "28.08.2026" formatında. Şema değişikliği yok.

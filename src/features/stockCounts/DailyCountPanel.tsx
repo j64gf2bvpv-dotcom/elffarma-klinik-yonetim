@@ -10,11 +10,6 @@ import {
   Undo2,
   ShoppingCart,
   UserRound,
-  Download,
-  FileSpreadsheet,
-  FileText,
-  FileType,
-  Printer,
   ImageDown,
   AlertTriangle,
   Trash2,
@@ -29,13 +24,6 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { ExportMenu } from '@/components/ExportMenu'
 import { useSales, useUpdateSaleRep, useDeleteSale } from '@/features/sales/hooks'
 import { deleteSale } from '@/features/sales/api'
@@ -58,7 +46,6 @@ import {
   useUpdateCountItem,
   useUpdateCountItemFlakon,
 } from './hooks'
-import { exportDailyCountToExcel, exportDailyCountToPdf, exportDailyCountToWord, printDailyCount } from './exportDailyCount'
 import { exportDailySummaryImage } from './exportSummaryImage'
 import { todayDate, type StockCountItemWithProduct } from './api'
 import type { SaleWithRelations } from '@/features/sales/api'
@@ -718,7 +705,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     <TableHead>Ürün</TableHead>
                     <TableHead className="font-bold text-foreground">
                       {previousCount
-                        ? `Son Sayım (${format(new Date(previousCount.count_date), 'd MMMM yyyy', { locale: trLocale })})`
+                        ? `${format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })} - SON SAYIM`
                         : 'Sistemdeki Miktar'}
                     </TableHead>
                     <TableHead className="border-l">Paket</TableHead>
@@ -778,7 +765,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                   <TableHead>Ürün</TableHead>
                   <TableHead className="font-bold text-foreground">
                     {previousCount
-                      ? `Son Sayım (${format(new Date(previousCount.count_date), 'd MMMM yyyy', { locale: trLocale })})`
+                      ? `${format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })} - SON SAYIM`
                       : 'O Günkü Stok'}
                   </TableHead>
                   <TableHead className="border-l">Paket</TableHead>
@@ -822,7 +809,6 @@ export function DailyCountPanel() {
   const completeMutation = useCompleteCount()
   const reopenMutation = useReopenCount()
   const undoMutation = useUndoCompleteCount()
-  const { data: allSales = [] } = useSales()
   const [selectedItemId, setSelectedItemId] = React.useState<string | null>(null)
 
   // İleri/geri okları SADECE gerçekten var olan sayımlar arasında gezdirir
@@ -933,12 +919,10 @@ export function DailyCountPanel() {
 
   const isCompleted = activeCount.status === 'completed'
   const otherPastCounts = pastCounts.filter((c) => c.id !== activeCount.id)
-  const previousDate = otherPastCounts.map((c) => c.count_date).sort((a, b) => b.localeCompare(a))[0] ?? null
   // Sadece TAMAMLANMIŞ sayımlar — açık (yarım kalmış) bir sayımın kısmi/boş
   // verisi "o günün son stoğu" gibi gösterilirse ekleme/çıkarma kararını
   // yanlış yönlendirir.
   const recentCounts = otherPastCounts.filter((c) => c.status === 'completed').slice(0, 3)
-  const todayOutgoingSales = allSales.filter((s) => s.sale_date === activeCount.count_date && s.type === 'sale')
 
   const countDateLabel = format(new Date(activeCount.count_date), 'd MMMM yyyy', { locale: trLocale })
 
@@ -1032,7 +1016,6 @@ export function DailyCountPanel() {
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1">
-            <CardTitle className="text-base">Günlük Stok</CardTitle>
             <Button
               type="button"
               variant="ghost"
@@ -1065,50 +1048,6 @@ export function DailyCountPanel() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {items.length > 0 && (
-              <ExportMenu<StockCountItemWithProduct>
-                title="Başlangıç Sayım Listesi"
-                filename={`baslangic-listesi-${activeCount.count_date}`}
-                triggerLabel="Başlangıç Listesi"
-                rows={items}
-                columns={[
-                  { header: 'ÜRÜN ADI', value: (i) => i.products.name },
-                  { header: 'STOKLAR', value: (i) => i.expected_quantity },
-                ]}
-              />
-            )}
-            {items.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Download /> Dışa Aktar
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onSelect={() => exportDailyCountToExcel(activeCount.count_date, previousDate, items, todayOutgoingSales)}
-                  >
-                    <FileSpreadsheet className="text-success" /> Excel (.xlsx)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={() => exportDailyCountToWord(activeCount.count_date, previousDate, items, todayOutgoingSales)}
-                  >
-                    <FileText className="text-primary" /> Word (.docx)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={() => exportDailyCountToPdf(activeCount.count_date, previousDate, items, todayOutgoingSales)}
-                  >
-                    <FileType className="text-destructive" /> PDF (.pdf)
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={() => printDailyCount(activeCount.count_date, previousDate, items, todayOutgoingSales)}
-                  >
-                    <Printer className="text-muted-foreground" /> Yazdır
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
             {isCompleted ? (
               <>
                 <Badge variant="success">
@@ -1176,9 +1115,7 @@ export function DailyCountPanel() {
 
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base">
-            {format(new Date(activeCount.count_date), 'dd.MM.yyyy', { locale: trLocale })}
-          </CardTitle>
+          <div />
           {!isCompleted && (
             <div className="w-64">
               <ProductCombobox
@@ -1213,7 +1150,7 @@ export function DailyCountPanel() {
                       <TableHead>Ürün</TableHead>
                       <TableHead className="font-bold text-foreground">
                         {previousCompletedCount
-                          ? `Son Sayım (${format(new Date(previousCompletedCount.count_date), 'd MMMM yyyy', { locale: trLocale })})`
+                          ? `${format(new Date(previousCompletedCount.count_date), 'dd.MM.yyyy', { locale: trLocale })} - SON SAYIM`
                           : 'Sistemdeki Miktar'}
                       </TableHead>
                       <TableHead className="border-l">Paket</TableHead>
