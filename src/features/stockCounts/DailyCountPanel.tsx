@@ -572,6 +572,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
   const setStatus = useSetCountStatus()
   const updateDateMutation = useUpdateCountDate()
   const completeMutation = useCompleteCount()
+  const undoMutation = useUndoCompleteCount()
   const updateItemMutation = useUpdateCountItem(count.id)
   const updateItemFlakonMutation = useUpdateCountItemFlakon(count.id)
   const addItemMutation = useAddCountItem(count.id)
@@ -609,6 +610,18 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
         : `${dateLabel} sayımı tamamen silinsin mi? Bu sayımdaki tüm kalemler de silinecek.`
     if (!(await confirm(message, { title: 'Sayımı Sil', confirmLabel: 'Sil', variant: 'destructive' }))) return
     deleteCountMutation.mutate(count.id)
+  }
+
+  async function handleUndoComplete() {
+    const dateLabel = format(new Date(count.count_date), 'd MMMM yyyy', { locale: trLocale })
+    if (
+      !(await confirm(
+        `${dateLabel} sayımının uyguladığı stok değişiklikleri geri alınacak (stok bir önceki sayımdaki değerine döndürülecek) ve sayım tekrar düzenlenebilir hale gelecek. Devam edilsin mi?`,
+        { title: 'Sayımı Geri Al', confirmLabel: 'Geri Al' },
+      ))
+    )
+      return
+    undoMutation.mutate(count.id)
   }
 
   return (
@@ -655,6 +668,23 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
               <SelectItem value="completed">Tamamlandı</SelectItem>
             </SelectContent>
           </Select>
+          {count.status === 'completed' && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-destructive hover:text-destructive"
+              title="Bu sayımın uyguladığı stok değişikliklerini geri alır"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleUndoComplete()
+              }}
+              disabled={undoMutation.isPending}
+            >
+              {undoMutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Undo2 className="size-3.5" />}
+              Geri Al
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"
