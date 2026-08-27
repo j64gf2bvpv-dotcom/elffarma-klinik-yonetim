@@ -41,6 +41,15 @@ function addDaysToDateString(dateStr: string, days: number): string {
  * sayım — gerçek tarihi bir gün öndeki — başlatılıyor, bkz. completeCount).
  * Açık birden fazla sayım olması beklenmez ama olursa en güncel tarihli
  * olan gösterilir.
+ *
+ * İSTİSNA (kullanıcı isteği, 2026-08-27: "o günkü tarihi vermeli"): bulunan
+ * açık sayım, en son TAMAMLANMIŞ sayımdan daha ESKİ bir tarihteyse, bu artık
+ * gerçek "bugün" değil — elle tarih değiştirme gibi işlemlerden arta kalmış
+ * YETİM bir sayımdır (ör. 20 Ağustos açık kalmış ama 27 Ağustos zaten
+ * tamamlanmış). Bu durumda null dönülür; ekran "bugün için henüz sayım
+ * başlatılmadı" gösterip doğru (gerçek takvim) tarihli yeni bir sayım
+ * başlatılmasını sağlar — yetim sayım Geçmiş Sayımlar listesinden hâlâ
+ * erişilebilir/silinebilir, veri kaybolmaz.
  */
 export async function fetchTodayCount(): Promise<StockCount | null> {
   const { data, error } = await supabase
@@ -51,7 +60,19 @@ export async function fetchTodayCount(): Promise<StockCount | null> {
     .limit(1)
     .maybeSingle()
   if (error) throw error
-  return data as StockCount | null
+  if (!data) return null
+
+  const { data: latestCompleted, error: completedError } = await supabase
+    .from('stock_counts')
+    .select('count_date')
+    .eq('status', 'completed')
+    .order('count_date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (completedError) throw completedError
+  if (latestCompleted && data.count_date < latestCompleted.count_date) return null
+
+  return data as StockCount
 }
 
 export async function fetchPastCounts(): Promise<StockCount[]> {
