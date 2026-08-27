@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.226] - 2026-08-27
+
+**"Tüm Ürünler" görünümündeki "Tüm Hareketleri Sil" (tüm ürünler kapsamında) artık gerçekten çalışıyor:** `delete_all_stock_movements_bulk`, tüm ürünler seçiliyken (filtre boş) attığı WHERE'siz `DELETE`/`UPDATE` Supabase'in güvenlik kuralına takılıp "DELETE requires a WHERE clause" hatasıyla başarısız oluyordu — Satışlar'daki "Tümünü Sil" ile aynı sorun, aynı `WHERE true` düzeltmesi uygulandı. Belirli ürünler seçiliyken zaten çalışıyordu, etkilenmedi.
+
 ## [2.17.225] - 2026-08-27
 
 **Hata mesajları artık "[object Object]" yerine gerçek nedeni gösteriyor:** Supabase/PostgREST hataları (`{ message, details, hint, code }`) gerçek `Error` örneği değil düz nesne olduğu için `error instanceof Error` kontrolü bunlarda hep false dönüyor ve toast'larda anlamsız "[object Object]" yazıyordu (ör. Stok Kartı'nda "Tüm Hareketleri Sil"). Yeni paylaşılan `getErrorMessage()` yardımcı fonksiyonu (`src/lib/utils.ts`) hem gerçek `Error`'ları hem düz `{ message }` nesnelerini doğru okuyor; bu deseni kullanan 6 dosyanın tamamı (Stok Kartı, Tüm Ürünleri Sıfırla, Kongre ürün ekleme, Günlük Sayım toplu silme, Belge açma, offline yazma kuyruğu) güncellendi.
