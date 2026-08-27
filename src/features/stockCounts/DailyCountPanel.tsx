@@ -19,6 +19,8 @@ import {
   AlertTriangle,
   Trash2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -58,7 +60,7 @@ import {
 } from './hooks'
 import { exportDailyCountToExcel, exportDailyCountToPdf, exportDailyCountToWord, printDailyCount } from './exportDailyCount'
 import { exportDailySummaryImage } from './exportSummaryImage'
-import type { StockCountItemWithProduct } from './api'
+import { todayDate, type StockCountItemWithProduct } from './api'
 import type { SaleWithRelations } from '@/features/sales/api'
 import type { StockCount } from '@/types/database'
 import { cn, getErrorMessage } from '@/lib/utils'
@@ -820,20 +822,46 @@ export function DailyCountPanel() {
   const completeMutation = useCompleteCount()
   const reopenMutation = useReopenCount()
   const undoMutation = useUndoCompleteCount()
-  const { data: items = [] } = useCountItems(todayCount?.id)
-  const updateItemMutation = useUpdateCountItem(todayCount?.id ?? '')
-  const updateItemFlakonMutation = useUpdateCountItemFlakon(todayCount?.id ?? '')
-  const addItemMutation = useAddCountItem(todayCount?.id ?? '')
-  const deleteItemMutation = useDeleteCountItem(todayCount?.id ?? '')
   const { data: allSales = [] } = useSales()
   const [selectedItemId, setSelectedItemId] = React.useState<string | null>(null)
+
+  // İleri/geri okları SADECE gerçekten var olan sayımlar arasında gezdirir
+  // (kullanıcı isteği, 2026-08-28: "sayım günün yanına ileri geri tuşları
+  // koy o güne gidebileyim") — yeni tarih üretmez, sadece todayCount +
+  // pastCounts içindeki tarihler arasında konum değiştirir. null = varsayılan
+  // (todayCount).
+  const [viewedDate, setViewedDate] = React.useState<string | null>(null)
+  const navDates = React.useMemo(() => {
+    const dates = new Set<string>()
+    if (todayCount) dates.add(todayCount.count_date)
+    for (const c of pastCounts) dates.add(c.count_date)
+    return Array.from(dates).sort()
+  }, [todayCount, pastCounts])
+  const activeCount =
+    (viewedDate
+      ? (pastCounts.find((c) => c.count_date === viewedDate) ??
+        (todayCount?.count_date === viewedDate ? todayCount : undefined))
+      : todayCount) ?? todayCount
+  const navIndex = activeCount ? navDates.indexOf(activeCount.count_date) : -1
+  const canGoBack = navIndex > 0
+  const canGoForward = navIndex >= 0 && navIndex < navDates.length - 1
+
+  const { data: items = [] } = useCountItems(activeCount?.id)
+  const updateItemMutation = useUpdateCountItem(activeCount?.id ?? '')
+  const updateItemFlakonMutation = useUpdateCountItemFlakon(activeCount?.id ?? '')
+  const addItemMutation = useAddCountItem(activeCount?.id ?? '')
+  const deleteItemMutation = useDeleteCountItem(activeCount?.id ?? '')
 
   // Bir önceki TAMAMLANMIŞ sayım — "Sistemdeki Miktar" artık bunun Son Stok
   // değeri (canlı products stoğu değil, kullanıcı isteğiyle 2026-08-22).
   // Hook sırası bozulmasın diye (erken return'lerden ÖNCE) burada, en
-  // tepede çağrılıyor — bkz. aşağıdaki baselineByProduct.
-  const otherPastCountsForBaseline = pastCounts.filter((c) => c.id !== todayCount?.id)
-  const previousCompletedCount = otherPastCountsForBaseline.find((c) => c.status === 'completed')
+  // tepede çağrılıyor — bkz. aşağıdaki baselineByProduct. Görüntülenen
+  // sayımın TARİHİNE göre önceki (activeCount navigasyonla değişebildiği
+  // için artık her zaman "bugünden önceki" değil, "görüntülenenden önceki").
+  const otherPastCountsForBaseline = pastCounts.filter((c) => c.id !== activeCount?.id)
+  const previousCompletedCount = otherPastCountsForBaseline
+    .filter((c) => c.status === 'completed' && (!activeCount || c.count_date < activeCount.count_date))
+    .sort((a, b) => b.count_date.localeCompare(a.count_date))[0]
   const { data: previousItems = [] } = useCountItems(previousCompletedCount?.id)
   const baselineByProduct = React.useMemo(() => {
     const map = new Map<string, { paket: number; flakon: number }>()
@@ -869,14 +897,15 @@ export function DailyCountPanel() {
   }
 
   async function handleDeleteTodayCount() {
-    if (!todayCount) return
-    const dateLabel = format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })
+    if (!activeCount) return
+    const dateLabel = format(new Date(activeCount.count_date), 'd MMMM yyyy', { locale: trLocale })
     const message =
-      todayCount.status === 'completed'
+      activeCount.status === 'completed'
         ? `${dateLabel} sayımı TAMAMLANMIŞ — silmek, tamamlanırken uygulanan stok değişikliklerini GERİ ALMAZ, sadece sayım kaydı silinir. Yine de silinsin mi?`
         : `${dateLabel} sayımı tamamen silinsin mi? Bu sayımdaki tüm kalemler de silinecek.`
     if (!(await confirm(message, { title: 'Sayımı Sil', confirmLabel: 'Sil', variant: 'destructive' }))) return
-    deleteCountMutation.mutate(todayCount.id)
+    deleteCountMutation.mutate(activeCount.id)
+    if (viewedDate === activeCount.count_date) setViewedDate(null)
   }
 
   if (loadingToday) {
@@ -887,7 +916,7 @@ export function DailyCountPanel() {
     )
   }
 
-  if (!todayCount) {
+  if (!activeCount) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
@@ -902,16 +931,16 @@ export function DailyCountPanel() {
     )
   }
 
-  const isCompleted = todayCount.status === 'completed'
-  const otherPastCounts = pastCounts.filter((c) => c.id !== todayCount.id)
+  const isCompleted = activeCount.status === 'completed'
+  const otherPastCounts = pastCounts.filter((c) => c.id !== activeCount.id)
   const previousDate = otherPastCounts.map((c) => c.count_date).sort((a, b) => b.localeCompare(a))[0] ?? null
   // Sadece TAMAMLANMIŞ sayımlar — açık (yarım kalmış) bir sayımın kısmi/boş
   // verisi "o günün son stoğu" gibi gösterilirse ekleme/çıkarma kararını
   // yanlış yönlendirir.
   const recentCounts = otherPastCounts.filter((c) => c.status === 'completed').slice(0, 3)
-  const todayOutgoingSales = allSales.filter((s) => s.sale_date === todayCount.count_date && s.type === 'sale')
+  const todayOutgoingSales = allSales.filter((s) => s.sale_date === activeCount.count_date && s.type === 'sale')
 
-  const countDateLabel = format(new Date(todayCount.count_date), 'd MMMM yyyy (EEEE)', { locale: trLocale })
+  const countDateLabel = format(new Date(activeCount.count_date), 'd MMMM yyyy (EEEE)', { locale: trLocale })
 
   // "Değişecek" — bugün girilen sayı taban (önceki sayım) ile FARKLIYSA
   // sayılıyor; aynıysa (kullanıcı isteğiyle) hiçbir hareket kaydedilmeyeceği
@@ -954,16 +983,55 @@ export function DailyCountPanel() {
     ...swissItems.map(productLine),
   ]
 
+  // Bugünün gerçek takvim tarihinin İLERİSİNDE — normalde olmaması gereken,
+  // arka arkaya "Sayımı Tamamla" ile hızlıca oluşmuş yanlışlıkla ileri
+  // gitmiş bir sayım (kullanıcı isteği, 2026-08-28: "bugünün önüne
+  // geçtiysem silebileyim") — Sil butonu zaten her zaman var, burada sadece
+  // dikkat çekmek için vurgulanıyor.
+  const isFutureCount = activeCount.count_date > todayDate()
+
   return (
     <div className="grid gap-4">
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base">Günlük Stok</CardTitle>
+          <div className="flex items-center gap-1">
+            <CardTitle className="text-base">Günlük Stok</CardTitle>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              title="Önceki gün"
+              onClick={() => canGoBack && setViewedDate(navDates[navIndex - 1])}
+              disabled={!canGoBack}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <span className={cn('text-sm font-medium', isFutureCount && 'text-destructive')}>
+              {format(new Date(activeCount.count_date), 'd MMMM yyyy', { locale: trLocale })}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              title="Sonraki gün"
+              onClick={() => canGoForward && setViewedDate(navDates[navIndex + 1])}
+              disabled={!canGoForward}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+            {isFutureCount && (
+              <Badge variant="destructive" className="ml-1">
+                Bugünün ilerisinde
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {items.length > 0 && (
               <ExportMenu<StockCountItemWithProduct>
                 title="Başlangıç Sayım Listesi"
-                filename={`baslangic-listesi-${todayCount.count_date}`}
+                filename={`baslangic-listesi-${activeCount.count_date}`}
                 triggerLabel="Başlangıç Listesi"
                 rows={items}
                 columns={[
@@ -981,23 +1049,23 @@ export function DailyCountPanel() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
-                    onSelect={() => exportDailyCountToExcel(todayCount.count_date, previousDate, items, todayOutgoingSales)}
+                    onSelect={() => exportDailyCountToExcel(activeCount.count_date, previousDate, items, todayOutgoingSales)}
                   >
                     <FileSpreadsheet className="text-success" /> Excel (.xlsx)
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={() => exportDailyCountToWord(todayCount.count_date, previousDate, items, todayOutgoingSales)}
+                    onSelect={() => exportDailyCountToWord(activeCount.count_date, previousDate, items, todayOutgoingSales)}
                   >
                     <FileText className="text-primary" /> Word (.docx)
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={() => exportDailyCountToPdf(todayCount.count_date, previousDate, items, todayOutgoingSales)}
+                    onSelect={() => exportDailyCountToPdf(activeCount.count_date, previousDate, items, todayOutgoingSales)}
                   >
                     <FileType className="text-destructive" /> PDF (.pdf)
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onSelect={() => printDailyCount(todayCount.count_date, previousDate, items, todayOutgoingSales)}
+                    onSelect={() => printDailyCount(activeCount.count_date, previousDate, items, todayOutgoingSales)}
                   >
                     <Printer className="text-muted-foreground" /> Yazdır
                   </DropdownMenuItem>
@@ -1012,7 +1080,7 @@ export function DailyCountPanel() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => reopenMutation.mutate(todayCount.id)}
+                  onClick={() => reopenMutation.mutate(activeCount.id)}
                   disabled={reopenMutation.isPending}
                 >
                   {reopenMutation.isPending && <Loader2 className="animate-spin" />}
@@ -1022,7 +1090,7 @@ export function DailyCountPanel() {
                   variant="outline"
                   size="sm"
                   className="text-destructive hover:text-destructive"
-                  onClick={() => handleUndoComplete(todayCount.id)}
+                  onClick={() => handleUndoComplete(activeCount.id)}
                   disabled={undoMutation.isPending}
                   title="Bu sayımın uyguladığı stok değişikliklerini geri alır"
                 >
@@ -1033,7 +1101,7 @@ export function DailyCountPanel() {
             ) : (
               <Button
                 size="sm"
-                onClick={() => completeMutation.mutate(todayCount.id)}
+                onClick={() => completeMutation.mutate(activeCount.id)}
                 disabled={completeMutation.isPending}
               >
                 {completeMutation.isPending && <Loader2 className="animate-spin" />}
@@ -1072,7 +1140,7 @@ export function DailyCountPanel() {
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">
-            {format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })} Sayımı
+            {format(new Date(activeCount.count_date), 'd MMMM yyyy', { locale: trLocale })} Sayımı
           </CardTitle>
           {!isCompleted && (
             <div className="w-64">
@@ -1114,7 +1182,7 @@ export function DailyCountPanel() {
                       <TableHead>Paket</TableHead>
                       <TableHead>Flakon</TableHead>
                       <TableHead className="animate-text-blink font-bold text-destructive">
-                        {format(new Date(todayCount.count_date), 'd MMMM', { locale: trLocale })} — Bugünkü Stok
+                        {format(new Date(activeCount.count_date), 'd MMMM', { locale: trLocale })} — Bugünkü Stok
                       </TableHead>
                       {!isCompleted && <TableHead></TableHead>}
                     </TableRow>
@@ -1150,7 +1218,7 @@ export function DailyCountPanel() {
           <div className="flex items-center gap-2">
             <ExportMenu<{ metrik: string; deger: string | number }>
               title={`${countDateLabel} — Günlük Özet`}
-              filename={`gunluk-ozet-${todayCount.count_date}`}
+              filename={`gunluk-ozet-${activeCount.count_date}`}
               triggerLabel="Özeti Dışa Aktar"
               rows={summaryRows}
               columns={[
@@ -1175,7 +1243,7 @@ export function DailyCountPanel() {
         </CardHeader>
       </Card>
 
-      <TodaySalesActivity countDate={todayCount.count_date} />
+      <TodaySalesActivity countDate={activeCount.count_date} />
 
       {pastCounts.length > 1 && (
         <Card>
@@ -1184,7 +1252,7 @@ export function DailyCountPanel() {
           </CardHeader>
           <CardContent className="grid gap-2">
             {pastCounts
-              .filter((c) => c.id !== todayCount.id)
+              .filter((c) => c.id !== activeCount.id)
               .map((c) => (
                 <PastCountRow
                   key={c.id}

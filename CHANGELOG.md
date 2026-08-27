@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.244] - 2026-08-28
+
+**Günlük Stok'a ileri/geri gün gezinme okları eklendi:** "Günlük Stok" kartındaki tarihin yanına ◀ / ▶ okları eklendi — mevcut (bugünkü açık sayım + Geçmiş Sayımlar'da olan) günler arasında gezip o günün sayımını doğrudan ana panelde görüntüleyip düzenleyebiliyorsunuz (yeni tarih üretmiyor, sadece var olan sayımlar arasında gezdiriyor). Bugünün gerçek takvim tarihinin İLERİSİNDEKİ bir sayım görüntülenirse (ör. art arda "Sayımı Tamamla" ile yanlışlıkla ileri gidilmişse) tarih kırmızı renkte ve "Bugünün ilerisinde" etiketiyle vurgulanıyor — zaten var olan Sil butonuyla silinebiliyor. Şema değişikliği yok.
+
 ## [2.17.243] - 2026-08-28
 
 **"Geri Al" butonu gerçekten görünür yerde: Geçmiş Sayımlar listesi:** Bir önceki sürümde buton sadece "bugünkü sayım" tamamlanmışken görünüyordu — ama sayım tamamlanınca uygulama otomatik olarak ertesi günün YENİ (açık) sayımını başlattığı için tamamlanmış sayım hemen "bugünkü sayım" olmaktan çıkıp Geçmiş Sayımlar listesine düşüyor, buton pratikte hiç görünmüyordu. "Geri Al" artık asıl doğru yerde: Geçmiş Sayımlar'da her "Tamamlandı" durumundaki sayımın yanında. Şema değişikliği yok.
