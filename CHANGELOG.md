@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.240] - 2026-08-28
+
+**Günlük Sayım'da "Son Günlerin Stoğu" artık Sayım tablosunun altında:** Önceden Sayım kartının üstünde duruyordu — kullanıcı isteğiyle Sayım kartının hemen altına, Günlük Özet'ten önceye taşındı. Şema değişikliği yok.
+
 ## [2.17.239] - 2026-08-28
 
 **"Kişi Kişi Dışa Aktar" → "Kişi Bazlı Dışa Aktar" oldu ve artık kişi seçtiriyor:** Önceki sürüm "Tüm Personel" seçiliyken herkesi otomatik olarak tek Excel'e (kişi başına sekme) aktarıyordu, seçim imkânı yoktu. Artık buton bir onay penceresi açıyor; istediğiniz personelleri işaretleyip sadece onların satışlarına göre (üstteki tarih aralığında) dışa aktarabiliyorsunuz — üstteki tek-kişi filtresinden bağımsız, her zaman kullanılabilir. Şema değişikliği yok.

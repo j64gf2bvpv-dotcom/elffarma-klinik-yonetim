@@ -1017,8 +1017,6 @@ export function DailyCountPanel() {
         )}
       </Card>
 
-      <RecentStockComparison recentCounts={recentCounts} />
-
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">Sayım</CardTitle>
@@ -1089,6 +1087,8 @@ export function DailyCountPanel() {
           )}
         </CardContent>
       </Card>
+
+      <RecentStockComparison recentCounts={recentCounts} />
 
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
