@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { format, startOfMonth, subMonths } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ShoppingCart, Undo2, Trash2, BarChart3, FileText, TrendingUp, TrendingDown, Users, Loader2, Target } from 'lucide-react'
+import { ShoppingCart, Undo2, Trash2, BarChart3, FileText, TrendingUp, TrendingDown, Users, Loader2, Target, Check } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -343,6 +343,77 @@ function RepTargetEditor({ rep, netTotal }: { rep: SalesRep; netTotal: number })
 }
 
 /**
+ * "Tüm Personel" tablosundaki her satır — hedef/prim oranı, o kişiyi ayrıca
+ * tek tek seçmeye gerek kalmadan doğrudan satırdan düzenlenebilsin diye
+ * (kullanıcı isteği, 2026-08-28: "manuel düzeltilebilsin buradaki
+ * ayarlar"). Mantık RepTargetEditor ile aynı (kaydedilene kadar sadece
+ * inputlar değişir, rozet/prim hep KAYITLI değere göre hesaplanır) — burada
+ * tablo satırı şeklinde.
+ */
+function RepTargetTableRow({ rep, net }: { rep: SalesRep; net: number }) {
+  const updateRepMutation = useUpdateSalesRep()
+  const [targetInput, setTargetInput] = React.useState(rep.sales_target != null ? String(rep.sales_target) : '')
+  const [rateInput, setRateInput] = React.useState(rep.commission_rate != null ? String(rep.commission_rate) : '')
+
+  function handleSave() {
+    updateRepMutation.mutate({
+      id: rep.id,
+      input: {
+        sales_target: targetInput.trim() === '' ? null : Number(targetInput),
+        commission_rate: rateInput.trim() === '' ? null : Number(rateInput),
+      },
+    })
+  }
+
+  const rate = Number(rep.commission_rate ?? 0)
+  const target = rep.sales_target != null ? Number(rep.sales_target) : null
+  const commission = net * (rate / 100)
+
+  return (
+    <TableRow>
+      <TableCell className="text-primary font-semibold whitespace-nowrap">{rep.name}</TableCell>
+      <TableCell className="text-right">
+        <Input
+          type="number"
+          min="0"
+          step="0.01"
+          value={targetInput}
+          onChange={(e) => setTargetInput(e.target.value)}
+          className="ml-auto w-28 text-right"
+        />
+      </TableCell>
+      <TableCell className="text-right tabular-nums whitespace-nowrap">{currency(net)}</TableCell>
+      <TableCell>
+        {target != null ? (
+          <Badge variant={net >= target ? 'success' : 'outline'}>{net >= target ? 'Hedef Aşıldı' : 'Hedef Altında'}</Badge>
+        ) : (
+          '—'
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        <Input
+          type="number"
+          min="0"
+          max="100"
+          step="0.01"
+          value={rateInput}
+          onChange={(e) => setRateInput(e.target.value)}
+          className="ml-auto w-20 text-right"
+        />
+      </TableCell>
+      <TableCell className="text-success text-right font-semibold tabular-nums whitespace-nowrap">
+        {currency(commission)}
+      </TableCell>
+      <TableCell>
+        <Button variant="ghost" size="icon" onClick={handleSave} disabled={updateRepMutation.isPending}>
+          {updateRepMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+        </Button>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+/**
  * "Personel Satış Raporu" — kullanıcı isteği (2026-08-28): her satış
  * temsilcisinin hangi doktora ne ürün sattığını, ne not yazdığını, hangi
  * tarihte ve ne fiyattan sattığını kişi kişi ayrı görebilmek, Excel'e
@@ -415,10 +486,7 @@ function StaffSalesReportTab() {
       const returns = repSales
         .filter((s) => s.type === 'return')
         .reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
-      const net = sales - returns
-      const target = r.sales_target != null ? Number(r.sales_target) : null
-      const rate = Number(r.commission_rate ?? 0)
-      return { rep: r, net, target, rate, commission: net * (rate / 100) }
+      return { rep: r, net: sales - returns }
     })
   }, [reps, allSales, from, to])
 
@@ -552,40 +620,24 @@ function StaffSalesReportTab() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Personel</TableHead>
-                    <TableHead className="text-right">Hedef</TableHead>
+                    <TableHead className="text-right">Hedef (₺)</TableHead>
                     <TableHead className="text-right">Dönem Net Cirosu</TableHead>
                     <TableHead>Hedef Durumu</TableHead>
-                    <TableHead className="text-right">Prim Oranı</TableHead>
+                    <TableHead className="text-right">Prim Oranı (%)</TableHead>
                     <TableHead className="text-right">Hak Edilen Prim</TableHead>
+                    <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {repTargetRows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-muted-foreground py-6 text-center">
+                      <TableCell colSpan={7} className="text-muted-foreground py-6 text-center">
                         Henüz personel yok
                       </TableCell>
                     </TableRow>
                   )}
-                  {repTargetRows.map(({ rep, net, target, rate, commission }) => (
-                    <TableRow key={rep.id}>
-                      <TableCell className="text-primary font-semibold">{rep.name}</TableCell>
-                      <TableCell className="text-right">{target != null ? currency(target) : '—'}</TableCell>
-                      <TableCell className="text-right tabular-nums">{currency(net)}</TableCell>
-                      <TableCell>
-                        {target != null ? (
-                          <Badge variant={net >= target ? 'success' : 'outline'}>
-                            {net >= target ? 'Hedef Aşıldı' : 'Hedef Altında'}
-                          </Badge>
-                        ) : (
-                          '—'
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">%{rate}</TableCell>
-                      <TableCell className="text-success text-right font-semibold tabular-nums">
-                        {currency(commission)}
-                      </TableCell>
-                    </TableRow>
+                  {repTargetRows.map(({ rep, net }) => (
+                    <RepTargetTableRow key={rep.id} rep={rep} net={net} />
                   ))}
                 </TableBody>
               </Table>
