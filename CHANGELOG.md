@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.210] - 2026-08-27
+
+**Satış içe aktarmada artık hiçbir hata penceresi çıkmıyor:** Eşleşmeyen doktor/ürün adı, geçersiz tarih/adet veya kayıt sırasında çıkan herhangi bir sorun artık kullanıcıya gösterilmiyor — o satır sessizce atlanıp bir sonrakine geçiliyor, doğru eşleşen satırlar normal şekilde ekleniyor. Not: bir satış mutlaka gerçek bir doktora ve ürüne bağlanmak zorunda olduğundan, sistemde kaydı olmayan bir doktor/ürün adı geçen satır yine de eklenemiyor (sahte kayıt oluşturulmuyor) — sadece bunun artık bir hata olarak gösterilmesi kaldırıldı. Şema değişikliği yok.
+
 ## [2.17.209] - 2026-08-26
 
 **Satış içe aktarmada eksik satırlar artık hata göstermiyor:** Tarih/Doktor/Ürün/Adet'ten biri boş bırakılmış satırlar (kullanılmayan şablon satırları, elle doldururken atlanan hücreler) artık "hata" olarak işaretlenmiyor — sessizce atlanıyor, doğru dolu satırlar her zamanki gibi ekleniyor. Doktor/ürün adı bulunamadı veya geçersiz tarih/adet gibi gerçek sorunlar hâlâ hata olarak gösteriliyor. Şema değişikliği yok.

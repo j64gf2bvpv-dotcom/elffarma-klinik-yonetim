@@ -34,10 +34,19 @@ export const SALE_IMPORT_FIELD_HINTS: Record<string, string> = {
 
 /**
  * SalesPage'in İçe Aktar'ı (kullanıcı isteği, 2026-08-26). Doktor ve ürün
- * adıyla eşleştirilir (sistemde kayıtlı değilse hata); aynı tür/doktor/ürün/
- * tarih/adet/fiyat kombinasyonu zaten varsa atlanan kayıt sayılır. Her satır
- * `createSale` üzerinden gerçek bir satış kaydı VE stok hareketi oluşturur
- * (bkz. api.ts — bu artık merkezî, ayrıca bir stok çağrısına gerek yok).
+ * adıyla eşleştirilir; aynı tür/doktor/ürün/tarih/adet/fiyat kombinasyonu
+ * zaten varsa atlanan kayıt sayılır. Her satır `createSale` üzerinden
+ * gerçek bir satış kaydı VE stok hareketi oluşturur (bkz. api.ts — bu artık
+ * merkezî, ayrıca bir stok çağrısına gerek yok).
+ *
+ * Kasıtlı olarak HİÇBİR satır hata olarak raporlanmaz (kullanıcı isteği,
+ * 2026-08-27: "hiçbir hata vermesin eksik olsa bile yüklesin") — eksik hücre,
+ * eşleşmeyen doktor/ürün adı, geçersiz tarih/adet veya kayıt sırasında çıkan
+ * bir hata, o satırı sessizce atlar; geri kalan doğru satırlar yine de
+ * eklenir. Sahte/eksik bir doktor ya da ürün kaydı OLUŞTURULMAZ — bir satışın
+ * gerçek bir doktora ve ürüne bağlanması zorunlu, o yüzden eşleşmeyen satır
+ * atlanmak zorunda; sadece bunun kullanıcıya bir hata penceresi olarak
+ * gösterilmesi kaldırıldı.
  */
 export async function importSaleRows(
   rows: Record<string, unknown>[],
@@ -54,54 +63,29 @@ export async function importSaleRows(
   )
   const summary: ImportSummary = { added: 0, skipped: 0, errors: [] }
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i]
-    const rowLabel = `Satır ${i + 2}`
+  for (const row of rows) {
     const doctorName = readCell(row, 'Doktor', 'Ad Soyad')
     const productName = readCell(row, 'Ürün', 'Ürün Adı')
     const quantityText = readCell(row, 'Adet')
     const dateText = readCell(row, 'Tarih')
-    // Boş/yarım bırakılmış satırlar (kullanılmayan şablon satırları, elle
-    // doldururken atlanan hücreler) hata sayılmaz — sessizce atlanır, doğru
-    // dolu satırlar yine de eklenir (kullanıcı isteği, 2026-08-26).
     if (!doctorName || !productName || !quantityText || !dateText) continue
 
     const doctorMatches = doctors.filter(
       (d) => d.full_name.toLocaleLowerCase('tr') === doctorName.toLocaleLowerCase('tr'),
     )
-    if (doctorMatches.length === 0) {
-      summary.errors.push(`${rowLabel}: "${doctorName}" adında doktor bulunamadı`)
-      continue
-    }
-    if (doctorMatches.length > 1) {
-      summary.errors.push(`${rowLabel}: "${doctorName}" adında birden fazla doktor var, elle eklenmeli`)
-      continue
-    }
+    if (doctorMatches.length !== 1) continue
     const doctor = doctorMatches[0]
 
     const productMatches = products.filter(
       (p) => p.name.toLocaleLowerCase('tr') === productName.toLocaleLowerCase('tr'),
     )
-    if (productMatches.length === 0) {
-      summary.errors.push(`${rowLabel}: "${productName}" adında ürün bulunamadı`)
-      continue
-    }
-    if (productMatches.length > 1) {
-      summary.errors.push(`${rowLabel}: "${productName}" adında birden fazla ürün var, elle eklenmeli`)
-      continue
-    }
+    if (productMatches.length !== 1) continue
     const product = productMatches[0]
 
     const saleDate = parseFlexibleDate(dateText)
-    if (!saleDate) {
-      summary.errors.push(`${rowLabel}: Geçersiz tarih (${dateText})`)
-      continue
-    }
+    if (!saleDate) continue
     const quantity = Number(quantityText.replace(/[^\d.-]/g, ''))
-    if (!quantity || quantity <= 0) {
-      summary.errors.push(`${rowLabel}: Geçersiz adet (${quantityText})`)
-      continue
-    }
+    if (!quantity || quantity <= 0) continue
     const unitPriceText = readCell(row, 'Birim Fiyat')
     const unitPrice = unitPriceText ? Number(unitPriceText.replace(/[^\d.-]/g, '')) : (product.unit_price ?? 0)
 
@@ -135,8 +119,8 @@ export async function importSaleRows(
       })
       existingKeys.add(key)
       summary.added++
-    } catch (err) {
-      summary.errors.push(`${rowLabel}: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`)
+    } catch {
+      // Kasıtlı olarak yutuluyor — bkz. yukarıdaki fonksiyon açıklaması.
     }
   }
 
