@@ -588,6 +588,7 @@ function StaffSalesReportTab() {
           <Input id="staff-report-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
         <div className="ml-auto flex items-end gap-2">
+          <SaleForm defaultSalesRepId={repId || undefined} />
           <ExportMenu<SaleWithRelations>
             title={`Personel Satış Raporu — ${selectedRepName}`}
             filename={`personel-satis-raporu-${selectedRepName}`}
