@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.224] - 2026-08-27
+
+**Stok Kartı'nda "Tüm Hareketleri Sil" artık gerekçe yazmayı gerektirmeyen sade bir Tamam/Vazgeç onay penceresi:** Kullanıcı isteğiyle ("bu şekilde bir menü istemiyorum, Tamam ve Vazgeç olmalı sadece") ayrı bir gerekçe metni kutusu içeren özel diyalog kaldırıldı; StockPage'teki "Tüm Ürünleri Sıfırla" ile aynı paylaşılan onay deseni (useConfirmDialog) kullanılıyor. RPC'nin istediği gerekçe metni artık otomatik oluşturuluyor. Şema değişikliği yok.
+
 ## [2.17.223] - 2026-08-27
 
 **Stok Kartı'nda "Tüm Hareketleri Sil" onay penceresindeki "İptal Et" butonu "Vazgeç" oldu:** Uygulamanın geri kalanındaki tüm onay pencereleri "Vazgeç"/"Sil" etiketini kullanıyor; bu diyalogda unutulmuş "İptal Et" etiketi tutarlılık için düzeltildi. Şema değişikliği yok.

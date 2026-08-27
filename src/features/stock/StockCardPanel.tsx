@@ -3,23 +3,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { toast } from 'sonner'
-import { ImageDown, IdCard, ArrowLeftRight, Pencil, Trash2, PackageX, Loader2 } from 'lucide-react'
+import { ImageDown, IdCard, ArrowLeftRight, Pencil, Trash2, PackageX } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
@@ -169,87 +159,57 @@ function InlineQtyCell({
  * paket/flakon stoğu 0'a çekilir — boş bir defterle tutarlı tek değer bu.
  */
 /**
- * Bu ürüne ait TÜM geçmiş hareketleri kalıcı olarak siler — önceden gerekçe
- * girişi + ürün adını yazarak onaylama olmak üzere iki ayrı adımdı; kullanıcı
- * isteğiyle (2026-08-24 — "bu şekilde ekran hiçbirinde çıkmasın Sil veya
- * İptal Et çıkmalı") uygulamanın geri kalanındaki tek adımlı Vazgeç/Sil
- * deseniyle tutarlı olsun diye tek adıma indirildi. Gerekçe alanı kaldırılmadı
- * (RPC'nin kendisi denetim kaydı için zorunlu bir gerekçe istiyor), sadece
- * ekstra "ürün adını yazarak onayla" adımı kaldırıldı.
+ * Bu ürüne ait TÜM geçmiş hareketleri kalıcı olarak siler. Önceden ayrıca
+ * zorunlu bir gerekçe metni yazmak gerekiyordu; kullanıcı isteğiyle
+ * (2026-08-27 — "bu şekilde bir menü istemiyorum, Tamam ve Vazgeç olmalı
+ * sadece") StockPage'teki ResetAllStockDialog ile aynı sade
+ * Tamam/Vazgeç (useConfirmDialog) desenine indirildi. RPC'nin kendisi
+ * denetim kaydı için hâlâ bir gerekçe metni istediğinden sabit bir metin
+ * otomatik gönderiliyor.
  */
 function DeleteAllMovementsDialog({ product }: { product: Product }) {
   const { staff } = useAuth()
   const queryClient = useQueryClient()
-  const [open, setOpen] = React.useState(false)
-  const [reason, setReason] = React.useState('')
-  const [submitting, setSubmitting] = React.useState(false)
+  const { confirm, dialog } = useConfirmDialog()
 
   if (staff?.role !== 'admin') return null
 
-  function handleOpenChange(next: boolean) {
-    setOpen(next)
-    if (!next) setReason('')
-  }
+  async function handleClick() {
+    if (
+      !(await confirm(
+        `${product.name} ürününe ait TÜM geçmiş giriş/çıkış hareketleri kalıcı olarak silinecek ve stok (paket + flakon) 0'a çekilecek. Bu işlem geri alınamaz.`,
+        { title: `${product.name} — Tüm Hareketleri Sil`, confirmLabel: 'Tamam' },
+      ))
+    )
+      return
 
-  async function handleConfirm() {
-    setSubmitting(true)
     try {
       const { data, error } = await supabase.rpc('delete_all_stock_movements_for_product', {
         p_product_id: product.id,
-        p_reason: reason.trim(),
+        p_reason: `Tüm hareketleri sil (${new Date().toLocaleString('tr-TR')})`,
       })
       if (error) throw error
       await queryClient.invalidateQueries({ queryKey: ['products'] })
       await queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       toast.success(`${product.name} için ${data ?? 0} hareket kalıcı olarak silindi`)
-      handleOpenChange(false)
     } catch (error) {
       toast.error('Silinemedi', { description: error instanceof Error ? error.message : String(error) })
-    } finally {
-      setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <>
       <Button
         variant="outline"
         size="sm"
         className="text-destructive hover:text-destructive"
-        onClick={() => setOpen(true)}
+        onClick={handleClick}
         title="Bu ürünün TÜM stok hareket geçmişini kalıcı olarak siler"
       >
         <Trash2 className="size-3.5" /> Tüm Hareketleri Sil
       </Button>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{product.name} — Tüm Hareketleri Sil</DialogTitle>
-          <DialogDescription>
-            Bu ürüne ait TÜM geçmiş giriş/çıkış hareketleri kalıcı olarak silinecek ve stok (paket + flakon) 0'a
-            çekilecek. Bu işlem geri alınamaz.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-1.5">
-          <Label htmlFor="delete-all-reason">Gerekçe (zorunlu)</Label>
-          <Textarea
-            id="delete-all-reason"
-            rows={3}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Ör. hatalı toplu içe aktarma sonrası geçmişi temizleme..."
-          />
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-            Vazgeç
-          </Button>
-          <Button type="button" variant="destructive" disabled={!reason.trim() || submitting} onClick={handleConfirm}>
-            {submitting && <Loader2 className="animate-spin" />}
-            Sil
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      {dialog}
+    </>
   )
 }
 
