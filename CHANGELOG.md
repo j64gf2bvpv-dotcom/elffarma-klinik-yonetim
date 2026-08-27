@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.237] - 2026-08-28
+
+**Prim Oranı artık serbest metin değil, sabit %3 / %5 / %10 seçenekli:** Hem tek personel seçiliyken (Hedef ve Prim bölümü) hem "Tüm Personel" tablosunun her satırında, prim oranı için sayı yazmak yerine üç sabit seçenekten biri seçiliyor — hak edilen prim, seçilen orana göre hâlâ anlık ve doğru hesaplanıyor. Şema değişikliği yok.
+
 ## [2.17.236] - 2026-08-28
 
 **Personel Satış Raporu'ndan artık kişi kişi ayrı sekmelerde Excel alınabiliyor:** "Tüm Personel" seçiliyken "Kişi Kişi Dışa Aktar" butonu, o an filtrelenmiş kayıtları TEK bir Excel dosyasında her personel için ayrı sekme olacak şekilde indiriyor (personeli olmayan satışlar "Belirtilmemiş" sekmesinde toplanıyor, hiçbir kayıt atlanmıyor). `exportData.ts`'e genel amaçlı yeni bir `exportToExcelMultiSheet` yardımcı fonksiyonu eklendi. Şema değişikliği yok.

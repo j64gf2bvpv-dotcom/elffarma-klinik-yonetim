@@ -43,6 +43,9 @@ function netAmount(s: { type: string; quantity: number; unit_price: number }) {
   return (s.type === 'return' ? -1 : 1) * s.quantity * Number(s.unit_price)
 }
 
+/** Prim oranı — kullanıcı isteğiyle (2026-08-28: "yüzde 3 yüzde 5 ve yüzde 10 olarak belirlensin seçilebilsin") serbest metin yerine sabit üç seçenek. */
+const COMMISSION_RATE_OPTIONS = [3, 5, 10]
+
 const SALE_REPORT_COLUMNS: ExportColumn<SaleWithRelations>[] = [
   { header: 'Tarih', value: (s) => format(new Date(s.sale_date), 'd MMM yyyy', { locale: trLocale }) },
   { header: 'Personel', value: (s) => s.sales_reps?.name ?? '—' },
@@ -310,17 +313,19 @@ function RepTargetEditor({ rep, netTotal }: { rep: SalesRep; netTotal: number })
           <CurrencyInput id="staff-target" value={targetValue} onChange={setTargetValue} className="w-44" />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="staff-rate">Prim Oranı (%)</Label>
-          <Input
-            id="staff-rate"
-            type="number"
-            min="0"
-            max="100"
-            step="0.01"
-            value={rateInput}
-            onChange={(e) => setRateInput(e.target.value)}
-            className="w-32"
-          />
+          <Label htmlFor="staff-rate">Prim Oranı</Label>
+          <Select value={rateInput} onValueChange={setRateInput}>
+            <SelectTrigger id="staff-rate" className="w-32">
+              <SelectValue placeholder="Seçin" />
+            </SelectTrigger>
+            <SelectContent>
+              {COMMISSION_RATE_OPTIONS.map((r) => (
+                <SelectItem key={r} value={String(r)}>
+                  %{r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={handleSave} disabled={updateRepMutation.isPending}>
           {updateRepMutation.isPending && <Loader2 className="animate-spin" />}
@@ -398,15 +403,18 @@ function RepTargetTableRow({ rep, net }: { rep: SalesRep; net: number }) {
         )}
       </TableCell>
       <TableCell className="text-right">
-        <Input
-          type="number"
-          min="0"
-          max="100"
-          step="0.01"
-          value={rateInput}
-          onChange={(e) => setRateInput(e.target.value)}
-          className="ml-auto w-20 text-right"
-        />
+        <Select value={rateInput} onValueChange={setRateInput}>
+          <SelectTrigger className="ml-auto w-24">
+            <SelectValue placeholder="Seçin" />
+          </SelectTrigger>
+          <SelectContent>
+            {COMMISSION_RATE_OPTIONS.map((r) => (
+              <SelectItem key={r} value={String(r)}>
+                %{r}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </TableCell>
       <TableCell className="text-success text-right font-semibold tabular-nums whitespace-nowrap">
         {currency(liveCommission)}
