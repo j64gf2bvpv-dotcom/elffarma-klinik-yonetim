@@ -73,10 +73,6 @@ import type { BrandLine, Product, ProductCatalog } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 const ALL_BRANDS = 'all'
-/** Kategorisi/hattı olmayan ya da artık geçerli bir katalogda bulunmayan
- * ürünlerin düştüğü "Tümü" altındaki son grup — hiçbir ürün sessizce
- * kaybolmasın diye (kullanıcı isteği, 2026-08-17). */
-const UNCATALOGED = '__uncataloged__'
 
 /** Mevcut iki katalog (dermakor/swiss) veritabanında hâlâ küçük harf
  * saklanıyor (geçmiş veriyle/komisyon kurallarıyla uyumluluk bozulmasın diye
@@ -935,19 +931,16 @@ export function StockPage() {
   const { confirm, dialog } = useConfirmDialog()
 
   // Ekranda o an görünen ürün satırlarının GERÇEK dikey sırası — ALL_BRANDS
-  // filtresinde katalog başına bir ProductsTable (+ eşleşmeyen ürünler için
-  // son bir "Diğer" grubu) render edildiği için, klavye ok tuşlarının
-  // render sırasıyla birebir eşleşmesi için aynı bölme mantığı burada da
-  // uygulanıyor. Hiçbir ürün bu listeden düşmüyor (kullanıcı isteği,
-  // 2026-08-17 — önceden brand_line dermakor/swiss olmayan ürünler "Tümü"
-  // sekmesinde sessizce hiç görünmüyordu).
+  // filtresinde katalog başına bir ProductsTable render edildiği için,
+  // klavye ok tuşlarının render sırasıyla birebir eşleşmesi için aynı bölme
+  // mantığı burada da uygulanıyor. Hiçbir katalogla eşleşmeyen ("Diğer")
+  // ürünler artık "Tümü" görünümünde HİÇ gösterilmiyor (kullanıcı isteği,
+  // 2026-08-27: "stok ve günlükten diğer kısmını kaldır") — bu yüzden burada
+  // da dahil edilmiyor, aksi halde ok tuşuyla ekranda hiç görünmeyen bir
+  // satıra atlamaya çalışırdı.
   const orderedVisibleProducts = React.useMemo(() => {
     if (brandFilter === ALL_BRANDS) {
-      const catalogNames = new Set(catalogs.map((c) => c.name))
-      return [
-        ...catalogs.flatMap((c) => products.filter((p) => p.brand_line === c.name)),
-        ...products.filter((p) => !p.brand_line || !catalogNames.has(p.brand_line)),
-      ]
+      return catalogs.flatMap((c) => products.filter((p) => p.brand_line === c.name))
     }
     return products
   }, [products, brandFilter, catalogs])
@@ -1177,26 +1170,6 @@ export function StockPage() {
                   />
                 </div>
               ))}
-              {(() => {
-                const catalogNames = new Set(catalogs.map((c) => c.name))
-                const uncataloged = products.filter((p) => !p.brand_line || !catalogNames.has(p.brand_line))
-                if (uncataloged.length === 0) return null
-                return (
-                  <div key={UNCATALOGED} className="min-w-0">
-                    <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Diğer</h3>
-                    <ProductsTable
-                      products={uncataloged}
-                      onRemove={handleRemove}
-                      selectedId={selectedProductId}
-                      onSelect={setSelectedProductId}
-                      checkedIds={checkedIds}
-                      onToggleChecked={toggleChecked}
-                      onToggleAll={toggleAllChecked}
-                      onReorder={handleReorder}
-                    />
-                  </div>
-                )
-              })()}
             </div>
           )}
 

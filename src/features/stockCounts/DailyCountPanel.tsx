@@ -894,9 +894,11 @@ export function DailyCountPanel() {
       deger: finalStockLabel(finalPaket, finalFlakon),
     }
   }
+  // "Diğer" (Dermakor/Swiss dışı) ürünler kasıtlı olarak hiçbir yerde
+  // gösterilmiyor (kullanıcı isteği, 2026-08-27: "stok ve günlükten diğer
+  // kısmını kaldır").
   const dermakorItems = items.filter((i) => i.products.brand_line === 'dermakor')
   const swissItems = items.filter((i) => i.products.brand_line === 'swiss')
-  const otherItems = items.filter((i) => i.products.brand_line !== 'dermakor' && i.products.brand_line !== 'swiss')
 
   // Sadece ürünler Dermakor/Swiss diye ayrılmış liste — toplam/fark gibi
   // ayrı hesaplanan özet rakamları YOK. Tarih satırı kaldırıldı (kullanıcı
@@ -907,7 +909,6 @@ export function DailyCountPanel() {
     ...dermakorItems.map(productLine),
     { metrik: '— SWISS —', deger: '' },
     ...swissItems.map(productLine),
-    ...(otherItems.length > 0 ? [{ metrik: '— DİĞER —', deger: '' }, ...otherItems.map(productLine)] : []),
   ]
 
   return (
@@ -1042,7 +1043,6 @@ export function DailyCountPanel() {
             [
               ['Dermakor', dermakorItems],
               ['Swiss', swissItems],
-              ['Diğer', otherItems],
             ] as const
           ).map(([groupLabel, groupItems]) =>
             groupItems.length === 0 ? null : (
