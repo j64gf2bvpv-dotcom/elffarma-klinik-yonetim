@@ -41,19 +41,20 @@ export const SALE_IMPORT_FIELD_HINTS: Record<string, string> = {
  * gerçek bir satış kaydı VE stok hareketi oluşturur (bkz. api.ts — bu artık
  * merkezî, ayrıca bir stok çağrısına gerek yok).
  *
- * Kasıtlı olarak HİÇBİR satır hata olarak raporlanmaz (kullanıcı isteği,
- * 2026-08-27: "hiçbir hata vermesin eksik olsa bile yüklesin") — eksik hücre,
- * geçersiz tarih/adet veya kayıt sırasında çıkan bir hata, o satırı sessizce
- * atlar; geri kalan doğru satırlar yine de eklenir. Dosyadaki bir doktor/ürün
- * adı sistemde YOKSA (birebir eşleşme sıfır sonuç), yine kullanıcı isteği ile
- * (2026-08-27: "sistemde yoksa otomatik olarak yeni kayıt olarak eklensin")
- * minimal bir yeni doktor/ürün kaydı otomatik oluşturulup satış ona bağlanır
- * — sadece isim/ürün adı bilinir, diğer alanlar (telefon, kategori vb.) boş/
- * varsayılan kalır, sonradan ilgili sayfadan tamamlanabilir. Aynı isim aynı
- * dosya içinde birden fazla satırda geçiyorsa sadece İLK seferinde oluşturulur
- * (localDoctors/localProducts önbelleği). Ad AYNI ANDA BİRDEN FAZLA kayıtla
- * eşleşiyorsa (belirsiz) oluşturma yapılmaz, satır atlanır — hangisinin
- * kastedildiği tahmin edilmez.
+ * Kasıtlı olarak HİÇBİR satır hata olarak raporlanmaz ve mümkün olduğunca
+ * hiçbir satır reddedilmez (kullanıcı isteği, 2026-08-27: "hiçbir hata
+ * vermesin eksik olsa bile yüklesin"):
+ * - Doktor hücresi boşsa, dosyada BİR ÖNCEKİ dolu satırdaki doktor kullanılır
+ *   — gerçek dünyadaki Excel listelerinde aynı doktorun art arda gelen birden
+ *   fazla ürün satırında doktor adı sadece ilk satıra yazılıp altındakiler
+ *   göze hoş görünsün diye boş bırakılıyor (bkz. kullanıcının gerçek dosyası).
+ * - Tarih hücresi boşsa bugünün tarihi kullanılır (bir satışın illa bir
+ *   tarihi olmak zorunda, tahmin edilebilecek en makul değer budur).
+ * - Ürün/Adet zorunlu kalır — bunlar satırdan satıra gerçekten değiştiği için
+ *   tahmin edilemez, boşsa o satır atlanır.
+ * - Dosyadaki bir doktor/ürün adı sistemde YOKSA (eşleşme sıfır), minimal bir
+ *   yeni kayıt otomatik oluşturulur; BİRDEN FAZLA eşleşiyorsa (belirsiz) da
+ *   yine hiçbir satır reddedilmesin diye ilk eşleşen kayıt kullanılır.
  */
 export async function importSaleRows(
   rows: Record<string, unknown>[],
@@ -71,13 +72,15 @@ export async function importSaleRows(
   const summary: ImportSummary = { added: 0, skipped: 0, errors: [], created: 0 }
   const localDoctors = [...doctors]
   const localProducts = [...products]
+  let lastDoctorName = ''
 
   for (const row of rows) {
-    const doctorName = readCell(row, 'Doktor', 'Ad Soyad')
+    const doctorNameRaw = readCell(row, 'Doktor', 'Ad Soyad')
+    if (doctorNameRaw) lastDoctorName = doctorNameRaw
+    const doctorName = doctorNameRaw || lastDoctorName
     const productName = readCell(row, 'Ürün', 'Ürün Adı')
     const quantityText = readCell(row, 'Adet')
-    const dateText = readCell(row, 'Tarih')
-    if (!doctorName || !productName || !quantityText || !dateText) continue
+    if (!doctorName || !productName || !quantityText) continue
 
     let doctorMatches = localDoctors.filter(
       (d) => d.full_name.toLocaleLowerCase('tr') === doctorName.toLocaleLowerCase('tr'),
@@ -98,7 +101,6 @@ export async function importSaleRows(
         continue
       }
     }
-    if (doctorMatches.length !== 1) continue
     const doctor = doctorMatches[0]
 
     let productMatches = localProducts.filter(
@@ -118,11 +120,10 @@ export async function importSaleRows(
         continue
       }
     }
-    if (productMatches.length !== 1) continue
     const product = productMatches[0]
 
-    const saleDate = parseFlexibleDate(dateText)
-    if (!saleDate) continue
+    const dateText = readCell(row, 'Tarih')
+    const saleDate = dateText ? (parseFlexibleDate(dateText) ?? new Date()) : new Date()
     const quantity = Number(quantityText.replace(/[^\d.-]/g, ''))
     if (!quantity || quantity <= 0) continue
     const unitPriceText = readCell(row, 'Birim Fiyat')

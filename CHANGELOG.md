@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.212] - 2026-08-27
+
+**Satış içe aktarmada boş Doktor/Tarih hücreleri artık satırı reddetmiyor:** Gerçek Excel listelerinde aynı doktorun art arda gelen ürün satırlarında doktor adı sadece ilk satıra yazılıp altındakiler boş bırakılıyor — artık böyle satırlarda bir üstteki dolu satırdaki doktor otomatik kullanılıyor. Tarih hücresi boşsa bugünün tarihi kullanılıyor. Ürün/Adet hâlâ zorunlu (satırdan satıra gerçekten değiştiği için tahmin edilemiyor). Şema değişikliği yok.
+
 ## [2.17.211] - 2026-08-27
 
 **Satış içe aktarmada eşleşmeyen doktor/ürün artık otomatik oluşturuluyor:** Dosyadaki bir doktor veya ürün adı sistemde hiç yoksa (isim tamamen eşleşmiyorsa), o satırı atlamak yerine artık minimal bir yeni doktor/ürün kaydı otomatik açılıp satış ona bağlanıyor (sadece isim biliniyor — telefon, kategori gibi diğer alanlar sonradan ilgili sayfadan tamamlanabilir). Aynı isim dosyada birden çok satırda geçiyorsa sadece ilk seferde yeni kayıt açılıyor. Başarı mesajında kaç yeni doktor/ürün oluşturulduğu bilgi amaçlı gösteriliyor. Birden fazla kayıtla belirsiz şekilde eşleşen isimler hâlâ atlanıyor (hangisinin kastedildiği tahmin edilmiyor). Şema değişikliği yok.
