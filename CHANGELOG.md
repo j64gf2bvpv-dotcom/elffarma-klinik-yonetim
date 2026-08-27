@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.229] - 2026-08-28
+
+**Satışlar'da doktor/kongre/satış danışmanı arasına ayraç eklendi:** Önceden sadece satış danışmanından önce "·" vardı, doktor adı ile kongre etiketi bitişik duruyordu — artık üçü de "·" ile ayrılıyor (ör. "DR ZEBULLAH · mısır kongresi · erkan"). Şema değişikliği yok.
+
 ## [2.17.228] - 2026-08-28
 
 **Satışlar'da kongre etiketi ve satış danışmanı ismi ayrı renklerde, arka plan dolgusuz:** Kongre adı bir önceki sürümde dolgulu (filled) rozet olmuştu — kullanıcı isteğiyle ("arkası renkli değil sadece yazı renkli olsun") arka plan kaldırıldı, sadece turuncu/sarı (warning) kalın yazı kaldı. Satış danışmanı ismi de artık ayrı bir renkte (marka/primary) ve yarı kalın — önceden kongre etiketiyle aynı soluk gri tondaydı. Şema değişikliği yok.

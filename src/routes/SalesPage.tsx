@@ -198,7 +198,7 @@ function SalesTab({
                       )}
                       <span className="font-medium">{first.customers?.full_name ?? '—'}</span>
                       {first.congress_name && (
-                        <span className="text-warning text-sm font-bold">{first.congress_name}</span>
+                        <span className="text-warning text-sm font-bold">· {first.congress_name}</span>
                       )}
                       {first.sales_reps?.name && (
                         <span className="text-primary font-semibold">· {first.sales_reps.name}</span>
