@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.235] - 2026-08-28
+
+**Hedef ve Prim: hedef alanı artık nokta/virgül otomatik biçimleniyor, prim de girerken anlık önizleniyor:** Hedef (₺) alanı uygulamanın diğer para girişleriyle aynı bileşeni (CurrencyInput) kullanıyor — 1000'ler basamağı nokta, ondalık virgülle otomatik ayrılıyor. "Hak Edilen Prim" artık kaydedilmeden önce, prim oranı kutusuna yazarken anlık hesaplanıp gösteriliyor (önceden sadece Kaydet'e basılınca güncelleniyordu). Şema değişikliği yok.
+
 ## [2.17.234] - 2026-08-28
 
 **"Tüm Personel" tablosundaki hedef/prim artık satırdan doğrudan düzenlenebiliyor:** Önceden hedef/prim oranını değiştirmek için önce o personeli tek tek seçmek gerekiyordu — kullanıcı isteğiyle ("manuel düzeltilebilsin buradaki ayarlar") "Tüm Personel" tablosunun her satırına Hedef ve Prim Oranı için düzenlenebilir giriş kutuları ve bir Kaydet (✓) butonu eklendi. Şema değişikliği yok.

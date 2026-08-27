@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CurrencyInput } from '@/components/ui/currency-input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -268,36 +269,31 @@ function SalesTab({
  */
 function RepTargetEditor({ rep, netTotal }: { rep: SalesRep; netTotal: number }) {
   const updateRepMutation = useUpdateSalesRep()
-  const [targetInput, setTargetInput] = React.useState(rep.sales_target != null ? String(rep.sales_target) : '')
+  const [targetValue, setTargetValue] = React.useState<number | undefined>(rep.sales_target ?? undefined)
   const [rateInput, setRateInput] = React.useState(rep.commission_rate != null ? String(rep.commission_rate) : '')
 
   function handleSave() {
     updateRepMutation.mutate({
       id: rep.id,
       input: {
-        sales_target: targetInput.trim() === '' ? null : Number(targetInput),
+        sales_target: targetValue ?? null,
         commission_rate: rateInput.trim() === '' ? null : Number(rateInput),
       },
     })
   }
 
-  const rate = Number(rep.commission_rate ?? 0)
-  const commission = netTotal * (rate / 100)
+  // Kaydedilmemiş olsa bile inputlara yazılan anlık değerle hesaplanır —
+  // kullanıcı isteği (2026-08-28: "yüzde ve prim miktarını girince sonunda
+  // alması gereken primi göstersin"): Kaydet'e basmadan önce de önizleme.
+  const liveRate = Number(rateInput || 0)
+  const liveCommission = netTotal * (liveRate / 100)
 
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1.5">
-          <Label htmlFor="staff-target">Aylık Satış Hedefi (₺)</Label>
-          <Input
-            id="staff-target"
-            type="number"
-            min="0"
-            step="0.01"
-            value={targetInput}
-            onChange={(e) => setTargetInput(e.target.value)}
-            className="w-40"
-          />
+          <Label htmlFor="staff-target">Aylık Satış Hedefi</Label>
+          <CurrencyInput id="staff-target" value={targetValue} onChange={setTargetValue} className="w-44" />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="staff-rate">Prim Oranı (%)</Label>
@@ -325,17 +321,19 @@ function RepTargetEditor({ rep, netTotal }: { rep: SalesRep; netTotal: number })
         </div>
         <div className="rounded-lg border p-3">
           <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Hedef Durumu</p>
-          {rep.sales_target != null ? (
-            <Badge variant={netTotal >= Number(rep.sales_target) ? 'success' : 'outline'} className="mt-1">
-              {currency(netTotal)} / {currency(Number(rep.sales_target))}
+          {targetValue != null ? (
+            <Badge variant={netTotal >= targetValue ? 'success' : 'outline'} className="mt-1">
+              {currency(netTotal)} / {currency(targetValue)}
             </Badge>
           ) : (
             <p className="text-muted-foreground mt-1 text-sm">Hedef belirlenmedi</p>
           )}
         </div>
         <div className="rounded-lg border p-3">
-          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Hak Edilen Prim (%{rate})</p>
-          <p className="text-success mt-1 text-xl font-semibold tabular-nums">{currency(commission)}</p>
+          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+            Hak Edilen Prim (%{liveRate})
+          </p>
+          <p className="text-success mt-1 text-xl font-semibold tabular-nums">{currency(liveCommission)}</p>
         </div>
       </div>
     </div>
@@ -352,40 +350,35 @@ function RepTargetEditor({ rep, netTotal }: { rep: SalesRep; netTotal: number })
  */
 function RepTargetTableRow({ rep, net }: { rep: SalesRep; net: number }) {
   const updateRepMutation = useUpdateSalesRep()
-  const [targetInput, setTargetInput] = React.useState(rep.sales_target != null ? String(rep.sales_target) : '')
+  const [targetValue, setTargetValue] = React.useState<number | undefined>(rep.sales_target ?? undefined)
   const [rateInput, setRateInput] = React.useState(rep.commission_rate != null ? String(rep.commission_rate) : '')
 
   function handleSave() {
     updateRepMutation.mutate({
       id: rep.id,
       input: {
-        sales_target: targetInput.trim() === '' ? null : Number(targetInput),
+        sales_target: targetValue ?? null,
         commission_rate: rateInput.trim() === '' ? null : Number(rateInput),
       },
     })
   }
 
-  const rate = Number(rep.commission_rate ?? 0)
-  const target = rep.sales_target != null ? Number(rep.sales_target) : null
-  const commission = net * (rate / 100)
+  // Kaydedilmeden önce de anlık önizleme (bkz. RepTargetEditor'daki aynı not).
+  const liveRate = Number(rateInput || 0)
+  const liveCommission = net * (liveRate / 100)
 
   return (
     <TableRow>
       <TableCell className="text-primary font-semibold whitespace-nowrap">{rep.name}</TableCell>
       <TableCell className="text-right">
-        <Input
-          type="number"
-          min="0"
-          step="0.01"
-          value={targetInput}
-          onChange={(e) => setTargetInput(e.target.value)}
-          className="ml-auto w-28 text-right"
-        />
+        <CurrencyInput value={targetValue} onChange={setTargetValue} className="ml-auto w-32" />
       </TableCell>
       <TableCell className="text-right tabular-nums whitespace-nowrap">{currency(net)}</TableCell>
       <TableCell>
-        {target != null ? (
-          <Badge variant={net >= target ? 'success' : 'outline'}>{net >= target ? 'Hedef Aşıldı' : 'Hedef Altında'}</Badge>
+        {targetValue != null ? (
+          <Badge variant={net >= targetValue ? 'success' : 'outline'}>
+            {net >= targetValue ? 'Hedef Aşıldı' : 'Hedef Altında'}
+          </Badge>
         ) : (
           '—'
         )}
@@ -402,7 +395,7 @@ function RepTargetTableRow({ rep, net }: { rep: SalesRep; net: number }) {
         />
       </TableCell>
       <TableCell className="text-success text-right font-semibold tabular-nums whitespace-nowrap">
-        {currency(commission)}
+        {currency(liveCommission)}
       </TableCell>
       <TableCell>
         <Button variant="ghost" size="icon" onClick={handleSave} disabled={updateRepMutation.isPending}>
