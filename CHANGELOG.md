@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.214] - 2026-08-27
+
+**Günlük Sayım'da bir sayımı tamamen silme eklendi:** Hem bugünün sayımının başlığında hem de Geçmiş Sayımlar listesindeki her satırda artık bir "Sayımı Sil" (çöp kutusu) butonu var — yanlışlıkla ileri tarihe açılmış/kalmış bir sayımı, kalemleriyle birlikte tamamen silebilirsiniz. Tamamlanmış bir sayımı silerken, bunun o sayımın uyguladığı stok değişikliklerini geri almadığı ayrıca uyarı olarak gösteriliyor. Şema değişikliği yok.
+
 ## [2.17.213] - 2026-08-27
 
 **Küçük pencerede Stok sayfasının üst buton satırı artık taşmıyor:** "Yeni Ürün" ve "Tüm Stoğu Sıfırla" gibi butonlar, dar bir pencerede sığmadıklarında ekranın dışına taşıp kayboluyordu (bir CSS ayarı satır atlamayı engelliyordu) — artık sığmadıklarında düzgünce alt satıra geçiyorlar, hiçbir buton kaybolmuyor.

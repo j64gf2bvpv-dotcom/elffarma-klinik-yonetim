@@ -43,6 +43,7 @@ import {
   useCompleteCount,
   useCountItems,
   useDeleteCountItem,
+  useDeleteStockCount,
   usePastCounts,
   useReopenCount,
   useSetCountStatus,
@@ -533,6 +534,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
   const updateItemFlakonMutation = useUpdateCountItemFlakon(count.id)
   const addItemMutation = useAddCountItem(count.id)
   const deleteItemMutation = useDeleteCountItem(count.id)
+  const deleteCountMutation = useDeleteStockCount()
   const [selectedItemId, setSelectedItemId] = React.useState<string | null>(null)
   const { confirm, dialog } = useConfirmDialog()
 
@@ -555,6 +557,16 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
   async function handleDeleteItem(item: StockCountItemWithProduct) {
     if (!(await confirm(`${item.products.name} bu sayımdan çıkarılsın mı?`))) return
     deleteItemMutation.mutate(item.id)
+  }
+
+  async function handleDeleteCount() {
+    const dateLabel = format(new Date(count.count_date), 'd MMMM yyyy', { locale: trLocale })
+    const message =
+      count.status === 'completed'
+        ? `${dateLabel} sayımı TAMAMLANMIŞ — silmek, tamamlanırken uygulanan stok değişikliklerini GERİ ALMAZ, sadece sayım kaydı silinir. Yine de silinsin mi?`
+        : `${dateLabel} sayımı tamamen silinsin mi? Bu sayımdaki tüm kalemler de silinecek.`
+    if (!(await confirm(message, { title: 'Sayımı Sil', confirmLabel: 'Sil', variant: 'destructive' }))) return
+    deleteCountMutation.mutate(count.id)
   }
 
   return (
@@ -601,6 +613,19 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
               <SelectItem value="completed">Tamamlandı</SelectItem>
             </SelectContent>
           </Select>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            title="Sayımı Sil"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDeleteCount()
+            }}
+          >
+            <Trash2 className="size-3.5 text-destructive" />
+          </Button>
         </div>
       </div>
       {open && (
@@ -752,10 +777,22 @@ export function DailyCountPanel() {
   }
 
   const { confirm, dialog } = useConfirmDialog()
+  const deleteCountMutation = useDeleteStockCount()
 
   async function handleDeleteItem(item: StockCountItemWithProduct) {
     if (!(await confirm(`${item.products.name} bu sayımdan çıkarılsın mı?`))) return
     deleteItemMutation.mutate(item.id)
+  }
+
+  async function handleDeleteTodayCount() {
+    if (!todayCount) return
+    const dateLabel = format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })
+    const message =
+      todayCount.status === 'completed'
+        ? `${dateLabel} sayımı TAMAMLANMIŞ — silmek, tamamlanırken uygulanan stok değişikliklerini GERİ ALMAZ, sadece sayım kaydı silinir. Yine de silinsin mi?`
+        : `${dateLabel} sayımı tamamen silinsin mi? Bu sayımdaki tüm kalemler de silinecek.`
+    if (!(await confirm(message, { title: 'Sayımı Sil', confirmLabel: 'Sil', variant: 'destructive' }))) return
+    deleteCountMutation.mutate(todayCount.id)
   }
 
   if (loadingToday) {
@@ -914,6 +951,16 @@ export function DailyCountPanel() {
                 )}
               </Button>
             )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="Sayımı Sil"
+              onClick={handleDeleteTodayCount}
+              disabled={deleteCountMutation.isPending}
+            >
+              <Trash2 className="size-4 text-destructive" />
+            </Button>
           </div>
         </CardHeader>
         {!isCompleted && pendingChangeCount > 0 && (

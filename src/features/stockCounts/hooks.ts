@@ -4,6 +4,7 @@ import {
   addCountItem,
   completeCount,
   deleteCountItem,
+  deleteStockCount,
   fetchCountItems,
   fetchPastCounts,
   fetchTodayCount,
@@ -129,6 +130,18 @@ export function useUpdateCountDate() {
       toast.success('Sayım tarihi güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useDeleteStockCount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (stockCountId: string) => deleteStockCount(stockCountId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_counts'] })
+      toast.success('Sayım silindi')
+    },
+    onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
   })
 }
 

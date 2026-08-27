@@ -283,3 +283,15 @@ export async function setCountStatusManually(stockCountId: string, status: Stock
     'Sayım durumunu elle değiştirme',
   )
 }
+
+/**
+ * Bir sayımı (ve stock_count_items'daki tüm kalemlerini, ON DELETE CASCADE ile)
+ * tamamen siler — kullanıcı isteği, 2026-08-27: yanlışlıkla ileri tarihe
+ * açılmış/kalmış sayımları temizleyebilmek için. TAMAMLANMIŞ bir sayımı
+ * silmek, o sayımın tamamlanırken zaten uyguladığı stok hareketlerini GERİ
+ * ALMAZ — sadece sayım kaydının kendisi kaybolur (UI tarafında bu ayrım
+ * kullanıcıya açıkça gösteriliyor, bkz. DailyCountPanel.tsx).
+ */
+export async function deleteStockCount(stockCountId: string): Promise<void> {
+  await offlineDelete('stock_counts', stockCountId, 'Sayım silme')
+}
