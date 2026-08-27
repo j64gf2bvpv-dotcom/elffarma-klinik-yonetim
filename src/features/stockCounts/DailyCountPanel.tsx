@@ -635,7 +635,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
           className="flex flex-1 items-center gap-2 text-left hover:text-foreground"
         >
           <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
-          {format(new Date(count.count_date), 'd MMMM yyyy', { locale: trLocale })}
+          {format(new Date(count.count_date), 'dd.MM.yyyy EEEE', { locale: trLocale })}
         </button>
         <div className="flex items-center gap-2">
           {/* Tarih elle öne/arkaya alınabilir (kullanıcı isteği, 2026-08-25) —

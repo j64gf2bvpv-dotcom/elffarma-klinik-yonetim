@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.247] - 2026-08-28
+
+**Geçmiş Sayımlar satır başlığındaki tarih "28.08.2026 Salı" formatına çevrildi:** Önceden "28 Ağustos 2026" yazıyordu, şimdi diğer sayım ekranlarıyla tutarlı sayısal + gün adı formatında. Not: bu satırın yanındaki küçük tarih kutusu (sayımı başka bir güne taşımak için) tarayıcının kendi yerleşik `input type="date"` bileşeni — o kutunun kendi gösterdiği metin biçimi tarayıcı/işletim sistemi tarafından kontrol ediliyor, uygulama tarafından değiştirilemiyor. Şema değişikliği yok.
+
 ## [2.17.246] - 2026-08-28
 
 **Sayım tablosu başlığındaki tarih formatları tekilleştirildi ve sadeleştirildi:** Nav okları yanındaki tarih ile Sayım tablosundaki yanıp sönen "Bugünkü Stok" başlığı artık AYNI metni (`activeDateLabel` — "28.08.2026 CUMA - GÜNCEL SAYIM" / geçmişte "SAYIM") tek yerden üretiyor; önceden ikisi ayrı ayrı yazılıyordu ve biri güncellenmemişti. Ürün tablosu kartının başlığı ("28 Ağustos 2026 Sayımı") da kullanıcı isteğiyle sadece "28.08.2026" olarak sadeleştirildi. Şema değişikliği yok.
