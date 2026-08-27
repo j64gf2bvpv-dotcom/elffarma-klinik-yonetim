@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.228] - 2026-08-28
+
+**Satışlar'da kongre etiketi ve satış danışmanı ismi ayrı renklerde, arka plan dolgusuz:** Kongre adı bir önceki sürümde dolgulu (filled) rozet olmuştu — kullanıcı isteğiyle ("arkası renkli değil sadece yazı renkli olsun") arka plan kaldırıldı, sadece turuncu/sarı (warning) kalın yazı kaldı. Satış danışmanı ismi de artık ayrı bir renkte (marka/primary) ve yarı kalın — önceden kongre etiketiyle aynı soluk gri tondaydı. Şema değişikliği yok.
+
 ## [2.17.227] - 2026-08-27
 
 **Satışlar listesinde kongre/workshop etiketi artık daha belirgin:** Doktor satırındaki kongre adı rozeti önceden küçük, soluk ve normal punto (outline, muted) idi — kullanıcı isteğiyle sarı/turuncu (warning), büyük ve kalın punto yapıldı. Şema değişikliği yok.

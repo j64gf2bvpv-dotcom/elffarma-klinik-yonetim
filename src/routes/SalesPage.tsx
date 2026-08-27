@@ -198,12 +198,10 @@ function SalesTab({
                       )}
                       <span className="font-medium">{first.customers?.full_name ?? '—'}</span>
                       {first.congress_name && (
-                        <Badge variant="warning" className="text-sm font-bold">
-                          {first.congress_name}
-                        </Badge>
+                        <span className="text-warning text-sm font-bold">{first.congress_name}</span>
                       )}
                       {first.sales_reps?.name && (
-                        <span className="text-muted-foreground">· {first.sales_reps.name}</span>
+                        <span className="text-primary font-semibold">· {first.sales_reps.name}</span>
                       )}
                     </div>
                     <div className="grid gap-1">
