@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.236] - 2026-08-28
+
+**Personel Satış Raporu'ndan artık kişi kişi ayrı sekmelerde Excel alınabiliyor:** "Tüm Personel" seçiliyken "Kişi Kişi Dışa Aktar" butonu, o an filtrelenmiş kayıtları TEK bir Excel dosyasında her personel için ayrı sekme olacak şekilde indiriyor (personeli olmayan satışlar "Belirtilmemiş" sekmesinde toplanıyor, hiçbir kayıt atlanmıyor). `exportData.ts`'e genel amaçlı yeni bir `exportToExcelMultiSheet` yardımcı fonksiyonu eklendi. Şema değişikliği yok.
+
+**Personel Satış Raporu'ndan Toplam Satış / Toplam İade kartları kaldırıldı:** Kullanıcı isteğiyle — Hedef ve Prim bölümündeki "Dönem Net Cirosu" zaten aynı bilgiyi veriyordu.
+
 ## [2.17.235] - 2026-08-28
 
 **Hedef ve Prim: hedef alanı artık nokta/virgül otomatik biçimleniyor, prim de girerken anlık önizleniyor:** Hedef (₺) alanı uygulamanın diğer para girişleriyle aynı bileşeni (CurrencyInput) kullanıyor — 1000'ler basamağı nokta, ondalık virgülle otomatik ayrılıyor. "Hak Edilen Prim" artık kaydedilmeden önce, prim oranı kutusuna yazarken anlık hesaplanıp gösteriliyor (önceden sadece Kaydet'e basılınca güncelleniyordu). Şema değişikliği yok.

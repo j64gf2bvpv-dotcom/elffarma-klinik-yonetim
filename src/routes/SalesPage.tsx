@@ -30,6 +30,7 @@ import { useProducts } from '@/features/stock/hooks'
 import { useSalesReps, useUpdateSalesRep } from '@/features/salesReps/hooks'
 import { cn, getErrorMessage } from '@/lib/utils'
 import type { ImportSummary } from '@/lib/importData'
+import { exportToExcelMultiSheet, type ExportColumn } from '@/lib/exportData'
 import type { SalesRep } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import { useQueryClient } from '@tanstack/react-query'
@@ -41,6 +42,19 @@ function currency(n: number) {
 function netAmount(s: { type: string; quantity: number; unit_price: number }) {
   return (s.type === 'return' ? -1 : 1) * s.quantity * Number(s.unit_price)
 }
+
+const SALE_REPORT_COLUMNS: ExportColumn<SaleWithRelations>[] = [
+  { header: 'Tarih', value: (s) => format(new Date(s.sale_date), 'd MMM yyyy', { locale: trLocale }) },
+  { header: 'Personel', value: (s) => s.sales_reps?.name ?? '—' },
+  { header: 'Doktor', value: (s) => s.customers?.full_name ?? '—' },
+  { header: 'Tür', value: (s) => (s.type === 'sale' ? 'Satış' : 'İade') },
+  { header: 'Ürün', value: (s) => s.product_name },
+  { header: 'Adet', value: (s) => s.quantity },
+  { header: 'Birim Fiyat', value: (s) => Number(s.unit_price) },
+  { header: 'Tutar', value: (s) => s.quantity * Number(s.unit_price) },
+  { header: 'Kongre/Workshop', value: (s) => s.congress_name ?? '—' },
+  { header: 'Not', value: (s) => s.note ?? '—' },
+]
 
 function filterSalesByDate<T extends { sale_date: string }>(sales: T[], from: string, to: string): T[] {
   return sales.filter((s) => {
@@ -516,6 +530,28 @@ function StaffSalesReportTab() {
     }
   }
 
+  /**
+   * "Tüm Personel" seçiliyken tek Excel dosyasında kişi başına ayrı sekme —
+   * kullanıcı isteği (2026-08-28: "dışarı aktarırken kişi kişi
+   * alabilmeliyim"). Personeli olmayan (sales_rep_id null) satışlar da
+   * "Belirtilmemiş" adıyla ayrı bir sekmede toplanıyor, hiçbir satır sessizce
+   * atlanmıyor.
+   */
+  function handleExportPerRep() {
+    const byRep = new Map<string, SaleWithRelations[]>()
+    for (const s of filtered) {
+      const key = s.sales_reps?.name ?? 'Belirtilmemiş'
+      if (!byRep.has(key)) byRep.set(key, [])
+      byRep.get(key)!.push(s)
+    }
+    exportToExcelMultiSheet(
+      'personel-satis-raporu-kisi-kisi',
+      Array.from(byRep.entries())
+        .sort(([a], [b]) => a.localeCompare(b, 'tr'))
+        .map(([name, rows]) => ({ name, columns: SALE_REPORT_COLUMNS, rows })),
+    )
+  }
+
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-end gap-3">
@@ -548,19 +584,14 @@ function StaffSalesReportTab() {
             title={`Personel Satış Raporu — ${selectedRepName}`}
             filename={`personel-satis-raporu-${selectedRepName}`}
             rows={filtered}
-            columns={[
-              { header: 'Tarih', value: (s) => format(new Date(s.sale_date), 'd MMM yyyy', { locale: trLocale }) },
-              { header: 'Personel', value: (s) => s.sales_reps?.name ?? '—' },
-              { header: 'Doktor', value: (s) => s.customers?.full_name ?? '—' },
-              { header: 'Tür', value: (s) => (s.type === 'sale' ? 'Satış' : 'İade') },
-              { header: 'Ürün', value: (s) => s.product_name },
-              { header: 'Adet', value: (s) => s.quantity },
-              { header: 'Birim Fiyat', value: (s) => Number(s.unit_price) },
-              { header: 'Tutar', value: (s) => s.quantity * Number(s.unit_price) },
-              { header: 'Kongre/Workshop', value: (s) => s.congress_name ?? '—' },
-              { header: 'Not', value: (s) => s.note ?? '—' },
-            ]}
+            columns={SALE_REPORT_COLUMNS}
           />
+          {!repId && (
+            <Button variant="outline" onClick={handleExportPerRep} disabled={filtered.length === 0}>
+              <Users className="size-3.5" />
+              Kişi Kişi Dışa Aktar
+            </Button>
+          )}
           <Button
             variant="outline"
             className="text-destructive hover:text-destructive"
@@ -571,31 +602,6 @@ function StaffSalesReportTab() {
             Tümünü Sil
           </Button>
         </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <ShoppingCart className="size-5" />
-            </span>
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Toplam Satış</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(totalSales)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive">
-              <Undo2 className="size-5" />
-            </span>
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Toplam İade</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(totalReturns)}</p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Card>

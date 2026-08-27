@@ -31,6 +31,39 @@ export function exportToExcel<T>(filename: string, columns: ExportColumn<T>[], r
   saveAs(new Blob([buffer], { type: 'application/octet-stream' }), `${filename}.xlsx`)
 }
 
+/**
+ * Tek dosyada kişi/kategori başına ayrı sekme — ör. Personel Satış Raporu'nda
+ * "Tüm Personel" seçiliyken kişi kişi ayrı rapor almak (kullanıcı isteği,
+ * 2026-08-28: "dışarı aktarırken kişi kişi alabilmeliyim"). Excel sekme adı
+ * kuralı gereği (en fazla 31 karakter, `: \ / ? * [ ]` yasak) isimler
+ * temizlenip kısaltılıyor; aynı isim/kısaltma birden fazla sekmede çakışırsa
+ * sonuna sayaç ekleniyor.
+ */
+export function exportToExcelMultiSheet<T>(filename: string, sheets: { name: string; columns: ExportColumn<T>[]; rows: T[] }[]) {
+  const workbook = XLSX.utils.book_new()
+  const usedNames = new Set<string>()
+  for (const sheet of sheets) {
+    const data = sheet.rows.map((row) => {
+      const record: Record<string, string | number> = {}
+      for (const col of sheet.columns) record[col.header] = col.value(row)
+      return record
+    })
+    const worksheet = XLSX.utils.json_to_sheet(data)
+    const base = sheet.name.replace(/[:\\/?*[\]]/g, ' ').trim().slice(0, 31) || 'Sayfa'
+    let name = base
+    let n = 2
+    while (usedNames.has(name)) {
+      const suffix = ` (${n})`
+      name = base.slice(0, 31 - suffix.length) + suffix
+      n++
+    }
+    usedNames.add(name)
+    XLSX.utils.book_append_sheet(workbook, worksheet, name)
+  }
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+  saveAs(new Blob([buffer], { type: 'application/octet-stream' }), `${filename}.xlsx`)
+}
+
 export async function exportToWord<T>(
   title: string,
   filename: string,
