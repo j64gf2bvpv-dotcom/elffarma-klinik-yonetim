@@ -1,7 +1,8 @@
 import * as React from 'react'
 import { format, startOfMonth, subMonths } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ShoppingCart, Undo2, Trash2, BarChart3, FileText, TrendingUp, TrendingDown } from 'lucide-react'
+import { ShoppingCart, Undo2, Trash2, BarChart3, FileText, TrendingUp, TrendingDown, Users, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -16,6 +18,7 @@ import { ImportMenu } from '@/components/ImportMenu'
 import { RevenueChart, type RevenueChartPoint } from '@/components/charts/RevenueChart'
 import { SaleForm } from '@/features/sales/SaleForm'
 import { useSales, useDeleteSale, useDeleteAllSales } from '@/features/sales/hooks'
+import { deleteSale, type SaleWithRelations } from '@/features/sales/api'
 import { importSaleRows, SALE_IMPORT_HEADERS, SALE_IMPORT_SAMPLE_ROWS } from '@/features/sales/importSales'
 import { InvoiceForm } from '@/features/invoices/InvoiceForm'
 import { useInvoices, useDeleteInvoice } from '@/features/invoices/hooks'
@@ -24,8 +27,7 @@ import { useExpenses } from '@/features/expenses/hooks'
 import { useCustomers } from '@/features/customers/hooks'
 import { useProducts } from '@/features/stock/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
-import { cn } from '@/lib/utils'
-import type { SaleWithRelations } from '@/features/sales/api'
+import { cn, getErrorMessage } from '@/lib/utils'
 import type { ImportSummary } from '@/lib/importData'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import { useQueryClient } from '@tanstack/react-query'
@@ -244,6 +246,280 @@ function SalesTab({
                 )
               })}
             </div>
+          )}
+        </CardContent>
+      </Card>
+      {dialog}
+    </div>
+  )
+}
+
+/**
+ * "Personel Satış Raporu" — kullanıcı isteği (2026-08-28): her satış
+ * temsilcisinin hangi doktora ne ürün sattığını, ne not yazdığını, hangi
+ * tarihte ve ne fiyattan sattığını kişi kişi ayrı görebilmek, Excel'e
+ * aktarabilmek, ve aynı ekrandan düzenleyip/silebilmek. `useSales()` ile
+ * aynı veri kaynağını (dolayısıyla stokla aynı satış kayıtlarını) kullanır —
+ * ayrı bir sorgu/hesaplama katmanı yok, sadece `sales_rep_id`/tarihe göre
+ * filtreleme. "Tümünü Sil" burada SADECE o an filtrelenmiş (seçili personel
+ * + tarih aralığı) kayıtları siler — `delete_sale` RPC'sini (stok etkisini
+ * doğru şekilde tersine çeviren, zaten tek satış silmede kullanılan aynı
+ * fonksiyon) her satır için sırayla çağırır; yeni bir toplu-silme SQL
+ * fonksiyonu yazmak yerine kanıtlanmış tek-satır mantığını tekrar kullanmak
+ * hata riskini azaltıyor.
+ */
+function StaffSalesReportTab() {
+  const { data: allSales = [], isLoading } = useSales()
+  const { data: reps = [] } = useSalesReps()
+  const deleteMutation = useDeleteSale()
+  const queryClient = useQueryClient()
+  const { confirm, dialog } = useConfirmDialog()
+  const [repId, setRepId] = React.useState('')
+  const [from, setFrom] = React.useState('')
+  const [to, setTo] = React.useState('')
+  const [bulkDeleting, setBulkDeleting] = React.useState(false)
+
+  const filtered = React.useMemo(() => {
+    const byRep = repId ? allSales.filter((s) => s.sales_rep_id === repId) : allSales
+    return filterSalesByDate(byRep, from, to)
+  }, [allSales, repId, from, to])
+
+  const selectedRepName = repId ? (reps.find((r) => r.id === repId)?.name ?? '—') : 'Tüm Personel'
+  const totalSales = filtered.filter((s) => s.type === 'sale').reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
+  const totalReturns = filtered
+    .filter((s) => s.type === 'return')
+    .reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
+
+  const monthlyTotals = React.useMemo(() => {
+    const map = new Map<string, { label: string; sales: number; returns: number }>()
+    for (const s of filtered) {
+      const key = s.sale_date.slice(0, 7)
+      if (!map.has(key)) {
+        map.set(key, { label: format(new Date(s.sale_date), 'MMMM yyyy', { locale: trLocale }), sales: 0, returns: 0 })
+      }
+      const bucket = map.get(key)!
+      const amount = s.quantity * Number(s.unit_price)
+      if (s.type === 'sale') bucket.sales += amount
+      else bucket.returns += amount
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([key, v]) => ({ key, ...v, net: v.sales - v.returns }))
+  }, [filtered])
+
+  async function handleDelete(sale: SaleWithRelations) {
+    if (
+      !(await confirm(`${sale.product_name} (${sale.quantity} adet) ${sale.type === 'sale' ? 'satış' : 'iade'} kaydı silinsin mi?`))
+    )
+      return
+    deleteMutation.mutate(sale.id)
+  }
+
+  async function handleDeleteAllFiltered() {
+    if (filtered.length === 0) return
+    if (
+      !(await confirm(
+        `${selectedRepName} için listelenen ${filtered.length} satış/iade kaydının TÜMÜ silinecek ve stok etkileri tersine çevrilecek. Bu işlem geri alınamaz.`,
+        { title: 'Tümünü Sil', confirmLabel: 'Onayla' },
+      ))
+    )
+      return
+    setBulkDeleting(true)
+    try {
+      for (const s of filtered) {
+        await deleteSale(s.id)
+      }
+      await queryClient.invalidateQueries({ queryKey: ['sales'] })
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      await queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
+      toast.success(`${filtered.length} kayıt silindi`)
+    } catch (error) {
+      toast.error('Bazı kayıtlar silinemedi', { description: getErrorMessage(error) })
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="grid min-w-48 gap-1.5">
+          <Label>Personel</Label>
+          <Select value={repId || 'all'} onValueChange={(v) => setRepId(v === 'all' ? '' : v)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Tüm Personel" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tüm Personel</SelectItem>
+              {reps.map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  {r.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="staff-report-from">Başlangıç</Label>
+          <Input id="staff-report-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="staff-report-to">Bitiş</Label>
+          <Input id="staff-report-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </div>
+        <div className="ml-auto flex items-end gap-2">
+          <ExportMenu<SaleWithRelations>
+            title={`Personel Satış Raporu — ${selectedRepName}`}
+            filename={`personel-satis-raporu-${selectedRepName}`}
+            rows={filtered}
+            columns={[
+              { header: 'Tarih', value: (s) => format(new Date(s.sale_date), 'd MMM yyyy', { locale: trLocale }) },
+              { header: 'Personel', value: (s) => s.sales_reps?.name ?? '—' },
+              { header: 'Doktor', value: (s) => s.customers?.full_name ?? '—' },
+              { header: 'Tür', value: (s) => (s.type === 'sale' ? 'Satış' : 'İade') },
+              { header: 'Ürün', value: (s) => s.product_name },
+              { header: 'Adet', value: (s) => s.quantity },
+              { header: 'Birim Fiyat', value: (s) => Number(s.unit_price) },
+              { header: 'Tutar', value: (s) => s.quantity * Number(s.unit_price) },
+              { header: 'Kongre/Workshop', value: (s) => s.congress_name ?? '—' },
+              { header: 'Not', value: (s) => s.note ?? '—' },
+            ]}
+          />
+          <Button
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            onClick={handleDeleteAllFiltered}
+            disabled={filtered.length === 0 || bulkDeleting}
+          >
+            {bulkDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+            Tümünü Sil
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <ShoppingCart className="size-5" />
+            </span>
+            <div>
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Toplam Satış</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(totalSales)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-6">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive">
+              <Undo2 className="size-5" />
+            </span>
+            <div>
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Toplam İade</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(totalReturns)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          {isLoading && <p className="text-muted-foreground p-6">Yükleniyor...</p>}
+          {!isLoading && filtered.length === 0 && (
+            <p className="text-muted-foreground p-6">Bu filtreye uyan satış/iade kaydı yok.</p>
+          )}
+          {filtered.length > 0 && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tarih</TableHead>
+                    <TableHead>Personel</TableHead>
+                    <TableHead>Doktor</TableHead>
+                    <TableHead>Tür</TableHead>
+                    <TableHead>Ürün</TableHead>
+                    <TableHead className="text-right">Adet</TableHead>
+                    <TableHead className="text-right">Birim Fiyat</TableHead>
+                    <TableHead className="text-right">Tutar</TableHead>
+                    <TableHead>Kongre/Workshop</TableHead>
+                    <TableHead>Not</TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {format(new Date(s.sale_date), 'd MMM yyyy', { locale: trLocale })}
+                      </TableCell>
+                      <TableCell className="text-primary font-semibold whitespace-nowrap">
+                        {s.sales_reps?.name ?? '—'}
+                      </TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">{s.customers?.full_name ?? '—'}</TableCell>
+                      <TableCell>
+                        {s.type === 'sale' ? (
+                          <Badge variant="secondary">Satış</Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-destructive/30 text-destructive">
+                            İade
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{s.product_name}</TableCell>
+                      <TableCell className="text-right">{s.quantity}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">{currency(Number(s.unit_price))}</TableCell>
+                      <TableCell className="text-right font-medium whitespace-nowrap">
+                        {currency(s.quantity * Number(s.unit_price))}
+                      </TableCell>
+                      <TableCell className="text-warning font-bold whitespace-nowrap">
+                        {s.congress_name ?? '—'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{s.note ?? '—'}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <SaleForm sale={s} />
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(s)}>
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Aylık Toplam Ciro — {selectedRepName}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {monthlyTotals.length === 0 ? (
+            <p className="text-muted-foreground p-6 text-sm">Bu filtreye uyan satış/iade kaydı yok.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ay</TableHead>
+                  <TableHead className="text-right">Toplam Satış</TableHead>
+                  <TableHead className="text-right">Toplam İade</TableHead>
+                  <TableHead className="text-right">Net Ciro</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {monthlyTotals.map((m) => (
+                  <TableRow key={m.key}>
+                    <TableCell className="font-medium capitalize">{m.label}</TableCell>
+                    <TableCell className="text-success text-right">{currency(m.sales)}</TableCell>
+                    <TableCell className="text-destructive text-right">{currency(m.returns)}</TableCell>
+                    <TableCell className="text-right font-semibold">{currency(m.net)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
@@ -576,6 +852,9 @@ export function SalesPage() {
           <TabsTrigger value="reports">
             <BarChart3 className="size-3.5" /> Raporlar
           </TabsTrigger>
+          <TabsTrigger value="staff-report">
+            <Users className="size-3.5" /> Personel Satış Raporu
+          </TabsTrigger>
           <TabsTrigger value="invoices">
             <FileText className="size-3.5" /> Faturalar
           </TabsTrigger>
@@ -585,6 +864,9 @@ export function SalesPage() {
         </TabsContent>
         <TabsContent value="reports">
           <ReportsTab />
+        </TabsContent>
+        <TabsContent value="staff-report">
+          <StaffSalesReportTab />
         </TabsContent>
         <TabsContent value="invoices">
           <InvoicesTab />

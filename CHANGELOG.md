@@ -3,6 +3,14 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.232] - 2026-08-28
+
+**Personel Satış Raporu'nun sonuna aylık toplam ciro tablosu eklendi:** O an filtrelenmiş (seçili personel + tarih aralığı) satışlar ay ay gruplanıp Ay / Toplam Satış / Toplam İade / Net Ciro olarak listeleniyor. Şema değişikliği yok.
+
+## [2.17.231] - 2026-08-28
+
+**Satışlar'a yeni "Personel Satış Raporu" sekmesi eklendi:** Her satış temsilcisinin hangi doktora, hangi tarihte, ne fiyattan, hangi ürünü sattığını (kongre/workshop ve not dahil) kişi kişi ayrı görüntüleyebileceğiniz, doğrudan bu ekrandan düzenleyip/silebileceğiniz, ve Excel'e (ayrıca Word/PDF/yazdırma) aktarabileceğiniz yeni bir sekme. Personel filtresi + tarih aralığı ile daraltılabilir; "Tümünü Sil" o an filtrelenmiş (seçili personel + tarih aralığı) kayıtları, zaten tek satış silmede kullanılan aynı `delete_sale` RPC'sini (stok etkisini doğru tersine çeviren) her satır için sırayla çağırarak siler — yeni bir toplu-silme SQL fonksiyonu yazılmadı, kanıtlanmış mantık tekrar kullanıldı. Veri kaynağı "Satışlar" sekmesiyle birebir aynı (`useSales()`), ayrı bir hesaplama katmanı yok. Şema değişikliği yok.
+
 ## [2.17.230] - 2026-08-28
 
 **Satışlar'daki ayraç "·" yerine "/" oldu:** Kullanıcı isteğiyle doktor/kongre/satış danışmanı arasındaki ayraç değiştirildi (ör. "DR ZEBULLAH / mısır kongresi / erkan"). Şema değişikliği yok.
