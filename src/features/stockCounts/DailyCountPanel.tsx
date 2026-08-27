@@ -915,9 +915,7 @@ export function DailyCountPanel() {
     <div className="grid gap-4">
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base">
-            {format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })} Sayımı
-          </CardTitle>
+          <CardTitle className="text-base">Günlük Stok</CardTitle>
           <div className="flex items-center gap-2">
             {items.length > 0 && (
               <ExportMenu<StockCountItemWithProduct>
@@ -1019,7 +1017,9 @@ export function DailyCountPanel() {
 
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base">Sayım</CardTitle>
+          <CardTitle className="text-base">
+            {format(new Date(todayCount.count_date), 'd MMMM yyyy', { locale: trLocale })} Sayımı
+          </CardTitle>
           {!isCompleted && (
             <div className="w-64">
               <ProductCombobox

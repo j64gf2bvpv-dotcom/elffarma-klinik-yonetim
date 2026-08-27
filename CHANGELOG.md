@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.241] - 2026-08-28
+
+**Günlük Sayım'da tekrar eden "Sayım" başlığı düzeltildi:** Üst üste iki kart hem "27 Ağustos 2026 Sayımı" hem düz "Sayım" başlığı taşıyordu, iki kez "sayım" yazılmış gibi görünüyordu. Üstteki (dışa aktar/tamamla/sil butonlarının olduğu) kart artık "Günlük Stok", asıl ürün tablosunun kartı ise tarihli "{tarih} Sayımı" başlığını taşıyor. Şema değişikliği yok.
+
 ## [2.17.240] - 2026-08-28
 
 **Günlük Sayım'da "Son Günlerin Stoğu" artık Sayım tablosunun altında:** Önceden Sayım kartının üstünde duruyordu — kullanıcı isteğiyle Sayım kartının hemen altına, Günlük Özet'ten önceye taşındı. Şema değişikliği yok.
