@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.242] - 2026-08-28
+
+**"Sayımı Tamamla ve Stoğu Güncelle"nin yanına "Geri Al" butonu eklendi:** Bir sayım tamamlandıktan sonra, uygulanan stok değişikliklerini geri alıp sayımı tekrar düzenlenebilir hale getiren yeni bir buton (`undoCompleteCount`) — `completeCount`'un tam simetriği: aynı taban (bir önceki tamamlanmış sayımın Son Stok'u) hesaplanır, fark tersine uygulanır. Not: bu, o üründe sayım tamamlandıktan SONRA başka bir hareket (ör. satış) olmadığını varsayan düz bir tersine çevirmedir — hareketlerin kendisini tek tek iptal eden bir mekanizma değil (stock_movements'ta hangi hareketin hangi sayıma ait olduğunu tutan bir referans yok). Mevcut "Yeniden Aç" (stoğu geri almadan sadece yeniden düzenlemeye açan) buton olduğu gibi kaldı. Şema değişikliği yok.
+
 ## [2.17.241] - 2026-08-28
 
 **Günlük Sayım'da tekrar eden "Sayım" başlığı düzeltildi:** Üst üste iki kart hem "27 Ağustos 2026 Sayımı" hem düz "Sayım" başlığı taşıyordu, iki kez "sayım" yazılmış gibi görünüyordu. Üstteki (dışa aktar/tamamla/sil butonlarının olduğu) kart artık "Günlük Stok", asıl ürün tablosunun kartı ise tarihli "{tarih} Sayımı" başlığını taşıyor. Şema değişikliği yok.

@@ -51,6 +51,7 @@ import {
   useSetCountStatus,
   useStartTodayCount,
   useTodayCount,
+  useUndoCompleteCount,
   useUpdateCountDate,
   useUpdateCountItem,
   useUpdateCountItemFlakon,
@@ -788,6 +789,7 @@ export function DailyCountPanel() {
   const startMutation = useStartTodayCount()
   const completeMutation = useCompleteCount()
   const reopenMutation = useReopenCount()
+  const undoMutation = useUndoCompleteCount()
   const { data: items = [] } = useCountItems(todayCount?.id)
   const updateItemMutation = useUpdateCountItem(todayCount?.id ?? '')
   const updateItemFlakonMutation = useUpdateCountItemFlakon(todayCount?.id ?? '')
@@ -823,6 +825,17 @@ export function DailyCountPanel() {
   async function handleDeleteItem(item: StockCountItemWithProduct) {
     if (!(await confirm(`${item.products.name} bu sayımdan çıkarılsın mı?`))) return
     deleteItemMutation.mutate(item.id)
+  }
+
+  async function handleUndoComplete(id: string) {
+    if (
+      !(await confirm(
+        'Bu sayımın uyguladığı stok değişiklikleri geri alınacak (stok bir önceki sayımdaki değerine döndürülecek) ve sayım tekrar düzenlenebilir hale gelecek. Devam edilsin mi?',
+        { title: 'Sayımı Geri Al', confirmLabel: 'Geri Al' },
+      ))
+    )
+      return
+    undoMutation.mutate(id)
   }
 
   async function handleDeleteTodayCount() {
@@ -974,6 +987,17 @@ export function DailyCountPanel() {
                 >
                   {reopenMutation.isPending && <Loader2 className="animate-spin" />}
                   Yeniden Aç
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleUndoComplete(todayCount.id)}
+                  disabled={undoMutation.isPending}
+                  title="Bu sayımın uyguladığı stok değişikliklerini geri alır"
+                >
+                  {undoMutation.isPending ? <Loader2 className="animate-spin" /> : <Undo2 className="size-3.5" />}
+                  Geri Al
                 </Button>
               </>
             ) : (

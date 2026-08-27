@@ -281,6 +281,89 @@ export async function reopenCount(stockCountId: string): Promise<void> {
 }
 
 /**
+ * "Sayımı Tamamla ve Stoğu Güncelle"nin uyguladığı stok hareketini geri alır
+ * (kullanıcı isteği, 2026-08-28: "geri al butonu olsun yaptığım
+ * değişiklikleri geri alsın"). completeCount ile TAM SİMETRİK: aynı taban
+ * (bir önceki TAMAMLANMIŞ sayımın Son Stok'u, yoksa canlı stok) hesaplanır,
+ * ama fark TERSİNE uygulanır — canlı stok bu sayımın uyguladığı yerden
+ * (counted_quantity) tabana geri döndürülür. Sayım sonunda 'open' durumuna
+ * alınır ki düzeltilip yeniden tamamlanabilsin. Not: bu sayımın
+ * tamamlanmasından SONRA o ürünlerde başka bir hareket (ör. bir satış) da
+ * olduysa geri alma bunu hesaba katmaz — taban değere düz bir tersine
+ * çevirmedir, hareketlerin kendisini tek tek izleyip iptal eden bir "tam
+ * zaman yolculuğu" değil (stock_movements'ta hangi hareketin hangi sayıma
+ * ait olduğunu tutan bir referans yok).
+ */
+export async function undoCompleteCount(stockCountId: string): Promise<void> {
+  const items = await fetchCountItems(stockCountId)
+
+  const { data: currentCount, error: currentCountError } = await supabase
+    .from('stock_counts')
+    .select('count_date')
+    .eq('id', stockCountId)
+    .single()
+  if (currentCountError) throw currentCountError
+
+  const { data: previousCounts, error: previousCountsError } = await supabase
+    .from('stock_counts')
+    .select('id')
+    .eq('status', 'completed')
+    .lt('count_date', currentCount.count_date)
+    .order('count_date', { ascending: false })
+    .limit(1)
+  if (previousCountsError) throw previousCountsError
+  const previousCountId = previousCounts?.[0]?.id ?? null
+
+  const baselineByProduct = new Map<string, { paket: number; flakon: number }>()
+  if (previousCountId) {
+    const previousItems = await fetchCountItems(previousCountId)
+    for (const item of previousItems) {
+      baselineByProduct.set(item.product_id, {
+        paket: item.counted_quantity ?? item.expected_quantity,
+        flakon: item.counted_quantity_flakon ?? item.expected_quantity_flakon,
+      })
+    }
+  }
+
+  for (const item of items) {
+    const baseline = baselineByProduct.get(item.product_id) ?? {
+      paket: item.products.current_quantity,
+      flakon: item.products.flakon_quantity,
+    }
+
+    if (item.counted_quantity != null) {
+      const delta = baseline.paket - item.products.current_quantity
+      if (delta !== 0) {
+        await recordStockMovement({
+          product_id: item.product_id,
+          movement_type: delta > 0 ? 'in' : 'out',
+          quantity: Math.abs(delta),
+          reason: 'Günlük sayım geri alma',
+          note: `Sayım geri alındı — stok ${baseline.paket} değerine döndürüldü`,
+          unit_kind: 'paket',
+        })
+      }
+    }
+
+    if (item.counted_quantity_flakon != null) {
+      const deltaFlakon = baseline.flakon - item.products.flakon_quantity
+      if (deltaFlakon !== 0) {
+        await recordStockMovement({
+          product_id: item.product_id,
+          movement_type: deltaFlakon > 0 ? 'in' : 'out',
+          quantity: Math.abs(deltaFlakon),
+          reason: 'Günlük sayım geri alma',
+          note: `Sayım geri alındı — stok ${baseline.flakon} değerine döndürüldü`,
+          unit_kind: 'flakon',
+        })
+      }
+    }
+  }
+
+  await offlineUpdate('stock_counts', stockCountId, { status: 'open', completed_at: null }, 'Sayımı geri alma')
+}
+
+/**
  * Bir sayımın tarihini elle öne/arkaya alır (kullanıcı isteği, 2026-08-25) —
  * ör. yanlış tarihe düşmüş/kaydırılması gereken bir sayımı düzeltmek için.
  * Sadece count_date alanını değiştirir, kalemlere veya stoğa dokunmaz.

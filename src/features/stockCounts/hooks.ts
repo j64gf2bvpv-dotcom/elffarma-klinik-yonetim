@@ -11,10 +11,12 @@ import {
   reopenCount,
   setCountStatusManually,
   startTodayCount,
+  undoCompleteCount,
   updateCountDate,
   updateCountItem,
   updateCountItemFlakon,
 } from './api'
+import { getErrorMessage } from '@/lib/utils'
 import type { Product, StockCount } from '@/types/database'
 
 export function useTodayCount() {
@@ -105,6 +107,20 @@ export function useCompleteCount() {
       toast.success('Sayım tamamlandı, stok güncellendi')
     },
     onError: (error: Error) => toast.error('Tamamlanamadı', { description: error.message }),
+  })
+}
+
+export function useUndoCompleteCount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (stockCountId: string) => undoCompleteCount(stockCountId),
+    onSuccess: (_data, stockCountId) => {
+      queryClient.invalidateQueries({ queryKey: ['stock_counts'] })
+      queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Sayım geri alındı, stok eski haline döndürüldü')
+    },
+    onError: (error) => toast.error('Geri alınamadı', { description: getErrorMessage(error) }),
   })
 }
 
