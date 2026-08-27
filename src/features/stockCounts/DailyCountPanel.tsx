@@ -949,41 +949,56 @@ export function DailyCountPanel() {
             </div>
           )}
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ürün</TableHead>
-                <TableHead className="font-bold text-foreground">
-                  {previousCompletedCount
-                    ? `Son Sayım (${format(new Date(previousCompletedCount.count_date), 'd MMMM', { locale: trLocale })})`
-                    : 'Sistemdeki Miktar'}
-                </TableHead>
-                <TableHead>Paket</TableHead>
-                <TableHead>Flakon</TableHead>
-                <TableHead className="animate-text-blink font-bold text-destructive">
-                  {format(new Date(todayCount.count_date), 'd MMMM', { locale: trLocale })} — Bugünkü Stok
-                </TableHead>
-                {!isCompleted && <TableHead></TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item, index) => (
-                <CountItemRow
-                  key={item.id}
-                  item={item}
-                  baseline={getBaseline(item)}
-                  readOnly={isCompleted}
-                  selected={item.id === selectedItemId}
-                  onSelect={setSelectedItemId}
-                  onSavePaket={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
-                  onSaveFlakon={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
-                  onDelete={handleDeleteItem}
-                  nextItemId={items[index + 1]?.id}
-                />
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="grid gap-6 px-0 pt-0 pb-4">
+          {(
+            [
+              ['Dermakor', dermakorItems],
+              ['Swiss', swissItems],
+              ['Diğer', otherItems],
+            ] as const
+          ).map(([groupLabel, groupItems]) =>
+            groupItems.length === 0 ? null : (
+              <div key={groupLabel} className="min-w-0">
+                <h3 className="text-muted-foreground px-3 pb-1 text-sm font-semibold tracking-wide uppercase">
+                  {groupLabel}
+                </h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ürün</TableHead>
+                      <TableHead className="font-bold text-foreground">
+                        {previousCompletedCount
+                          ? `Son Sayım (${format(new Date(previousCompletedCount.count_date), 'd MMMM', { locale: trLocale })})`
+                          : 'Sistemdeki Miktar'}
+                      </TableHead>
+                      <TableHead>Paket</TableHead>
+                      <TableHead>Flakon</TableHead>
+                      <TableHead className="animate-text-blink font-bold text-destructive">
+                        {format(new Date(todayCount.count_date), 'd MMMM', { locale: trLocale })} — Bugünkü Stok
+                      </TableHead>
+                      {!isCompleted && <TableHead></TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {groupItems.map((item, index) => (
+                      <CountItemRow
+                        key={item.id}
+                        item={item}
+                        baseline={getBaseline(item)}
+                        readOnly={isCompleted}
+                        selected={item.id === selectedItemId}
+                        onSelect={setSelectedItemId}
+                        onSavePaket={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
+                        onSaveFlakon={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
+                        onDelete={handleDeleteItem}
+                        nextItemId={groupItems[index + 1]?.id}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ),
+          )}
         </CardContent>
       </Card>
 

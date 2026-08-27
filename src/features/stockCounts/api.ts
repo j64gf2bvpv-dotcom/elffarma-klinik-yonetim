@@ -4,7 +4,24 @@ import { recordStockMovement } from '@/features/stock/api'
 import type { Product, StockCount, StockCountItem } from '@/types/database'
 
 export type StockCountItemWithProduct = StockCountItem & {
-  products: Pick<Product, 'name' | 'unit' | 'brand_line' | 'current_quantity' | 'flakon_quantity'>
+  products: Pick<Product, 'name' | 'unit' | 'brand_line' | 'current_quantity' | 'flakon_quantity' | 'sort_order'>
+}
+
+/** Stok Yönetimi sayfasıyla AYNI sıralama (sort_order artan, null'lar sonda,
+ * sonra ad) — kullanıcı isteği, 2026-08-27: "stokla günlük sayımda ürünlerin
+ * isim sıralaması da aynı olmalı". Sayım kalemleri veritabanında created_at'e
+ * göre geliyor (sayım açılırken o anki sıradan bağımsız eklenmiş olabilir),
+ * bu yüzden istemci tarafında Stok sayfasının PostgREST sıralamasıyla birebir
+ * eşleşecek şekilde yeniden sıralanıyor. */
+function sortByProductOrder(items: StockCountItemWithProduct[]): StockCountItemWithProduct[] {
+  return [...items].sort((a, b) => {
+    const soA = a.products.sort_order
+    const soB = b.products.sort_order
+    if (soA != null && soB != null && soA !== soB) return soA - soB
+    if (soA != null && soB == null) return -1
+    if (soA == null && soB != null) return 1
+    return a.products.name.localeCompare(b.products.name, 'tr')
+  })
 }
 
 function todayDate() {
@@ -50,11 +67,11 @@ export async function fetchPastCounts(): Promise<StockCount[]> {
 export async function fetchCountItems(stockCountId: string): Promise<StockCountItemWithProduct[]> {
   const { data, error } = await supabase
     .from('stock_count_items')
-    .select('*, products(name, unit, brand_line, current_quantity, flakon_quantity)')
+    .select('*, products(name, unit, brand_line, current_quantity, flakon_quantity, sort_order)')
     .eq('stock_count_id', stockCountId)
     .order('created_at', { ascending: true })
   if (error) throw error
-  return data as unknown as StockCountItemWithProduct[]
+  return sortByProductOrder(data as unknown as StockCountItemWithProduct[])
 }
 
 async function createCountForDate(countDate: string, createdBy: string | null | undefined): Promise<StockCount> {

@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.213] - 2026-08-27
+
+**Küçük pencerede Stok sayfasının üst buton satırı artık taşmıyor:** "Yeni Ürün" ve "Tüm Stoğu Sıfırla" gibi butonlar, dar bir pencerede sığmadıklarında ekranın dışına taşıp kayboluyordu (bir CSS ayarı satır atlamayı engelliyordu) — artık sığmadıklarında düzgünce alt satıra geçiyorlar, hiçbir buton kaybolmuyor.
+
+**Günlük Sayım artık Stok Yönetimi'yle aynı sırada ve aynı Dermakor/Swiss/Diğer gruplamasında:** Sayım listesindeki ürün sırası, Stok sayfasındaki elle ayarlanan sıralamayla birebir eşleşiyor (önceden sayım kalemleri eklenme sırasına göre listeleniyordu). Sayım tablosu da artık Stok sayfası gibi Dermakor/Swiss/Diğer olarak ayrı bölümlerde gösteriliyor. Şema değişikliği yok.
+
 ## [2.17.212] - 2026-08-27
 
 **Satış içe aktarmada boş Doktor/Tarih hücreleri artık satırı reddetmiyor:** Gerçek Excel listelerinde aynı doktorun art arda gelen ürün satırlarında doktor adı sadece ilk satıra yazılıp altındakiler boş bırakılıyor — artık böyle satırlarda bir üstteki dolu satırdaki doktor otomatik kullanılıyor. Tarih hücresi boşsa bugünün tarihi kullanılıyor. Ürün/Adet hâlâ zorunlu (satırdan satıra gerçekten değiştiği için tahmin edilemiyor). Şema değişikliği yok.
