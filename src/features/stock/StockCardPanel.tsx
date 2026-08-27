@@ -76,8 +76,25 @@ function currency(n: number) {
  * düzenlenebilir — StockPage'deki stok adedi hücresiyle aynı desen. Değer 0
  * olsa (o satırda boş görünse) bile tıklanabilir kalır, çünkü boş taraf
  * üzerinden de yeni bir adet eklenebilmeli — bkz. handleInlineQtyChange.
+ *
+ * Hücre boşaltılıp (0/boş) onaylanırsa — kullanıcı isteği, 2026-08-27:
+ * "sadece giriş çıkış vb hücre içindeki ekranları temizleme özelliği olsun"
+ * — önceden sessizce eski değere geri dönüyordu; artık `onClear` verilmişse
+ * o satırın hareketini tamamen siler (bir hareket 0 adetli olarak var olamaz,
+ * bkz. record_stock_movement'daki "Miktar sıfırdan büyük olmalı" kısıtı —
+ * o yüzden "temizlemek" o satırı silmekle eşdeğer).
  */
-function InlineQtyCell({ value, unitLabel, onCommit }: { value: number; unitLabel?: string; onCommit: (next: number) => void }) {
+function InlineQtyCell({
+  value,
+  unitLabel,
+  onCommit,
+  onClear,
+}: {
+  value: number
+  unitLabel?: string
+  onCommit: (next: number) => void
+  onClear?: () => void
+}) {
   const [editing, setEditing] = React.useState(false)
   const [text, setText] = React.useState(value > 0 ? String(value) : '')
 
@@ -87,7 +104,13 @@ function InlineQtyCell({ value, unitLabel, onCommit }: { value: number; unitLabe
 
   function commit() {
     setEditing(false)
-    const next = Number(text)
+    const trimmed = text.trim()
+    if (trimmed === '' || Number(trimmed) === 0) {
+      if (value > 0 && onClear) onClear()
+      else setText(value > 0 ? String(value) : '')
+      return
+    }
+    const next = Number(trimmed)
     if (!Number.isFinite(next) || next <= 0 || Math.round(next) !== next) {
       setText(value > 0 ? String(value) : '')
       return
@@ -125,7 +148,11 @@ function InlineQtyCell({ value, unitLabel, onCommit }: { value: number; unitLabe
     <button
       type="button"
       onClick={() => setEditing(true)}
-      title={value > 0 ? 'Adedi düzenlemek için tıklayın' : 'Eklemek için tıklayın'}
+      title={
+        value > 0
+          ? 'Adedi düzenlemek için tıklayın — boşaltıp onaylarsanız bu hareket silinir'
+          : 'Eklemek için tıklayın'
+      }
       className="min-w-6 rounded px-1 py-0.5 text-left hover:bg-accent"
     >
       {value > 0 ? (unitLabel ? `${value} ${unitLabel}` : value) : <span className="text-muted-foreground">—</span>}
@@ -551,6 +578,7 @@ export function StockCardPanel() {
                           value={row.inQty}
                           unitLabel={row.unitKind === 'flakon' ? 'Flakon' : 'Paket'}
                           onCommit={(next) => handleInlineQtyChange(row, 'in', next)}
+                          onClear={() => handleDeleteMovement(row)}
                         />
                       </TableCell>
                       <TableCell className="text-destructive tabular-nums">
@@ -558,6 +586,7 @@ export function StockCardPanel() {
                           value={row.outQty}
                           unitLabel={row.unitKind === 'flakon' ? 'Flakon' : 'Paket'}
                           onCommit={(next) => handleInlineQtyChange(row, 'out', next)}
+                          onClear={() => handleDeleteMovement(row)}
                         />
                       </TableCell>
                       <TableCell className="font-medium tabular-nums">

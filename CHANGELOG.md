@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.222] - 2026-08-27
+
+**Stok Kartı'nda Giriş/Çıkış hücreleri artık boşaltılıp temizlenebiliyor:** Hareket Dökümü'ndeki Giriş/Çıkış hücresine tıklayıp değeri silip onayladığınızda (Enter/dışarı tıklama) önceden sessizce eski değere geri dönüyordu — artık o satırın hareketini tamamen siler (bir hareketin 0 adetli olması mümkün değil, o yüzden "temizlemek" o satırı kaldırmakla aynı şey; stok buna göre geri düzeltilir). Şema değişikliği yok.
+
 ## [2.17.221] - 2026-08-27
 
 **Haftalık Satış Temsilcisi Raporu'nda "Yeni Doktor(lar)" artık boş satır bırakılsa da kaydediliyor:** "Başka Doktor Ekle" ile açılan ek bir satır doldurulmadan bırakılırsa önceden Kaydet'e basınca hiçbir şey olmuyordu (o satırdaki "Doktor adı gerekli" doğrulaması tüm kaydetmeyi engelliyordu). Artık isim girilmemiş satırlar sessizce atlanıyor, dolu olanlar kaydediliyor. Hiç dolu satır yoksa "En az bir doktor adı girin" uyarısı çıkıyor. Şema değişikliği yok.
