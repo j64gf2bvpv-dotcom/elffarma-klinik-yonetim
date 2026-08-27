@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.216] - 2026-08-27
+
+**Günün Satış / İade Hareketleri'nde düzenleme ve toplu silme eklendi:** Her satırda artık bir düzenle (kalem) butonu var — doktor, ürün, adet gibi bilgileri değiştirebilirsiniz (stok buna göre otomatik düzeltilir: eski kayıt geri alınıp yeni haliyle yeniden uygulanır). Kart başlığına, o güne ait tüm satış/iade kayıtlarını tek seferde silen bir "Tümünü Sil" butonu eklendi (her kayıt için stok ayrı ayrı geri düzeltilir). Şema değişikliği yok.
+
 ## [2.17.215] - 2026-08-27
 
 **"Bugünkü Stok" artık gerçekten bugünün tarihini gösteriyor:** Açık kalmış eski bir sayım (ör. elle tarih değiştirilirken yanlışlıkla açık bırakılmış) varken, ondan DAHA YENİ tarihli tamamlanmış bir sayım da varsa, program artık o eski açık sayımı "bugün" saymıyor — bunun yerine "bugün için henüz sayım başlatılmadı" gösterip doğru (gerçek takvim) tarihli yeni bir sayım başlatılmasına izin veriyor. Eski/yetim sayım veri kaybı olmadan Geçmiş Sayımlar listesinden hâlâ görülüp silinebiliyor. Şema değişikliği yok.

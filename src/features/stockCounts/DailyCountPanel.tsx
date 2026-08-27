@@ -2,6 +2,7 @@ import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   ClipboardCheck,
   CheckCircle2,
@@ -35,6 +36,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ExportMenu } from '@/components/ExportMenu'
 import { useSales, useUpdateSaleRep, useDeleteSale } from '@/features/sales/hooks'
+import { deleteSale } from '@/features/sales/api'
 import { SaleForm } from '@/features/sales/SaleForm'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useSalesReps } from '@/features/salesReps/hooks'
@@ -148,6 +150,7 @@ function SalesActivityRow({ sale, repRoleLabel }: { sale: SaleWithRelations; rep
               ))}
           </SelectContent>
         </Select>
+        <SaleForm sale={sale} />
         <Button variant="ghost" size="icon" className="size-7" onClick={handleCancel} title="İptal Et">
           <Trash2 className="size-3.5 text-destructive" />
         </Button>
@@ -160,6 +163,9 @@ function SalesActivityRow({ sale, repRoleLabel }: { sale: SaleWithRelations; rep
 function TodaySalesActivity({ countDate }: { countDate: string }) {
   const { data: sales = [] } = useSales()
   const todaySales = sales.filter((s) => s.sale_date === countDate)
+  const queryClient = useQueryClient()
+  const [deletingAll, setDeletingAll] = React.useState(false)
+  const { confirm: confirmDeleteAll, dialog: deleteAllDialog } = useConfirmDialog()
 
   const returns = todaySales.filter((s) => s.type === 'return')
   const outgoing = todaySales.filter((s) => s.type === 'sale')
@@ -175,6 +181,34 @@ function TodaySalesActivity({ countDate }: { countDate: string }) {
     }
     return Array.from(map.values()).sort((a, b) => b.sale + b.returnQty - (a.sale + a.returnQty))
   }, [todaySales])
+
+  // Bugüne ait TÜM satış/iade kayıtlarını tek seferde temizler (kullanıcı
+  // isteği, 2026-08-27) — her kayıt kendi delete_sale RPC'siyle (stok etkisi
+  // tersine çevrilerek) tek tek silinir; useDeleteSale hook'unu değil doğrudan
+  // api fonksiyonunu kullanıyoruz ki her satır için ayrı "Silindi" toast'ı
+  // yığılmasın, sonunda tek bir özet toast'ı gösterilsin.
+  async function handleDeleteAll() {
+    if (
+      !(await confirmDeleteAll(
+        `Bugüne (${countDate}) ait ${todaySales.length} satış/iade kaydının TÜMÜ silinsin mi? Her kayıt için stok ayrı ayrı geri düzeltilecek.`,
+        { title: 'Tümünü Sil', confirmLabel: 'Tümünü Sil', variant: 'destructive' },
+      ))
+    )
+      return
+    setDeletingAll(true)
+    try {
+      for (const s of todaySales) {
+        await deleteSale(s.id)
+      }
+      await queryClient.invalidateQueries({ queryKey: ['sales'] })
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success(`${todaySales.length} kayıt silindi`)
+    } catch (error) {
+      toast.error('Bazı kayıtlar silinemedi', { description: error instanceof Error ? error.message : undefined })
+    } finally {
+      setDeletingAll(false)
+    }
+  }
 
   if (todaySales.length === 0) {
     return (
@@ -194,7 +228,14 @@ function TodaySalesActivity({ countDate }: { countDate: string }) {
     <Card>
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle className="text-base">Günün Satış / İade Hareketleri</CardTitle>
-        <SaleForm />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleDeleteAll} disabled={deletingAll}>
+            {deletingAll ? <Loader2 className="animate-spin" /> : <Trash2 className="text-destructive" />}
+            Tümünü Sil
+          </Button>
+          <SaleForm />
+          {deleteAllDialog}
+        </div>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div>
