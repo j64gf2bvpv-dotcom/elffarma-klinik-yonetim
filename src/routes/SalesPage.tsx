@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { format, startOfMonth, subMonths } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ShoppingCart, Undo2, Trash2, BarChart3, FileText, TrendingUp, TrendingDown, Users, Loader2 } from 'lucide-react'
+import { ShoppingCart, Undo2, Trash2, BarChart3, FileText, TrendingUp, TrendingDown, Users, Loader2, Target } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -26,9 +26,10 @@ import { usePayments } from '@/features/payments/hooks'
 import { useExpenses } from '@/features/expenses/hooks'
 import { useCustomers } from '@/features/customers/hooks'
 import { useProducts } from '@/features/stock/hooks'
-import { useSalesReps } from '@/features/salesReps/hooks'
+import { useSalesReps, useUpdateSalesRep } from '@/features/salesReps/hooks'
 import { cn, getErrorMessage } from '@/lib/utils'
 import type { ImportSummary } from '@/lib/importData'
+import type { SalesRep } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -255,6 +256,93 @@ function SalesTab({
 }
 
 /**
+ * Bir personelin aylık satış hedefi (`sales_reps.sales_target`) ve prim
+ * oranını (`sales_reps.commission_rate`) düzenleyen form + o dönem için
+ * hesaplanan durum/prim özeti. Bu iki kolon şemada zaten vardı ama hiçbir
+ * ekranda kullanılmıyordu (kullanıcı isteği, 2026-08-28: "yüzde kaç prim
+ * alacağı... aylık satış belirlensin... ayrı bir bölümde olsun" ile ilk kez
+ * buradan kullanılıyor). `key={rep.id}` ile üst bileşenden seçili personel
+ * değiştiğinde YENİDEN mount edilecek şekilde render edilir — bu yüzden
+ * inputlar başlangıç değerini doğrudan prop'tan alabilir, personel
+ * değiştikçe senkronize eden ayrı bir effect'e gerek yok.
+ */
+function RepTargetEditor({ rep, netTotal }: { rep: SalesRep; netTotal: number }) {
+  const updateRepMutation = useUpdateSalesRep()
+  const [targetInput, setTargetInput] = React.useState(rep.sales_target != null ? String(rep.sales_target) : '')
+  const [rateInput, setRateInput] = React.useState(rep.commission_rate != null ? String(rep.commission_rate) : '')
+
+  function handleSave() {
+    updateRepMutation.mutate({
+      id: rep.id,
+      input: {
+        sales_target: targetInput.trim() === '' ? null : Number(targetInput),
+        commission_rate: rateInput.trim() === '' ? null : Number(rateInput),
+      },
+    })
+  }
+
+  const rate = Number(rep.commission_rate ?? 0)
+  const commission = netTotal * (rate / 100)
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="grid gap-1.5">
+          <Label htmlFor="staff-target">Aylık Satış Hedefi (₺)</Label>
+          <Input
+            id="staff-target"
+            type="number"
+            min="0"
+            step="0.01"
+            value={targetInput}
+            onChange={(e) => setTargetInput(e.target.value)}
+            className="w-40"
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="staff-rate">Prim Oranı (%)</Label>
+          <Input
+            id="staff-rate"
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={rateInput}
+            onChange={(e) => setRateInput(e.target.value)}
+            className="w-32"
+          />
+        </div>
+        <Button onClick={handleSave} disabled={updateRepMutation.isPending}>
+          {updateRepMutation.isPending && <Loader2 className="animate-spin" />}
+          Kaydet
+        </Button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-lg border p-3">
+          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Dönem Net Cirosu</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums">{currency(netTotal)}</p>
+        </div>
+        <div className="rounded-lg border p-3">
+          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Hedef Durumu</p>
+          {rep.sales_target != null ? (
+            <Badge variant={netTotal >= Number(rep.sales_target) ? 'success' : 'outline'} className="mt-1">
+              {currency(netTotal)} / {currency(Number(rep.sales_target))}
+            </Badge>
+          ) : (
+            <p className="text-muted-foreground mt-1 text-sm">Hedef belirlenmedi</p>
+          )}
+        </div>
+        <div className="rounded-lg border p-3">
+          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Hak Edilen Prim (%{rate})</p>
+          <p className="text-success mt-1 text-xl font-semibold tabular-nums">{currency(commission)}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
  * "Personel Satış Raporu" — kullanıcı isteği (2026-08-28): her satış
  * temsilcisinin hangi doktora ne ürün sattığını, ne not yazdığını, hangi
  * tarihte ve ne fiyattan sattığını kişi kişi ayrı görebilmek, Excel'e
@@ -284,11 +372,13 @@ function StaffSalesReportTab() {
     return filterSalesByDate(byRep, from, to)
   }, [allSales, repId, from, to])
 
-  const selectedRepName = repId ? (reps.find((r) => r.id === repId)?.name ?? '—') : 'Tüm Personel'
+  const selectedRep = repId ? reps.find((r) => r.id === repId) : undefined
+  const selectedRepName = selectedRep?.name ?? 'Tüm Personel'
   const totalSales = filtered.filter((s) => s.type === 'sale').reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
   const totalReturns = filtered
     .filter((s) => s.type === 'return')
     .reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
+  const commissionRate = Number(selectedRep?.commission_rate ?? 0)
 
   const monthlyTotals = React.useMemo(() => {
     const map = new Map<string, { label: string; sales: number; returns: number }>()
@@ -304,8 +394,33 @@ function StaffSalesReportTab() {
     }
     return Array.from(map.entries())
       .sort(([a], [b]) => b.localeCompare(a))
-      .map(([key, v]) => ({ key, ...v, net: v.sales - v.returns }))
-  }, [filtered])
+      .map(([key, v]) => ({ key, ...v, net: v.sales - v.returns, commission: (v.sales - v.returns) * (commissionRate / 100) }))
+  }, [filtered, commissionRate])
+
+  /**
+   * "Tümü" görünümünde her personelin hedef/prim durumu — kullanıcı isteği
+   * (2026-08-28: "yüzde kaç prim alacağı... yapması gereken aylık satış
+   * belirlensin... ayrı bir bölümde olsun"). `sales_reps.sales_target` /
+   * `commission_rate` mevcut ama daha önce hiçbir ekranda kullanılmıyordu —
+   * bu, tek/tüm personel görünümüne göre bunları kullanan/düzenleyen ilk yer.
+   * Prim, hedef tutturulup tutturulmadığına BAKMAKSIZIN dönemin net cirosunun
+   * (satış - iade) prim oranı kadarı olarak hesaplanıyor; hedef sadece
+   * karşılaştırma/ilerleme göstergesi.
+   */
+  const repTargetRows = React.useMemo(() => {
+    const dated = filterSalesByDate(allSales, from, to)
+    return reps.map((r) => {
+      const repSales = dated.filter((s) => s.sales_rep_id === r.id)
+      const sales = repSales.filter((s) => s.type === 'sale').reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
+      const returns = repSales
+        .filter((s) => s.type === 'return')
+        .reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
+      const net = sales - returns
+      const target = r.sales_target != null ? Number(r.sales_target) : null
+      const rate = Number(r.commission_rate ?? 0)
+      return { rep: r, net, target, rate, commission: net * (rate / 100) }
+    })
+  }, [reps, allSales, from, to])
 
   async function handleDelete(sale: SaleWithRelations) {
     if (
@@ -423,6 +538,63 @@ function StaffSalesReportTab() {
       </div>
 
       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="size-4" /> Hedef ve Prim {selectedRep ? `— ${selectedRepName}` : ''}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {selectedRep ? (
+            <RepTargetEditor key={selectedRep.id} rep={selectedRep} netTotal={totalSales - totalReturns} />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Personel</TableHead>
+                    <TableHead className="text-right">Hedef</TableHead>
+                    <TableHead className="text-right">Dönem Net Cirosu</TableHead>
+                    <TableHead>Hedef Durumu</TableHead>
+                    <TableHead className="text-right">Prim Oranı</TableHead>
+                    <TableHead className="text-right">Hak Edilen Prim</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {repTargetRows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-muted-foreground py-6 text-center">
+                        Henüz personel yok
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {repTargetRows.map(({ rep, net, target, rate, commission }) => (
+                    <TableRow key={rep.id}>
+                      <TableCell className="text-primary font-semibold">{rep.name}</TableCell>
+                      <TableCell className="text-right">{target != null ? currency(target) : '—'}</TableCell>
+                      <TableCell className="text-right tabular-nums">{currency(net)}</TableCell>
+                      <TableCell>
+                        {target != null ? (
+                          <Badge variant={net >= target ? 'success' : 'outline'}>
+                            {net >= target ? 'Hedef Aşıldı' : 'Hedef Altında'}
+                          </Badge>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">%{rate}</TableCell>
+                      <TableCell className="text-success text-right font-semibold tabular-nums">
+                        {currency(commission)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardContent className="p-0">
           {isLoading && <p className="text-muted-foreground p-6">Yükleniyor...</p>}
           {!isLoading && filtered.length === 0 && (
@@ -507,6 +679,7 @@ function StaffSalesReportTab() {
                   <TableHead className="text-right">Toplam Satış</TableHead>
                   <TableHead className="text-right">Toplam İade</TableHead>
                   <TableHead className="text-right">Net Ciro</TableHead>
+                  {selectedRep && <TableHead className="text-right">Hak Edilen Prim</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -516,6 +689,9 @@ function StaffSalesReportTab() {
                     <TableCell className="text-success text-right">{currency(m.sales)}</TableCell>
                     <TableCell className="text-destructive text-right">{currency(m.returns)}</TableCell>
                     <TableCell className="text-right font-semibold">{currency(m.net)}</TableCell>
+                    {selectedRep && (
+                      <TableCell className="text-success text-right font-semibold">{currency(m.commission)}</TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

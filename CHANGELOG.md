@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.233] - 2026-08-28
+
+**Personel Satış Raporu'na "Hedef ve Prim" bölümü eklendi:** Bir personel seçildiğinde aylık satış hedefi (₺) ve prim oranı (%) düzenlenip kaydedilebiliyor; dönem net cirosu, hedef durumu (aşıldı/altında) ve hak edilen prim (net ciro × oran) gösteriliyor, aylık ciro tablosuna da "Hak Edilen Prim" sütunu eklendi. "Tüm Personel" seçiliyken her personelin hedefi/oranı/dönem cirosu/hak edilen primi tek tabloda listeleniyor. `sales_reps.sales_target`/`commission_rate` şemada zaten vardı ama hiçbir ekranda kullanılmıyordu — ilk kez burada kullanılıyor, yeni bir migration gerekmedi. Prim, hedef tutturulup tutturulmadığına bakılmaksızın net cironun oranı olarak hesaplanıyor; hedef sadece karşılaştırma göstergesi. Şema değişikliği yok.
+
 ## [2.17.232] - 2026-08-28
 
 **Personel Satış Raporu'nun sonuna aylık toplam ciro tablosu eklendi:** O an filtrelenmiş (seçili personel + tarih aralığı) satışlar ay ay gruplanıp Ay / Toplam Satış / Toplam İade / Net Ciro olarak listeleniyor. Şema değişikliği yok.

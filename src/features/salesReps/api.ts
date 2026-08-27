@@ -16,6 +16,10 @@ export async function createSalesRep(name: string): Promise<SalesRep> {
 export interface SalesRepUpdateInput {
   name?: string
   photo_url?: string | null
+  /** Aylık satış hedefi (TL) — Personel Satış Raporu'ndaki Hedef ve Prim bölümünde kullanılır. */
+  sales_target?: number | null
+  /** Prim oranı (%) — hak edilen prim, dönemin net cirosunun bu yüzdesi olarak hesaplanır. */
+  commission_rate?: number | null
 }
 
 export async function updateSalesRep(id: string, input: SalesRepUpdateInput): Promise<SalesRep> {
