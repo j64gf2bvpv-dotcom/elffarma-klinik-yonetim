@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.245] - 2026-08-28
+
+**Günlük Sayım'da tablo sütun çizgileri, tarih formatı ve Stok Kartı buton sırası düzeltildi:** "Son Sayım"/"Sistemdeki Miktar" ile Paket/Flakon girişleri ve "Bugünkü Stok" sütunları arasına dikey çizgi eklendi (kullanıcı isteği: "arasında tablo çizgisi olsun karışıyor"). Sayım tarihleri artık her yerde gün/ay/yıl'ın tamamını gösteriyor (önceden bazı yerlerde yıl eksikti). Üst gezinme okları yanındaki tarih artık "28.08.2026 SALI" formatında; bugünkü sayımsa "- GÜNCEL SAYIM", geçmiş bir güne gidildiyse "SAYIM" ekleniyor. Ayrıca Stok Kartı'nda "Görsel (PNG)" butonu "Dışa Aktar"dan ÖNCE gelecek şekilde sıralandı (kullanıcı isteği). Şema değişikliği yok.
+
 ## [2.17.244] - 2026-08-28
 
 **Günlük Stok'a ileri/geri gün gezinme okları eklendi:** "Günlük Stok" kartındaki tarihin yanına ◀ / ▶ okları eklendi — mevcut (bugünkü açık sayım + Geçmiş Sayımlar'da olan) günler arasında gezip o günün sayımını doğrudan ana panelde görüntüleyip düzenleyebiliyorsunuz (yeni tarih üretmiyor, sadece var olan sayımlar arasında gezdiriyor). Bugünün gerçek takvim tarihinin İLERİSİNDEKİ bir sayım görüntülenirse (ör. art arda "Sayımı Tamamla" ile yanlışlıkla ileri gidilmişse) tarih kırmızı renkte ve "Bugünün ilerisinde" etiketiyle vurgulanıyor — zaten var olan Sil butonuyla silinebiliyor. Şema değişikliği yok.

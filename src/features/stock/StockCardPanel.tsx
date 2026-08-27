@@ -502,6 +502,21 @@ export function StockCardPanel() {
               {mode === 'single' && product && <DeleteAllMovementsDialog product={product} />}
               {mode === 'all' && <DeleteAllMovementsBulkDialog productIds={allProductIds} />}
               <ResetAllStockDialog affectedCount={resetAffectedCount} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  exportStockCardImage(
+                    mode === 'single' ? (product?.name ?? '') : 'Tüm Ürünler',
+                    mode === 'single' && product?.sku ? `Kod: ${product.sku}` : null,
+                    summaryLine,
+                    rows,
+                    mode === 'all',
+                  )
+                }
+              >
+                <ImageDown className="size-3.5" /> Görsel (PNG)
+              </Button>
               <ExportMenu<StockCardRow>
                 title={mode === 'single' ? `Stok Kartı — ${product?.name}` : 'Stok Kartı — Tüm Ürünler'}
                 filename={mode === 'single' ? `stok-karti-${product?.sku ?? product?.name}` : 'stok-karti-tum-urunler'}
@@ -528,21 +543,6 @@ export function StockCardPanel() {
                   },
                 ]}
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  exportStockCardImage(
-                    mode === 'single' ? (product?.name ?? '') : 'Tüm Ürünler',
-                    mode === 'single' && product?.sku ? `Kod: ${product.sku}` : null,
-                    summaryLine,
-                    rows,
-                    mode === 'all',
-                  )
-                }
-              >
-                <ImageDown className="size-3.5" /> Görsel (PNG)
-              </Button>
             </div>
           </div>
 

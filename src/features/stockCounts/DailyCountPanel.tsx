@@ -386,7 +386,7 @@ function CountItemRow({
       <TableCell className="font-bold text-foreground">
         {baselineLabel(baseline.paket, baseline.flakon)}
       </TableCell>
-      <TableCell>
+      <TableCell className="border-l">
         {readOnly ? (
           <span>{item.counted_quantity != null ? `${item.counted_quantity} Paket` : '—'}</span>
         ) : (
@@ -430,7 +430,7 @@ function CountItemRow({
           />
         )}
       </TableCell>
-      <TableCell className="font-medium">
+      <TableCell className="border-l font-medium">
         <span className="inline-flex items-center gap-1.5">
           {finalStockLabel(finalPaket, finalFlakon)}
           {(item.counted_quantity != null || item.counted_quantity_flakon != null) &&
@@ -522,7 +522,7 @@ function RecentStockComparison({ recentCounts }: { recentCounts: StockCount[] })
                   key={c.id}
                   className={cn('border-l font-bold', DAY_COLOR_CLASSES[i % DAY_COLOR_CLASSES.length])}
                 >
-                  {format(new Date(c.count_date), 'd MMM', { locale: trLocale })}
+                  {format(new Date(c.count_date), 'd MMM yyyy', { locale: trLocale })}
                 </TableHead>
               ))}
             </TableRow>
@@ -718,13 +718,13 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     <TableHead>Ürün</TableHead>
                     <TableHead className="font-bold text-foreground">
                       {previousCount
-                        ? `Son Sayım (${format(new Date(previousCount.count_date), 'd MMMM', { locale: trLocale })})`
+                        ? `Son Sayım (${format(new Date(previousCount.count_date), 'd MMMM yyyy', { locale: trLocale })})`
                         : 'Sistemdeki Miktar'}
                     </TableHead>
-                    <TableHead>Paket</TableHead>
+                    <TableHead className="border-l">Paket</TableHead>
                     <TableHead>Flakon</TableHead>
-                    <TableHead className="font-bold text-foreground">
-                      {format(new Date(count.count_date), 'd MMMM', { locale: trLocale })} — O Günkü Stok
+                    <TableHead className="border-l font-bold text-foreground">
+                      {format(new Date(count.count_date), 'd MMMM yyyy', { locale: trLocale })} — O Günkü Stok
                     </TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -778,13 +778,13 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                   <TableHead>Ürün</TableHead>
                   <TableHead className="font-bold text-foreground">
                     {previousCount
-                      ? `Son Sayım (${format(new Date(previousCount.count_date), 'd MMMM', { locale: trLocale })})`
+                      ? `Son Sayım (${format(new Date(previousCount.count_date), 'd MMMM yyyy', { locale: trLocale })})`
                       : 'O Günkü Stok'}
                   </TableHead>
-                  <TableHead>Paket</TableHead>
+                  <TableHead className="border-l">Paket</TableHead>
                   <TableHead>Flakon</TableHead>
-                  <TableHead className="font-bold text-foreground">
-                    {format(new Date(count.count_date), 'd MMMM', { locale: trLocale })} — O Günkü Stok
+                  <TableHead className="border-l font-bold text-foreground">
+                    {format(new Date(count.count_date), 'd MMMM yyyy', { locale: trLocale })} — O Günkü Stok
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -795,9 +795,9 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     <TableCell className="font-bold text-foreground">
                       {baselineLabel(i.expected_quantity, i.expected_quantity_flakon)}
                     </TableCell>
-                    <TableCell>{i.counted_quantity ? `${i.counted_quantity} Paket` : '—'}</TableCell>
+                    <TableCell className="border-l">{i.counted_quantity ? `${i.counted_quantity} Paket` : '—'}</TableCell>
                     <TableCell>{i.counted_quantity_flakon ? `${i.counted_quantity_flakon} Flakon` : '—'}</TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="border-l font-medium">
                       {finalStockLabel(
                         resolveCounted(i.expected_quantity, i.counted_quantity),
                         resolveCounted(i.expected_quantity_flakon, i.counted_quantity_flakon),
@@ -1008,7 +1008,8 @@ export function DailyCountPanel() {
               <ChevronLeft className="size-4" />
             </Button>
             <span className={cn('text-sm font-medium', isFutureCount && 'text-destructive')}>
-              {format(new Date(activeCount.count_date), 'd MMMM yyyy', { locale: trLocale })}
+              {format(new Date(activeCount.count_date), 'dd.MM.yyyy EEEE', { locale: trLocale }).toLocaleUpperCase('tr-TR')}
+              {activeCount.count_date === todayDate() ? ' - GÜNCEL SAYIM' : ' SAYIM'}
             </span>
             <Button
               type="button"
@@ -1176,13 +1177,13 @@ export function DailyCountPanel() {
                       <TableHead>Ürün</TableHead>
                       <TableHead className="font-bold text-foreground">
                         {previousCompletedCount
-                          ? `Son Sayım (${format(new Date(previousCompletedCount.count_date), 'd MMMM', { locale: trLocale })})`
+                          ? `Son Sayım (${format(new Date(previousCompletedCount.count_date), 'd MMMM yyyy', { locale: trLocale })})`
                           : 'Sistemdeki Miktar'}
                       </TableHead>
-                      <TableHead>Paket</TableHead>
+                      <TableHead className="border-l">Paket</TableHead>
                       <TableHead>Flakon</TableHead>
-                      <TableHead className="animate-text-blink font-bold text-destructive">
-                        {format(new Date(activeCount.count_date), 'd MMMM', { locale: trLocale })} — Bugünkü Stok
+                      <TableHead className="animate-text-blink border-l font-bold text-destructive">
+                        {format(new Date(activeCount.count_date), 'd MMMM yyyy', { locale: trLocale })} — Bugünkü Stok
                       </TableHead>
                       {!isCompleted && <TableHead></TableHead>}
                     </TableRow>
