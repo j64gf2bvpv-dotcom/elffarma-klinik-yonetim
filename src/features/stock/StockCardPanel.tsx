@@ -241,7 +241,7 @@ function DeleteAllMovementsDialog({ product }: { product: Product }) {
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-            İptal Et
+            Vazgeç
           </Button>
           <Button type="button" variant="destructive" disabled={!reason.trim() || submitting} onClick={handleConfirm}>
             {submitting && <Loader2 className="animate-spin" />}
