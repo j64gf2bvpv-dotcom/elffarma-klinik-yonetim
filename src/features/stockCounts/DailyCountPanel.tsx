@@ -989,6 +989,12 @@ export function DailyCountPanel() {
   // geçtiysem silebileyim") — Sil butonu zaten her zaman var, burada sadece
   // dikkat çekmek için vurgulanıyor.
   const isFutureCount = activeCount.count_date > todayDate()
+  // Nav okları yanındaki tarih ile Sayım tablosundaki yanıp sönen "Bugünkü
+  // Stok" başlığı AYNI metni göstermeli (kullanıcı isteği, 2026-08-28) —
+  // tek yerden üretilip ikisinde de kullanılıyor.
+  const activeDateLabel =
+    format(new Date(activeCount.count_date), 'dd.MM.yyyy EEEE', { locale: trLocale }).toLocaleUpperCase('tr-TR') +
+    (activeCount.count_date === todayDate() ? ' - GÜNCEL SAYIM' : ' SAYIM')
 
   return (
     <div className="grid gap-4">
@@ -1008,8 +1014,7 @@ export function DailyCountPanel() {
               <ChevronLeft className="size-4" />
             </Button>
             <span className={cn('text-sm font-medium', isFutureCount && 'text-destructive')}>
-              {format(new Date(activeCount.count_date), 'dd.MM.yyyy EEEE', { locale: trLocale }).toLocaleUpperCase('tr-TR')}
-              {activeCount.count_date === todayDate() ? ' - GÜNCEL SAYIM' : ' SAYIM'}
+              {activeDateLabel}
             </span>
             <Button
               type="button"
@@ -1141,7 +1146,7 @@ export function DailyCountPanel() {
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">
-            {format(new Date(activeCount.count_date), 'd MMMM yyyy', { locale: trLocale })} Sayımı
+            {format(new Date(activeCount.count_date), 'dd.MM.yyyy', { locale: trLocale })}
           </CardTitle>
           {!isCompleted && (
             <div className="w-64">
@@ -1182,9 +1187,7 @@ export function DailyCountPanel() {
                       </TableHead>
                       <TableHead className="border-l">Paket</TableHead>
                       <TableHead>Flakon</TableHead>
-                      <TableHead className="animate-text-blink border-l font-bold text-destructive">
-                        {format(new Date(activeCount.count_date), 'd MMMM yyyy', { locale: trLocale })} — Bugünkü Stok
-                      </TableHead>
+                      <TableHead className="animate-text-blink border-l font-bold text-destructive">{activeDateLabel}</TableHead>
                       {!isCompleted && <TableHead></TableHead>}
                     </TableRow>
                   </TableHeader>
