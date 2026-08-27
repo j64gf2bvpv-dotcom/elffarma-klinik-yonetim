@@ -41,11 +41,15 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+// doctor_name kasıtlı olarak zorunlu DEĞİL (kullanıcı isteği, 2026-08-27:
+// "hepsini girmeden kaydet butonu çıkabilmeli") — "Başka Doktor Ekle" ile
+// açılan ekstra bir satır doldurulmadan bırakılırsa artık Kaydet'i
+// tıklamayı engellemiyor; boş satırlar onSubmitBulk'ta sessizce atlanır.
 const bulkSchema = z.object({
   visits: z
     .array(
       z.object({
-        doctor_name: z.string().min(2, 'Doktor adı gerekli'),
+        doctor_name: z.string().optional(),
         customer_id: z.string().nullable().optional(),
         phone: z.string().optional(),
         notes: z.string().optional(),
@@ -152,7 +156,14 @@ export function DoctorVisitDialog({
   }
 
   async function onSubmitBulk(values: BulkFormValues) {
-    for (const v of values.visits) {
+    const filled = values.visits
+      .map((v) => ({ ...v, doctor_name: v.doctor_name?.trim() ?? '' }))
+      .filter((v) => v.doctor_name.length >= 2)
+    if (filled.length === 0) {
+      toast.error('En az bir doktor adı girin')
+      return
+    }
+    for (const v of filled) {
       await createMutation.mutateAsync({
         visit_date: visitDate,
         sales_rep_id: salesRepId,
