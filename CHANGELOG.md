@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.219] - 2026-08-27
+
+**Haftalık Satış Temsilcisi Raporu'nda "Yeni Doktor(lar)" penceresinin Kaydet butonu artık altta sabit:** Çok sayıda doktor eklendiğinde (Başka Doktor Ekle ile) önceden Kaydet butonunu bulmak için tüm listeyi kaydırmak gerekiyordu — artık sadece doktor satırları kayıyor, Vazgeç/Kaydet butonları her zaman görünür kalıyor. Headless Chrome'da 12 satırla doğrulandı. Şema değişikliği yok.
+
 ## [2.17.218] - 2026-08-27
 
 **Satışlara "Kongre / Workshop" alanı eklendi:** Yeni Satış/İade formunda, doktor seçiminin hemen altında opsiyonel bir "Kongre / Workshop" metin kutusu var — satışın hangi kongre/workshop'ta yapıldığını serbest metin olarak not düşebilirsiniz. Girilirse Satışlar listesinde doktor adının yanında rozet olarak görünür. Kongreler modülündeki resmî kayıtlara bağlı değil, tamamen serbest metin. Şema değişikliği: `sales.congress_name` (nullable).

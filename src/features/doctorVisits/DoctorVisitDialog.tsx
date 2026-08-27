@@ -198,12 +198,22 @@ export function DoctorVisitDialog({
             <Plus className="size-3.5" /> Doktor Ekle
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Yeni Doktor(lar)</DialogTitle>
           </DialogHeader>
           <Form {...bulkForm}>
-            <form onSubmit={bulkForm.handleSubmit(onSubmitBulk)} className="grid gap-3">
+            {/* Kaydet butonu her zaman altta sabit görünsün diye (kullanıcı
+                isteği, 2026-08-27: "altta kaydet butonu olmalı") — çok sayıda
+                doktor eklendiğinde sadece satır listesi kayar, DialogFooter
+                (Vazgeç/Kaydet) hep görünür kalır. min-h-0 burada zorunlu:
+                olmazsa flex sütunu iç scroll yerine dialog'un kendisini
+                büyütmeye devam eder. */}
+            <form
+              onSubmit={bulkForm.handleSubmit(onSubmitBulk)}
+              className="flex min-h-0 flex-1 flex-col gap-3"
+            >
+              <div className="grid min-h-0 flex-1 auto-rows-min gap-3 overflow-y-auto pr-1">
               {bulkFields.fields.map((field, index) => (
                 <div key={field.id} className="grid gap-2 rounded-md border p-2.5">
                   <div className="flex items-start gap-2">
@@ -281,6 +291,7 @@ export function DoctorVisitDialog({
               >
                 <Plus className="size-3.5" /> Başka Doktor Ekle
               </Button>
+              </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Vazgeç
