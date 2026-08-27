@@ -12,6 +12,15 @@ import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -429,6 +438,83 @@ function RepTargetTableRow({ rep, net }: { rep: SalesRep; net: number }) {
 }
 
 /**
+ * Kişi bazlı dışa aktarma — dışa aktarılacak personelleri seçtiren bir
+ * onay penceresi, sonra TEK Excel dosyasında her seçili personel için ayrı
+ * sekme üretir (kullanıcı isteği, 2026-08-28: "kişi bazlı dışa aktar
+ * yazmalı, kişiler seçilip satışlarına göre dışa aktar olmalı" — önceki
+ * sürüm "Tüm Personel" seçiliyken HERKESİ otomatik aktarıyordu, seçim
+ * imkânı yoktu). `sales` üstteki tarih filtresine göre gelir (üst
+ * bileşendeki `repId` tek-kişi filtresinden BAĞIMSIZ) — bu yüzden buton her
+ * zaman görünür, dropdown'da hangi kişi seçili olursa olsun kullanılabilir.
+ */
+function ExportPerRepDialog({ reps, sales }: { reps: SalesRep[]; sales: SaleWithRelations[] }) {
+  const [open, setOpen] = React.useState(false)
+  const [selected, setSelected] = React.useState<Set<string>>(new Set())
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function handleExport() {
+    const chosenIds = new Set(selected)
+    const byRep = new Map<string, SaleWithRelations[]>()
+    for (const s of sales) {
+      if (!s.sales_rep_id || !chosenIds.has(s.sales_rep_id)) continue
+      const key = s.sales_reps?.name ?? 'Belirtilmemiş'
+      if (!byRep.has(key)) byRep.set(key, [])
+      byRep.get(key)!.push(s)
+    }
+    exportToExcelMultiSheet(
+      'personel-satis-raporu-kisi-bazli',
+      Array.from(byRep.entries())
+        .sort(([a], [b]) => a.localeCompare(b, 'tr'))
+        .map(([name, rows]) => ({ name, columns: SALE_REPORT_COLUMNS, rows })),
+    )
+    setOpen(false)
+    setSelected(new Set())
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button variant="outline" onClick={() => setOpen(true)} disabled={reps.length === 0}>
+        <Users className="size-3.5" />
+        Kişi Bazlı Dışa Aktar
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Kişi Bazlı Dışa Aktar</DialogTitle>
+          <DialogDescription>
+            Dışa aktarılacak personelleri seçin — her biri için tek bir Excel dosyasında ayrı bir sekme oluşturulur
+            (üstteki tarih aralığına göre).
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid max-h-72 gap-1 overflow-y-auto">
+          {reps.map((r) => (
+            <label key={r.id} className="hover:bg-accent flex items-center gap-2 rounded-md px-2 py-1.5 text-sm">
+              <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggle(r.id)} />
+              {r.name}
+            </label>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Vazgeç
+          </Button>
+          <Button type="button" onClick={handleExport} disabled={selected.size === 0}>
+            Dışa Aktar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
  * "Personel Satış Raporu" — kullanıcı isteği (2026-08-28): her satış
  * temsilcisinin hangi doktora ne ürün sattığını, ne not yazdığını, hangi
  * tarihte ve ne fiyattan sattığını kişi kişi ayrı görebilmek, Excel'e
@@ -493,17 +579,18 @@ function StaffSalesReportTab() {
    * (satış - iade) prim oranı kadarı olarak hesaplanıyor; hedef sadece
    * karşılaştırma/ilerleme göstergesi.
    */
+  const datedSales = React.useMemo(() => filterSalesByDate(allSales, from, to), [allSales, from, to])
+
   const repTargetRows = React.useMemo(() => {
-    const dated = filterSalesByDate(allSales, from, to)
     return reps.map((r) => {
-      const repSales = dated.filter((s) => s.sales_rep_id === r.id)
+      const repSales = datedSales.filter((s) => s.sales_rep_id === r.id)
       const sales = repSales.filter((s) => s.type === 'sale').reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
       const returns = repSales
         .filter((s) => s.type === 'return')
         .reduce((sum, s) => sum + s.quantity * Number(s.unit_price), 0)
       return { rep: r, net: sales - returns }
     })
-  }, [reps, allSales, from, to])
+  }, [reps, datedSales])
 
   async function handleDelete(sale: SaleWithRelations) {
     if (
@@ -538,27 +625,6 @@ function StaffSalesReportTab() {
     }
   }
 
-  /**
-   * "Tüm Personel" seçiliyken tek Excel dosyasında kişi başına ayrı sekme —
-   * kullanıcı isteği (2026-08-28: "dışarı aktarırken kişi kişi
-   * alabilmeliyim"). Personeli olmayan (sales_rep_id null) satışlar da
-   * "Belirtilmemiş" adıyla ayrı bir sekmede toplanıyor, hiçbir satır sessizce
-   * atlanmıyor.
-   */
-  function handleExportPerRep() {
-    const byRep = new Map<string, SaleWithRelations[]>()
-    for (const s of filtered) {
-      const key = s.sales_reps?.name ?? 'Belirtilmemiş'
-      if (!byRep.has(key)) byRep.set(key, [])
-      byRep.get(key)!.push(s)
-    }
-    exportToExcelMultiSheet(
-      'personel-satis-raporu-kisi-kisi',
-      Array.from(byRep.entries())
-        .sort(([a], [b]) => a.localeCompare(b, 'tr'))
-        .map(([name, rows]) => ({ name, columns: SALE_REPORT_COLUMNS, rows })),
-    )
-  }
 
   return (
     <div className="grid gap-4">
@@ -595,12 +661,7 @@ function StaffSalesReportTab() {
             rows={filtered}
             columns={SALE_REPORT_COLUMNS}
           />
-          {!repId && (
-            <Button variant="outline" onClick={handleExportPerRep} disabled={filtered.length === 0}>
-              <Users className="size-3.5" />
-              Kişi Kişi Dışa Aktar
-            </Button>
-          )}
+          <ExportPerRepDialog reps={reps} sales={datedSales} />
           <Button
             variant="outline"
             className="text-destructive hover:text-destructive"
