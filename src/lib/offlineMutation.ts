@@ -7,6 +7,7 @@
 
 import { supabase } from './supabaseClient'
 import { enqueueMutation } from './offlineQueue'
+import { getErrorMessage } from './utils'
 
 /**
  * supabase.auth.getUser() JWT'yi sunucuda doğrulamak için ağ isteği atar ve
@@ -20,7 +21,7 @@ export async function getCurrentUserId(): Promise<string | undefined> {
 
 function isNetworkError(error: unknown): boolean {
   if (!navigator.onLine) return true
-  const message = error instanceof Error ? error.message : String(error ?? '')
+  const message = getErrorMessage(error)
   return /failed to fetch|networkerror|network request failed|load failed/i.test(message)
 }
 
@@ -34,7 +35,7 @@ function isNetworkError(error: unknown): boolean {
  */
 function translatePermissionError(error: unknown): unknown {
   const code = (error as { code?: string } | null | undefined)?.code
-  const message = error instanceof Error ? error.message : String(error ?? '')
+  const message = getErrorMessage(error)
   if (code === 'PGRST116' || code === '42501' || /row-level security policy/i.test(message)) {
     return new Error('Bu işlem için yetkiniz yok — sadece yönetici yapabilir.')
   }

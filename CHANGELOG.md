@@ -3,6 +3,14 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.225] - 2026-08-27
+
+**Hata mesajları artık "[object Object]" yerine gerçek nedeni gösteriyor:** Supabase/PostgREST hataları (`{ message, details, hint, code }`) gerçek `Error` örneği değil düz nesne olduğu için `error instanceof Error` kontrolü bunlarda hep false dönüyor ve toast'larda anlamsız "[object Object]" yazıyordu (ör. Stok Kartı'nda "Tüm Hareketleri Sil"). Yeni paylaşılan `getErrorMessage()` yardımcı fonksiyonu (`src/lib/utils.ts`) hem gerçek `Error`'ları hem düz `{ message }` nesnelerini doğru okuyor; bu deseni kullanan 6 dosyanın tamamı (Stok Kartı, Tüm Ürünleri Sıfırla, Kongre ürün ekleme, Günlük Sayım toplu silme, Belge açma, offline yazma kuyruğu) güncellendi.
+
+**Stok Kartı'nda "Tüm Hareketleri Sil" artık gerçekten çalışıyor:** Yukarıdaki hata maskesi kalkınca ortaya çıkan asıl neden düzeltildi — RPC, `audit_logs` tablosuna `action='delete_all_stock_movements'` ile yazmaya çalışıyordu ama tablodaki CHECK kısıtı bu değere izin vermiyordu (`insert`/`update`/`delete`/`rpc` ile sınırlıydı), bu yüzden buton her tıklandığında "violates check constraint" hatasıyla düşüyordu. Kısıt bu değeri de kapsayacak şekilde genişletildi (migration `20260827204319`).
+
+**Stok Kartı'nın "Tüm Ürünler" görünümüne de "Tüm Hareketleri Sil" eklendi:** Önceden sadece "Tek Ürün" görünümünde vardı; artık üstteki ürün filtresine göre (boş = TÜM ürünler, doluysa sadece seçili ürünler) topluca da kullanılabiliyor. Yeni bir RPC (`delete_all_stock_movements_bulk`, migration `20260827204726`) ekliyor — sadece yöneticiye açık, aynı Tamam/Vazgeç onay deseni.
+
 ## [2.17.224] - 2026-08-27
 
 **Stok Kartı'nda "Tüm Hareketleri Sil" artık gerekçe yazmayı gerektirmeyen sade bir Tamam/Vazgeç onay penceresi:** Kullanıcı isteğiyle ("bu şekilde bir menü istemiyorum, Tamam ve Vazgeç olmalı sadece") ayrı bir gerekçe metni kutusu içeren özel diyalog kaldırıldı; StockPage'teki "Tüm Ürünleri Sıfırla" ile aynı paylaşılan onay deseni (useConfirmDialog) kullanılıyor. RPC'nin istediği gerekçe metni artık otomatik oluşturuluyor. Şema değişikliği yok.

@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/lib/auth'
+import { getErrorMessage } from '@/lib/utils'
 import { getAttachmentUrl } from './api'
 import { useAttachments, useDeleteAttachment, useUploadAttachment } from './hooks'
 import type { AttachmentOwnerType } from '@/types/database'
@@ -41,7 +42,7 @@ export function AttachmentsPanel({ ownerType, ownerId }: AttachmentsPanelProps) 
       const url = await getAttachmentUrl(path)
       window.open(url, '_blank')
     } catch (error) {
-      toast.error('Belge açılamadı', { description: error instanceof Error ? error.message : undefined })
+      toast.error('Belge açılamadı', { description: getErrorMessage(error) })
     } finally {
       setDownloadingId(null)
     }

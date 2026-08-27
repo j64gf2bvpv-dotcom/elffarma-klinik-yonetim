@@ -60,7 +60,7 @@ import { exportDailySummaryImage } from './exportSummaryImage'
 import type { StockCountItemWithProduct } from './api'
 import type { SaleWithRelations } from '@/features/sales/api'
 import type { StockCount } from '@/types/database'
-import { cn } from '@/lib/utils'
+import { cn, getErrorMessage } from '@/lib/utils'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 const NO_REP = '__none__'
@@ -204,7 +204,7 @@ function TodaySalesActivity({ countDate }: { countDate: string }) {
       await queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success(`${todaySales.length} kayıt silindi`)
     } catch (error) {
-      toast.error('Bazı kayıtlar silinemedi', { description: error instanceof Error ? error.message : undefined })
+      toast.error('Bazı kayıtlar silinemedi', { description: getErrorMessage(error) })
     } finally {
       setDeletingAll(false)
     }

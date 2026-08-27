@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Plus, Loader2, X, ChevronsUpDown, Package } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { getErrorMessage } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -170,7 +171,7 @@ export function ParticipantProductDialog({
       resetForm()
       setOpen(false)
     } catch (error) {
-      toast.error('Eklenemedi', { description: error instanceof Error ? error.message : undefined })
+      toast.error('Eklenemedi', { description: getErrorMessage(error) })
     } finally {
       setSubmitting(false)
     }

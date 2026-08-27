@@ -41,6 +41,7 @@ import {
 } from './importStockCard'
 import type { MovementType, Product } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
+import { getErrorMessage } from '@/lib/utils'
 
 type ReportMode = 'single' | 'all'
 
@@ -151,14 +152,6 @@ function InlineQtyCell({
 }
 
 /**
- * Tek ürün görünümündeki tüm hareket geçmişini kalıcı olarak siler (o
- * üründen başka HİÇBİR ürüne dokunmaz). stock_movements normalde hiç
- * silinmeyen bir denetim kaydı olduğu için bilerek sadece yöneticiye açık,
- * gerekçe zorunlu ve yazarak onay istiyor (bkz. StockPage'teki
- * ResetAllStockDialog ile aynı iki adımlı desen). Silme sonrası ürünün
- * paket/flakon stoğu 0'a çekilir — boş bir defterle tutarlı tek değer bu.
- */
-/**
  * Bu ürüne ait TÜM geçmiş hareketleri kalıcı olarak siler. Önceden ayrıca
  * zorunlu bir gerekçe metni yazmak gerekiyordu; kullanıcı isteğiyle
  * (2026-08-27 — "bu şekilde bir menü istemiyorum, Tamam ve Vazgeç olmalı
@@ -193,7 +186,7 @@ function DeleteAllMovementsDialog({ product }: { product: Product }) {
       await queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       toast.success(`${product.name} için ${data ?? 0} hareket kalıcı olarak silindi`)
     } catch (error) {
-      toast.error('Silinemedi', { description: error instanceof Error ? error.message : String(error) })
+      toast.error('Silinemedi', { description: getErrorMessage(error) })
     }
   }
 
@@ -205,6 +198,62 @@ function DeleteAllMovementsDialog({ product }: { product: Product }) {
         className="text-destructive hover:text-destructive"
         onClick={handleClick}
         title="Bu ürünün TÜM stok hareket geçmişini kalıcı olarak siler"
+      >
+        <Trash2 className="size-3.5" /> Tüm Hareketleri Sil
+      </Button>
+      {dialog}
+    </>
+  )
+}
+
+/**
+ * "Tüm Ürünler" görünümündeki eşdeğeri — DeleteAllMovementsDialog'dan farkı
+ * tek bir ürüne değil, üstteki ürün filtresine (ProductMultiCombobox — boş
+ * = tümü) göre birden fazla/tüm ürüne birden uygulanması (kullanıcı isteği,
+ * 2026-08-27 — "burada da tüm hareketleri sil olmalı"). Ayrı bir RPC
+ * (delete_all_stock_movements_bulk) kullanır çünkü tek-ürün RPC'si bir
+ * `product_id` parametresine kilitli.
+ */
+function DeleteAllMovementsBulkDialog({ productIds }: { productIds: string[] }) {
+  const { staff } = useAuth()
+  const queryClient = useQueryClient()
+  const { confirm, dialog } = useConfirmDialog()
+
+  if (staff?.role !== 'admin') return null
+
+  const scopeLabel = productIds.length > 0 ? `seçili ${productIds.length} ürüne` : 'TÜM ürünlere'
+
+  async function handleClick() {
+    if (
+      !(await confirm(
+        `${scopeLabel} ait TÜM geçmiş giriş/çıkış hareketleri kalıcı olarak silinecek ve stokları (paket + flakon) 0'a çekilecek. Bu işlem geri alınamaz.`,
+        { title: 'Tüm Hareketleri Sil', confirmLabel: 'Tamam' },
+      ))
+    )
+      return
+
+    try {
+      const { data, error } = await supabase.rpc('delete_all_stock_movements_bulk', {
+        p_product_ids: productIds.length > 0 ? productIds : null,
+        p_reason: `Tüm hareketleri sil (${new Date().toLocaleString('tr-TR')})`,
+      })
+      if (error) throw error
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      await queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
+      toast.success(`${data ?? 0} hareket kalıcı olarak silindi`)
+    } catch (error) {
+      toast.error('Silinemedi', { description: getErrorMessage(error) })
+    }
+  }
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="text-destructive hover:text-destructive"
+        onClick={handleClick}
+        title="Seçili (ya da tüm) ürünlerin TÜM stok hareket geçmişini kalıcı olarak siler"
       >
         <Trash2 className="size-3.5" /> Tüm Hareketleri Sil
       </Button>
@@ -451,6 +500,7 @@ export function StockCardPanel() {
                 }
               />
               {mode === 'single' && product && <DeleteAllMovementsDialog product={product} />}
+              {mode === 'all' && <DeleteAllMovementsBulkDialog productIds={allProductIds} />}
               <ResetAllStockDialog affectedCount={resetAffectedCount} />
               <ExportMenu<StockCardRow>
                 title={mode === 'single' ? `Stok Kartı — ${product?.name}` : 'Stok Kartı — Tüm Ürünler'}

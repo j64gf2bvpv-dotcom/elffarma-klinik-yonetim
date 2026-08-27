@@ -5,6 +5,7 @@ import { RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabaseClient'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
+import { getErrorMessage } from '@/lib/utils'
 
 /**
  * "Tüm Ürünleri Sıfırla" — artık herhangi bir aktif personel kullanabilir
@@ -54,7 +55,7 @@ export function ResetAllStockDialog({ affectedCount }: { affectedCount: number }
       await queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       toast.success(`${data ?? affectedCount} ürünün stoğu (paket + flakon) sıfırlandı`)
     } catch (error) {
-      toast.error('Sıfırlanamadı', { description: error instanceof Error ? error.message : String(error) })
+      toast.error('Sıfırlanamadı', { description: getErrorMessage(error) })
     }
   }
 
