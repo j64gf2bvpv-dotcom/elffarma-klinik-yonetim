@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.263] - 2026-08-28
+
+**Güncel Stok Durumu'ndaki Paket/Flakon ayraç çizgisi gerçekten uzadı:** Bir önceki düzeltmede çizgi teknik olarak "satırın tam yüksekliği" olarak ayarlanmıştı ama `<td>` kendiliğinden esneyen bir kutu olmadığı için çizgi hâlâ sadece metin kadar kısa çıkıyordu — artık gerçekten satırın (ör. ürün resmi/kalın satırların belirlediği) tam yüksekliğine geriliyor. Şema değişikliği yok.
+
 ## [2.17.262] - 2026-08-28
 
 **Stok'ta ürün düzenleme ve kaldırma artık tüm personelde:** Önceden ürün adına tıklayıp tam bilgileri düzenlemek ve "Kaldır" butonu sadece yöneticilere görünüyordu — artık her aktif personel kullanabiliyor (fiyat/SKU/kritik stok gibi finansal alanlar hâlâ korunuyor, sadece isim/kategori ve kaldırma açıldı). "Güncel Stok Durumu" sütununda Paket ve Flakon artık gerçek bir dikey çizgiyle ayrılıyor. Şema değişikliği: `deactivate_product` RPC eklendi.

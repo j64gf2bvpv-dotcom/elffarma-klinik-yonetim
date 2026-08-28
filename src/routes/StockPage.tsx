@@ -596,7 +596,16 @@ function ProductsTable({
                     <FlakonQuantityCell product={product} />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-stretch gap-1.5 text-sm">
+                    {/* h-full: tarayıcılar bir <td>'nin yükseklik değerini
+                        (satırdaki en yüksek hücreye göre otomatik eşitlenmiş
+                        olsa bile) yüzdelik yükseklik hesaplarken "belirli"
+                        kabul eder, bu yüzden doğrudan çocuğa h-full vermek
+                        yeterli — TableCell'in kendisine ayrıca bir şey
+                        eklemeye gerek yok. Bu olmadan aşağıdaki self-stretch
+                        ayraç sadece metnin kendi satır yüksekliği kadar kısa
+                        çıkıyordu (kullanıcı raporu, 2026-08-28: "ortadan
+                        uzun çizgiyle"). */}
+                    <div className="flex h-full items-stretch gap-1.5 text-sm">
                       {isCritical && (
                         <AlertTriangle className="size-3.5 self-center text-destructive animate-alert-glow-red" />
                       )}
