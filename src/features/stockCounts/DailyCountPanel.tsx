@@ -411,15 +411,21 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                 <TableHeader>
                   <TableRow>
                     <TableHead>Ürün</TableHead>
-                    <TableHead className="font-bold text-foreground">
-                      {previousCount
-                        ? format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })
-                        : 'Sistemdeki Miktar'}
+                    <TableHead className="text-sm font-bold text-foreground">
+                      {previousCount ? (
+                        <span className="bg-muted text-foreground rounded-md px-2 py-1">
+                          {format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })}
+                        </span>
+                      ) : (
+                        'Sistemdeki Miktar'
+                      )}
                     </TableHead>
                     <TableHead className="border-l">Paket</TableHead>
                     <TableHead>Flakon</TableHead>
-                    <TableHead className="border-l font-bold text-foreground">
-                      {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
+                    <TableHead className="border-l text-sm font-bold text-foreground">
+                      <span className="bg-muted text-primary rounded-md px-2 py-1">
+                        {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
+                      </span>
                     </TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -470,13 +476,19 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
               <TableHeader>
                 <TableRow>
                   <TableHead>Ürün</TableHead>
-                  <TableHead className="font-bold text-foreground">
-                    {previousCount
-                      ? format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })
-                      : 'O Günkü Stok'}
+                  <TableHead className="text-sm font-bold text-foreground">
+                    {previousCount ? (
+                      <span className="bg-muted text-foreground rounded-md px-2 py-1">
+                        {format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })}
+                      </span>
+                    ) : (
+                      'O Günkü Stok'
+                    )}
                   </TableHead>
-                  <TableHead className="border-l font-bold text-foreground">
-                    {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
+                  <TableHead className="border-l text-sm font-bold text-foreground">
+                    <span className="bg-muted text-primary rounded-md px-2 py-1">
+                      {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
+                    </span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -697,7 +709,7 @@ export function DailyCountPanel() {
     <div className="grid gap-4">
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 pb-6">
-          <CardTitle className="text-base">Günlük Özet</CardTitle>
+          <CardTitle className="text-sm">Günlük Özet</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
             <ImportMenu
               onImport={handleImport}
@@ -738,7 +750,7 @@ export function DailyCountPanel() {
             >
               <ChevronLeft className="size-4" />
             </Button>
-            <span className={cn('text-base font-medium', isFutureCount && 'text-destructive')}>
+            <span className={cn('text-sm font-medium', isFutureCount && 'text-destructive')}>
               {activeDateLabel}
             </span>
             <Button

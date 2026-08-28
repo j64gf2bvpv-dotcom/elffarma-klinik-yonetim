@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.255] - 2026-08-28
+
+**Geçmiş Sayımlar'daki tarih kutucukları renklendirildi, Günlük Özet yazıları büyütüldü:** Geçmiş Sayımlar listesindeki tarih kutucuklarında artık eski (önceki) sayım tarihi siyah, yeni (o satırın kendi) sayım tarihi kırmızı renkte gösteriliyor — hangisinin daha güncel olduğu tek bakışta anlaşılıyor. "Günlük Özet" başlığı ve Günlük Stok üstündeki gezinme tarihi yazısı bir önceki güncellemede fazla küçülmüştü, tekrar okunabilir boyuta (`text-sm`) getirildi. Şema değişikliği yok.
+
 ## [2.17.254] - 2026-08-28
 
 **Buton boyutları ve buton/etiket sırası tutarlılaştırıldı:** "Sayımı Tamamla ve Stoğu Güncelle" butonu artık diğer birincil (kırmızı) butonlarla aynı boyutta (küçük `sm` yerine varsayılan boyut) — hem bugünkü panelde hem Geçmiş Sayımlar'daki açık sayım görünümünde. Gezinme tarihi yazısı da Günlük Özet başlığıyla aynı punto boyutunda (`text-base`). Geçmiş Sayımlar'daki "Son Sayım (...)"/"O Günkü Stok" sütun başlıkları sadeleştirilip sade tarihe indirildi (ana paneldeki "27.08.2026 - SON SAYIM" formatı olduğu gibi kaldı, sadece Geçmiş Sayımlar'daki değişti). Stok > Ürünler sekmesinde "Yeni Ürün Ekle" butonu artık "Yeni Katalog"un hemen öncesinde, aynı boyutta (`sm`). Geçmiş Sayımlar'da bir sayım "Tamamlandı" durumundaysa Paket/Flakon sütunları artık gizli — sadece ürün adı, önceki sayım ve o günkü nihai stok gösteriliyor. Şema değişikliği yok.
