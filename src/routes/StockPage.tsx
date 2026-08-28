@@ -45,7 +45,6 @@ import {
   useUpdateProductCampaign,
   useUpdateProductCatalog,
   useUpdateProductCategory,
-  useUpdateProductName,
   useUpdateProductPrice,
 } from '@/features/stock/hooks'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
@@ -458,68 +457,6 @@ function CategoryCell({ product }: { product: Product }) {
   )
 }
 
-/** Sadece ürün adını düzenleyebilen sade satır-içi hücre — admin olmayan personel
- * için: tam ProductForm'u (fiyat, stok vb. dahil) açmak yerine sadece adı
- * değiştirebilsinler (bkz. products_staff_editable_columns_guard trigger'ı,
- * diğer sütunları personelde zaten reddediyor). */
-function NameCell({ product }: { product: Product }) {
-  const [editing, setEditing] = React.useState(false)
-  const [value, setValue] = React.useState(product.name)
-  const mutation = useUpdateProductName()
-
-  React.useEffect(() => {
-    if (!editing) setValue(product.name)
-  }, [product.name, editing])
-
-  function commit() {
-    setEditing(false)
-    const trimmed = value.trim()
-    if (!trimmed || trimmed === product.name) {
-      setValue(product.name)
-      return
-    }
-    mutation.mutate({ id: product.id, name: trimmed })
-  }
-
-  if (editing) {
-    return (
-      <div className="flex items-center gap-1">
-        <Input
-          autoFocus
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onFocus={(e) => e.currentTarget.select()}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              commit()
-            }
-            if (e.key === 'Escape') {
-              setValue(product.name)
-              setEditing(false)
-            }
-          }}
-          className="h-8 w-40"
-        />
-        <SaveButton onCommit={commit} />
-      </div>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => setEditing(true)}
-      title="Ürün adını düzenlemek için tıklayın"
-      className="-mx-1 block rounded-md px-1 py-0.5 text-left hover:bg-accent"
-    >
-      {product.name}
-      {product.barcode && <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>}
-    </button>
-  )
-}
-
 /**
  * `max-w-none` üründe resim kare gözükmeme ("ince çubuk" görünme) hatasının
  * gerçek kök nedeni için gerekli: Tailwind'in `img{max-width:100%;height:auto}`
@@ -550,8 +487,6 @@ function ProductsTable({
   onToggleAll: (products: Product[], checkAll: boolean) => void
   onReorder: (products: Product[]) => void
 }) {
-  const { staff } = useAuth()
-  const isAdmin = staff?.role === 'admin'
   const dragIndexRef = React.useRef<number | null>(null)
   const allChecked = products.length > 0 && products.every((p) => checkedIds.has(p.id))
 
@@ -639,21 +574,17 @@ function ProductsTable({
                     />
                   </TableCell>
                   <TableCell className="font-medium">
-                    {isAdmin ? (
-                      <ProductForm
-                        product={product}
-                        trigger={
-                          <button type="button" className="block text-left hover:underline" title="Tüm bilgileri düzenle">
-                            {product.name}
-                            {product.barcode && (
-                              <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>
-                            )}
-                          </button>
-                        }
-                      />
-                    ) : (
-                      <NameCell product={product} />
-                    )}
+                    <ProductForm
+                      product={product}
+                      trigger={
+                        <button type="button" className="block text-left hover:underline" title="Tüm bilgileri düzenle">
+                          {product.name}
+                          {product.barcode && (
+                            <span className="block text-xs text-muted-foreground">Barkod: {product.barcode}</span>
+                          )}
+                        </button>
+                      }
+                    />
                   </TableCell>
                   <TableCell>
                     <CategoryCell product={product} />
@@ -665,12 +596,20 @@ function ProductsTable({
                     <FlakonQuantityCell product={product} />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5 text-sm">
-                      {isCritical && <AlertTriangle className="size-3.5 text-destructive animate-alert-glow-red" />}
-                      <span className={cn('flex items-center gap-1.5', isCritical && 'font-medium text-destructive')}>
-                        <span>{product.current_quantity > 0 ? `${product.current_quantity} paket` : '—'}</span>
-                        <span className="text-border">|</span>
-                        <span>{product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}</span>
+                    <div className="flex items-stretch gap-1.5 text-sm">
+                      {isCritical && (
+                        <AlertTriangle className="size-3.5 self-center text-destructive animate-alert-glow-red" />
+                      )}
+                      <span
+                        className={cn('flex items-stretch gap-2', isCritical && 'font-medium text-destructive')}
+                      >
+                        <span className="self-center">
+                          {product.current_quantity > 0 ? `${product.current_quantity} paket` : '—'}
+                        </span>
+                        <span className="border-border w-px self-stretch border-l" />
+                        <span className="self-center">
+                          {product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}
+                        </span>
                       </span>
                     </div>
                   </TableCell>
@@ -700,14 +639,10 @@ function ProductsTable({
                     <div className="flex justify-end gap-2">
                       <StockHistoryDialog product={product} />
                       <StockMovementDialog product={product} />
-                      {isAdmin && (
-                        <>
-                          <ProductForm product={product} />
-                          <Button variant="ghost" size="icon" onClick={() => onRemove(product)}>
-                            <Trash2 className="size-4 text-destructive" />
-                          </Button>
-                        </>
-                      )}
+                      <ProductForm product={product} />
+                      <Button variant="ghost" size="icon" onClick={() => onRemove(product)}>
+                        <Trash2 className="size-4 text-destructive" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

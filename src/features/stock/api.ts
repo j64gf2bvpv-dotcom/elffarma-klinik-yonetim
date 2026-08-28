@@ -92,8 +92,16 @@ export async function updateProductPrice(id: string, unit_price: number | null):
   return offlineUpdate<Product>('products', id, { unit_price }, `Satış fiyatı güncelleme`)
 }
 
+/**
+ * `deactivate_product` RPC üzerinden — doğrudan `.update()` çağrısı
+ * products_staff_editable_columns_guard trigger'ı yüzünden personel için
+ * her zaman reddediliyordu (is_active o trigger'ın izin verdiği alanlar
+ * arasında değil). RPC, record_stock_movement'takiyle aynı desenle bypass
+ * bayrağını set edip is_active_staff() yeterli (kullanıcı isteği,
+ * 2026-08-28: "düzenle ve sil bütün kullanıcılarda olması gerekli").
+ */
 export async function deactivateProduct(id: string): Promise<void> {
-  await offlineUpdate('products', id, { is_active: false }, 'Ürün kaldırma')
+  await offlineRpc('deactivate_product', { p_product_id: id }, 'Ürün kaldırma')
 }
 
 /** deactivateProduct'ın tersi + verilen alanları güncelliyor — örnek veri
