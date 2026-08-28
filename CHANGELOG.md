@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.258] - 2026-08-28
+
+**Geçmiş Sayımlar başlık çizgisi gerçekten görünür hale getirildi:** Bir önceki güncellemede eklenen başlık-altı çizgi, paylaşılan tablo bileşeninin kendi (daha yüksek öncelikli) çizgi kuralı tarafından eziliyordu, ekranda görünmüyordu — artık `!important` ile zorlanıyor, çizgi net şekilde görünüyor. Şema değişikliği yok.
+
 ## [2.17.257] - 2026-08-28
 
 **Geçmiş Sayımlar tablo başlığı ayrıldı, tarih kutucukları hizalandı:** Ürün/tarih başlık satırı ile altındaki ürün satırları arasına belirgin bir çizgi eklendi — önceden çok soluk olduğu için başlık satırı içerikle karışıyordu. Ayrıca tarih kutucuklarının kendi iç boşluğu (pill) yüzünden yazı, hemen altındaki Paket/Flakon rakamlarına göre biraz sağa kaymış görünüyordu — kutucuk artık altındaki yazıyla aynı hizada başlıyor. Şema değişikliği yok.

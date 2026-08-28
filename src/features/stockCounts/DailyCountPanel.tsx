@@ -409,7 +409,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
             <>
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b-2 border-border">
+                  <TableRow className="!border-b-2 !border-border">
                     <TableHead>Ürün</TableHead>
                     <TableHead className="text-sm font-bold text-foreground">
                       {previousCount ? (
@@ -474,7 +474,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
           {!isLoading && items.length > 0 && !isOpenCount && (
             <Table>
               <TableHeader>
-                <TableRow className="border-b-2 border-border">
+                <TableRow className="!border-b-2 !border-border">
                   <TableHead>Ürün</TableHead>
                   <TableHead className="text-sm font-bold text-foreground">
                     {previousCount ? (
