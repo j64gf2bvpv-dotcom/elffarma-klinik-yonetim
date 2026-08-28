@@ -112,8 +112,19 @@ function CountItemRow({
    * Enter-ile-ilerleme deseni (bkz. o dosyadaki quantityInputRef). */
   nextItemId?: string
 }) {
-  const [paketValue, setPaketValue] = React.useState(item.counted_quantity?.toString() ?? '')
-  const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
+  // Kullanıcı raporu, 2026-08-29: "sayımı tamamlayıp bir sonraki güne
+  // geçtiğimde yaptığım sayımlar siliniyor gibi görünüyor" — aslında veri
+  // kaybolmuyor (geçmiş sayımda duruyor), ama her yeni gün bu kutu BOŞ
+  // başladığı için kullanıcıya "silinmiş" gibi görünüyordu. Artık kutu, bir
+  // önceki tamamlanmış sayımın onaylı rakamıyla (baseline) önceden dolduruluyor
+  // — dokunulmazsa counted_quantity yine null kalır (hiçbir hareket
+  // uygulanmaz), sadece görünen sayı süreklilik hissi versin diye baseline.
+  const [paketValue, setPaketValue] = React.useState(
+    item.counted_quantity != null ? item.counted_quantity.toString() : baseline.paket.toString(),
+  )
+  const [flakonValue, setFlakonValue] = React.useState(
+    item.counted_quantity_flakon != null ? item.counted_quantity_flakon.toString() : baseline.flakon.toString(),
+  )
   // "Bugünkü Stok" henüz elle sayılmadıysa geçmiş sayımın (baseline) değil,
   // CANLI ürün stoğunun karşılığı olmalı — aksi halde gün içinde "Günün
   // Satış/İade Hareketleri"nden girilen bir satış/iade burada hiç
@@ -136,7 +147,7 @@ function CountItemRow({
         { title: 'Dikkat', confirmLabel: 'Tamam, Devam Et', variant: 'default' },
       )
       if (!ok) {
-        setPaketValue(item.counted_quantity?.toString() ?? '')
+        setPaketValue(item.counted_quantity != null ? item.counted_quantity.toString() : baseline.paket.toString())
         return
       }
     }
@@ -151,7 +162,9 @@ function CountItemRow({
         { title: 'Dikkat', confirmLabel: 'Tamam, Devam Et', variant: 'default' },
       )
       if (!ok) {
-        setFlakonValue(item.counted_quantity_flakon?.toString() ?? '')
+        setFlakonValue(
+          item.counted_quantity_flakon != null ? item.counted_quantity_flakon.toString() : baseline.flakon.toString(),
+        )
         return
       }
     }
@@ -159,12 +172,14 @@ function CountItemRow({
   }
 
   React.useEffect(() => {
-    setPaketValue(item.counted_quantity?.toString() ?? '')
-  }, [item.counted_quantity])
+    setPaketValue(item.counted_quantity != null ? item.counted_quantity.toString() : baseline.paket.toString())
+  }, [item.counted_quantity, item.id, baseline.paket])
 
   React.useEffect(() => {
-    setFlakonValue(item.counted_quantity_flakon?.toString() ?? '')
-  }, [item.counted_quantity_flakon])
+    setFlakonValue(
+      item.counted_quantity_flakon != null ? item.counted_quantity_flakon.toString() : baseline.flakon.toString(),
+    )
+  }, [item.counted_quantity_flakon, item.id, baseline.flakon])
 
   return (
     <TableRow onClick={() => onSelect(item.id)} selected={selected}>
