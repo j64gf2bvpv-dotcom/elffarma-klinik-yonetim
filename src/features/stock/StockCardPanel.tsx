@@ -159,6 +159,16 @@ function InlineQtyCell({
  * Tamam/Vazgeç (useConfirmDialog) desenine indirildi. RPC'nin kendisi
  * denetim kaydı için hâlâ bir gerekçe metni istediğinden sabit bir metin
  * otomatik gönderiliyor.
+ *
+ * ÖNEMLİ (olay, 2026-08-29): bu RPC eskiden hareketleri silerken ürünün
+ * current_quantity/flakon_quantity'sini de 0'a çekiyordu ("boş bir defterle
+ * tutarlı olsun" gerekçesiyle) — bu, 2026-08-27'de "tüm ürünler" kapsamında
+ * kullanılınca kataloğun neredeyse tamamının GERÇEK stok verisini geri
+ * dönülemez şekilde sıfırladı. RPC artık SADECE stock_movements'ı siliyor,
+ * güncel stoğa dokunmuyor (bkz. migration
+ * 20260828220101_fix_delete_all_movements_must_not_zero_stock.sql) — "geçmişi
+ * temizleme" ile "güncel stoğu sıfırlama" (ResetAllStockDialog'un işi, ayrı
+ * ve kasıtlı bir işlem) artık birbirine karışmıyor.
  */
 function DeleteAllMovementsDialog({ product }: { product: Product }) {
   const { staff } = useAuth()
@@ -170,7 +180,7 @@ function DeleteAllMovementsDialog({ product }: { product: Product }) {
   async function handleClick() {
     if (
       !(await confirm(
-        `${product.name} ürününe ait TÜM geçmiş giriş/çıkış hareketleri kalıcı olarak silinecek ve stok (paket + flakon) 0'a çekilecek. Bu işlem geri alınamaz.`,
+        `${product.name} ürününe ait TÜM geçmiş giriş/çıkış hareketleri kalıcı olarak silinecek. Ürünün GÜNCEL stok miktarına (paket + flakon) dokunulmaz, sadece hareket geçmişi (denetim izi) temizlenir. Bu işlem geri alınamaz.`,
         { title: `${product.name} — Tüm Hareketleri Sil`, confirmLabel: 'Tamam' },
       ))
     )
@@ -182,7 +192,6 @@ function DeleteAllMovementsDialog({ product }: { product: Product }) {
         p_reason: `Tüm hareketleri sil (${new Date().toLocaleString('tr-TR')})`,
       })
       if (error) throw error
-      await queryClient.invalidateQueries({ queryKey: ['products'] })
       await queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       toast.success(`${product.name} için ${data ?? 0} hareket kalıcı olarak silindi`)
     } catch (error) {
@@ -226,7 +235,7 @@ function DeleteAllMovementsBulkDialog({ productIds }: { productIds: string[] }) 
   async function handleClick() {
     if (
       !(await confirm(
-        `${scopeLabel} ait TÜM geçmiş giriş/çıkış hareketleri kalıcı olarak silinecek ve stokları (paket + flakon) 0'a çekilecek. Bu işlem geri alınamaz.`,
+        `${scopeLabel} ait TÜM geçmiş giriş/çıkış hareketleri kalıcı olarak silinecek. Ürünlerin GÜNCEL stok miktarlarına (paket + flakon) dokunulmaz, sadece hareket geçmişi (denetim izi) temizlenir. Bu işlem geri alınamaz.`,
         { title: 'Tüm Hareketleri Sil', confirmLabel: 'Tamam' },
       ))
     )
@@ -238,7 +247,6 @@ function DeleteAllMovementsBulkDialog({ productIds }: { productIds: string[] }) 
         p_reason: `Tüm hareketleri sil (${new Date().toLocaleString('tr-TR')})`,
       })
       if (error) throw error
-      await queryClient.invalidateQueries({ queryKey: ['products'] })
       await queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       toast.success(`${data ?? 0} hareket kalıcı olarak silindi`)
     } catch (error) {
