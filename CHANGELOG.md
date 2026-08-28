@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.261] - 2026-08-28
+
+**Günlük Sayım'da "Bugünün Sayımını Başlat" artık çakışma hatası vermiyor:** Bugüne ait bir sayım (ör. bir önceki günün sayımı tamamlanırken otomatik açılmış) zaten varken bazen ekran "henüz başlatılmadı" gösterip Başlat'a basınca "duplicate key value violates unique constraint" hatası veriyordu. Artık bugüne ait bir kayıt varsa (durumu ne olursa olsun) doğrudan o gösteriliyor, tekrar oluşturulmaya çalışılmıyor.
+
 ## [2.17.260] - 2026-08-28
 
 **Geçmiş Sayımlar'daki tarih kutucuklarının punto boyutu, Dermakor/Swiss tablosundaki tarih başlıklarıyla aynı boyuta getirildi** (`text-sm` → `text-xs`) — sayfada tarih başlıkları artık her yerde aynı büyüklükte. Şema değişikliği yok.

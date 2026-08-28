@@ -42,16 +42,34 @@ function addDaysToDateString(dateStr: string, days: number): string {
  * Açık birden fazla sayım olması beklenmez ama olursa en güncel tarihli
  * olan gösterilir.
  *
- * İSTİSNA (kullanıcı isteği, 2026-08-27: "o günkü tarihi vermeli"): bulunan
- * açık sayım, en son TAMAMLANMIŞ sayımdan daha ESKİ bir tarihteyse, bu artık
- * gerçek "bugün" değil — elle tarih değiştirme gibi işlemlerden arta kalmış
- * YETİM bir sayımdır (ör. 20 Ağustos açık kalmış ama 27 Ağustos zaten
- * tamamlanmış). Bu durumda null dönülür; ekran "bugün için henüz sayım
- * başlatılmadı" gösterip doğru (gerçek takvim) tarihli yeni bir sayım
- * başlatılmasını sağlar — yetim sayım Geçmiş Sayımlar listesinden hâlâ
+ * ÖNCELİK (kullanıcı raporu, 2026-08-28): gerçek takvim tarihine (todayDate())
+ * ait bir sayım VARSA — durumu (açık/tamamlanmış) ne olursa olsun — HER ZAMAN
+ * o döner. Önceden burada sadece "en güncel açık sayım" aranıyor, bugünün
+ * kendi satırı zaten TAMAMLANMIŞsa hiç görülmüyordu — ekran "bugün için henüz
+ * sayım başlatılmadı" gösterip "Başlat"a basınca createCountForDate AYNI
+ * tarih için ikinci bir satır INSERT etmeye çalışıyor, bu da
+ * "duplicate key value violates unique constraint stock_counts_count_date_key"
+ * hatasıyla patlıyordu (stock_counts.count_date UNIQUE). Bugüne ait satır
+ * yoksa eski davranışa (en güncel açık sayım) düşülür.
+ *
+ * İSTİSNA (kullanıcı isteği, 2026-08-27: "o günkü tarihi vermeli"): bugüne
+ * ait satır yokken bulunan açık sayım, en son TAMAMLANMIŞ sayımdan daha ESKİ
+ * bir tarihteyse, bu artık gerçek "bugün" değil — elle tarih değiştirme gibi
+ * işlemlerden arta kalmış YETİM bir sayımdır (ör. 20 Ağustos açık kalmış ama
+ * 27 Ağustos zaten tamamlanmış). Bu durumda null dönülür; ekran "bugün için
+ * henüz sayım başlatılmadı" gösterip doğru (gerçek takvim) tarihli yeni bir
+ * sayım başlatılmasını sağlar — yetim sayım Geçmiş Sayımlar listesinden hâlâ
  * erişilebilir/silinebilir, veri kaybolmaz.
  */
 export async function fetchTodayCount(): Promise<StockCount | null> {
+  const { data: todayRow, error: todayError } = await supabase
+    .from('stock_counts')
+    .select('*')
+    .eq('count_date', todayDate())
+    .maybeSingle()
+  if (todayError) throw todayError
+  if (todayRow) return todayRow as StockCount
+
   const { data, error } = await supabase
     .from('stock_counts')
     .select('*')
@@ -125,9 +143,28 @@ async function createCountForDate(countDate: string, createdBy: string | null | 
   return count
 }
 
+/**
+ * Bugüne ait bir satır zaten varsa (ör. bir önceki sayım tamamlanırken
+ * otomatik açılmış) ONU döner, ikinci bir INSERT DENEMEZ — stock_counts.
+ * count_date UNIQUE kısıtı yüzünden aksi halde "duplicate key value
+ * violates unique constraint stock_counts_count_date_key" hatasıyla
+ * patlıyordu (kullanıcı raporu, 2026-08-28). fetchTodayCount zaten bugüne
+ * ait satırı varsa göstermesi gerektiği için normal akışta bu fonksiyon
+ * sadece gerçekten hiç satır yokken çağrılır — bu ek kontrol yarış
+ * durumlarına karşı bir güvenlik payı.
+ */
 export async function startTodayCount(): Promise<StockCount> {
+  const today = todayDate()
+  const { data: existing, error: existingError } = await supabase
+    .from('stock_counts')
+    .select('*')
+    .eq('count_date', today)
+    .maybeSingle()
+  if (existingError) throw existingError
+  if (existing) return existing as StockCount
+
   const createdBy = await getCurrentUserId()
-  return createCountForDate(todayDate(), createdBy)
+  return createCountForDate(today, createdBy)
 }
 
 /** Sayım başladıktan sonra unutulan/yanlışlıkla dahil edilmiş (ör. örnek/demo
