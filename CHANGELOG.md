@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.264] - 2026-08-28
+
+**Stok'ta Güncel Stok Durumu ve Paket/Flakon sütunları yeniden düzenlendi:** Paket/Flakon sütunları arasına da (Paket ile Flakon arasında) tablo çizgisi eklendi. Güncel Stok Durumu'ndaki uyarı üçgeni ikonu kaldırıldı — kritik stokta artık sadece rakamın kendisi kırmızı ve yanıp sönüyor (0/"—" gösterilen taraf yanmıyor, sadece gerçek bir rakam varsa). Sayılar artık satırdan satıra (uyarı olsun olmasın) hep aynı hizada, "yamuk" kaymıyor. Şema değişikliği yok.
+
 ## [2.17.263] - 2026-08-28
 
 **Güncel Stok Durumu'ndaki Paket/Flakon ayraç çizgisi gerçekten uzadı:** Bir önceki düzeltmede çizgi teknik olarak "satırın tam yüksekliği" olarak ayarlanmıştı ama `<td>` kendiliğinden esneyen bir kutu olmadığı için çizgi hâlâ sadece metin kadar kısa çıkıyordu — artık gerçekten satırın (ör. ürün resmi/kalın satırların belirlediği) tam yüksekliğine geriliyor. Şema değişikliği yok.

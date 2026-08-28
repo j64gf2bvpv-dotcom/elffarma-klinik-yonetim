@@ -1,7 +1,6 @@
 import * as React from 'react'
 import {
   Search,
-  AlertTriangle,
   Trash2,
   CalendarClock,
   Loader2,
@@ -162,7 +161,6 @@ function QuantityCell({ product }: { product: Product }) {
       title="Adedi düzenlemek için tıklayın"
       className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent"
     >
-      {isCritical && <AlertTriangle className="size-3.5 text-destructive animate-alert-glow-red rounded-full" />}
       <Badge variant={isCritical ? 'destructive' : 'secondary'} className={cn(isCritical && 'animate-alert-glow-red')}>
         {product.current_quantity > 0 ? `${product.current_quantity} Paket` : '—'}
       </Badge>
@@ -518,7 +516,7 @@ function ProductsTable({
               <TableHead>Ürün</TableHead>
               <TableHead>Kategori</TableHead>
               <TableHead>Paket</TableHead>
-              <TableHead>Flakon</TableHead>
+              <TableHead className="border-l">Flakon</TableHead>
               <TableHead>Güncel Stok Durumu</TableHead>
               <TableHead>Satış Fiyatı</TableHead>
               <TableHead>Kampanya</TableHead>
@@ -592,27 +590,32 @@ function ProductsTable({
                   <TableCell>
                     <QuantityCell product={product} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-l">
                     <FlakonQuantityCell product={product} />
                   </TableCell>
                   <TableCell>
-                    {/* h-full: tarayıcılar bir <td>'nin yükseklik değerini
-                        (satırdaki en yüksek hücreye göre otomatik eşitlenmiş
-                        olsa bile) yüzdelik yükseklik hesaplarken "belirli"
-                        kabul eder, bu yüzden doğrudan çocuğa h-full vermek
-                        yeterli — TableCell'in kendisine ayrıca bir şey
-                        eklemeye gerek yok. Bu olmadan aşağıdaki self-stretch
-                        ayraç sadece metnin kendi satır yüksekliği kadar kısa
-                        çıkıyordu (kullanıcı raporu, 2026-08-28: "ortadan
-                        uzun çizgiyle"). */}
-                    <div className="flex h-full items-stretch gap-1.5 text-sm">
-                      {isCritical && (
-                        <AlertTriangle className="size-3.5 self-center text-destructive animate-alert-glow-red" />
-                      )}
-                      <span
-                        className={cn('flex items-stretch gap-2', isCritical && 'font-medium text-destructive')}
-                      >
-                        <span className="self-center">
+                    {/* Sabit genişlikli paket sütunu — kullanıcı raporu,
+                        2026-08-28: "yamuk yumuk sayılar düzenli olmalı". Metin
+                        uzunluğu satırdan satıra değiştiği için (ör. "5 paket"
+                        / "44 paket" / "—") sabit genişlik (w-14) olmadan ayraç
+                        her satırda farklı X konumuna kayıyordu. Uyarı ikonu
+                        kasıtlı olarak yok — kritik durumda sadece rakamlar
+                        kırmızı + yanıp sönüyor (kullanıcı isteği, 2026-08-28:
+                        "emojilerini kaldır ... rakamlar kırmızı olsun yanıp
+                        sönsün"). h-full + self-stretch: <td> yüzdelik
+                        yüksekliği satırın (ör. ürün görselinin belirlediği)
+                        tam yüksekliğine göre çözer, ayraç satır boyunca uzun
+                        bir çizgi olarak çıkar. */}
+                    <div className="flex h-full items-stretch text-sm">
+                      <span className="flex items-stretch gap-2">
+                        <span
+                          className={cn(
+                            'w-14 shrink-0 self-center',
+                            isCritical &&
+                              product.current_quantity > 0 &&
+                              'font-medium text-destructive animate-alert-glow-red',
+                          )}
+                        >
                           {product.current_quantity > 0 ? `${product.current_quantity} paket` : '—'}
                         </span>
                         <span className="border-border w-px self-stretch border-l" />
