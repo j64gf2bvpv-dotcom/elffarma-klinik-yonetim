@@ -411,7 +411,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                 <TableHeader>
                   <TableRow className="border-b-2! border-border!">
                     <TableHead>Ürün</TableHead>
-                    <TableHead className="text-sm font-bold text-foreground">
+                    <TableHead className="text-xs font-bold text-foreground">
                       {previousCount ? (
                         <span className="bg-muted text-foreground rounded-md -ml-2 px-2 py-1">
                           {format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })}
@@ -422,7 +422,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     </TableHead>
                     <TableHead className="border-l">Paket</TableHead>
                     <TableHead>Flakon</TableHead>
-                    <TableHead className="border-l text-sm font-bold text-foreground">
+                    <TableHead className="border-l text-xs font-bold text-foreground">
                       <span className="bg-primary text-primary-foreground rounded-md -ml-2 px-2 py-1">
                         {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                       </span>
@@ -476,7 +476,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
               <TableHeader>
                 <TableRow className="border-b-2! border-border!">
                   <TableHead>Ürün</TableHead>
-                  <TableHead className="text-sm font-bold text-foreground">
+                  <TableHead className="text-xs font-bold text-foreground">
                     {previousCount ? (
                       <span className="bg-muted text-foreground rounded-md -ml-2 px-2 py-1">
                         {format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })}
@@ -485,7 +485,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                       'O Günkü Stok'
                     )}
                   </TableHead>
-                  <TableHead className="border-l text-sm font-bold text-foreground">
+                  <TableHead className="border-l text-xs font-bold text-foreground">
                     <span className="bg-primary text-primary-foreground rounded-md -ml-2 px-2 py-1">
                       {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                     </span>
