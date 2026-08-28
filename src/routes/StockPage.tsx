@@ -522,7 +522,7 @@ function ProductsTable({
               <TableHead className="border-l text-center">Kategori</TableHead>
               <TableHead className="border-l text-center">Paket</TableHead>
               <TableHead className="border-l text-center">Flakon</TableHead>
-              <TableHead className="border-l">Güncel Stok Durumu</TableHead>
+              <TableHead className="border-l text-center">Güncel Stok Durumu</TableHead>
               <TableHead className="border-l text-center">Satış Fiyatı</TableHead>
               <TableHead className="border-l text-center">Kampanya</TableHead>
               <TableHead className="border-l text-center">SKT</TableHead>
@@ -599,27 +599,26 @@ function ProductsTable({
                   <TableCell className="border-l text-center">
                     <FlakonQuantityCell product={product} />
                   </TableCell>
-                  <TableCell className="border-l">
-                    {/* Sabit genişlikli paket sütunu — kullanıcı raporu,
-                        2026-08-28: "yamuk yumuk sayılar düzenli olmalı". Metin
-                        uzunluğu satırdan satıra değiştiği için (ör. "5 paket"
-                        / "44 paket" / "—") sabit genişlik (w-14) olmadan ayraç
-                        her satırda farklı X konumuna kayıyordu. Uyarı ikonu
-                        kasıtlı olarak yok — kritik durumda sadece rakamlar
-                        kırmızı + yanıp sönüyor (kullanıcı isteği, 2026-08-28:
-                        "emojilerini kaldır ... rakamlar kırmızı olsun yanıp
-                        sönsün"). Paket/Flakon ile arasındaki ayraç kısa/satır
-                        içi bırakıldı — Paket ve Flakon zaten kendi gerçek
-                        sütunlarında (tam yükseklikte border-l ile) ayrı
-                        gösteriliyor, burada uzun bir çizgiye gerek yok
-                        (kullanıcı isteği, 2026-08-28: "bu kısımda yukarıdan
-                        aşağıya uzun çizgiler olmasın"). justify-center BİLEREK
-                        yok — flakon metninin genişliği satırdan satıra
-                        değiştiği için ("—" / "1 flakon") tüm grubu ortalamak,
-                        ayracı her satırda farklı X'e kaydırıyordu (kullanıcı
-                        isteği, 2026-08-28: "ortalı değil düz hizalı şekilde
-                        devam etmeli") — sol hizalı sabit sütun bunu önlüyor. */}
-                    <div className="flex items-center gap-2 text-sm">
+                  <TableCell className="border-l text-center">
+                    {/* Sabit genişlikli paket VE flakon sütunları — kullanıcı
+                        raporu, 2026-08-28: "yamuk yumuk sayılar düzenli
+                        olmalı" + "tam ortalı değil". Metin uzunluğu satırdan
+                        satıra değiştiği için (ör. "5 paket" / "44 paket" /
+                        "—", "1 flakon" / "—") her iki tarafa da sabit genişlik
+                        (w-14) verilmezse ya ayraç ya da ortalanan grubun
+                        toplam genişliği satırdan satıra kayıyordu. İkisi de
+                        sabit olunca hem ayraç her satırda tam aynı X'te hem de
+                        justify-center ile grup her satırda tam aynı yerde
+                        ortalanıyor. Uyarı ikonu kasıtlı olarak yok — kritik
+                        durumda sadece rakamlar kırmızı + yanıp sönüyor
+                        (kullanıcı isteği, 2026-08-28: "emojilerini kaldır ...
+                        rakamlar kırmızı olsun yanıp sönsün"). Ayraç kısa/satır
+                        içi — Paket ve Flakon zaten kendi gerçek sütunlarında
+                        (tam yükseklikte border-l ile) ayrı gösteriliyor,
+                        burada uzun bir çizgiye gerek yok (kullanıcı isteği,
+                        2026-08-28: "bu kısımda yukarıdan aşağıya uzun çizgiler
+                        olmasın"). */}
+                    <div className="flex items-center justify-center gap-2 text-sm">
                       <span
                         className={cn(
                           'w-14 shrink-0 text-right',
@@ -631,7 +630,9 @@ function ProductsTable({
                         {product.current_quantity > 0 ? `${product.current_quantity} paket` : '—'}
                       </span>
                       <span className="border-border h-4 border-l" />
-                      <span>{product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}</span>
+                      <span className="w-14 shrink-0 text-left">
+                        {product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="border-l text-center">

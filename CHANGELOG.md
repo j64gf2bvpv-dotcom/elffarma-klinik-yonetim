@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.266] - 2026-08-28
+
+**Stok'ta Güncel Stok Durumu'nda Paket/Flakon ortalama düzeltildi:** Paket ve Flakon değerleri artık iki sabit genişlikli sütun olarak ortadaki çizgiye göre gerçekten ortalı — önceki sürümde sadece sol hizalıydı, kullanıcı geri bildirimiyle tam ortalanacak şekilde düzeltildi (rakamlar satırdan satıra kaysa da ayraç çizgisi her zaman aynı yerde kalıyor). Şema değişikliği yok.
+
 ## [2.17.265] - 2026-08-28
 
 **Stok'ta ürün listesi tablosu baştan sona düzenlendi:** Ürün adından itibaren tüm sütunlar arasına tam boy tablo çizgisi eklendi (sürükle/seç/görsel gibi küçük yardımcı sütunlar arasına eklenmedi). Kategori/Paket/Flakon/Fiyat/Kampanya/SKT/İşlemler içerikleri ortalandı. Süresi geçen/yaklaşan ürünlerde takvim ikonu kaldırıldı, sadece SKT rozeti kırmızı/turuncu kalıyor. Güncel Stok Durumu'nda Paket/Flakon arası ayraç sabit, sol hizalı bir sütun halinde (ortalanmadan) tutarlı kalıyor. Her satırın en başına, kataloğun kendi sırasına göre 1'den başlayan bir numara eklendi — toplam ürün sayısını son numaraya bakarak görebilirsiniz. Şema değişikliği yok.
