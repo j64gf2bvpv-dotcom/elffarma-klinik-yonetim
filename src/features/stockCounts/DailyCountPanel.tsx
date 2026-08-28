@@ -409,11 +409,11 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
             <>
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b-2 border-border">
                     <TableHead>Ürün</TableHead>
                     <TableHead className="text-sm font-bold text-foreground">
                       {previousCount ? (
-                        <span className="bg-muted text-foreground rounded-md px-2 py-1">
+                        <span className="bg-muted text-foreground rounded-md -ml-2 px-2 py-1">
                           {format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                         </span>
                       ) : (
@@ -423,7 +423,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     <TableHead className="border-l">Paket</TableHead>
                     <TableHead>Flakon</TableHead>
                     <TableHead className="border-l text-sm font-bold text-foreground">
-                      <span className="bg-primary text-primary-foreground rounded-md px-2 py-1">
+                      <span className="bg-primary text-primary-foreground rounded-md -ml-2 px-2 py-1">
                         {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                       </span>
                     </TableHead>
@@ -474,11 +474,11 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
           {!isLoading && items.length > 0 && !isOpenCount && (
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b-2 border-border">
                   <TableHead>Ürün</TableHead>
                   <TableHead className="text-sm font-bold text-foreground">
                     {previousCount ? (
-                      <span className="bg-muted text-foreground rounded-md px-2 py-1">
+                      <span className="bg-muted text-foreground rounded-md -ml-2 px-2 py-1">
                         {format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                       </span>
                     ) : (
@@ -486,7 +486,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     )}
                   </TableHead>
                   <TableHead className="border-l text-sm font-bold text-foreground">
-                    <span className="bg-primary text-primary-foreground rounded-md px-2 py-1">
+                    <span className="bg-primary text-primary-foreground rounded-md -ml-2 px-2 py-1">
                       {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                     </span>
                   </TableHead>

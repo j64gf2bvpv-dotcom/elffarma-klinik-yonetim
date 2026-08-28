@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.257] - 2026-08-28
+
+**Geçmiş Sayımlar tablo başlığı ayrıldı, tarih kutucukları hizalandı:** Ürün/tarih başlık satırı ile altındaki ürün satırları arasına belirgin bir çizgi eklendi — önceden çok soluk olduğu için başlık satırı içerikle karışıyordu. Ayrıca tarih kutucuklarının kendi iç boşluğu (pill) yüzünden yazı, hemen altındaki Paket/Flakon rakamlarına göre biraz sağa kaymış görünüyordu — kutucuk artık altındaki yazıyla aynı hizada başlıyor. Şema değişikliği yok.
+
 ## [2.17.256] - 2026-08-28
 
 **Geçmiş Sayımlar'da yeni tarih kutucuğu artık dolu kırmızı şerit:** Bir önceki güncellemede yeni tarih sadece kırmızı yazı rengiyle gösteriliyordu; şimdi butonlardaki gibi dolu kırmızı zemin + beyaz yazı (`bg-primary`/`text-primary-foreground`) kullanılıyor, eski tarih kutucuğu ise gri zemin + normal yazı olarak kalıyor. Şema değişikliği yok.
