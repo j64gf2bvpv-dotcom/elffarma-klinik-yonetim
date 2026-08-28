@@ -2,7 +2,6 @@ import * as React from 'react'
 import {
   Search,
   Trash2,
-  CalendarClock,
   Loader2,
   Check,
   GripVertical,
@@ -504,6 +503,12 @@ function ProductsTable({
         <Table>
           <TableHeader>
             <TableRow>
+              {/* Sıra numarası — kullanıcı isteği, 2026-08-28: "toplam kaç
+                  ürün olduğunu sayılara bakarak anlarım". Katalog başına ayrı
+                  bir ProductsTable render edildiği için (bkz. StockPage'in
+                  ALL_BRANDS görünümü) index+1 zaten o kataloğun kendi sırası —
+                  her katalogda 1'den başlar. */}
+              <TableHead className="w-10 text-center text-muted-foreground">No</TableHead>
               <TableHead className="w-8"></TableHead>
               <TableHead className="w-8">
                 <Checkbox
@@ -513,21 +518,21 @@ function ProductsTable({
                 />
               </TableHead>
               <TableHead className="w-[60px]"></TableHead>
-              <TableHead>Ürün</TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead>Paket</TableHead>
-              <TableHead className="border-l">Flakon</TableHead>
-              <TableHead>Güncel Stok Durumu</TableHead>
-              <TableHead>Satış Fiyatı</TableHead>
-              <TableHead>Kampanya</TableHead>
-              <TableHead>SKT</TableHead>
-              <TableHead className="text-right">İşlemler</TableHead>
+              <TableHead className="border-l">Ürün</TableHead>
+              <TableHead className="border-l text-center">Kategori</TableHead>
+              <TableHead className="border-l text-center">Paket</TableHead>
+              <TableHead className="border-l text-center">Flakon</TableHead>
+              <TableHead className="border-l">Güncel Stok Durumu</TableHead>
+              <TableHead className="border-l text-center">Satış Fiyatı</TableHead>
+              <TableHead className="border-l text-center">Kampanya</TableHead>
+              <TableHead className="border-l text-center">SKT</TableHead>
+              <TableHead className="border-l text-center">İşlemler</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.length === 0 && (
               <TableRow>
-                <TableCell colSpan={12} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={13} className="py-8 text-center text-muted-foreground">
                   Ürün bulunamadı
                 </TableCell>
               </TableRow>
@@ -553,6 +558,7 @@ function ProductsTable({
                     (isCritical || expiryStatus === 'expired') && product.id !== selectedId && 'bg-destructive/5',
                   )}
                 >
+                  <TableCell className="text-center text-muted-foreground tabular-nums">{index + 1}</TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()} className="cursor-grab text-muted-foreground">
                     <GripVertical className="size-4" />
                   </TableCell>
@@ -571,7 +577,7 @@ function ProductsTable({
                       fallback={<div className="size-9 shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted" />}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">
+                  <TableCell className="border-l font-medium">
                     <ProductForm
                       product={product}
                       trigger={
@@ -584,16 +590,16 @@ function ProductsTable({
                       }
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-l text-center">
                     <CategoryCell product={product} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-l text-center">
                     <QuantityCell product={product} />
                   </TableCell>
-                  <TableCell className="border-l">
+                  <TableCell className="border-l text-center">
                     <FlakonQuantityCell product={product} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-l">
                     {/* Sabit genişlikli paket sütunu — kullanıcı raporu,
                         2026-08-28: "yamuk yumuk sayılar düzenli olmalı". Metin
                         uzunluğu satırdan satıra değiştiği için (ör. "5 paket"
@@ -602,53 +608,57 @@ function ProductsTable({
                         kasıtlı olarak yok — kritik durumda sadece rakamlar
                         kırmızı + yanıp sönüyor (kullanıcı isteği, 2026-08-28:
                         "emojilerini kaldır ... rakamlar kırmızı olsun yanıp
-                        sönsün"). h-full + self-stretch: <td> yüzdelik
-                        yüksekliği satırın (ör. ürün görselinin belirlediği)
-                        tam yüksekliğine göre çözer, ayraç satır boyunca uzun
-                        bir çizgi olarak çıkar. */}
-                    <div className="flex h-full items-stretch text-sm">
-                      <span className="flex items-stretch gap-2">
-                        <span
-                          className={cn(
-                            'w-14 shrink-0 self-center',
-                            isCritical &&
-                              product.current_quantity > 0 &&
-                              'font-medium text-destructive animate-alert-glow-red',
-                          )}
-                        >
-                          {product.current_quantity > 0 ? `${product.current_quantity} paket` : '—'}
-                        </span>
-                        <span className="border-border w-px self-stretch border-l" />
-                        <span className="self-center">
-                          {product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}
-                        </span>
+                        sönsün"). Paket/Flakon ile arasındaki ayraç kısa/satır
+                        içi bırakıldı — Paket ve Flakon zaten kendi gerçek
+                        sütunlarında (tam yükseklikte border-l ile) ayrı
+                        gösteriliyor, burada uzun bir çizgiye gerek yok
+                        (kullanıcı isteği, 2026-08-28: "bu kısımda yukarıdan
+                        aşağıya uzun çizgiler olmasın"). justify-center BİLEREK
+                        yok — flakon metninin genişliği satırdan satıra
+                        değiştiği için ("—" / "1 flakon") tüm grubu ortalamak,
+                        ayracı her satırda farklı X'e kaydırıyordu (kullanıcı
+                        isteği, 2026-08-28: "ortalı değil düz hizalı şekilde
+                        devam etmeli") — sol hizalı sabit sütun bunu önlüyor. */}
+                    <div className="flex items-center gap-2 text-sm">
+                      <span
+                        className={cn(
+                          'w-14 shrink-0 text-right',
+                          isCritical &&
+                            product.current_quantity > 0 &&
+                            'font-medium text-destructive animate-alert-glow-red',
+                        )}
+                      >
+                        {product.current_quantity > 0 ? `${product.current_quantity} paket` : '—'}
                       </span>
+                      <span className="border-border h-4 border-l" />
+                      <span>{product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}</span>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-l text-center">
                     <PriceCell product={product} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-l text-center">
                     <CampaignCell product={product} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-l text-center">
+                    {/* Takvim ikonu kasıtlı olarak yok — sadece kritikte
+                        (süresi geçmiş/yaklaşan) rozet kırmızı/turuncu kalıyor
+                        (kullanıcı isteği, 2026-08-28: "takvim simgesi olmasın
+                        sadece kritiklerde kırmızı olarak kalsın tarih"). */}
                     {product.expiry_date ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        {expiryStatus !== 'ok' && <CalendarClock className="size-3.5 text-destructive" />}
-                        <Badge
-                          variant={
-                            expiryStatus === 'expired' ? 'destructive' : expiryStatus === 'soon' ? 'warning' : 'outline'
-                          }
-                        >
-                          {product.expiry_date}
-                        </Badge>
-                      </span>
+                      <Badge
+                        variant={
+                          expiryStatus === 'expired' ? 'destructive' : expiryStatus === 'soon' ? 'warning' : 'outline'
+                        }
+                      >
+                        {product.expiry_date}
+                      </Badge>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
+                  <TableCell className="border-l">
+                    <div className="flex justify-center gap-2">
                       <StockHistoryDialog product={product} />
                       <StockMovementDialog product={product} />
                       <ProductForm product={product} />
