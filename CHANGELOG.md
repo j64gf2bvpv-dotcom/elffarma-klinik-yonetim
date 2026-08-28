@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.259] - 2026-08-28
+
+**Geçmiş Sayımlar başlık çizgisi gerçek anlamda düzeltildi:** Bir önceki denemede kullanılan `!important` işareti eski (v3) Tailwind söz dizimindeydi — bu projedeki Tailwind v4'te işaret sınıfın BAŞINDA değil SONUNDA yazılıyor, o yüzden hiçbir etkisi olmamıştı. Doğru söz dizimiyle düzeltildi, çizgi artık gerçekten görünüyor. Şema değişikliği yok.
+
 ## [2.17.258] - 2026-08-28
 
 **Geçmiş Sayımlar başlık çizgisi gerçekten görünür hale getirildi:** Bir önceki güncellemede eklenen başlık-altı çizgi, paylaşılan tablo bileşeninin kendi (daha yüksek öncelikli) çizgi kuralı tarafından eziliyordu, ekranda görünmüyordu — artık `!important` ile zorlanıyor, çizgi net şekilde görünüyor. Şema değişikliği yok.
