@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.269] - 2026-08-29
+
+**KRİTİK DÜZELTME — bir önceki güncellemenin (v2.17.267) yan etkisi, sayılmamış ürünlerin "Güncel Sayım" sütununda YANLIŞLIKLA 0 görünmesine yol açıyordu:** v2.17.267'de Paket/Flakon kutularının bir önceki sayımın rakamıyla önceden dolması sağlanmıştı, ama bu değişiklik farkında olmadan "Güncel Sayım" sütununun hesabını da etkiledi — o sütun, kutuya hiç dokunulmadığında CANLI ürün stoğunu göstermesi gerekirken, artık her zaman (bazen çok eski ve güncel olmayan) bir önceki sayım rakamını gösteriyordu. Bazı ürünlerde bu eski rakam 0 olduğu için ekranda gerçek stok var olsa bile "—" görünüyordu. **Gerçek ürün stok verisinde (veritabanında) hiçbir kayıp/bozulma olmadığı doğrulandı** — sorun sadece bu ekrandaki bir hesaplama hatasıydı. v2.17.267'nin bu kısmı tamamen geri alındı; kutular yine boş başlıyor ve "Güncel Sayım" sütunu yeniden doğru şekilde canlı stoğa düşüyor. Şema değişikliği yok.
+
 ## [2.17.268] - 2026-08-29
 
 **Kök neden düzeltmesi — sayımı tamamlayınca "bugünkü sayım" bir sonraki güne geçmiyordu:** Bir günün sayımı tamamlanınca sistem hemen bir sonraki günü otomatik açıyor, ama ekran "bugünkü sayım" olarak hangi satırı göstereceğine karar verirken gerçek takvim tarihiyle birebir eşleşen satırı HER ZAMAN önceliklendiriyordu. Gerçek takvim günü henüz ilerlemediği için (aynı oturumda art arda gün tamamlanınca) bu, ekranın az önce TAMAMLANMIŞ günü göstermeye devam edip yeni açılan sonraki günü hiç göstermemesine yol açıyordu — o gün ayrıca "Geçmiş Sayımlar" listesinden bilerek gizlendiği için kullanıcıya verinin tamamen kaybolduğu izlenimini veriyordu (veri hiçbir zaman silinmemişti). Artık "bugünkü sayım" olarak her zaman tarihi en yeni olan satır gösteriliyor — tamamlanınca otomatik açılan yeni gün hemen ekrana geliyor, tamamlanan gün de doğru şekilde Geçmiş Sayımlar'a düşüyor. Şema değişikliği yok.

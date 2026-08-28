@@ -112,19 +112,17 @@ function CountItemRow({
    * Enter-ile-ilerleme deseni (bkz. o dosyadaki quantityInputRef). */
   nextItemId?: string
 }) {
-  // Kullanıcı raporu, 2026-08-29: "sayımı tamamlayıp bir sonraki güne
-  // geçtiğimde yaptığım sayımlar siliniyor gibi görünüyor" — aslında veri
-  // kaybolmuyor (geçmiş sayımda duruyor), ama her yeni gün bu kutu BOŞ
-  // başladığı için kullanıcıya "silinmiş" gibi görünüyordu. Artık kutu, bir
-  // önceki tamamlanmış sayımın onaylı rakamıyla (baseline) önceden dolduruluyor
-  // — dokunulmazsa counted_quantity yine null kalır (hiçbir hareket
-  // uygulanmaz), sadece görünen sayı süreklilik hissi versin diye baseline.
-  const [paketValue, setPaketValue] = React.useState(
-    item.counted_quantity != null ? item.counted_quantity.toString() : baseline.paket.toString(),
-  )
-  const [flakonValue, setFlakonValue] = React.useState(
-    item.counted_quantity_flakon != null ? item.counted_quantity_flakon.toString() : baseline.flakon.toString(),
-  )
+  // ÖNEMLİ (kullanıcı raporu, 2026-08-29 — gerçek stok verisi bozuldu): bu
+  // kutuyu bir önceki sayımın rakamıyla GERÇEKTEN doldurmayı denedik ama bu,
+  // aşağıdaki finalPaket/finalFlakon hesabını da (kutu boşken CANLI ürün
+  // stoğuna düşmesi gereken) bozup her satırda yanlışlıkla eski/durgun bir
+  // sayı göstermeye başladı — bazı ürünlerin gerçek (güncel) stoğu ekranda
+  // sıfır/yanlış görünmesine yol açtı. O deneme GERİ ALINDI: kutu yine boş
+  // ('') başlıyor, "silinmiş gibi görünme" sorunu bunun yerine aşağıdaki
+  // placeholder (hayalet metin) ile çözülüyor — placeholder hiçbir hesaba
+  // katılmadığı için finalPaket/finalFlakon etkilenmez.
+  const [paketValue, setPaketValue] = React.useState(item.counted_quantity?.toString() ?? '')
+  const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
   // "Bugünkü Stok" henüz elle sayılmadıysa geçmiş sayımın (baseline) değil,
   // CANLI ürün stoğunun karşılığı olmalı — aksi halde gün içinde "Günün
   // Satış/İade Hareketleri"nden girilen bir satış/iade burada hiç
@@ -147,7 +145,7 @@ function CountItemRow({
         { title: 'Dikkat', confirmLabel: 'Tamam, Devam Et', variant: 'default' },
       )
       if (!ok) {
-        setPaketValue(item.counted_quantity != null ? item.counted_quantity.toString() : baseline.paket.toString())
+        setPaketValue(item.counted_quantity?.toString() ?? '')
         return
       }
     }
@@ -162,9 +160,7 @@ function CountItemRow({
         { title: 'Dikkat', confirmLabel: 'Tamam, Devam Et', variant: 'default' },
       )
       if (!ok) {
-        setFlakonValue(
-          item.counted_quantity_flakon != null ? item.counted_quantity_flakon.toString() : baseline.flakon.toString(),
-        )
+        setFlakonValue(item.counted_quantity_flakon?.toString() ?? '')
         return
       }
     }
@@ -172,14 +168,12 @@ function CountItemRow({
   }
 
   React.useEffect(() => {
-    setPaketValue(item.counted_quantity != null ? item.counted_quantity.toString() : baseline.paket.toString())
-  }, [item.counted_quantity, item.id, baseline.paket])
+    setPaketValue(item.counted_quantity?.toString() ?? '')
+  }, [item.counted_quantity])
 
   React.useEffect(() => {
-    setFlakonValue(
-      item.counted_quantity_flakon != null ? item.counted_quantity_flakon.toString() : baseline.flakon.toString(),
-    )
-  }, [item.counted_quantity_flakon, item.id, baseline.flakon])
+    setFlakonValue(item.counted_quantity_flakon?.toString() ?? '')
+  }, [item.counted_quantity_flakon])
 
   return (
     <TableRow onClick={() => onSelect(item.id)} selected={selected}>
