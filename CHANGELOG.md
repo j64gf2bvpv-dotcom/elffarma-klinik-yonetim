@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.268] - 2026-08-29
+
+**Kök neden düzeltmesi — sayımı tamamlayınca "bugünkü sayım" bir sonraki güne geçmiyordu:** Bir günün sayımı tamamlanınca sistem hemen bir sonraki günü otomatik açıyor, ama ekran "bugünkü sayım" olarak hangi satırı göstereceğine karar verirken gerçek takvim tarihiyle birebir eşleşen satırı HER ZAMAN önceliklendiriyordu. Gerçek takvim günü henüz ilerlemediği için (aynı oturumda art arda gün tamamlanınca) bu, ekranın az önce TAMAMLANMIŞ günü göstermeye devam edip yeni açılan sonraki günü hiç göstermemesine yol açıyordu — o gün ayrıca "Geçmiş Sayımlar" listesinden bilerek gizlendiği için kullanıcıya verinin tamamen kaybolduğu izlenimini veriyordu (veri hiçbir zaman silinmemişti). Artık "bugünkü sayım" olarak her zaman tarihi en yeni olan satır gösteriliyor — tamamlanınca otomatik açılan yeni gün hemen ekrana geliyor, tamamlanan gün de doğru şekilde Geçmiş Sayımlar'a düşüyor. Şema değişikliği yok.
+
 ## [2.17.267] - 2026-08-29
 
 **Günlük Sayım'da yeni güne geçince kutuların boş görünmesi ("sayımlar siliniyor" hissi) giderildi:** Bir sayımı tamamlayıp bir sonraki güne geçildiğinde, o günün Paket/Flakon giriş kutuları önceden hep boş başlıyordu — veri aslında kaybolmuyordu (önceki gün Geçmiş Sayımlar'da duruyor), ama boş kutu kullanıcıya "silinmiş" gibi görünüyordu. Artık kutular, bir önceki tamamlanmış sayımın onaylı rakamıyla önceden dolduruluyor; hiçbir şeye dokunulmazsa hâlâ hiçbir stok hareketi uygulanmıyor, sadece süreklilik görünür oluyor — bir şey değiştiyse kutu üzerine yazılıp düzeltilebilir. Şema değişikliği yok.

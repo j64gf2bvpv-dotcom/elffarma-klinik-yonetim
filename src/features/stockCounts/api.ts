@@ -36,61 +36,36 @@ function addDaysToDateString(dateStr: string, days: number): string {
 }
 
 /**
- * "Bugünkü sayım" artık gerçek takvim tarihine değil, o an AÇIK olan sayıma
- * bağlı (kullanıcı isteğiyle, 2026-08-24: sayım tamamlanınca hemen YARINKİ
- * sayım — gerçek tarihi bir gün öndeki — başlatılıyor, bkz. completeCount).
- * Açık birden fazla sayım olması beklenmez ama olursa en güncel tarihli
- * olan gösterilir.
+ * "Bugünkü sayım" gerçek takvim tarihine değil, tarihi en yeni olan sayım
+ * satırına bağlı — durumu (açık/tamamlanmış) önemli değil. Bu tasarım,
+ * sayımın gerçek takvimden BAĞIMSIZ, kendi kesintisiz zincirinde ilerlemesini
+ * yansıtır: her tamamlama bir sonraki günü hemen otomatik açar (bkz.
+ * completeCount), dolayısıyla normal akışta "en yeni tarihli satır" HER ZAMAN
+ * o an üzerinde çalışılması gereken (yeni açılmış, boş) sayımdır.
  *
- * ÖNCELİK (kullanıcı raporu, 2026-08-28): gerçek takvim tarihine (todayDate())
- * ait bir sayım VARSA — durumu (açık/tamamlanmış) ne olursa olsun — HER ZAMAN
- * o döner. Önceden burada sadece "en güncel açık sayım" aranıyor, bugünün
- * kendi satırı zaten TAMAMLANMIŞsa hiç görülmüyordu — ekran "bugün için henüz
- * sayım başlatılmadı" gösterip "Başlat"a basınca createCountForDate AYNI
- * tarih için ikinci bir satır INSERT etmeye çalışıyor, bu da
- * "duplicate key value violates unique constraint stock_counts_count_date_key"
- * hatasıyla patlıyordu (stock_counts.count_date UNIQUE). Bugüne ait satır
- * yoksa eski davranışa (en güncel açık sayım) düşülür.
- *
- * İSTİSNA (kullanıcı isteği, 2026-08-27: "o günkü tarihi vermeli"): bugüne
- * ait satır yokken bulunan açık sayım, en son TAMAMLANMIŞ sayımdan daha ESKİ
- * bir tarihteyse, bu artık gerçek "bugün" değil — elle tarih değiştirme gibi
- * işlemlerden arta kalmış YETİM bir sayımdır (ör. 20 Ağustos açık kalmış ama
- * 27 Ağustos zaten tamamlanmış). Bu durumda null dönülür; ekran "bugün için
- * henüz sayım başlatılmadı" gösterip doğru (gerçek takvim) tarihli yeni bir
- * sayım başlatılmasını sağlar — yetim sayım Geçmiş Sayımlar listesinden hâlâ
- * erişilebilir/silinebilir, veri kaybolmaz.
+ * DÜZELTME (kullanıcı raporu, 2026-08-29: "sayımı tamamlayınca bir sonraki
+ * güne geçtiğimde yaptığım sayımlar bir önceki günde görünmüyor"): önceki
+ * sürüm, gerçek takvim tarihine (todayDate()) birebir eşleşen satırı HER
+ * ZAMAN önceliklendiriyordu. Gerçek takvim günü ilerlemeden (aynı oturumda)
+ * art arda birden fazla gün tamamlanınca bu, sistemin az önce TAMAMLANMIŞ
+ * günü göstermeye devam edip yeni açılan sonraki günü hiç göstermemesine yol
+ * açıyordu — kullanıcıya "verilerim kayboldu" gibi görünüyordu (oysa veri
+ * kaybolmuyordu, sadece ekran yanlış günü gösteriyordu ve o gün "Geçmiş
+ * Sayımlar" listesinden bilerek gizleniyordu, bkz. bu dosyanın Geçmiş
+ * Sayımlar filtre mantığı). "En yeni tarihli satır" kuralı hem bu sorunu hem
+ * de önceki 2026-08-28 hatasını (bugünün kendi satırı zaten TAMAMLANMIŞken
+ * hiç görülmemesi) tek, basit bir kuralla çözer — çünkü tamamlanan bir satır,
+ * bir sonraki gün otomatik açılana kadar zaten en yeni tarihli satırdır.
  */
 export async function fetchTodayCount(): Promise<StockCount | null> {
-  const { data: todayRow, error: todayError } = await supabase
-    .from('stock_counts')
-    .select('*')
-    .eq('count_date', todayDate())
-    .maybeSingle()
-  if (todayError) throw todayError
-  if (todayRow) return todayRow as StockCount
-
   const { data, error } = await supabase
     .from('stock_counts')
     .select('*')
-    .eq('status', 'open')
     .order('count_date', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (error) throw error
-  if (!data) return null
-
-  const { data: latestCompleted, error: completedError } = await supabase
-    .from('stock_counts')
-    .select('count_date')
-    .eq('status', 'completed')
-    .order('count_date', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (completedError) throw completedError
-  if (latestCompleted && data.count_date < latestCompleted.count_date) return null
-
-  return data as StockCount
+  return data as StockCount | null
 }
 
 export async function fetchPastCounts(): Promise<StockCount[]> {
