@@ -3,6 +3,14 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.254] - 2026-08-28
+
+**Buton boyutları ve buton/etiket sırası tutarlılaştırıldı:** "Sayımı Tamamla ve Stoğu Güncelle" butonu artık diğer birincil (kırmızı) butonlarla aynı boyutta (küçük `sm` yerine varsayılan boyut) — hem bugünkü panelde hem Geçmiş Sayımlar'daki açık sayım görünümünde. Gezinme tarihi yazısı da Günlük Özet başlığıyla aynı punto boyutunda (`text-base`). Geçmiş Sayımlar'daki "Son Sayım (...)"/"O Günkü Stok" sütun başlıkları sadeleştirilip sade tarihe indirildi (ana paneldeki "27.08.2026 - SON SAYIM" formatı olduğu gibi kaldı, sadece Geçmiş Sayımlar'daki değişti). Stok > Ürünler sekmesinde "Yeni Ürün Ekle" butonu artık "Yeni Katalog"un hemen öncesinde, aynı boyutta (`sm`). Geçmiş Sayımlar'da bir sayım "Tamamlandı" durumundaysa Paket/Flakon sütunları artık gizli — sadece ürün adı, önceki sayım ve o günkü nihai stok gösteriliyor. Şema değişikliği yok.
+
+## [2.17.252] - 2026-08-28
+
+**Tablolardaki dikey çizgiler artık satır satır kopuk değil, tek parça:** Tüm uygulamadaki paylaşılan `Table` bileşenine `border-spacing-0` eklendi — tarayıcının varsayılan tablo hücre boşluğu (`border-collapse: separate` modunda) sütun ayraç çizgilerinin (`border-l`) satırlar arasında görünmez küçük boşluklarla bölünmesine yol açıyordu, bu da Günlük Sayım tablosunda "nizami değil, hizasız" görünmesine sebep oluyordu. Ayrıca Günlük Özet ve Günlük Stok kartlarına alt boşluk (`pb-6`) eklendi — içerik artık kartın ortasında, alta yapışık değil. Stok > Ürünler sekmesine de "+ Yeni Ürün" butonu tekrar eklendi (üst genel başlıktan kaldırılmıştı). Şema değişikliği yok.
+
 ## [2.17.251] - 2026-08-28
 
 **Stok sayfasının üst başlık butonları ve Günlük Sayım'ın Günlük Özet/Günün Hareketleri bölümleri yeniden düzenlendi:** Stok sayfasının EN üstündeki, tüm sekmelerde (Ürünler/Günlük Sayım/Stok Kartı/vb.) görünen Dışa Aktar/İçe Aktar/Akıllı İçe Aktar/Günlük Hareket Yükle butonları kaldırıldı. Günlük Sayım'ın "Günlük Özet" kartı artık: İçe Aktar, PNG Olarak Dışa Aktar, Tüm Ürünleri Sıfırla ve Yeni Satış/İade butonlarını içeriyor (Yeni Ürün kaldırıldı). "Günün Satış/İade Hareketleri" ve "Son Günlerin Stoğu" bölümleri tamamen kaldırıldı. PNG olarak dışa aktarılan görselin başlığı artık "28.08.2026 Cuma" formatında ("— Günlük Özet" eki kaldırıldı). Tarih gezinme etiketinden "SAYIM"/"GÜNCEL SAYIM" eki kaldırılıp sade tarihe (ör. "25.08.2026") döndürüldü, sadece bugünkü sayımda "- GÜNCEL SAYIM" kalıyor. Şema değişikliği yok.

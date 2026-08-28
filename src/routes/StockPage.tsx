@@ -1058,6 +1058,15 @@ export function StockPage() {
                 </SelectContent>
               </Select>
             )}
+            {isAdmin && (
+              <ProductForm
+                trigger={
+                  <Button size="sm">
+                    <Plus className="size-3.5" /> Yeni Ürün Ekle
+                  </Button>
+                }
+              />
+            )}
             {isAdmin && <AddCatalogDialog existingNames={catalogs.map((c) => c.name)} />}
             {isAdmin && <ManageCatalogsDialog catalogs={catalogs} />}
           </div>

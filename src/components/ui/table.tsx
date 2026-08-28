@@ -123,7 +123,7 @@ function Table({ className, ...props }: React.ComponentProps<'table'>) {
       <table
         ref={tableRef}
         data-slot="table"
-        className={cn('w-full caption-bottom text-sm', className)}
+        className={cn('w-full caption-bottom border-separate border-spacing-0 text-sm', className)}
         {...props}
       />
       <FloatingScrollbar containerRef={containerRef} contentRef={tableRef} />

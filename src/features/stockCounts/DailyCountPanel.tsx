@@ -168,7 +168,7 @@ function CountItemRow({
 
   return (
     <TableRow onClick={() => onSelect(item.id)} selected={selected}>
-      <TableCell className="font-medium">{item.products.name}</TableCell>
+      <TableCell className="font-medium break-words whitespace-normal">{item.products.name}</TableCell>
       <TableCell className="font-bold text-foreground">
         {baselineLabel(baseline.paket, baseline.flakon)}
       </TableCell>
@@ -413,13 +413,13 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     <TableHead>Ürün</TableHead>
                     <TableHead className="font-bold text-foreground">
                       {previousCount
-                        ? `${format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })} - SON SAYIM`
+                        ? format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })
                         : 'Sistemdeki Miktar'}
                     </TableHead>
                     <TableHead className="border-l">Paket</TableHead>
                     <TableHead>Flakon</TableHead>
                     <TableHead className="border-l font-bold text-foreground">
-                      {format(new Date(count.count_date), 'd MMMM yyyy', { locale: trLocale })} — O Günkü Stok
+                      {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                     </TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -456,7 +456,6 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                   />
                 </div>
                 <Button
-                  size="sm"
                   onClick={() => completeMutation.mutate(count.id)}
                   disabled={completeMutation.isPending}
                 >
@@ -473,13 +472,11 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                   <TableHead>Ürün</TableHead>
                   <TableHead className="font-bold text-foreground">
                     {previousCount
-                      ? `${format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })} - SON SAYIM`
+                      ? format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })
                       : 'O Günkü Stok'}
                   </TableHead>
-                  <TableHead className="border-l">Paket</TableHead>
-                  <TableHead>Flakon</TableHead>
                   <TableHead className="border-l font-bold text-foreground">
-                    {format(new Date(count.count_date), 'd MMMM yyyy', { locale: trLocale })} — O Günkü Stok
+                    {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -490,8 +487,6 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     <TableCell className="font-bold text-foreground">
                       {baselineLabel(i.expected_quantity, i.expected_quantity_flakon)}
                     </TableCell>
-                    <TableCell className="border-l">{i.counted_quantity ? `${i.counted_quantity} Paket` : '—'}</TableCell>
-                    <TableCell>{i.counted_quantity_flakon ? `${i.counted_quantity_flakon} Flakon` : '—'}</TableCell>
                     <TableCell className="border-l font-medium">
                       {finalStockLabel(
                         resolveCounted(i.expected_quantity, i.counted_quantity),
@@ -701,7 +696,7 @@ export function DailyCountPanel() {
   return (
     <div className="grid gap-4">
       <Card>
-        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 pb-6">
           <CardTitle className="text-base">Günlük Özet</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
             <ImportMenu
@@ -730,7 +725,7 @@ export function DailyCountPanel() {
       </Card>
 
       <Card>
-        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 pb-6">
           <div className="flex items-center gap-1">
             <Button
               type="button"
@@ -743,7 +738,7 @@ export function DailyCountPanel() {
             >
               <ChevronLeft className="size-4" />
             </Button>
-            <span className={cn('text-sm font-medium', isFutureCount && 'text-destructive')}>
+            <span className={cn('text-base font-medium', isFutureCount && 'text-destructive')}>
               {activeDateLabel}
             </span>
             <Button
@@ -792,7 +787,6 @@ export function DailyCountPanel() {
               </>
             ) : (
               <Button
-                size="sm"
                 onClick={() => completeMutation.mutate(activeCount.id)}
                 disabled={completeMutation.isPending}
               >
@@ -830,7 +824,7 @@ export function DailyCountPanel() {
       </Card>
 
       <Card>
-        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 pb-6">
           <div />
           {!isCompleted && (
             <div className="w-64">
@@ -860,19 +854,21 @@ export function DailyCountPanel() {
                 <h3 className="text-muted-foreground px-3 pb-1 text-sm font-semibold tracking-wide uppercase">
                   {groupLabel}
                 </h3>
-                <Table>
+                <Table className="table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Ürün</TableHead>
-                      <TableHead className="font-bold text-foreground">
+                      <TableHead className="w-56">Ürün</TableHead>
+                      <TableHead className="w-44 font-bold text-foreground">
                         {previousCompletedCount
                           ? `${format(new Date(previousCompletedCount.count_date), 'dd.MM.yyyy', { locale: trLocale })} - SON SAYIM`
                           : 'Sistemdeki Miktar'}
                       </TableHead>
-                      <TableHead className="border-l">Paket</TableHead>
-                      <TableHead>Flakon</TableHead>
-                      <TableHead className="animate-text-blink border-l font-bold text-destructive">{activeDateLabel}</TableHead>
-                      {!isCompleted && <TableHead></TableHead>}
+                      <TableHead className="w-28 border-l">Paket</TableHead>
+                      <TableHead className="w-28">Flakon</TableHead>
+                      <TableHead className="w-48 animate-text-blink border-l font-bold text-destructive">
+                        {activeDateLabel}
+                      </TableHead>
+                      {!isCompleted && <TableHead className="w-12"></TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
