@@ -423,7 +423,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     <TableHead className="border-l">Paket</TableHead>
                     <TableHead>Flakon</TableHead>
                     <TableHead className="border-l text-sm font-bold text-foreground">
-                      <span className="bg-muted text-primary rounded-md px-2 py-1">
+                      <span className="bg-primary text-primary-foreground rounded-md px-2 py-1">
                         {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                       </span>
                     </TableHead>
@@ -486,7 +486,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                     )}
                   </TableHead>
                   <TableHead className="border-l text-sm font-bold text-foreground">
-                    <span className="bg-muted text-primary rounded-md px-2 py-1">
+                    <span className="bg-primary text-primary-foreground rounded-md px-2 py-1">
                       {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                     </span>
                   </TableHead>

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.256] - 2026-08-28
+
+**Geçmiş Sayımlar'da yeni tarih kutucuğu artık dolu kırmızı şerit:** Bir önceki güncellemede yeni tarih sadece kırmızı yazı rengiyle gösteriliyordu; şimdi butonlardaki gibi dolu kırmızı zemin + beyaz yazı (`bg-primary`/`text-primary-foreground`) kullanılıyor, eski tarih kutucuğu ise gri zemin + normal yazı olarak kalıyor. Şema değişikliği yok.
+
 ## [2.17.255] - 2026-08-28
 
 **Geçmiş Sayımlar'daki tarih kutucukları renklendirildi, Günlük Özet yazıları büyütüldü:** Geçmiş Sayımlar listesindeki tarih kutucuklarında artık eski (önceki) sayım tarihi siyah, yeni (o satırın kendi) sayım tarihi kırmızı renkte gösteriliyor — hangisinin daha güncel olduğu tek bakışta anlaşılıyor. "Günlük Özet" başlığı ve Günlük Stok üstündeki gezinme tarihi yazısı bir önceki güncellemede fazla küçülmüştü, tekrar okunabilir boyuta (`text-sm`) getirildi. Şema değişikliği yok.
