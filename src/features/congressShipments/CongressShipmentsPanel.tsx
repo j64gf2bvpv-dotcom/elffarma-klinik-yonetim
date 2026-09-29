@@ -21,7 +21,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useRecordStockMovement } from '@/features/stock/hooks'
-import { useCongresses } from '@/features/congresses/hooks'
+import { useCongresses, useCreateCongress } from '@/features/congresses/hooks'
 import {
   useCongressShipments,
   useCreateCongressShipment,
@@ -31,6 +31,101 @@ import {
 } from './hooks'
 import type { CongressShipmentWithCongress } from './api'
 import type { Product } from '@/types/database'
+
+/**
+ * Sevkiyat penceresinden çıkmadan yeni kongre / workshop / masterclass /
+ * eğitim tanımlamak için (kullanıcı isteği, 2026-09-29: "stok kongre
+ * workshop kısmına yeni masterclass workshop ya da eğitim ekleyebilmeliyim").
+ * Kongreler modülündeki congresses tablosuna yazar — ayrıntılar (fiyat,
+ * otel, konuşmacılar vb.) sonradan Kongreler sayfasından doldurulabilir.
+ * Oluşturulan kayıt onCreated ile çağırana döner ki listede hemen seçilsin.
+ */
+function QuickCongressDialog({ onCreated }: { onCreated: (id: string) => void }) {
+  const [open, setOpen] = React.useState(false)
+  const [name, setName] = React.useState('')
+  const [startDate, setStartDate] = React.useState('')
+  const [endDate, setEndDate] = React.useState('')
+  const [city, setCity] = React.useState('')
+  const createMutation = useCreateCongress()
+
+  function reset() {
+    setName('')
+    setStartDate('')
+    setEndDate('')
+    setCity('')
+  }
+
+  async function handleSubmit() {
+    if (name.trim().length < 2) {
+      toast.error('Kongre / masterclass / eğitim adını girin')
+      return
+    }
+    if (startDate && endDate && endDate < startDate) {
+      toast.error('Bitiş tarihi başlangıçtan önce olamaz')
+      return
+    }
+    const created = await createMutation.mutateAsync({
+      name: name.trim(),
+      start_date: startDate || null,
+      end_date: endDate || null,
+      city: city.trim() || null,
+    })
+    onCreated(created.id)
+    reset()
+    setOpen(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : (reset(), setOpen(false)))}>
+      <DialogTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-7">
+          <Plus className="size-3.5" /> Yeni Ekle
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Yeni Kongre / Workshop / Masterclass / Eğitim</DialogTitle>
+          <DialogDescription>
+            Kaydedilince listeye eklenir ve seçilir. Diğer ayrıntılar Kongreler sayfasından doldurulabilir.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-1.5">
+            <Label>Adı</Label>
+            <Input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Örn. Adana Injection Masterclass"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label>Başlangıç Tarihi</Label>
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Bitiş Tarihi (opsiyonel)</Label>
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Şehir (opsiyonel)</Label>
+            <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Örn. Adana" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Vazgeç
+          </Button>
+          <Button type="button" onClick={handleSubmit} disabled={createMutation.isPending}>
+            Kaydet
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 /** Kongre/workshopa götürülen toplam ürün miktarını ekleyen diyalog — kaydedilince gerçek stoktan (out) düşülür. */
 function AddShipmentDialog() {
@@ -128,7 +223,10 @@ function AddShipmentDialog() {
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label>Kongre / Workshop</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Kongre / Workshop</Label>
+              <QuickCongressDialog onCreated={setCongressId} />
+            </div>
             <Select value={congressId} onValueChange={setCongressId}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Kongre/workshop seçin" />
@@ -275,7 +373,10 @@ function EditShipmentDialog({ shipment, onClose }: { shipment: CongressShipmentW
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label>Kongre / Workshop</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Kongre / Workshop</Label>
+              <QuickCongressDialog onCreated={setCongressId} />
+            </div>
             <Select value={congressId} onValueChange={setCongressId}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Kongre/workshop seçin" />

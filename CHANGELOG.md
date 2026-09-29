@@ -3,6 +3,11 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.271] - 2026-09-29
+
+**Günlük Sayım'da tarih elle seçilebiliyor:** Okların arasındaki tarihe tıklayınca takvim açılıyor; seçilen gün görüntülenen sayımın tarihi olarak kaydediliyor. O günde zaten bir sayım varsa taşımak yerine o sayım açılıyor.
+**Kongre/Workshop sevkiyatından yeni etkinlik eklenebiliyor:** Sevkiyat Ekle/Düzenle pencerelerinde "Kongre / Workshop" alanının yanına "Yeni Ekle" butonu geldi — ad, tarih ve şehir girilerek yeni kongre, workshop, masterclass veya eğitim tanımlanıyor ve listede hemen seçiliyor.
+
 ## [2.17.270] - 2026-08-29
 
 **KÖK NEDEN BULUNDU VE DÜZELTİLDİ — "Tüm Hareketleri Sil" gerçek stok verisini sıfırlıyordu:** Günlük Sayım'da bazı ürünlerin "0" görünmesinin asıl nedeni bulundu — bu bir Günlük Sayım hatası değildi. Stok Kartı'ndaki "Tüm Hareketleri Sil" özelliği (tek ürün ve toplu/tüm-ürünler varyantı), geçmiş hareket kayıtlarını silerken arka planda etkilenen ürün(ler)in GÜNCEL stok miktarını (paket + flakon) da 0'a çekiyordu — bu, "geçmişi temizleme" ile "stoğu sıfırlama"nın (ki bu ayrı ve kasıtlı bir özellik olan "Tüm Ürünleri Sıfırla"nın işi olmalı) yanlışlıkla birbirine karışmasından kaynaklanıyordu. 27 Ağustos'ta "tüm ürünler" kapsamında kullanılınca kataloğun büyük kısmının gerçek stok miktarı geri dönülemez şekilde sıfırlandı. Veritabanı fonksiyonları düzeltildi — artık SADECE hareket geçmişini siliyor, güncel stoğa asla dokunmuyor; onay penceresindeki metin de bunu artık doğru şekilde belirtiyor. **Önemli: bu tarihten önce zaten sıfırlanmış ürünlerin eski stok miktarları kurtarılamıyor** — elle düzeltilmesi gerekiyor.

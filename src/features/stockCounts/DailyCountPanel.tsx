@@ -604,6 +604,25 @@ export function DailyCountPanel() {
 
   const { confirm, dialog } = useConfirmDialog()
   const deleteCountMutation = useDeleteStockCount()
+  const updateDateMutation = useUpdateCountDate()
+
+  // Nav okları yanındaki tarih artık elle seçilebiliyor (kullanıcı isteği,
+  // 2026-09-29: "günlük sayımda tarihi istediğimiz tarih olarak
+  // girebilmeliyiz") — görüntülenen sayımın tarihi seçilen güne taşınır.
+  // count_date UNIQUE olduğu için o günde zaten sayım varsa taşımak yerine
+  // o sayıma gidilir.
+  function handleActiveDateChange(nextDate: string) {
+    if (!activeCount || !nextDate || nextDate === activeCount.count_date) return
+    if (navDates.includes(nextDate)) {
+      toast.info('Bu tarihte zaten bir sayım var, o sayım açıldı')
+      setViewedDate(nextDate)
+      return
+    }
+    updateDateMutation.mutate(
+      { stockCountId: activeCount.id, countDate: nextDate },
+      { onSuccess: () => setViewedDate(nextDate) },
+    )
+  }
 
   async function handleDeleteItem(item: StockCountItemWithProduct) {
     if (!(await confirm(`${item.products.name} bu sayımdan çıkarılsın mı?`))) return
@@ -759,9 +778,23 @@ export function DailyCountPanel() {
             >
               <ChevronLeft className="size-4" />
             </Button>
-            <span className={cn('text-sm font-medium', isFutureCount && 'text-destructive')}>
+            <label
+              className={cn(
+                'relative cursor-pointer rounded px-1 py-0.5 text-sm font-medium hover:bg-accent',
+                isFutureCount && 'text-destructive',
+              )}
+              title="Tarihi değiştirmek için tıklayın"
+            >
               {activeDateLabel}
-            </span>
+              <input
+                type="date"
+                className="absolute inset-0 cursor-pointer opacity-0"
+                value={activeCount.count_date}
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                onChange={(e) => handleActiveDateChange(e.target.value)}
+                disabled={updateDateMutation.isPending}
+              />
+            </label>
             <Button
               type="button"
               variant="ghost"
