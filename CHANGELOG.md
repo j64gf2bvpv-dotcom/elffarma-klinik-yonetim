@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.273] - 2026-09-29
+
+**Kongre/Workshop sevkiyatına birden fazla ürün tek seferde eklenebiliyor:** "Sevkiyat Ekle" penceresinde "+ Ürün Ekle" ile alt alta istenen kadar ürün satırı açılıyor (her satırda götürülen, kapalı/açık dönen ve otomatik hesaplanan kullanılan miktar); yeni satır eklemek öncekileri silmiyor, Kaydet'e basınca her satır ayrı sevkiyat olarak kaydedilip stoktan düşülüyor.
+
 ## [2.17.272] - 2026-09-29
 
 v2.17.271'deki yenilikler (Günlük Sayım'da takvimden tarih seçme, Kongre/Workshop sevkiyatından yeni kongre/masterclass/eğitim ekleme) bu sürümle yayınlanıyor — v2.17.271, GitHub'ın Mac derleme sunucusundaki bir güncelleme yüzünden imzalama adımında yayınlanamamıştı; Mac paketi artık bir önceki kararlı sunucuda derleniyor.

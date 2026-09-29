@@ -127,14 +127,30 @@ function QuickCongressDialog({ onCreated }: { onCreated: (id: string) => void })
   )
 }
 
-/** Kongre/workshopa götürülen toplam ürün miktarını ekleyen diyalog — kaydedilince gerçek stoktan (out) düşülür. */
+interface ShipmentRow {
+  key: number
+  product: Product | null
+  quantity: string
+  sealedQty: string
+  openQty: string
+}
+
+function emptyRow(key: number): ShipmentRow {
+  return { key, product: null, quantity: '1', sealedQty: '0', openQty: '0' }
+}
+
+/**
+ * Kongre/workshopa götürülen ürünleri ekleyen diyalog — kaydedilince her
+ * satır ayrı bir sevkiyat kaydı olur ve gerçek stoktan (out) düşülür.
+ * Aynı kongreye birden fazla ürün alt alta tek seferde girilebiliyor
+ * (kullanıcı isteği, 2026-09-29: "ürünleri aynı sayfaya birden fazla alt
+ * alta ekleyebilmeliyim, yeni eklediğim diğerini silmemeli").
+ */
 function AddShipmentDialog() {
   const [open, setOpen] = React.useState(false)
   const [congressId, setCongressId] = React.useState('')
-  const [product, setProduct] = React.useState<Product | null>(null)
-  const [quantity, setQuantity] = React.useState('1')
-  const [sealedQty, setSealedQty] = React.useState('0')
-  const [openQty, setOpenQty] = React.useState('0')
+  const nextKey = React.useRef(1)
+  const [rows, setRows] = React.useState<ShipmentRow[]>(() => [emptyRow(0)])
   const [note, setNote] = React.useState('')
 
   const { data: congresses = [] } = useCongresses()
@@ -146,62 +162,85 @@ function AddShipmentDialog() {
     [congresses],
   )
 
-  const takenNum = Number(quantity) || 0
-  const sealedNum = Number(sealedQty) || 0
-  const openNum = Number(openQty) || 0
-  const usedPreview = Math.max(0, takenNum - sealedNum - openNum)
-
   function reset() {
     setCongressId('')
-    setProduct(null)
-    setQuantity('1')
-    setSealedQty('0')
-    setOpenQty('0')
+    setRows([emptyRow(nextKey.current++)])
     setNote('')
   }
 
+  function updateRow(key: number, patch: Partial<ShipmentRow>) {
+    setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)))
+  }
+
+  function addRow() {
+    setRows((prev) => [...prev, emptyRow(nextKey.current++)])
+  }
+
+  function removeRow(key: number) {
+    setRows((prev) => (prev.length > 1 ? prev.filter((r) => r.key !== key) : prev))
+  }
+
   async function handleSubmit() {
-    const qty = Number(quantity)
-    if (!congressId || !product || !Number.isFinite(qty) || qty <= 0) {
-      toast.error('Kongre, ürün ve geçerli bir miktar seçin')
+    if (!congressId) {
+      toast.error('Kongre / workshop seçin')
       return
     }
-    if (!Number.isFinite(sealedNum) || !Number.isFinite(openNum) || sealedNum < 0 || openNum < 0) {
-      toast.error('Kapalı/açık dönen için geçerli bir miktar girin')
-      return
-    }
-    if (sealedNum + openNum > qty) {
-      toast.error('Kapalı + açık dönen, götürülen miktarı geçemez')
-      return
+    for (const [i, r] of rows.entries()) {
+      const qty = Number(r.quantity)
+      const sealed = Number(r.sealedQty) || 0
+      const opened = Number(r.openQty) || 0
+      const label = rows.length > 1 ? `${i + 1}. satır: ` : ''
+      if (!r.product || !Number.isFinite(qty) || qty <= 0) {
+        toast.error(`${label}Ürün ve geçerli bir miktar seçin`)
+        return
+      }
+      if (sealed < 0 || opened < 0) {
+        toast.error(`${label}Kapalı/açık dönen için geçerli bir miktar girin`)
+        return
+      }
+      if (sealed + opened > qty) {
+        toast.error(`${label}Kapalı + açık dönen, götürülen miktarı geçemez`)
+        return
+      }
     }
     const congressName = congresses.find((c) => c.id === congressId)?.name ?? 'Kongre/Workshop'
-    await createMutation.mutateAsync({
-      congress_id: congressId,
-      product_id: product.id,
-      product_name: product.name,
-      quantity_taken: qty,
-      quantity_returned_sealed: sealedNum,
-      quantity_returned_open: openNum,
-      note: note.trim() || null,
-    })
-    // Tüm götürülen miktar önce stoktan çıkar, sonra o an için zaten dönmüş
-    // (kapalı+açık) kısım geri iade edilir — net etki (kullanılan) kadar
-    // stoğun dışarıda kalması, tek tek girildikten sonraki hâliyle aynı.
-    await recordMovement.mutateAsync({
-      product_id: product.id,
-      movement_type: 'out',
-      quantity: qty,
-      reason: 'Kongre/Workshop sevkiyatı',
-      note: congressName,
-    })
-    if (sealedNum + openNum > 0) {
+    // Satırlar sırayla kaydediliyor; kaydedilen satır listeden çıkarılıyor ki
+    // arada biri hata verirse tekrar Kaydet'e basınca öncekiler iki kez
+    // girilmesin.
+    for (const r of rows) {
+      const product = r.product as Product
+      const qty = Number(r.quantity)
+      const sealed = Number(r.sealedQty) || 0
+      const opened = Number(r.openQty) || 0
+      await createMutation.mutateAsync({
+        congress_id: congressId,
+        product_id: product.id,
+        product_name: product.name,
+        quantity_taken: qty,
+        quantity_returned_sealed: sealed,
+        quantity_returned_open: opened,
+        note: note.trim() || null,
+      })
+      // Tüm götürülen miktar önce stoktan çıkar, sonra o an için zaten dönmüş
+      // (kapalı+açık) kısım geri iade edilir — net etki (kullanılan) kadar
+      // stoğun dışarıda kalması, tek tek girildikten sonraki hâliyle aynı.
       await recordMovement.mutateAsync({
         product_id: product.id,
-        movement_type: 'return',
-        quantity: sealedNum + openNum,
-        reason: 'Kongre/Workshop — sevkiyatla birlikte girilen dönüş',
+        movement_type: 'out',
+        quantity: qty,
+        reason: 'Kongre/Workshop sevkiyatı',
         note: congressName,
       })
+      if (sealed + opened > 0) {
+        await recordMovement.mutateAsync({
+          product_id: product.id,
+          movement_type: 'return',
+          quantity: sealed + opened,
+          reason: 'Kongre/Workshop — sevkiyatla birlikte girilen dönüş',
+          note: congressName,
+        })
+      }
+      setRows((prev) => (prev.length > 1 ? prev.filter((x) => x.key !== r.key) : prev))
     }
     reset()
     setOpen(false)
@@ -216,10 +255,12 @@ function AddShipmentDialog() {
           <Plus className="size-3.5" /> Sevkiyat Ekle
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Kongreye/Workshopa Ürün Sevkiyatı</DialogTitle>
-          <DialogDescription>Götürülen miktar kaydedilince gerçek stoktan düşülür.</DialogDescription>
+          <DialogDescription>
+            Birden fazla ürünü alt alta ekleyebilirsiniz. Götürülen miktar kaydedilince gerçek stoktan düşülür.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1.5">
@@ -241,27 +282,60 @@ function AddShipmentDialog() {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-1.5">
-            <Label>Ürün (Stoktan Seç)</Label>
-            <ProductCombobox value={product?.id} onChange={setProduct} />
-          </div>
-          <div className="grid gap-1.5">
-            <Label>Götürülen Miktar</Label>
-            <Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-1.5">
-              <Label>Kapalı Dönen (opsiyonel)</Label>
-              <Input type="number" min="0" value={sealedQty} onChange={(e) => setSealedQty(e.target.value)} />
+
+          <div className="grid gap-2">
+            <div className="text-muted-foreground grid grid-cols-[minmax(0,1fr)_5rem_5rem_5rem_4rem_2.25rem] items-end gap-2 text-xs font-medium">
+              <span>Ürün (Stoktan Seç)</span>
+              <span>Götürülen</span>
+              <span>Kapalı Dönen</span>
+              <span>Açık Dönen</span>
+              <span>Kullanılan</span>
+              <span />
             </div>
-            <div className="grid gap-1.5">
-              <Label>Açık Dönen (opsiyonel)</Label>
-              <Input type="number" min="0" value={openQty} onChange={(e) => setOpenQty(e.target.value)} />
-            </div>
+            {rows.map((r) => {
+              const used = Math.max(0, (Number(r.quantity) || 0) - (Number(r.sealedQty) || 0) - (Number(r.openQty) || 0))
+              return (
+                <div key={r.key} className="grid grid-cols-[minmax(0,1fr)_5rem_5rem_5rem_4rem_2.25rem] items-center gap-2">
+                  <ProductCombobox value={r.product?.id} onChange={(p: Product) => updateRow(r.key, { product: p })} />
+                  <Input
+                    type="number"
+                    min="1"
+                    value={r.quantity}
+                    onChange={(e) => updateRow(r.key, { quantity: e.target.value })}
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    value={r.sealedQty}
+                    onChange={(e) => updateRow(r.key, { sealedQty: e.target.value })}
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    value={r.openQty}
+                    onChange={(e) => updateRow(r.key, { openQty: e.target.value })}
+                  />
+                  <span className="text-center text-sm tabular-nums">{used}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeRow(r.key)}
+                    disabled={rows.length === 1}
+                    title="Satırı kaldır"
+                  >
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
+              )
+            })}
+            <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={addRow}>
+              <Plus className="size-3.5" /> Ürün Ekle
+            </Button>
           </div>
-          <p className="text-muted-foreground -mt-2 text-xs">Kullanılan (otomatik hesaplanır): {usedPreview}</p>
+
           <div className="grid gap-1.5">
-            <Label>Not (opsiyonel)</Label>
+            <Label>Not (opsiyonel, tüm satırlara yazılır)</Label>
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Örn. stand vitrini için" />
           </div>
         </div>
@@ -270,7 +344,7 @@ function AddShipmentDialog() {
             Vazgeç
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={submitting}>
-            Kaydet
+            {rows.length > 1 ? `${rows.length} Ürünü Kaydet` : 'Kaydet'}
           </Button>
         </DialogFooter>
       </DialogContent>
