@@ -146,9 +146,9 @@ function emptyRow(key: number): ShipmentRow {
  * (kullanıcı isteği, 2026-09-29: "ürünleri aynı sayfaya birden fazla alt
  * alta ekleyebilmeliyim, yeni eklediğim diğerini silmemeli").
  */
-function AddShipmentDialog() {
+function AddShipmentDialog({ presetCongressId }: { presetCongressId?: string } = {}) {
   const [open, setOpen] = React.useState(false)
-  const [congressId, setCongressId] = React.useState('')
+  const [congressId, setCongressId] = React.useState(presetCongressId ?? '')
   const nextKey = React.useRef(1)
   const [rows, setRows] = React.useState<ShipmentRow[]>(() => [emptyRow(0)])
   const [note, setNote] = React.useState('')
@@ -163,7 +163,7 @@ function AddShipmentDialog() {
   )
 
   function reset() {
-    setCongressId('')
+    setCongressId(presetCongressId ?? '')
     setRows([emptyRow(nextKey.current++)])
     setNote('')
   }
@@ -251,9 +251,15 @@ function AddShipmentDialog() {
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : (reset(), setOpen(false)))}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="size-3.5" /> Sevkiyat Ekle
-        </Button>
+        {presetCongressId ? (
+          <Button type="button" variant="outline" size="sm" className="h-7">
+            <Plus className="size-3.5" /> Ürün Ekle
+          </Button>
+        ) : (
+          <Button>
+            <Plus className="size-3.5" /> Sevkiyat Ekle
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
@@ -778,6 +784,20 @@ export function CongressShipmentsPanel() {
   const [pendingDelete, setPendingDelete] = React.useState<CongressShipmentWithCongress | null>(null)
   const [editingShipment, setEditingShipment] = React.useState<CongressShipmentWithCongress | null>(null)
 
+  // Kongre bazında gruplanmış görünüm (kullanıcı isteği, 2026-09-29: "tek
+  // kongrede hepsi olmalı, alt alta eklenmeli") — her kongre bir başlık
+  // satırı + altında o kongreye götürülen tüm ürünler. Liste created_at'e
+  // göre yeniden eskiye geldiği için en son işlem gören kongre en üstte.
+  const groups = React.useMemo(() => {
+    const map = new Map<string, { congressId: string; congress: CongressShipmentWithCongress['congresses']; items: CongressShipmentWithCongress[] }>()
+    for (const s of shipments) {
+      const g = map.get(s.congress_id)
+      if (g) g.items.push(s)
+      else map.set(s.congress_id, { congressId: s.congress_id, congress: s.congresses, items: [s] })
+    }
+    return Array.from(map.values())
+  }, [shipments])
+
   async function confirmDelete() {
     const shipment = pendingDelete
     if (!shipment) return
@@ -837,39 +857,57 @@ export function CongressShipmentsPanel() {
                   </TableCell>
                 </TableRow>
               )}
-              {shipments.map((s) => {
-                return (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.congresses?.name ?? '—'}</TableCell>
-                    <TableCell>{s.product_name}</TableCell>
-                    <TableCell>
-                      <TakenQtyCell shipment={s} />
-                    </TableCell>
-                    <TableCell>
-                      <ReturnQtyCell shipment={s} field="quantity_returned_sealed" otherValue={s.quantity_returned_open} />
-                    </TableCell>
-                    <TableCell>
-                      <ReturnQtyCell shipment={s} field="quantity_returned_open" otherValue={s.quantity_returned_sealed} />
-                    </TableCell>
-                    <TableCell>
-                      <UsedQtyCell shipment={s} />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground max-w-40 truncate" title={s.note ?? undefined}>
-                      {s.note ?? '—'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end">
-                        <Button variant="ghost" size="icon" onClick={() => setEditingShipment(s)} title="Düzenle">
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setPendingDelete(s)} title="Sil">
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
+              {groups.map((g) => (
+                <React.Fragment key={g.congressId}>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableCell colSpan={8}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-semibold">{g.congress?.name ?? '—'}</span>
+                          {g.congress?.start_date && (
+                            <span className="text-muted-foreground text-xs">
+                              {format(new Date(g.congress.start_date), 'd MMM yyyy', { locale: trLocale })}
+                            </span>
+                          )}
+                          <span className="text-muted-foreground text-xs">· {g.items.length} ürün</span>
+                        </div>
+                        <AddShipmentDialog presetCongressId={g.congressId} />
                       </div>
                     </TableCell>
                   </TableRow>
-                )
-              })}
+                  {g.items.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell />
+                      <TableCell className="font-medium">{s.product_name}</TableCell>
+                      <TableCell>
+                        <TakenQtyCell shipment={s} />
+                      </TableCell>
+                      <TableCell>
+                        <ReturnQtyCell shipment={s} field="quantity_returned_sealed" otherValue={s.quantity_returned_open} />
+                      </TableCell>
+                      <TableCell>
+                        <ReturnQtyCell shipment={s} field="quantity_returned_open" otherValue={s.quantity_returned_sealed} />
+                      </TableCell>
+                      <TableCell>
+                        <UsedQtyCell shipment={s} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground max-w-40 truncate" title={s.note ?? undefined}>
+                        {s.note ?? '—'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end">
+                          <Button variant="ghost" size="icon" onClick={() => setEditingShipment(s)} title="Düzenle">
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => setPendingDelete(s)} title="Sil">
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </React.Fragment>
+              ))}
             </TableBody>
           </Table>
         </CardContent>

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.274] - 2026-09-29
+
+**Kongre/Workshop sevkiyat listesi kongre bazında gruplandı:** Her kongre/masterclass/eğitim artık bir başlık satırı; o kongreye götürülen tüm ürünler altında alt alta listeleniyor. Başlıktaki "+ Ürün Ekle" butonu, kongresi önceden seçili sevkiyat penceresini açıyor — mevcut ürünlere dokunmadan aynı kongreye yeni ürün ekleniyor.
+
 ## [2.17.273] - 2026-09-29
 
 **Kongre/Workshop sevkiyatına birden fazla ürün tek seferde eklenebiliyor:** "Sevkiyat Ekle" penceresinde "+ Ürün Ekle" ile alt alta istenen kadar ürün satırı açılıyor (her satırda götürülen, kapalı/açık dönen ve otomatik hesaplanan kullanılan miktar); yeni satır eklemek öncekileri silmiyor, Kaydet'e basınca her satır ayrı sevkiyat olarak kaydedilip stoktan düşülüyor.
