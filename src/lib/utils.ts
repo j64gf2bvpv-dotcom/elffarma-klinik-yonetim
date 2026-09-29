@@ -18,3 +18,16 @@ export function getErrorMessage(error: unknown): string {
   }
   return String(error ?? '')
 }
+
+/**
+ * Tarihi YEREL (Türkiye) takvim gününe göre 'YYYY-MM-DD' yapar.
+ * `d.toISOString().slice(0, 10)` UTC'ye çevirdiği için yerel gece yarısı
+ * (00:00–03:00 arası) bir önceki güne düşüyordu — tarih anahtarı gereken her
+ * yerde bunu kullanın.
+ */
+export function localDateKey(d: Date = new Date()): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}

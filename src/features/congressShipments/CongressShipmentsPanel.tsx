@@ -204,18 +204,11 @@ function useShipmentRows(minRows: 0 | 1) {
       const qty = Number(r.quantity)
       const sealed = Number(r.sealedQty) || 0
       const opened = Number(r.openQty) || 0
-      await createMutation.mutateAsync({
-        congress_id: congressId,
-        product_id: product.id,
-        product_name: product.name,
-        quantity_taken: qty,
-        quantity_returned_sealed: sealed,
-        quantity_returned_open: opened,
-        note,
-      })
-      // Tüm götürülen miktar önce stoktan çıkar, sonra o an için zaten dönmüş
-      // (kapalı+açık) kısım geri iade edilir — net etki (kullanılan) kadar
-      // stoğun dışarıda kalması, tek tek girildikten sonraki hâliyle aynı.
+      // ÖNCE stoktan düş, SONRA sevkiyat kaydını ekle (düzeltme, 2026-09-29):
+      // stok yetmezse hareket reddediliyor ve stoktan düşülmemiş bir sevkiyat
+      // kaydı listede kalmıyor. Tüm götürülen miktar önce stoktan çıkar, sonra
+      // o an için zaten dönmüş (kapalı+açık) kısım geri iade edilir — net
+      // etki (kullanılan) kadar stoğun dışarıda kalması.
       await recordMovement.mutateAsync({
         product_id: product.id,
         movement_type: 'out',
@@ -231,6 +224,31 @@ function useShipmentRows(minRows: 0 | 1) {
           reason: 'Kongre/Workshop — sevkiyatla birlikte girilen dönüş',
           note: congressName,
         })
+      }
+      try {
+        await createMutation.mutateAsync({
+          congress_id: congressId,
+          product_id: product.id,
+          product_name: product.name,
+          quantity_taken: qty,
+          quantity_returned_sealed: sealed,
+          quantity_returned_open: opened,
+          note,
+        })
+      } catch (error) {
+        const net = qty - sealed - opened
+        if (net > 0) {
+          await recordMovement
+            .mutateAsync({
+              product_id: product.id,
+              movement_type: 'return',
+              quantity: net,
+              reason: 'Kongre/Workshop sevkiyatı kaydedilemedi — stok geri alındı',
+              note: congressName,
+            })
+            .catch(() => {})
+        }
+        throw error
       }
       setRows((prev) => prev.filter((x) => x.key !== r.key))
     }

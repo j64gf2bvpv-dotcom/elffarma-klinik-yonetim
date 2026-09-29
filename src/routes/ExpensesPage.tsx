@@ -25,7 +25,7 @@ export function ExpensesPage() {
   const [to, setTo] = React.useState('')
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const { data: expenses = [], isLoading } = useExpenses({
-    from: from ? new Date(from).toISOString() : undefined,
+    from: from ? new Date(from + 'T00:00:00').toISOString() : undefined,
     to: to ? new Date(to + 'T23:59:59').toISOString() : undefined,
   })
   const deleteMutation = useDeleteExpense()

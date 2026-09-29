@@ -56,21 +56,43 @@ export async function createSampleRequest(input: SampleRequestInput): Promise<Sa
     'Numune talebi',
   )
 
+  // Her üründe ÖNCE stoktan düş, SONRA numune kalemini ekle (düzeltme,
+  // 2026-09-29) — stok yetmezse stoktan düşülmemiş bir numune kalemi
+  // kalmasın. Hiçbir kalem eklenemediyse boş kalan talep de silinir.
+  let savedItems = 0
   for (const item of input.items) {
-    await offlineInsert(
-      'sample_items',
-      { sample_request_id: request.id, ...item },
-      `Numune ürünü: ${item.product_id}`,
-    )
-    await recordStockMovement({
-      product_id: item.product_id,
-      movement_type: 'sample',
-      quantity: item.quantity,
-      reason: 'Numune',
-      customer_id: input.customer_id,
-      unit_price: item.unit_price,
-      note: `Numune talebi #${request.id}`,
-    })
+    try {
+      await recordStockMovement({
+        product_id: item.product_id,
+        movement_type: 'sample',
+        quantity: item.quantity,
+        reason: 'Numune',
+        customer_id: input.customer_id,
+        unit_price: item.unit_price,
+        note: `Numune talebi #${request.id}`,
+      })
+    } catch (error) {
+      if (savedItems === 0) await offlineDelete('sample_requests', request.id, 'Boş numune talebini silme').catch(() => {})
+      throw error
+    }
+    try {
+      await offlineInsert(
+        'sample_items',
+        { sample_request_id: request.id, ...item },
+        `Numune ürünü: ${item.product_id}`,
+      )
+      savedItems++
+    } catch (error) {
+      await recordStockMovement({
+        product_id: item.product_id,
+        movement_type: 'return',
+        quantity: item.quantity,
+        reason: 'Numune kalemi kaydedilemedi — stok geri alındı',
+        note: `Numune talebi #${request.id}`,
+      }).catch(() => {})
+      if (savedItems === 0) await offlineDelete('sample_requests', request.id, 'Boş numune talebini silme').catch(() => {})
+      throw error
+    }
   }
 
   return request

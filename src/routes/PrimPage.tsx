@@ -23,6 +23,7 @@ import { usePayments } from '@/features/payments/hooks'
 import { useProducts } from '@/features/stock/hooks'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
+import { localDateKey } from '@/lib/utils'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -30,7 +31,7 @@ function currency(n: number) {
 
 function firstDayOfMonth() {
   const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
+  return localDateKey(new Date(d.getFullYear(), d.getMonth(), 1))
 }
 
 function today() {
@@ -64,7 +65,7 @@ export function PrimPage() {
   // seçilen "to" gününde öğleden sonra yapılan tahsilatlar prim hesabından
   // sessizce düşer (bkz. PaymentsPage.tsx/BudgetYearPage.tsx'deki aynı desen).
   const { data: payments = [], isLoading: paymentsLoading } = usePayments({
-    from,
+    from: from ? new Date(from + 'T00:00:00').toISOString() : undefined,
     to: to ? new Date(to + 'T23:59:59').toISOString() : undefined,
   })
   const { data: products = [] } = useProducts('')

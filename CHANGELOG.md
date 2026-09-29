@@ -3,6 +3,14 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.277] - 2026-09-29
+
+**Genel inceleme — hata düzeltmeleri:**
+- **Stok yetmediğinde "hayalet" kayıt kalıyordu:** Satış/iade, kongre sevkiyatı, kongre stok kalemi, kongrede doktora ürün dağıtımı ve numune taleplerinde kayıt önce ekleniyor, stoktan düşme sonra deneniyordu — stok yetmeyince hata veriliyor ama kayıt stoktan düşülmeden listede kalıyor, tekrar denenince çift kayıt oluşuyordu. Artık önce stoktan düşülüyor; kayıt eklenemezse stok geri iade ediliyor.
+- **Excel'den günlük hareket içe aktarma tarihleri bir gün geriye kayıyordu** (ör. 31.08 → 30.08) — düzeltildi.
+- **Prim sayfasında ay başı, önceki ayın son gününe kayıyordu** (önceki ayın son günü satışları/tahsilatları prime karışabiliyordu) — düzeltildi.
+- **Tahsilatlar, Giderler ve Prim tarih filtresinde başlangıç günü** 00:00–03:00 arası kayıtları dışarıda bırakıyordu — düzeltildi.
+
 ## [2.17.276] - 2026-09-29
 
 **Kongre/workshop görselleri kolayca eklenebiliyor:** Kongreler sayfasındaki kartın görsel kutusuna tıklayınca doğrudan görsel seçiliyor; kutuya görsel sürükleyip bırakmak veya kopyalanmış görseli (ör. tarayıcıda Instagram'dan "Resmi Kopyala") tıklayıp Cmd+V ile yapıştırmak da mümkün. Kongre düzenleme penceresindeki Görsel alanı da sürükle-bırak ve yapıştırmayı destekliyor.

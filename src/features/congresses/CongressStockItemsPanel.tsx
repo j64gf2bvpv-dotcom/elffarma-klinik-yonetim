@@ -85,14 +85,9 @@ function AddStockItemDialog({
   }
 
   async function onSubmit(values: FormOutput) {
-    const created = await createMutation.mutateAsync({
-      congress_id: congressId,
-      product_id: values.product_id,
-      product_name: values.product_name,
-      quantity: values.quantity,
-      unit_price: values.unit_price,
-      note: values.note?.trim() || null,
-    })
+    // ÖNCE stoktan düş, SONRA kaydı ekle (düzeltme, 2026-09-29) — stok
+    // yetmezse stoktan düşülmemiş bir kalem listede kalmasın; kayıt
+    // eklenemezse stok geri iade edilir.
     await recordMovementMutation.mutateAsync({
       product_id: values.product_id,
       movement_type: 'out',
@@ -100,6 +95,28 @@ function AddStockItemDialog({
       reason: reasonNote,
       note: congressName ?? 'Kongre/Workshop',
     })
+    let created
+    try {
+      created = await createMutation.mutateAsync({
+        congress_id: congressId,
+        product_id: values.product_id,
+        product_name: values.product_name,
+        quantity: values.quantity,
+        unit_price: values.unit_price,
+        note: values.note?.trim() || null,
+      })
+    } catch (error) {
+      await recordMovementMutation
+        .mutateAsync({
+          product_id: values.product_id,
+          movement_type: 'return',
+          quantity: values.quantity,
+          reason: 'Kongre kalemi kaydedilemedi — stok geri alındı',
+          note: congressName ?? 'Kongre/Workshop',
+        })
+        .catch(() => {})
+      throw error
+    }
     if (targetStatus !== 'goturuldu') {
       await updateStatusMutation.mutateAsync({ id: created.id, status: targetStatus, congressId })
     }

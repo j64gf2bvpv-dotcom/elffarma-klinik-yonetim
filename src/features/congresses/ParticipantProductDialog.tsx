@@ -136,20 +136,39 @@ export function ParticipantProductDialog({
       // sıraya bağımlı işlendiği için (bkz. useOfflineSync), art arda aynı
       // ürüne ait hareketlerin sırası bozulmasın diye.
       for (const row of rows) {
-        const created = await createParticipantProduct({
-          participant_id: participantId,
-          product_name: row.product_name,
-          quantity: row.quantity,
-          unit_price: row.unit_price,
-          sales_rep_id: repId,
-        })
+        const movementNote = `${congressName ?? 'Kongre'}${doctorName ? ' - Doktor: ' + doctorName : ''}`
+        // ÖNCE stoktan düş, SONRA kaydı ekle (düzeltme, 2026-09-29) — stok
+        // yetmezse stoktan düşülmemiş bir dağıtım kaydı kalmasın; kayıt
+        // eklenemezse stok geri iade edilir.
         await recordStockMovement({
           product_id: row.product_id,
           movement_type: 'out',
           quantity: row.quantity,
           reason: 'Kongre satışı',
-          note: `${congressName ?? 'Kongre'}${doctorName ? ' - Doktor: ' + doctorName : ''}`,
+          note: movementNote,
         })
+        let created
+        try {
+          created = await createParticipantProduct({
+            participant_id: participantId,
+            product_name: row.product_name,
+            quantity: row.quantity,
+            unit_price: row.unit_price,
+            sales_rep_id: repId,
+          })
+        } catch (error) {
+          await recordStockMovement({
+            product_id: row.product_id,
+            movement_type: 'return',
+            quantity: row.quantity,
+            reason: 'Kongre satışı kaydedilemedi — stok geri alındı',
+            note: movementNote,
+          }).catch(() => {})
+          throw error
+        }
+        // Kaydedilen satır listeden çıkarılıyor ki arada biri hata verirse
+        // tekrar Ekle'ye basınca öncekiler iki kez girilmesin.
+        setRows((prev) => prev.filter((r) => r.product_id !== row.product_id))
         queryClient.setQueryData<ParticipantWithProducts[]>(['congress_participants', congressId], (old) =>
           old?.map((p) =>
             p.id === participantId

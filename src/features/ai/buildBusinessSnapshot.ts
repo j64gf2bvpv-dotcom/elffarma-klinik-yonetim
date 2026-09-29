@@ -15,6 +15,7 @@ import type {
   ProductLot,
   SalesRep,
 } from '@/types/database'
+import { localDateKey } from '@/lib/utils'
 
 export interface BusinessSnapshotInput {
   products: Product[]
@@ -81,7 +82,7 @@ export function buildBusinessSnapshot(input: BusinessSnapshotInput) {
   )
 
   return {
-    tarih: new Date().toISOString().slice(0, 10),
+    tarih: localDateKey(),
     stok: {
       kritik_urun_sayisi: criticalStock.length,
       kritik_urunler: criticalStock.slice(0, 15),

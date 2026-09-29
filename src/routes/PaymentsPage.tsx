@@ -70,7 +70,7 @@ export function PaymentsPage() {
   const [selectedCustomerId, setSelectedCustomerId] = React.useState<string | null>(null)
   const [selectedPaymentId, setSelectedPaymentId] = React.useState<string | null>(null)
   const { data: payments = [], isLoading } = usePayments({
-    from: from ? new Date(from).toISOString() : undefined,
+    from: from ? new Date(from + 'T00:00:00').toISOString() : undefined,
     to: to ? new Date(to + 'T23:59:59').toISOString() : undefined,
   })
   const deleteMutation = useDeletePayment()

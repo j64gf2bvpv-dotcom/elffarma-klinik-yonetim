@@ -58,11 +58,11 @@ export async function createSale(input: SaleInput): Promise<Sale> {
   // 'movement_note' column of 'sales'" hatasıyla kayıt tamamen başarısız
   // oluyordu, kullanıcı isteği/hata raporu, 2026-08-26).
   const { movement_note, ...saleRow } = input
-  const sale = await offlineInsert<Sale>(
-    'sales',
-    { ...saleRow, created_by: createdBy },
-    `${input.type === 'sale' ? 'Satış' : 'İade'}: ${input.product_name}`,
-  )
+  // ÖNCE stok hareketi, SONRA satış kaydı (düzeltme, 2026-09-29): eskiden
+  // sıra tersti — stok yetmediğinde record_stock_movement "Yeterli stok yok"
+  // diye reddediyor ama satış kaydı zaten eklenmiş oluyordu; stoktan düşülmemiş
+  // "hayalet" bir satış kalıyor, kullanıcı tekrar deneyince çift kayıt
+  // oluşuyordu. Kayıt eklenemezse uygulanan stok hareketi geri alınıyor.
   if (input.product_id) {
     await recordStockMovement({
       product_id: input.product_id,
@@ -74,7 +74,24 @@ export async function createSale(input: SaleInput): Promise<Sale> {
       note: movement_note ?? input.product_name,
     })
   }
-  return sale
+  try {
+    return await offlineInsert<Sale>(
+      'sales',
+      { ...saleRow, created_by: createdBy },
+      `${input.type === 'sale' ? 'Satış' : 'İade'}: ${input.product_name}`,
+    )
+  } catch (error) {
+    if (input.product_id) {
+      await recordStockMovement({
+        product_id: input.product_id,
+        movement_type: input.type === 'sale' ? 'return' : 'out',
+        quantity: input.quantity,
+        reason: `${input.type === 'sale' ? 'Satış' : 'İade'} kaydedilemedi — stok hareketi geri alındı`,
+        note: input.product_name,
+      }).catch(() => {})
+    }
+    throw error
+  }
 }
 
 export async function updateSaleRep(id: string, salesRepId: string | null): Promise<Sale> {

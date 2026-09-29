@@ -11,6 +11,7 @@ import { createProduct, recordStockMovement } from './api'
 import type { Product } from '@/types/database'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
+import { localDateKey } from '@/lib/utils'
 
 function findRowIndex(matrix: unknown[][], pattern: RegExp): number {
   for (let i = 0; i < Math.min(matrix.length, 6); i++) {
@@ -147,7 +148,7 @@ export function DailyMovementImportButton() {
 
         const dateLabel = nearestLeftValue(dateRow, idx)
         const parsedDate = dateLabel ? parseFlexibleDate(dateLabel) : null
-        const dateIso = (parsedDate ?? new Date()).toISOString().slice(0, 10)
+        const dateIso = localDateKey(parsedDate ?? new Date())
 
         const doctor = doctors.find((d) => d.full_name.toLocaleLowerCase('tr') === personName.toLocaleLowerCase('tr'))
         const rep = salesReps.find((s) => s.name.toLocaleLowerCase('tr') === personName.toLocaleLowerCase('tr'))
