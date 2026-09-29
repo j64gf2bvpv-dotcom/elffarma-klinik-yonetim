@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.276] - 2026-09-29
+
+**Kongre/workshop görselleri kolayca eklenebiliyor:** Kongreler sayfasındaki kartın görsel kutusuna tıklayınca doğrudan görsel seçiliyor; kutuya görsel sürükleyip bırakmak veya kopyalanmış görseli (ör. tarayıcıda Instagram'dan "Resmi Kopyala") tıklayıp Cmd+V ile yapıştırmak da mümkün. Kongre düzenleme penceresindeki Görsel alanı da sürükle-bırak ve yapıştırmayı destekliyor.
+
 ## [2.17.275] - 2026-09-29
 
 **Kalem (Düzenle) penceresinden de aynı kongreye başka ürünler eklenebiliyor:** Sevkiyatı Düzenle penceresine "Aynı kongreye başka ürün ekle" bölümü geldi — "+ Başka Ürün Ekle" ile istenen kadar ürün satırı açılıyor; bunlar düzenlenen satırın ürününü değiştirmiyor, listeye aynı kongrenin altına yeni satır olarak ekleniyor ve stoktan düşülüyor.

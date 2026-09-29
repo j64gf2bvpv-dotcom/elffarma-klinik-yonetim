@@ -20,7 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useCreateCongress, useUpdateCongress } from './hooks'
-import { uploadCongressImage } from './api'
+import { extractImageFile, uploadCongressImage } from './api'
 import type { Congress } from '@/types/database'
 
 const schema = z.object({
@@ -88,6 +88,13 @@ export function CongressForm({ congress }: { congress?: Congress }) {
   async function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
+    await uploadImageFile(file)
+  }
+
+  // Görsel alanına sürükle-bırak ve kopyalanmış görseli yapıştırma (Cmd+V)
+  // desteği (2026-09-29) — ör. tarayıcıda Instagram'dan "Resmi Kopyala"
+  // deyip buraya yapıştırmak için.
+  async function uploadImageFile(file: File | null | undefined) {
     if (!file) return
     setUploadingImage(true)
     try {
@@ -413,8 +420,25 @@ export function CongressForm({ congress }: { congress?: Congress }) {
               name="image_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Görsel (opsiyonel)</FormLabel>
-                  <div className="flex items-center gap-3">
+                  <FormLabel>Görsel (opsiyonel) — yükleyin, sürükleyip bırakın veya kopyaladığınız görseli yapıştırın</FormLabel>
+                  <div
+                    className="flex items-center gap-3"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      const file = extractImageFile(e.dataTransfer)
+                      if (file) {
+                        e.preventDefault()
+                        void uploadImageFile(file)
+                      }
+                    }}
+                    onPaste={(e) => {
+                      const file = extractImageFile(e.clipboardData)
+                      if (file) {
+                        e.preventDefault()
+                        void uploadImageFile(file)
+                      }
+                    }}
+                  >
                     <input
                       ref={imageInputRef}
                       type="file"

@@ -79,6 +79,21 @@ export async function updateCongress(id: string, input: CongressInput): Promise<
   return offlineUpdate<Congress>('congresses', id, { ...input }, `Kongre güncelleme: ${input.name}`)
 }
 
+/** Sadece görseli değiştirir — kongre kartından doğrudan görsel ekleme için. */
+export async function updateCongressImage(id: string, imageUrl: string | null): Promise<Congress> {
+  return offlineUpdate<Congress>('congresses', id, { image_url: imageUrl }, 'Kongre görseli güncelleme')
+}
+
+/** Sürüklenen/yapıştırılan içerikten ilk görsel dosyasını bulur (yoksa null). */
+export function extractImageFile(data: DataTransfer | null): File | null {
+  if (!data) return null
+  for (const item of Array.from(data.items ?? [])) {
+    if (item.kind === 'file' && item.type.startsWith('image/')) return item.getAsFile()
+  }
+  const file = Array.from(data.files ?? []).find((f) => f.type.startsWith('image/'))
+  return file ?? null
+}
+
 export async function deleteCongress(id: string): Promise<void> {
   return offlineDelete('congresses', id, 'Kongre silme')
 }

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale'
-import { CalendarRange, ArrowRight, AlertTriangle, Presentation } from 'lucide-react'
+import { CalendarRange, ArrowRight, AlertTriangle } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -10,8 +10,7 @@ import { Button } from '@/components/ui/button'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CongressForm } from '@/features/congresses/CongressForm'
 import { useCongresses } from '@/features/congresses/hooks'
-import { SafeThumbnail } from '@/components/SafeThumbnail'
-import { placeholderColor } from '@/lib/placeholderColor'
+import { CongressImageDrop } from '@/features/congresses/CongressImageDrop'
 import type { Congress } from '@/types/database'
 
 export function CongressesPage() {
@@ -54,17 +53,7 @@ export function CongressesPage() {
             <Card className="h-full transition-colors hover:border-primary/50">
               <CardContent className="pt-6">
                 <div className="mb-3 flex items-start gap-3">
-                  <span
-                    className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border text-white"
-                    style={congress.image_url ? undefined : { backgroundColor: placeholderColor(congress.name) }}
-                  >
-                    <SafeThumbnail
-                      src={congress.image_url}
-                      alt={congress.name}
-                      className="size-full bg-muted object-contain p-1"
-                      fallback={<Presentation className="size-6" />}
-                    />
-                  </span>
+                  <CongressImageDrop congress={congress} />
                   <div className="min-w-0 flex-1">
                     <h3 className="mb-1 truncate text-lg font-semibold">{congress.name}</h3>
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">

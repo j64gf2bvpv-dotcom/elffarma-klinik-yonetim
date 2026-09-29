@@ -28,6 +28,8 @@ import {
   setChecklistItemDone,
   setConsumableUsed,
   updateCongress,
+  updateCongressImage,
+  uploadCongressImage,
   updateCongressStockItemStatus,
   updateConsumable,
   updateParticipant,
@@ -91,6 +93,21 @@ export function useCreateCongress() {
       toast.success('Kongre eklendi')
     },
     onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
+  })
+}
+
+export function useSetCongressImage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File }) => updateCongressImage(id, await uploadCongressImage(file)),
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueryData<Congress[]>(['congresses'], (old) =>
+        old?.map((c) => (c.id === id ? { ...c, image_url: updated.image_url } : c)),
+      )
+      queryClient.invalidateQueries({ queryKey: ['congresses'] })
+      toast.success('Görsel eklendi')
+    },
+    onError: (error: Error) => toast.error('Görsel yüklenemedi', { description: error.message }),
   })
 }
 
