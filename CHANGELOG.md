@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.275] - 2026-09-29
+
+**Kalem (Düzenle) penceresinden de aynı kongreye başka ürünler eklenebiliyor:** Sevkiyatı Düzenle penceresine "Aynı kongreye başka ürün ekle" bölümü geldi — "+ Başka Ürün Ekle" ile istenen kadar ürün satırı açılıyor; bunlar düzenlenen satırın ürününü değiştirmiyor, listeye aynı kongrenin altına yeni satır olarak ekleniyor ve stoktan düşülüyor.
+
 ## [2.17.274] - 2026-09-29
 
 **Kongre/Workshop sevkiyat listesi kongre bazında gruplandı:** Her kongre/masterclass/eğitim artık bir başlık satırı; o kongreye götürülen tüm ürünler altında alt alta listeleniyor. Başlıktaki "+ Ürün Ekle" butonu, kongresi önceden seçili sevkiyat penceresini açıyor — mevcut ürünlere dokunmadan aynı kongreye yeni ürün ekleniyor.

@@ -31,6 +31,7 @@ import {
 } from './hooks'
 import type { CongressShipmentWithCongress } from './api'
 import type { Product } from '@/types/database'
+import { cn } from '@/lib/utils'
 
 /**
  * Sevkiyat penceresinden çıkmadan yeni kongre / workshop / masterclass /
@@ -140,73 +141,64 @@ function emptyRow(key: number): ShipmentRow {
 }
 
 /**
- * Kongre/workshopa götürülen ürünleri ekleyen diyalog — kaydedilince her
- * satır ayrı bir sevkiyat kaydı olur ve gerçek stoktan (out) düşülür.
- * Aynı kongreye birden fazla ürün alt alta tek seferde girilebiliyor
- * (kullanıcı isteği, 2026-09-29: "ürünleri aynı sayfaya birden fazla alt
- * alta ekleyebilmeliyim, yeni eklediğim diğerini silmemeli").
+ * Alt alta çok ürünlü sevkiyat satırlarının ortak durumu + kaydetme mantığı —
+ * hem Sevkiyat Ekle hem de kalem (Düzenle) penceresi kullanıyor (kullanıcı
+ * isteği, 2026-09-29: "kalem işaretine tıkladığımda başka ürünler de
+ * ekleyebilmeliyim, birden fazla"). minRows=1 → en az bir satır kalır
+ * (Sevkiyat Ekle); minRows=0 → hiç satır olmayabilir (Düzenle).
  */
-function AddShipmentDialog({ presetCongressId }: { presetCongressId?: string } = {}) {
-  const [open, setOpen] = React.useState(false)
-  const [congressId, setCongressId] = React.useState(presetCongressId ?? '')
+function useShipmentRows(minRows: 0 | 1) {
   const nextKey = React.useRef(1)
-  const [rows, setRows] = React.useState<ShipmentRow[]>(() => [emptyRow(0)])
-  const [note, setNote] = React.useState('')
-
-  const { data: congresses = [] } = useCongresses()
+  const initial = React.useCallback(
+    () => (minRows === 1 ? [emptyRow(0)] : []),
+    [minRows],
+  )
+  const [rows, setRows] = React.useState<ShipmentRow[]>(initial)
   const createMutation = useCreateCongressShipment()
   const recordMovement = useRecordStockMovement()
 
-  const sortedCongresses = React.useMemo(
-    () => [...congresses].sort((a, b) => (b.start_date ?? '').localeCompare(a.start_date ?? '')),
-    [congresses],
-  )
-
   function reset() {
-    setCongressId(presetCongressId ?? '')
-    setRows([emptyRow(nextKey.current++)])
-    setNote('')
+    setRows(minRows === 1 ? [emptyRow(nextKey.current++)] : [])
   }
-
+  function addRow() {
+    setRows((prev) => [...prev, emptyRow(nextKey.current++)])
+  }
+  function removeRow(key: number) {
+    setRows((prev) => (prev.length > minRows ? prev.filter((r) => r.key !== key) : prev))
+  }
   function updateRow(key: number, patch: Partial<ShipmentRow>) {
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)))
   }
 
-  function addRow() {
-    setRows((prev) => [...prev, emptyRow(nextKey.current++)])
-  }
-
-  function removeRow(key: number) {
-    setRows((prev) => (prev.length > 1 ? prev.filter((r) => r.key !== key) : prev))
-  }
-
-  async function handleSubmit() {
-    if (!congressId) {
-      toast.error('Kongre / workshop seçin')
-      return
-    }
+  /** Hata varsa toast gösterip false döner. */
+  function validate(): boolean {
     for (const [i, r] of rows.entries()) {
       const qty = Number(r.quantity)
       const sealed = Number(r.sealedQty) || 0
       const opened = Number(r.openQty) || 0
-      const label = rows.length > 1 ? `${i + 1}. satır: ` : ''
+      const label = rows.length > 1 ? `${i + 1}. ürün satırı: ` : ''
       if (!r.product || !Number.isFinite(qty) || qty <= 0) {
         toast.error(`${label}Ürün ve geçerli bir miktar seçin`)
-        return
+        return false
       }
       if (sealed < 0 || opened < 0) {
         toast.error(`${label}Kapalı/açık dönen için geçerli bir miktar girin`)
-        return
+        return false
       }
       if (sealed + opened > qty) {
         toast.error(`${label}Kapalı + açık dönen, götürülen miktarı geçemez`)
-        return
+        return false
       }
     }
-    const congressName = congresses.find((c) => c.id === congressId)?.name ?? 'Kongre/Workshop'
-    // Satırlar sırayla kaydediliyor; kaydedilen satır listeden çıkarılıyor ki
-    // arada biri hata verirse tekrar Kaydet'e basınca öncekiler iki kez
-    // girilmesin.
+    return true
+  }
+
+  /**
+   * Her satırı ayrı sevkiyat kaydı olarak ekler ve stoktan düşer. Kaydedilen
+   * satır listeden çıkarılıyor ki arada biri hata verirse tekrar Kaydet'e
+   * basınca öncekiler iki kez girilmesin.
+   */
+  async function saveAll(congressId: string, congressName: string, note: string | null) {
     for (const r of rows) {
       const product = r.product as Product
       const qty = Number(r.quantity)
@@ -219,7 +211,7 @@ function AddShipmentDialog({ presetCongressId }: { presetCongressId?: string } =
         quantity_taken: qty,
         quantity_returned_sealed: sealed,
         quantity_returned_open: opened,
-        note: note.trim() || null,
+        note,
       })
       // Tüm götürülen miktar önce stoktan çıkar, sonra o an için zaten dönmüş
       // (kapalı+açık) kısım geri iade edilir — net etki (kullanılan) kadar
@@ -240,13 +232,134 @@ function AddShipmentDialog({ presetCongressId }: { presetCongressId?: string } =
           note: congressName,
         })
       }
-      setRows((prev) => (prev.length > 1 ? prev.filter((x) => x.key !== r.key) : prev))
+      setRows((prev) => prev.filter((x) => x.key !== r.key))
     }
+  }
+
+  return {
+    rows,
+    reset,
+    addRow,
+    removeRow,
+    updateRow,
+    validate,
+    saveAll,
+    minRows,
+    submitting: createMutation.isPending || recordMovement.isPending,
+  }
+}
+
+const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_5rem_5rem_5rem_4rem_2.25rem] items-center gap-2'
+
+function ShipmentRowsEditor({
+  state,
+  addLabel,
+}: {
+  state: ReturnType<typeof useShipmentRows>
+  addLabel: string
+}) {
+  const { rows, updateRow, removeRow, addRow, minRows } = state
+  return (
+    <div className="grid gap-2">
+      {rows.length > 0 && (
+        <div className={cn(ROW_GRID, 'text-muted-foreground items-end text-xs font-medium')}>
+          <span>Ürün (Stoktan Seç)</span>
+          <span>Götürülen</span>
+          <span>Kapalı Dönen</span>
+          <span>Açık Dönen</span>
+          <span>Kullanılan</span>
+          <span />
+        </div>
+      )}
+      {rows.map((r) => {
+        const used = Math.max(0, (Number(r.quantity) || 0) - (Number(r.sealedQty) || 0) - (Number(r.openQty) || 0))
+        return (
+          <div key={r.key} className={ROW_GRID}>
+            <ProductCombobox value={r.product?.id} onChange={(p: Product) => updateRow(r.key, { product: p })} />
+            <Input type="number" min="1" value={r.quantity} onChange={(e) => updateRow(r.key, { quantity: e.target.value })} />
+            <Input type="number" min="0" value={r.sealedQty} onChange={(e) => updateRow(r.key, { sealedQty: e.target.value })} />
+            <Input type="number" min="0" value={r.openQty} onChange={(e) => updateRow(r.key, { openQty: e.target.value })} />
+            <span className="text-center text-sm tabular-nums">{used}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => removeRow(r.key)}
+              disabled={rows.length <= minRows}
+              title="Satırı kaldır"
+            >
+              <Trash2 className="size-4 text-destructive" />
+            </Button>
+          </div>
+        )
+      })}
+      <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={addRow}>
+        <Plus className="size-3.5" /> {addLabel}
+      </Button>
+    </div>
+  )
+}
+
+function CongressSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  const { data: congresses = [] } = useCongresses()
+  const sorted = React.useMemo(
+    () => [...congresses].sort((a, b) => (b.start_date ?? '').localeCompare(a.start_date ?? '')),
+    [congresses],
+  )
+  return (
+    <div className="grid gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <Label>Kongre / Workshop</Label>
+        <QuickCongressDialog onCreated={onChange} />
+      </div>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Kongre/workshop seçin" />
+        </SelectTrigger>
+        <SelectContent>
+          {sorted.map((c) => (
+            <SelectItem key={c.id} value={c.id}>
+              {c.name}
+              {c.start_date ? ` — ${format(new Date(c.start_date), 'd MMM yyyy', { locale: trLocale })}` : ''}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+/**
+ * Kongre/workshopa götürülen ürünleri ekleyen diyalog — kaydedilince her
+ * satır ayrı bir sevkiyat kaydı olur ve gerçek stoktan (out) düşülür.
+ * Aynı kongreye birden fazla ürün alt alta tek seferde girilebiliyor.
+ */
+function AddShipmentDialog({ presetCongressId }: { presetCongressId?: string } = {}) {
+  const [open, setOpen] = React.useState(false)
+  const [congressId, setCongressId] = React.useState(presetCongressId ?? '')
+  const [note, setNote] = React.useState('')
+  const { data: congresses = [] } = useCongresses()
+  const rowsState = useShipmentRows(1)
+
+  function reset() {
+    setCongressId(presetCongressId ?? '')
+    rowsState.reset()
+    setNote('')
+  }
+
+  async function handleSubmit() {
+    if (!congressId) {
+      toast.error('Kongre / workshop seçin')
+      return
+    }
+    if (!rowsState.validate()) return
+    const congressName = congresses.find((c) => c.id === congressId)?.name ?? 'Kongre/Workshop'
+    await rowsState.saveAll(congressId, congressName, note.trim() || null)
     reset()
     setOpen(false)
   }
 
-  const submitting = createMutation.isPending || recordMovement.isPending
+  const count = rowsState.rows.length
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : (reset(), setOpen(false)))}>
@@ -269,77 +382,8 @@ function AddShipmentDialog({ presetCongressId }: { presetCongressId?: string } =
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
-          <div className="grid gap-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label>Kongre / Workshop</Label>
-              <QuickCongressDialog onCreated={setCongressId} />
-            </div>
-            <Select value={congressId} onValueChange={setCongressId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Kongre/workshop seçin" />
-              </SelectTrigger>
-              <SelectContent>
-                {sortedCongresses.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                    {c.start_date ? ` — ${format(new Date(c.start_date), 'd MMM yyyy', { locale: trLocale })}` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid gap-2">
-            <div className="text-muted-foreground grid grid-cols-[minmax(0,1fr)_5rem_5rem_5rem_4rem_2.25rem] items-end gap-2 text-xs font-medium">
-              <span>Ürün (Stoktan Seç)</span>
-              <span>Götürülen</span>
-              <span>Kapalı Dönen</span>
-              <span>Açık Dönen</span>
-              <span>Kullanılan</span>
-              <span />
-            </div>
-            {rows.map((r) => {
-              const used = Math.max(0, (Number(r.quantity) || 0) - (Number(r.sealedQty) || 0) - (Number(r.openQty) || 0))
-              return (
-                <div key={r.key} className="grid grid-cols-[minmax(0,1fr)_5rem_5rem_5rem_4rem_2.25rem] items-center gap-2">
-                  <ProductCombobox value={r.product?.id} onChange={(p: Product) => updateRow(r.key, { product: p })} />
-                  <Input
-                    type="number"
-                    min="1"
-                    value={r.quantity}
-                    onChange={(e) => updateRow(r.key, { quantity: e.target.value })}
-                  />
-                  <Input
-                    type="number"
-                    min="0"
-                    value={r.sealedQty}
-                    onChange={(e) => updateRow(r.key, { sealedQty: e.target.value })}
-                  />
-                  <Input
-                    type="number"
-                    min="0"
-                    value={r.openQty}
-                    onChange={(e) => updateRow(r.key, { openQty: e.target.value })}
-                  />
-                  <span className="text-center text-sm tabular-nums">{used}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeRow(r.key)}
-                    disabled={rows.length === 1}
-                    title="Satırı kaldır"
-                  >
-                    <Trash2 className="size-4 text-destructive" />
-                  </Button>
-                </div>
-              )
-            })}
-            <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={addRow}>
-              <Plus className="size-3.5" /> Ürün Ekle
-            </Button>
-          </div>
-
+          <CongressSelect value={congressId} onChange={setCongressId} />
+          <ShipmentRowsEditor state={rowsState} addLabel="Ürün Ekle" />
           <div className="grid gap-1.5">
             <Label>Not (opsiyonel, tüm satırlara yazılır)</Label>
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Örn. stand vitrini için" />
@@ -349,8 +393,8 @@ function AddShipmentDialog({ presetCongressId }: { presetCongressId?: string } =
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
             Vazgeç
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={submitting}>
-            {rows.length > 1 ? `${rows.length} Ürünü Kaydet` : 'Kaydet'}
+          <Button type="button" onClick={handleSubmit} disabled={rowsState.submitting}>
+            {count > 1 ? `${count} Ürünü Kaydet` : 'Kaydet'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -360,11 +404,12 @@ function AddShipmentDialog({ presetCongressId }: { presetCongressId?: string } =
 
 /**
  * Yanlış girilen kongre/ürün/miktarı düzeltmek için (kullanıcı isteğiyle,
- * 2026-08-22) — AddShipmentDialog ile aynı form, farkla açılıyor ve kaydedince
- * stok farkını (eski ürün/miktar → yeni ürün/miktar) düzeltiyor. İade zaten
- * girildiyse (quantity_returned_sealed/open > 0) ürün değiştirme engelleniyor
- * — o iadeler hangi ürüne ait olduğunu artık belirsizleştirir, bu durumda
- * önce kaydı silip yeniden girmek gerekir.
+ * 2026-08-22) — kaydedince stok farkını (eski ürün/miktar → yeni ürün/miktar)
+ * düzeltiyor. İade zaten girildiyse (quantity_returned_sealed/open > 0) ürün
+ * değiştirme engelleniyor — o iadeler hangi ürüne ait olduğunu artık
+ * belirsizleştirir, bu durumda önce kaydı silip yeniden girmek gerekir.
+ * Ayrıca "Başka Ürün Ekle" ile aynı kongreye yeni ürün satırları eklenebiliyor
+ * (2026-09-29) — bunlar mevcut kaydı değiştirmez, ayrı sevkiyat olarak girilir.
  */
 function EditShipmentDialog({ shipment, onClose }: { shipment: CongressShipmentWithCongress; onClose: () => void }) {
   const [congressId, setCongressId] = React.useState(shipment.congress_id)
@@ -376,13 +421,9 @@ function EditShipmentDialog({ shipment, onClose }: { shipment: CongressShipmentW
   const { data: congresses = [] } = useCongresses()
   const updateMutation = useUpdateCongressShipment()
   const recordMovement = useRecordStockMovement()
+  const extraRows = useShipmentRows(0)
 
   const hasReturns = shipment.quantity_returned_sealed > 0 || shipment.quantity_returned_open > 0
-
-  const sortedCongresses = React.useMemo(
-    () => [...congresses].sort((a, b) => (b.start_date ?? '').localeCompare(a.start_date ?? '')),
-    [congresses],
-  )
 
   async function handleSubmit() {
     const qty = Number(quantity)
@@ -397,7 +438,14 @@ function EditShipmentDialog({ shipment, onClose }: { shipment: CongressShipmentW
       })
       return
     }
+    if (!extraRows.validate()) return
     const congressName = congresses.find((c) => c.id === congressId)?.name ?? 'Kongre/Workshop'
+    const trimmedNote = note.trim() || null
+    const changed =
+      productChanged ||
+      qty !== shipment.quantity_taken ||
+      congressId !== shipment.congress_id ||
+      trimmedNote !== (shipment.note ?? null)
 
     if (productChanged) {
       await recordMovement.mutateAsync({
@@ -425,69 +473,65 @@ function EditShipmentDialog({ shipment, onClose }: { shipment: CongressShipmentW
       })
     }
 
-    await updateMutation.mutateAsync({
-      id: shipment.id,
-      input: {
-        congress_id: congressId,
-        product_id: productId,
-        product_name: productName,
-        quantity_taken: qty,
-        note: note.trim() || null,
-      },
-    })
+    if (changed) {
+      await updateMutation.mutateAsync({
+        id: shipment.id,
+        input: {
+          congress_id: congressId,
+          product_id: productId,
+          product_name: productName,
+          quantity_taken: qty,
+          note: trimmedNote,
+        },
+      })
+    }
+    await extraRows.saveAll(congressId, congressName, trimmedNote)
     onClose()
   }
 
-  const submitting = updateMutation.isPending || recordMovement.isPending
+  const submitting = updateMutation.isPending || recordMovement.isPending || extraRows.submitting
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Sevkiyatı Düzenle</DialogTitle>
           <DialogDescription>
             {hasReturns
               ? 'Bu sevkiyatta iade zaten girildiği için ürün değiştirilemez — kongre, miktar ve not düzenlenebilir.'
-              : 'Yanlış girilen kongre, ürün veya miktarı düzeltin.'}
+              : 'Bu satırın ürününü/miktarını düzeltebilir veya aşağıdan aynı kongreye başka ürünler ekleyebilirsiniz.'}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
-          <div className="grid gap-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label>Kongre / Workshop</Label>
-              <QuickCongressDialog onCreated={setCongressId} />
+          <CongressSelect value={congressId} onChange={setCongressId} />
+          <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2">
+            <div className="grid gap-1.5">
+              <Label>Bu satırdaki ürün</Label>
+              <ProductCombobox
+                value={productId}
+                onChange={(p: Product) => {
+                  setProductId(p.id)
+                  setProductName(p.name)
+                }}
+              />
             </div>
-            <Select value={congressId} onValueChange={setCongressId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Kongre/workshop seçin" />
-              </SelectTrigger>
-              <SelectContent>
-                {sortedCongresses.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                    {c.start_date ? ` — ${format(new Date(c.start_date), 'd MMM yyyy', { locale: trLocale })}` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid gap-1.5">
+              <Label>Götürülen</Label>
+              <Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            </div>
           </div>
-          <div className="grid gap-1.5">
-            <Label>Ürün (Stoktan Seç)</Label>
-            <ProductCombobox
-              value={productId}
-              onChange={(p: Product) => {
-                setProductId(p.id)
-                setProductName(p.name)
-              }}
-            />
-            {hasReturns && (
-              <p className="text-muted-foreground text-xs">İade girildiği için ürün değişikliği kaydedilmeyecek.</p>
-            )}
+          {hasReturns && (
+            <p className="text-muted-foreground -mt-2 text-xs">İade girildiği için ürün değişikliği kaydedilmeyecek.</p>
+          )}
+
+          <div className="grid gap-2 rounded-md border border-dashed p-3">
+            <p className="text-sm font-medium">Aynı kongreye başka ürün ekle</p>
+            <p className="text-muted-foreground -mt-1 text-xs">
+              Buraya eklediğiniz ürünler yukarıdaki ürünü değiştirmez, listeye alt alta yeni satır olarak eklenir.
+            </p>
+            <ShipmentRowsEditor state={extraRows} addLabel="Başka Ürün Ekle" />
           </div>
-          <div className="grid gap-1.5">
-            <Label>Götürülen Miktar</Label>
-            <Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-          </div>
+
           <div className="grid gap-1.5">
             <Label>Not (opsiyonel)</Label>
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Örn. stand vitrini için" />
@@ -498,7 +542,7 @@ function EditShipmentDialog({ shipment, onClose }: { shipment: CongressShipmentW
             Vazgeç
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={submitting}>
-            Kaydet
+            {extraRows.rows.length > 0 ? `Kaydet (+${extraRows.rows.length} yeni ürün)` : 'Kaydet'}
           </Button>
         </DialogFooter>
       </DialogContent>
