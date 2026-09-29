@@ -74,7 +74,11 @@ jobs:
         include:
           - os: windows-latest
             build_args: --win nsis --x64
-          - os: macos-latest
+          # macos-latest (macos-26 imajı, 2026-09-07 güncellemesi) imzalama
+          # sertifikasını geçici anahtarlığa alırken `security
+          # set-key-partition-list` adımında hata veriyor (v2.17.271 iki kez
+          # bu yüzden düştü) — önceki kararlı imaja sabitlendi.
+          - os: macos-15
             build_args: --mac dmg zip --arm64
     runs-on: ${{ matrix.os }}
     steps:
