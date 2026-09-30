@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.279] - 2026-09-30
+
+**Ürün görselleri büyütülebiliyor:** Stok > Ürünler listesindeki küçük ürün resmine tıklayınca görsel, ürün adıyla birlikte büyük olarak açılıyor.
+
 ## [2.17.278] - 2026-09-30
 
 **Kongre/Workshop sevkiyatında stok yetmeyen ürün artık açıkça gösteriliyor:** Her ürün satırının altında "Stokta: X paket" yazıyor, yetmiyorsa kırmızı. Stok yetmeyen ürün varsa kaydetmeden önce hangi ürün(ler) olduğu söyleniyor ve hiçbir satır yarım kaydedilmiyor (eskiden stoğu olanlar kaydedilip stoğu 0 olanlar sessizce eklenmiyordu). "Vazgeç" artık pencereyi temizliyor.

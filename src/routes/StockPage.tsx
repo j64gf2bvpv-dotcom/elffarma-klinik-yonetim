@@ -49,7 +49,7 @@ import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
 import { CargoPanel } from '@/features/cargo/CargoPanel'
 import { CongressShipmentsPanel } from '@/features/congressShipments/CongressShipmentsPanel'
-import { SafeThumbnail } from '@/components/SafeThumbnail'
+import { ZoomableThumbnail } from '@/components/ZoomableThumbnail'
 import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
 import { useAuth } from '@/lib/auth'
@@ -570,7 +570,7 @@ function ProductsTable({
                     />
                   </TableCell>
                   <TableCell>
-                    <SafeThumbnail
+                    <ZoomableThumbnail
                       src={product.image_url}
                       alt={product.name}
                       className="size-9 max-w-none shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted object-cover"
