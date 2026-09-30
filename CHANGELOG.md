@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.282] - 2026-09-30
+
+**Malzemeler iki ayrı menüye bölündü:** Stok > Kongre/Workshop'ta artık "Sarf Malzeme" (iğne, kanül, eldiven vb. tek tek eklenir) ve "Afiş / Katalog / Ekstra" (afiş-katalog-broşür + ekstra gerekli malzemeler) ayrı butonlar/pencereler.
+**✓ ve ✗ işaretleri:** Her kalemin yanında hazır/tamam için ✓, olmayan/bulunamayan için ✗ var (aynı işarete tekrar tıklayınca kalkar); ✓ işaretlenince ismin üstü çizilmiyor.
+**İsim ve adet yerinde düzenlenebiliyor**, liste **"PNG Olarak Dışa Aktar"** ile çıktı alınabilir beyaz zeminli bir görsel olarak indirilebiliyor (durum kutusu, malzeme adı, adet).
+
 ## [2.17.281] - 2026-09-30
 
 **Kongre/Workshop için ayrı "Malzemeler" bölümü:** Stok > Kongre/Workshop'ta "Sevkiyat Ekle"nin yanındaki "Malzemeler" butonu, ürünlerden ayrı bir pencere açıyor — kongre seçilip üç liste tutuluyor: Sarf Malzemeler (standart liste tek tıkla eklenebilir), Afiş / Katalog / Broşür ve Ekstra / Gerekli Malzemeler. Her kalemde isim + adet var, adet yerinde düzenleniyor, hazır olanlar tik ile işaretleniyor. Bu liste stoktan düşmez; Kongreler > kongre detayındaki "Sarf Malzeme" listesiyle aynı kayıtları kullanır (şema değişikliği yok).

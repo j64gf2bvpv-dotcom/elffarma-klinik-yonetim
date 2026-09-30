@@ -22,7 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useProducts, useRecordStockMovement } from '@/features/stock/hooks'
 import { ZoomableThumbnail } from '@/components/ZoomableThumbnail'
-import { CongressMaterialsSection } from './CongressMaterialsSection'
+import { CongressMaterialsSection, type MaterialGroup } from './CongressMaterialsSection'
 import { useCongresses, useCreateCongress } from '@/features/congresses/hooks'
 import {
   useCongressShipments,
@@ -876,36 +876,57 @@ function UsedQtyCell({ shipment }: { shipment: CongressShipmentWithCongress }) {
 }
 
 /**
- * Ürünlerden AYRI malzeme bölümü (kullanıcı isteği, 2026-09-30: "ürünlerden
- * ayrı bir yerde olsun, malzemeler diye bölüm aç, sevkiyat ekle kısmının
- * yanına buton") — kongre seçilir, o kongreye götürülen sarf malzemeler,
- * afiş/katalog/broşür ve ekstra/gerekli malzemeler isim + adet olarak girilir,
- * tamamlananlar işaretlenir. Stoktan düşmez (bunlar stok ürünü değil).
+ * Ürünlerden AYRI malzeme menüleri (kullanıcı istekleri, 2026-09-30) —
+ * "Sevkiyat Ekle"nin yanında iki buton: Sarf Malzeme (iğne, eldiven vb. tek
+ * tek eklenir) ve Afiş / Katalog / Ekstra (tanıtım malzemeleri + ekstra
+ * gerekli malzemeler). Kongre seçilir; her kalemde isim + adet, ✓ / ✗
+ * işareti; liste PNG olarak dışa aktarılır. Stoktan düşmez.
  */
-function MaterialsDialog({ defaultCongressId }: { defaultCongressId?: string }) {
+function MaterialsDialog({
+  defaultCongressId,
+  label,
+  title,
+  description,
+  groups,
+}: {
+  defaultCongressId?: string
+  label: string
+  title: string
+  description: string
+  groups: MaterialGroup[]
+}) {
   const [open, setOpen] = React.useState(false)
   const [congressId, setCongressId] = React.useState('')
+  const { data: congresses = [] } = useCongresses()
   const activeCongressId = congressId || defaultCongressId || ''
+  const congress = congresses.find((c) => c.id === activeCongressId)
+  const congressLabel = congress
+    ? congress.name +
+      (congress.start_date ? ` — ${format(new Date(congress.start_date), 'd MMMM yyyy', { locale: trLocale })}` : '')
+    : ''
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline">
-          <ClipboardList className="size-3.5" /> Malzemeler
+          <ClipboardList className="size-3.5" /> {label}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl">
+      <DialogContent className={groups.length > 1 ? 'max-w-5xl' : 'max-w-2xl'}>
         <DialogHeader>
-          <DialogTitle>Kongre / Workshop Malzemeleri</DialogTitle>
-          <DialogDescription>
-            Götürülen sarf malzemeler, afiş / katalog / broşür ve ekstra gerekli malzemeler — isim ve adet girin,
-            hazır olanları işaretleyin. Bu liste stoktan düşmez.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <CongressSelect value={activeCongressId} onChange={setCongressId} />
           {activeCongressId ? (
-            <CongressMaterialsSection key={activeCongressId} congressId={activeCongressId} />
+            <CongressMaterialsSection
+              key={activeCongressId}
+              congressId={activeCongressId}
+              congressLabel={congressLabel}
+              groups={groups}
+              exportTitle={title}
+            />
           ) : (
             <p className="text-muted-foreground text-sm">Önce bir kongre / workshop seçin.</p>
           )}
@@ -983,7 +1004,20 @@ export function CongressShipmentsPanel() {
           <Boxes className="size-4 text-primary" /> Kongre / Workshop Ürün Sevkiyatı
         </h3>
         <div className="flex flex-wrap items-center gap-2">
-          <MaterialsDialog defaultCongressId={groups[0]?.congressId} />
+          <MaterialsDialog
+            defaultCongressId={groups[0]?.congressId}
+            label="Sarf Malzeme"
+            title="Sarf Malzeme Listesi"
+            description="Kongreye/workshopa götürülen sarf malzemeler (iğne, kanül, eldiven vb.) — tek tek ekleyin, adet girin, hazır olanı ✓, olmayanı ✗ ile işaretleyin. Stoktan düşmez."
+            groups={['sarf']}
+          />
+          <MaterialsDialog
+            defaultCongressId={groups[0]?.congressId}
+            label="Afiş / Katalog / Ekstra"
+            title="Afiş, Katalog, Broşür ve Ekstra Malzemeler"
+            description="Götürülen afiş / katalog / broşür ve ekstra gerekli malzemeler — isim ve adet girin, hazır olanı ✓, olmayanı ✗ ile işaretleyin. Stoktan düşmez."
+            groups={['tanitim', 'ekstra']}
+          />
           <AddShipmentDialog />
         </div>
       </div>

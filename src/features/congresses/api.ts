@@ -347,6 +347,11 @@ export async function createConsumablesBulk(
   return created
 }
 
+/** Tamam (is_used) + not alanını (grup/yok işareti) birlikte günceller — Stok > Kongre/Workshop malzeme listeleri için. */
+export async function setConsumableState(id: string, state: { is_used: boolean; note: string | null }): Promise<void> {
+  await offlineUpdate('congress_consumables', id, { ...state }, 'Malzeme durumu güncelleme')
+}
+
 export async function setConsumableUsed(id: string, is_used: boolean): Promise<void> {
   await offlineUpdate('congress_consumables', id, { is_used }, 'Sarf malzeme durumu güncelleme')
 }
