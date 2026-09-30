@@ -55,15 +55,28 @@ function buildNote(group: MaterialGroup, missing: boolean): string | null {
   return tokens.length > 0 ? tokens.join(';') : null
 }
 
-const MATERIAL_GROUPS: { key: MaterialGroup; title: string; placeholder: string; quick?: string[] }[] = [
-  { key: 'sarf', title: 'Sarf Malzemeler', placeholder: 'Örn. İğne 30 Gauge' },
+/**
+ * Ekranda gösterilen listeler. Afiş/katalog/broşür ile ekstra malzemeler TEK
+ * listede birleşik gösteriliyor (kullanıcı isteği, 2026-09-30: "bu kısmı da
+ * birleştir") — kayıtlarda eski "tanitim"/"ekstra" ayrımı duruyor (her
+ * kalem kendi grubunu korur), sadece görünüm tek liste. Yeni eklenen kalem
+ * listenin ilk grubuna (`keys[0]`) yazılır.
+ */
+interface MaterialListDef {
+  keys: MaterialGroup[]
+  title: string
+  placeholder: string
+  quick?: string[]
+}
+
+const MATERIAL_LISTS: MaterialListDef[] = [
+  { keys: ['sarf'], title: 'Sarf Malzemeler', placeholder: 'Örn. İğne 30 Gauge' },
   {
-    key: 'tanitim',
-    title: 'Afiş / Katalog / Broşür',
-    placeholder: 'Örn. MIXO broşürü',
+    keys: ['tanitim', 'ekstra'],
+    title: 'Afiş / Katalog / Broşür ve Ekstra Malzemeler',
+    placeholder: 'Örn. MIXO broşürü, uzatma kablosu',
     quick: ['Afiş', 'Katalog', 'Broşür', 'Roll-up'],
   },
-  { key: 'ekstra', title: 'Ekstra / Gerekli Malzemeler', placeholder: 'Örn. Uzatma kablosu' },
 ]
 
 function MaterialList({
@@ -72,7 +85,7 @@ function MaterialList({
   items,
 }: {
   congressId: string
-  group: (typeof MATERIAL_GROUPS)[number]
+  group: MaterialListDef
   items: CongressConsumable[]
 }) {
   const queryClient = useQueryClient()
@@ -81,12 +94,14 @@ function MaterialList({
   const updateMutation = useUpdateConsumable(congressId)
   const deleteMutation = useDeleteConsumable(congressId)
   const stateMutation = useMutation({
-    mutationFn: ({ id, mark }: { id: string; mark: MaterialMark }) =>
-      setConsumableState(id, { is_used: mark === 'done', note: buildNote(group.key, mark === 'missing') }),
-    onMutate: ({ id, mark }) => {
+    // Not alanı kalemin KENDİ grubuyla yeniden kurulur (birleşik listede
+    // tanitim/ekstra karışık durabildiği için listenin grubuyla değil).
+    mutationFn: ({ item, mark }: { item: CongressConsumable; mark: MaterialMark }) =>
+      setConsumableState(item.id, { is_used: mark === 'done', note: buildNote(groupOf(item), mark === 'missing') }),
+    onMutate: ({ item, mark }) => {
       queryClient.setQueryData<CongressConsumable[]>(['congress_consumables', congressId], (old) =>
         old?.map((i) =>
-          i.id === id ? { ...i, is_used: mark === 'done', note: buildNote(group.key, mark === 'missing') } : i,
+          i.id === item.id ? { ...i, is_used: mark === 'done', note: buildNote(groupOf(item), mark === 'missing') } : i,
         ),
       )
     },
@@ -104,7 +119,7 @@ function MaterialList({
     const quantity = Math.max(1, Math.round(Number(qty)) || 1)
     setName('')
     setQty('1')
-    await createMutation.mutateAsync({ name: trimmed, quantity, note: buildNote(group.key, false) })
+    await createMutation.mutateAsync({ name: trimmed, quantity, note: buildNote(group.keys[0], false) })
     nameRef.current?.focus()
   }
 
@@ -151,7 +166,7 @@ function MaterialList({
             >
               <button
                 type="button"
-                onClick={() => stateMutation.mutate({ id: item.id, mark: mark === 'done' ? 'none' : 'done' })}
+                onClick={() => stateMutation.mutate({ item, mark: mark === 'done' ? 'none' : 'done' })}
                 className={cn(
                   'flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
                   mark === 'done'
@@ -164,7 +179,7 @@ function MaterialList({
               </button>
               <button
                 type="button"
-                onClick={() => stateMutation.mutate({ id: item.id, mark: mark === 'missing' ? 'none' : 'missing' })}
+                onClick={() => stateMutation.mutate({ item, mark: mark === 'missing' ? 'none' : 'missing' })}
                 className={cn(
                   'flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
                   mark === 'missing'
@@ -237,7 +252,7 @@ function MaterialList({
         </div>
       )}
 
-      {group.key === 'sarf' && items.length === 0 && (
+      {group.keys[0] === 'sarf' && items.length === 0 && (
         <Button
           type="button"
           variant="outline"
@@ -300,16 +315,19 @@ export function CongressMaterialsSection({
 
   if (isLoading) return <p className="text-muted-foreground text-sm">Yükleniyor...</p>
 
-  const shown = MATERIAL_GROUPS.filter((g) => groups.includes(g.key))
-  const shownCount = shown.reduce((sum, g) => sum + byGroup[g.key].length, 0)
+  const shown = MATERIAL_LISTS.filter((l) => l.keys.some((k) => groups.includes(k))).map((l) => ({
+    def: l,
+    items: l.keys.flatMap((k) => byGroup[k]),
+  }))
+  const shownCount = shown.reduce((sum, l) => sum + l.items.length, 0)
 
   function handleExport() {
     exportMaterialsImage(
       congressLabel,
       exportTitle,
-      shown.map((g) => ({
-        title: g.title,
-        rows: byGroup[g.key].map((i) => ({ name: i.name, quantity: i.quantity, mark: markOf(i) })),
+      shown.map((l) => ({
+        title: l.def.title,
+        rows: l.items.map((i) => ({ name: i.name, quantity: i.quantity, mark: markOf(i) })),
       })),
       `${exportTitle}-${congressLabel}`.toLocaleLowerCase('tr-TR').replace(/[^a-z0-9ğüşıöç]+/gi, '-').replace(/^-|-$/g, ''),
     )
@@ -326,8 +344,8 @@ export function CongressMaterialsSection({
         </Button>
       </div>
       <div className={cn('grid gap-3', shown.length > 1 && 'lg:grid-cols-2')}>
-        {shown.map((g) => (
-          <MaterialList key={g.key} congressId={congressId} group={g} items={byGroup[g.key]} />
+        {shown.map((l) => (
+          <MaterialList key={l.def.title} congressId={congressId} group={l.def} items={l.items} />
         ))}
       </div>
     </div>

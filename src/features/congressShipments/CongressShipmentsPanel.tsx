@@ -912,7 +912,7 @@ function MaterialsDialog({
           <ClipboardList className="size-3.5" /> {label}
         </Button>
       </DialogTrigger>
-      <DialogContent className={groups.length > 1 ? 'max-w-5xl' : 'max-w-2xl'}>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
