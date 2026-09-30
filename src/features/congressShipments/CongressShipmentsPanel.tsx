@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
-import { useRecordStockMovement } from '@/features/stock/hooks'
+import { useProducts, useRecordStockMovement } from '@/features/stock/hooks'
+import { ZoomableThumbnail } from '@/components/ZoomableThumbnail'
 import { useCongresses, useCreateCongress } from '@/features/congresses/hooks'
 import {
   useCongressShipments,
@@ -889,6 +890,10 @@ export function CongressShipmentsPanel() {
   // "İptal Et" / "Sil" onayı.
   const [pendingDelete, setPendingDelete] = React.useState<CongressShipmentWithCongress | null>(null)
   const [editingShipment, setEditingShipment] = React.useState<CongressShipmentWithCongress | null>(null)
+  // Ürün satırlarında küçük ürün resmi (kullanıcı isteği, 2026-09-30) —
+  // sevkiyat kaydında görsel tutulmuyor, ürün kataloğundan eşleştiriliyor.
+  const { data: products = [] } = useProducts('')
+  const imageByProductId = React.useMemo(() => new Map(products.map((p) => [p.id, p.image_url])), [products])
 
   // Kongre bazında gruplanmış görünüm (kullanıcı isteği, 2026-09-29: "tek
   // kongrede hepsi olmalı, alt alta eklenmeli") — her kongre bir başlık
@@ -984,7 +989,17 @@ export function CongressShipmentsPanel() {
                   {g.items.map((s) => (
                     <TableRow key={s.id}>
                       <TableCell />
-                      <TableCell className="font-medium">{s.product_name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <ZoomableThumbnail
+                            src={imageByProductId.get(s.product_id)}
+                            alt={s.product_name}
+                            className="size-9 max-w-none shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted object-cover"
+                            fallback={<div className="size-9 shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted" />}
+                          />
+                          {s.product_name}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <TakenQtyCell shipment={s} />
                       </TableCell>

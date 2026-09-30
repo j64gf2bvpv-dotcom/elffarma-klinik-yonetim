@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.280] - 2026-09-30
+
+**Kongre/Workshop sevkiyat listesinde ürün resimleri:** Her ürün satırında ürünün küçük resmi görünüyor; tıklayınca büyük açılıyor.
+
 ## [2.17.279] - 2026-09-30
 
 **Ürün görselleri büyütülebiliyor:** Stok > Ürünler listesindeki küçük ürün resmine tıklayınca görsel, ürün adıyla birlikte büyük olarak açılıyor.
