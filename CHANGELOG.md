@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.281] - 2026-09-30
+
+**Kongre/Workshop için ayrı "Malzemeler" bölümü:** Stok > Kongre/Workshop'ta "Sevkiyat Ekle"nin yanındaki "Malzemeler" butonu, ürünlerden ayrı bir pencere açıyor — kongre seçilip üç liste tutuluyor: Sarf Malzemeler (standart liste tek tıkla eklenebilir), Afiş / Katalog / Broşür ve Ekstra / Gerekli Malzemeler. Her kalemde isim + adet var, adet yerinde düzenleniyor, hazır olanlar tik ile işaretleniyor. Bu liste stoktan düşmez; Kongreler > kongre detayındaki "Sarf Malzeme" listesiyle aynı kayıtları kullanır (şema değişikliği yok).
+
 ## [2.17.280] - 2026-09-30
 
 **Kongre/Workshop sevkiyat listesinde ürün resimleri:** Her ürün satırında ürünün küçük resmi görünüyor; tıklayınca büyük açılıyor.

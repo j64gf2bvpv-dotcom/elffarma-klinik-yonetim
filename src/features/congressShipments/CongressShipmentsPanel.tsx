@@ -2,7 +2,7 @@ import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { toast } from 'sonner'
-import { Plus, Trash2, Boxes, Pencil } from 'lucide-react'
+import { Plus, Trash2, Boxes, Pencil, ClipboardList } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useProducts, useRecordStockMovement } from '@/features/stock/hooks'
 import { ZoomableThumbnail } from '@/components/ZoomableThumbnail'
+import { CongressMaterialsSection } from './CongressMaterialsSection'
 import { useCongresses, useCreateCongress } from '@/features/congresses/hooks'
 import {
   useCongressShipments,
@@ -875,6 +876,51 @@ function UsedQtyCell({ shipment }: { shipment: CongressShipmentWithCongress }) {
 }
 
 /**
+ * Ürünlerden AYRI malzeme bölümü (kullanıcı isteği, 2026-09-30: "ürünlerden
+ * ayrı bir yerde olsun, malzemeler diye bölüm aç, sevkiyat ekle kısmının
+ * yanına buton") — kongre seçilir, o kongreye götürülen sarf malzemeler,
+ * afiş/katalog/broşür ve ekstra/gerekli malzemeler isim + adet olarak girilir,
+ * tamamlananlar işaretlenir. Stoktan düşmez (bunlar stok ürünü değil).
+ */
+function MaterialsDialog({ defaultCongressId }: { defaultCongressId?: string }) {
+  const [open, setOpen] = React.useState(false)
+  const [congressId, setCongressId] = React.useState('')
+  const activeCongressId = congressId || defaultCongressId || ''
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <ClipboardList className="size-3.5" /> Malzemeler
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-6xl">
+        <DialogHeader>
+          <DialogTitle>Kongre / Workshop Malzemeleri</DialogTitle>
+          <DialogDescription>
+            Götürülen sarf malzemeler, afiş / katalog / broşür ve ekstra gerekli malzemeler — isim ve adet girin,
+            hazır olanları işaretleyin. Bu liste stoktan düşmez.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <CongressSelect value={activeCongressId} onChange={setCongressId} />
+          {activeCongressId ? (
+            <CongressMaterialsSection key={activeCongressId} congressId={activeCongressId} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Önce bir kongre / workshop seçin.</p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Kapat
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
  * Stok sekmesinde (Kargo'dan önce) kongre/workshopa götürülen ürünleri kongre
  * bazında toplu takip eder — congress_stock_items'tan (Kongreler modülü, satır
  * başına tek durum) bilerek ayrı: burada aynı satırda parçalı geri dönüş
@@ -936,7 +982,10 @@ export function CongressShipmentsPanel() {
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <Boxes className="size-4 text-primary" /> Kongre / Workshop Ürün Sevkiyatı
         </h3>
-        <AddShipmentDialog />
+        <div className="flex flex-wrap items-center gap-2">
+          <MaterialsDialog defaultCongressId={groups[0]?.congressId} />
+          <AddShipmentDialog />
+        </div>
       </div>
       <Card>
         <CardContent className="p-0">
