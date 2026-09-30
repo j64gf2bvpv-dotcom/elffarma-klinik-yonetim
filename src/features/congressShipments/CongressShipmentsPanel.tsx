@@ -190,6 +190,28 @@ function useShipmentRows(minRows: 0 | 1) {
         return false
       }
     }
+    // Stok yetmeyen ürün varsa HİÇBİR satır kaydedilmeden, hangi ürün olduğu
+    // açıkça söylenir (düzeltme, 2026-09-30) — eskiden stoğu olan satırlar
+    // kaydedilip listeden çıkıyor, stoğu 0 olanlar sessizce eklenmiyor,
+    // kullanıcıya "eklemiyor, siliyor" gibi görünüyordu. Aynı ürün birden
+    // fazla satırdaysa toplam miktara bakılır.
+    const wanted = new Map<string, { name: string; qty: number; stock: number }>()
+    for (const r of rows) {
+      const product = r.product as Product
+      const entry = wanted.get(product.id) ?? { name: product.name, qty: 0, stock: product.current_quantity }
+      entry.qty += Number(r.quantity)
+      wanted.set(product.id, entry)
+    }
+    const short = Array.from(wanted.values()).filter((w) => w.qty > w.stock)
+    if (short.length > 0) {
+      toast.error('Stok yetersiz — hiçbir ürün kaydedilmedi', {
+        description:
+          short.map((w) => `${w.name}: stokta ${w.stock} paket, istenen ${w.qty}`).join(' · ') +
+          '. Önce bu ürünlerin stoğunu (Günlük Sayım veya Stok Kartı > Giriş) düzeltin.',
+        duration: 12000,
+      })
+      return false
+    }
     return true
   }
 
@@ -267,7 +289,7 @@ function useShipmentRows(minRows: 0 | 1) {
   }
 }
 
-const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_5rem_5rem_5rem_4rem_2.25rem] items-center gap-2'
+const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_5rem_5rem_5rem_4rem_2.25rem] items-start gap-2'
 
 function ShipmentRowsEditor({
   state,
@@ -293,11 +315,26 @@ function ShipmentRowsEditor({
         const used = Math.max(0, (Number(r.quantity) || 0) - (Number(r.sealedQty) || 0) - (Number(r.openQty) || 0))
         return (
           <div key={r.key} className={ROW_GRID}>
-            <ProductCombobox value={r.product?.id} onChange={(p: Product) => updateRow(r.key, { product: p })} />
+            <div className="grid min-w-0 gap-0.5">
+              <ProductCombobox value={r.product?.id} onChange={(p: Product) => updateRow(r.key, { product: p })} />
+              {r.product && (
+                <span
+                  className={cn(
+                    'px-1 text-xs',
+                    (Number(r.quantity) || 0) > r.product.current_quantity
+                      ? 'font-medium text-destructive'
+                      : 'text-muted-foreground',
+                  )}
+                >
+                  Stokta: {r.product.current_quantity} paket
+                  {(Number(r.quantity) || 0) > r.product.current_quantity && ' — yetersiz'}
+                </span>
+              )}
+            </div>
             <Input type="number" min="1" value={r.quantity} onChange={(e) => updateRow(r.key, { quantity: e.target.value })} />
             <Input type="number" min="0" value={r.sealedQty} onChange={(e) => updateRow(r.key, { sealedQty: e.target.value })} />
             <Input type="number" min="0" value={r.openQty} onChange={(e) => updateRow(r.key, { openQty: e.target.value })} />
-            <span className="text-center text-sm tabular-nums">{used}</span>
+            <span className="py-2 text-center text-sm tabular-nums">{used}</span>
             <Button
               type="button"
               variant="ghost"
@@ -408,7 +445,14 @@ function AddShipmentDialog({ presetCongressId }: { presetCongressId?: string } =
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              reset()
+              setOpen(false)
+            }}
+          >
             Vazgeç
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={rowsState.submitting}>

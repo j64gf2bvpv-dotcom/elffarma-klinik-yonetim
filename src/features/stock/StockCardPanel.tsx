@@ -535,7 +535,7 @@ export function StockCardPanel() {
                   { header: 'Doktor', value: (r) => r.doctorName ?? '—' },
                   { header: 'Tür', value: (r) => tr.movementType[r.kind] },
                   { header: 'Fiyat', value: (r) => (r.unitPrice != null ? r.unitPrice : '') },
-                  { header: 'Sebep / Not', value: (r) => r.reason ?? r.note ?? '' },
+                  { header: 'Sebep / Not', value: (r) => [r.reason, r.note].filter((x, i, a) => x && a.indexOf(x) === i).join(' — ') },
                   { header: 'Giriş', value: (r) => (r.inQty ? `${r.inQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Paket'}` : '') },
                   { header: 'Çıkış', value: (r) => (r.outQty ? `${r.outQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Paket'}` : '') },
                   {
@@ -588,8 +588,14 @@ export function StockCardPanel() {
                         <Badge variant={KIND_BADGE_VARIANT[row.kind]}>{tr.movementType[row.kind]}</Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{row.unitPrice != null ? currency(row.unitPrice) : '—'}</TableCell>
-                      <TableCell className="text-muted-foreground max-w-40 truncate" title={row.reason ?? row.note ?? undefined}>
+                      {/* Tam metin, kesilmeden (kullanıcı isteği, 2026-09-30: "sebep not
+                          kısmı eksik kalıyor göremiyorum") — sebep ve not ikisi de varsa
+                          not (ör. kongre adı) altta ikinci satır olarak gösterilir. */}
+                      <TableCell className="text-muted-foreground min-w-48 whitespace-normal break-words">
                         {row.reason ?? row.note ?? '—'}
+                        {row.reason && row.note && row.note !== row.reason && (
+                          <div className="text-xs opacity-80">{row.note}</div>
+                        )}
                       </TableCell>
                       <TableCell className="text-success tabular-nums">
                         <InlineQtyCell

@@ -3,6 +3,11 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.278] - 2026-09-30
+
+**Kongre/Workshop sevkiyatında stok yetmeyen ürün artık açıkça gösteriliyor:** Her ürün satırının altında "Stokta: X paket" yazıyor, yetmiyorsa kırmızı. Stok yetmeyen ürün varsa kaydetmeden önce hangi ürün(ler) olduğu söyleniyor ve hiçbir satır yarım kaydedilmiyor (eskiden stoğu olanlar kaydedilip stoğu 0 olanlar sessizce eklenmiyordu). "Vazgeç" artık pencereyi temizliyor.
+**Stok Kartı'nda Sebep / Not tam görünüyor:** Metin artık kesilmiyor; sebep ve not ikisi de varsa not (ör. kongre adı) altta ayrıca gösteriliyor, dışa aktarımda da ikisi birlikte yer alıyor.
+
 ## [2.17.277] - 2026-09-29
 
 **Genel inceleme — hata düzeltmeleri:**
