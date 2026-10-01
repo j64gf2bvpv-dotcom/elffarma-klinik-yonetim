@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.286] - 2026-10-01
+
+**Logoya gerçek hafif kabartma:** Logo görselinin kendisine kabartma verildi (harflerin alt-sağ iç kenarları hafif gölgeli, harfler zeminden kalkık görünüyor); dış gölge hafifletildi.
+
 ## [2.17.285] - 2026-10-01
 
 **Logo biraz küçültüldü ve hafif kabartmalı/gölgeli yapıldı** (sol üst menü ve giriş ekranı).

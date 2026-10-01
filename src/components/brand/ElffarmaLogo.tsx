@@ -31,12 +31,12 @@ export function ElffarmaLogo({ size = 'sm', tagline = false, className, variant 
             'h-auto select-none',
             size === 'lg' ? 'w-[320px] max-w-full' : 'w-[150px] max-w-full',
           )}
-          // Hafif kabartma + yumuşak gölge (kullanıcı isteği, 2026-10-01):
-          // keskin alt-sağ kenar gölgesi kabartma hissi, geniş yumuşak gölge
-          // logoyu zeminden hafifçe kaldırıyor.
+          // Hafif kabartma (kullanıcı isteği, 2026-10-01): kabartma görselin
+          // kendisinde (harflerin alt-sağ iç kenarları hafif gölgeli, bkz.
+          // elffarma-logo-white.png); burada sadece ince bir kenar gölgesi +
+          // yumuşak bir gölge logoyu zeminden hafifçe kaldırıyor.
           style={{
-            filter:
-              'drop-shadow(1px 1.5px 0 rgba(0,0,0,0.28)) drop-shadow(0 3px 4px rgba(0,0,0,0.22)) drop-shadow(0 8px 14px rgba(0,0,0,0.18))',
+            filter: 'drop-shadow(0.5px 1px 0 rgba(0,0,0,0.25)) drop-shadow(0 3px 6px rgba(0,0,0,0.18))',
           }}
         />
       </div>
