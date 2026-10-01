@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import logoWhite from '@/assets/brand/elffarma-logo-white.png'
 
 interface ElffarmaLogoProps {
   size?: 'sm' | 'lg'
@@ -15,43 +16,34 @@ export function ElffarmaLogo({ size = 'sm', tagline = false, className, variant 
   const textSize = size === 'lg' ? 'text-5xl' : 'text-2xl'
   const wordmarkShadow = 'drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)]'
 
-  if (variant === 'premium') {
+  // Koyu/kırmızı zeminlerde (sidebar sol üst, giriş ekranı) artık yazıyla
+  // taklit değil GERÇEK logo kullanılıyor (kullanıcı isteği, 2026-10-01) —
+  // "Elf_Farma Logo vektör.pdf"ten kırmızı zemini çıkarılıp beyaz/şeffaf
+  // PNG'ye dönüştürüldü. Görselde "Estetik Sanatı" sloganı zaten var.
+  if (variant === 'premium' || variant === 'onRed') {
     return (
-      <div className={cn('flex flex-col items-center', className)}>
-        <div
+      <div className={cn('flex justify-center', className)}>
+        <img
+          src={logoWhite}
+          alt="elf FARMA — Estetik Sanatı"
+          draggable={false}
           className={cn(
-            'text-sidebar-foreground flex items-baseline leading-none font-sans tracking-tight',
-            textSize,
+            'h-auto select-none',
+            size === 'lg' ? 'w-[320px] max-w-full' : 'w-[150px] max-w-full',
             wordmarkShadow,
           )}
-        >
-          <span className="font-light lowercase">elf</span>
-          <span className="ml-1 font-bold">FARMA</span>
-        </div>
-        <p className="text-sidebar-foreground/80 mt-1 font-serif text-sm italic">&quot;Estetik Sanatı&quot;</p>
+        />
       </div>
     )
   }
 
-  const elfColor = variant === 'onRed' ? 'text-white' : 'text-foreground'
-  const farmaColor = variant === 'onRed' ? 'text-white' : 'text-primary'
-
   return (
     <div className={cn('flex flex-col', size === 'lg' ? 'items-center' : 'items-start', className)}>
       <div className={cn('flex items-baseline leading-none font-sans tracking-tight', textSize, wordmarkShadow)}>
-        <span className={cn('font-light lowercase', elfColor)}>elf</span>
-        <span className={cn('ml-1 font-bold', farmaColor)}>FARMA</span>
+        <span className="text-foreground font-light lowercase">elf</span>
+        <span className="text-primary ml-1 font-bold">FARMA</span>
       </div>
-      {tagline && (
-        <p
-          className={cn(
-            'mt-1 font-serif text-base italic',
-            variant === 'onRed' ? 'text-white/85' : 'text-muted-foreground',
-          )}
-        >
-          &quot;Estetik Sanatı&quot;
-        </p>
-      )}
+      {tagline && <p className="text-muted-foreground mt-1 font-serif text-base italic">&quot;Estetik Sanatı&quot;</p>}
     </div>
   )
 }
