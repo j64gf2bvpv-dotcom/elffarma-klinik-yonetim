@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.285] - 2026-10-01
+
+**Logo biraz küçültüldü ve hafif kabartmalı/gölgeli yapıldı** (sol üst menü ve giriş ekranı).
+
 ## [2.17.284] - 2026-10-01
 
 **Gerçek Elffarma logosu:** Sol üstteki (menü) ve giriş/şifre sıfırlama ekranlarındaki yazıyla taklit edilmiş logo, orijinal "Elf_Farma Logo vektör" dosyasından hazırlanan gerçek logoyla (beyaz, şeffaf zemin, "Estetik Sanatı" sloganıyla) değiştirildi.
