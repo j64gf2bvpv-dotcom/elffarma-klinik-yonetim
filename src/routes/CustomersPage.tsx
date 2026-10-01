@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { toast } from 'sonner'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
@@ -17,10 +18,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { CustomerForm } from '@/features/customers/CustomerForm'
-import { useCustomers, useDeleteCustomer } from '@/features/customers/hooks'
+import { useCustomers, useDeleteCustomer, useUpdateCustomerFields } from '@/features/customers/hooks'
+import type { CustomerInput } from '@/features/customers/api'
 import { type InvoiceFilter } from '@/features/customers/api'
 import { useRegions } from '@/features/regions/hooks'
-import { regionLabel } from '@/features/regions/RegionPicker'
 import {
   importCustomerRows,
   CUSTOMER_IMPORT_HEADERS,
@@ -28,11 +29,15 @@ import {
   CUSTOMER_IMPORT_FIELD_HINTS,
 } from '@/features/customers/importCustomers'
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
-import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
+import { formatTrPhoneForDisplay, normalizeTrPhone } from '@/features/whatsapp/normalizePhone'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
 import { VcfImportDialog } from '@/features/customers/VcfImportDialog'
 import { LocationFillDialog } from '@/features/customers/LocationFillDialog'
+import { InlineTextCell } from '@/features/customers/InlineCells'
+import { detectLocation, trFold, type DetectedLocation } from '@/lib/detectProvince'
+import { ensureRegionFor } from '@/features/regions/ensureRegion'
+import { cn } from '@/lib/utils'
 import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import type { ImportSummary } from '@/lib/importData'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
@@ -40,15 +45,13 @@ import type { Customer } from '@/types/database'
 
 const ALL_PROVINCES = '__all__'
 const ALL_TAGS = '__all_tags__'
-const ALL_REGIONS = '__all_regions__'
 
-type SortOption = 'name_asc' | 'name_desc' | 'province_asc' | 'region_asc'
+type SortOption = 'name_asc' | 'name_desc' | 'province_asc'
 
 const SORT_LABELS: Record<SortOption, string> = {
   name_asc: 'Ada Göre (A-Z)',
   name_desc: 'Ada Göre (Z-A)',
-  province_asc: 'Şehre Göre (A-Z)',
-  region_asc: 'Bölgeye Göre (A-Z)',
+  province_asc: 'İl / İlçeye Göre (A-Z)',
 }
 
 function getInitials(name: string): string {
@@ -58,13 +61,55 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
+/**
+ * "İstanbul / Kadıköy", "izmir bornova", "Kadıköy" gibi serbest girişi il +
+ * ilçeye çevirir. Boş → null (temizle). İl bulunamazsa 'invalid'.
+ */
+function parseLocationInput(text: string): DetectedLocation | null | 'invalid' {
+  const raw = text.trim()
+  if (!raw) return null
+  const [first, ...rest] = raw.split(/[/,]/).map((x) => x.trim()).filter(Boolean)
+  const province = turkeyProvinces.find((p) => trFold(p) === trFold(first))
+  if (province) {
+    const districtText = rest.join(' ').trim()
+    if (districtText) {
+      const known = detectLocation({ name: districtText })
+      const district = known && known.province === province && known.district ? known.district : districtText
+      return { province, district: district.charAt(0).toLocaleUpperCase('tr-TR') + district.slice(1) }
+    }
+    return { province, district: null }
+  }
+  // "izmir bornova" (ayraçsız) ya da sadece "Kadıköy" — algılayıcıya bırak
+  const detected = detectLocation({ name: raw })
+  if (!detected) return 'invalid'
+  if (!detected.district) {
+    const words = raw.split(/\s+/)
+    const tail = words.filter((w) => trFold(w) !== trFold(detected.province)).join(' ').trim()
+    if (tail) return { province: detected.province, district: tail.charAt(0).toLocaleUpperCase('tr-TR') + tail.slice(1) }
+  }
+  return detected
+}
+
+/** Mükerrer isim karşılaştırması için: unvanlar, noktalama ve Türkçe karakter/harf farkı yok sayılır. */
+function nameKey(name: string): string {
+  return trFold(name)
+    .replace(/\b(dr|doc|prof|uzm|op|dt|ecz|hoca|hanim|hnm|bey)\b\.?/g, ' ')
+    .replace(/[^a-z]+/g, ' ')
+    .trim()
+}
+
+function phoneKey(phone: string | null | undefined): string | null {
+  if (!phone) return null
+  const digits = phone.replace(/\D/g, '')
+  return normalizeTrPhone(digits.startsWith('00') ? digits.slice(2) : phone)?.canonical ?? null
+}
+
 export function CustomersPage() {
   const [search, setSearch] = React.useState('')
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [invoiceFilter, setInvoiceFilter] = React.useState<InvoiceFilter>('all')
   const [provinceFilter, setProvinceFilter] = React.useState(ALL_PROVINCES)
   const [tagFilter, setTagFilter] = React.useState(ALL_TAGS)
-  const [regionFilter, setRegionFilter] = React.useState(ALL_REGIONS)
   const [sortBy, setSortBy] = React.useState<SortOption>('name_asc')
   const { data: allCustomers = [], isLoading } = useCustomers(
     search,
@@ -72,35 +117,30 @@ export function CustomersPage() {
     provinceFilter === ALL_PROVINCES ? undefined : provinceFilter,
   )
   const { data: regions = [] } = useRegions()
-  const regionById = React.useMemo(() => new Map(regions.map((r) => [r.id, r])), [regions])
   const availableTags = React.useMemo(
     () => Array.from(new Set(allCustomers.flatMap((c) => c.tags))).sort((a, b) => a.localeCompare(b, 'tr')),
     [allCustomers],
   )
   const customers = React.useMemo(() => {
     let result = tagFilter === ALL_TAGS ? allCustomers : allCustomers.filter((c) => c.tags.includes(tagFilter))
-    if (regionFilter !== ALL_REGIONS) result = result.filter((c) => c.region_id === regionFilter)
 
     result = [...result].sort((a, b) => {
       switch (sortBy) {
         case 'name_desc':
           return b.full_name.localeCompare(a.full_name, 'tr')
         case 'province_asc':
-          return (a.province ?? '').localeCompare(b.province ?? '', 'tr') || a.full_name.localeCompare(b.full_name, 'tr')
-        case 'region_asc': {
-          const aRegion = a.region_id ? regionById.get(a.region_id) : undefined
-          const bRegion = b.region_id ? regionById.get(b.region_id) : undefined
-          const aLabel = aRegion ? regionLabel(aRegion, regionById) : ''
-          const bLabel = bRegion ? regionLabel(bRegion, regionById) : ''
-          return aLabel.localeCompare(bLabel, 'tr') || a.full_name.localeCompare(b.full_name, 'tr')
-        }
+          return (
+            (a.province ?? '').localeCompare(b.province ?? '', 'tr') ||
+            (a.district ?? '').localeCompare(b.district ?? '', 'tr') ||
+            a.full_name.localeCompare(b.full_name, 'tr')
+          )
         case 'name_asc':
         default:
           return a.full_name.localeCompare(b.full_name, 'tr')
       }
     })
     return result
-  }, [allCustomers, tagFilter, regionFilter, sortBy, regionById])
+  }, [allCustomers, tagFilter, sortBy])
   const deleteMutation = useDeleteCustomer()
   const queryClient = useQueryClient()
   const [customerToDelete, setCustomerToDelete] = React.useState<Customer | null>(null)
@@ -115,6 +155,69 @@ export function CustomersPage() {
   // (düzeltme, 2026-10-01 — filtre açıkken içe aktarınca filtre dışındaki
   // kayıtlı doktorlar "yeni" sanılıp tekrar ekleniyordu).
   const { data: everyCustomer = [] } = useCustomers('')
+  const updateFields = useUpdateCustomerFields()
+  function saveField(id: string, patch: Partial<CustomerInput>) {
+    updateFields.mutate({ id, patch })
+  }
+  async function saveLocation(id: string, text: string) {
+    const parsed = parseLocationInput(text)
+    if (parsed === 'invalid') {
+      toast.error('İl tanınamadı', { description: 'Örn. "İstanbul / Kadıköy", "İzmir Bornova" ya da sadece "Ankara" yazın.' })
+      return
+    }
+    let regionId: string | null = null
+    if (parsed) {
+      try {
+        regionId = await ensureRegionFor(parsed, [...regions])
+      } catch {
+        regionId = null
+      }
+    }
+    updateFields.mutate(
+      { id, patch: { province: parsed?.province ?? null, district: parsed?.district ?? null, region_id: regionId } },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['regions'] }) },
+    )
+  }
+
+  // Mükerrer kayıtlar (kullanıcı isteği, 2026-10-01: "aynı isimde ya da
+  // numarada olanları ayır, kırmızıyla işaretle") — arama/filtreden bağımsız
+  // TÜM carilerde aynı isim (Dr./Uzm. gibi unvanlar ve harf/Türkçe karakter
+  // farkı yok sayılarak) ya da aynı numara (telefon/cep/WhatsApp) varsa.
+  const duplicateKeys = React.useMemo(() => {
+    const nameCount = new Map<string, number>()
+    const phoneOwners = new Map<string, Set<string>>()
+    for (const c of everyCustomer) {
+      const nk = nameKey(c.full_name)
+      if (nk) nameCount.set(nk, (nameCount.get(nk) ?? 0) + 1)
+      for (const p of new Set([c.phone, c.mobile_phone, c.whatsapp_phone].map(phoneKey).filter(Boolean) as string[])) {
+        if (!phoneOwners.has(p)) phoneOwners.set(p, new Set())
+        phoneOwners.get(p)!.add(c.id)
+      }
+    }
+    return { nameCount, phoneOwners }
+  }, [everyCustomer])
+  function duplicateInfo(c: Customer) {
+    const nk = nameKey(c.full_name)
+    const name = !!nk && (duplicateKeys.nameCount.get(nk) ?? 0) > 1
+    const phone = [c.phone, c.mobile_phone, c.whatsapp_phone]
+      .map(phoneKey)
+      .some((p) => !!p && (duplicateKeys.phoneOwners.get(p)?.size ?? 0) > 1)
+    return { name, phone }
+  }
+  const duplicateCount = React.useMemo(
+    () => everyCustomer.filter((c) => { const d = duplicateInfo(c); return d.name || d.phone }).length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [everyCustomer, duplicateKeys],
+  )
+  const [onlyDuplicates, setOnlyDuplicates] = React.useState(false)
+  // "Mükerrerler" açıkken sadece mükerrer kayıtlar, aynı isim/numara yan yana gelecek şekilde
+  const shownCustomers = React.useMemo(() => {
+    if (!onlyDuplicates) return customers
+    return customers
+      .filter((c) => { const d = duplicateInfo(c); return d.name || d.phone })
+      .sort((a, b) => (phoneKey(a.phone) ?? '').localeCompare(phoneKey(b.phone) ?? '') || nameKey(a.full_name).localeCompare(nameKey(b.full_name), 'tr'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customers, onlyDuplicates, duplicateKeys])
   async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
     const summary = await importCustomerRows(rows, everyCustomer)
     if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['customers'] })
@@ -138,13 +241,6 @@ export function CustomersPage() {
                 { header: 'Tip', value: (c) => (c.doctor_type === 'hastane' ? 'Hastane' : 'Şahıs') },
                 { header: 'İl', value: (c) => c.province ?? '' },
                 { header: 'İlçe', value: (c) => c.district ?? '' },
-                {
-                  header: 'Bölge',
-                  value: (c) => {
-                    const region = c.region_id ? regionById.get(c.region_id) : undefined
-                    return region ? regionLabel(region, regionById) : ''
-                  },
-                },
                 { header: 'Hastane', value: (c) => c.hospital_name ?? '' },
                 { header: 'Ödeme Vadesi', value: (c) => c.next_payment_due ?? '' },
                 { header: 'TC Kimlik No', value: (c) => c.tc_no ?? '' },
@@ -221,21 +317,15 @@ export function CustomersPage() {
             </SelectContent>
           </Select>
         )}
-        {regions.length > 0 && (
-          <Select value={regionFilter} onValueChange={setRegionFilter}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Bölge" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_REGIONS}>Tüm Bölgeler</SelectItem>
-              {regions.map((region) => (
-                <SelectItem key={region.id} value={region.id}>
-                  {regionLabel(region, regionById)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <Button
+          type="button"
+          variant={onlyDuplicates ? 'destructive' : 'outline'}
+          onClick={() => setOnlyDuplicates((v) => !v)}
+          disabled={duplicateCount === 0 && !onlyDuplicates}
+          title="Aynı isimde ya da aynı numarada birden fazla kaydı olan kişiler"
+        >
+          Mükerrerler ({duplicateCount})
+        </Button>
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Sırala" />
@@ -258,7 +348,9 @@ export function CustomersPage() {
                 <TableHead>Ad Soyad</TableHead>
                 <TableHead>Telefon</TableHead>
                 <TableHead>Tip</TableHead>
-                <TableHead>İl</TableHead>
+                <TableHead>İl / İlçe</TableHead>
+                <TableHead>E-posta</TableHead>
+                <TableHead>Sosyal Medya</TableHead>
                 <TableHead>Ödeme Vadesi</TableHead>
                 <TableHead>Fatura</TableHead>
                 <TableHead>Etiketler</TableHead>
@@ -268,36 +360,72 @@ export function CustomersPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     Yükleniyor...
                   </TableCell>
                 </TableRow>
               )}
-              {!isLoading && customers.length === 0 && (
+              {!isLoading && shownCustomers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     Doktor bulunamadı
                   </TableCell>
                 </TableRow>
               )}
-              {customers.map((customer) => (
-                <TableRow key={customer.id} onClick={() => setSelectedId(customer.id)} selected={customer.id === selectedId}>
+              {shownCustomers.map((customer) => {
+                const dup = duplicateInfo(customer)
+                return (
+                <TableRow
+                  key={customer.id}
+                  onClick={() => setSelectedId(customer.id)}
+                  selected={customer.id === selectedId}
+                  className={cn((dup.name || dup.phone) && customer.id !== selectedId && 'bg-destructive/5')}
+                >
                   <TableCell className="font-medium">
-                    <Link to={`/musteriler/${customer.id}`} className="inline-flex items-center gap-2 hover:underline">
-                      <Avatar className="size-6">
-                        {customer.photo_url && <AvatarImage src={customer.photo_url} alt={customer.full_name} />}
-                        <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
-                          {getInitials(customer.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
+                    <div className="inline-flex items-center gap-2">
+                      <Link
+                        to={`/musteriler/${customer.id}`}
+                        title="Doktor detayını aç"
+                        onClick={(e) => e.stopPropagation()}
+                        className="shrink-0 rounded-full hover:ring-2 hover:ring-primary/40"
+                      >
+                        <Avatar className="size-6">
+                          {customer.photo_url && <AvatarImage src={customer.photo_url} alt={customer.full_name} />}
+                          <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
+                            {getInitials(customer.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Link>
                       {customer.is_vip && <Star className="size-3.5 shrink-0 fill-warning text-warning" />}
-                      {customer.full_name}
-                    </Link>
+                      <InlineTextCell
+                        value={customer.full_name}
+                        placeholder="Ad Soyad"
+                        className={cn(dup.name && 'font-semibold text-destructive')}
+                        onSave={(v) => v && saveField(customer.id, { full_name: v })}
+                      />
+                      {dup.name && (
+                        <Badge variant="destructive" className="shrink-0" title="Cari Kart'ta aynı isimde başka kayıt var">
+                          Aynı isim
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
-                      <Phone className="size-3.5" />
-                      {formatTrPhoneForDisplay(customer.phone)}
+                      <Phone className={cn('size-3.5 shrink-0', dup.phone && 'text-destructive')} />
+                      <InlineTextCell
+                        value={customer.phone}
+                        display={formatTrPhoneForDisplay(customer.phone)}
+                        placeholder="Telefon"
+                        inputType="tel"
+                        className={cn('whitespace-nowrap', dup.phone && 'font-semibold text-destructive')}
+                        onSave={(v) => v && saveField(customer.id, { phone: v })}
+                      />
+                      {dup.phone && (
+                        <Badge variant="destructive" className="shrink-0" title="Cari Kart'ta aynı numarada başka kayıt var">
+                          Aynı numara
+                        </Badge>
+                      )}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -311,16 +439,40 @@ export function CustomersPage() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {customer.province ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <MapPin className="size-3.5" />
-                        {/* İl ve ilçe birlikte (kullanıcı isteği, 2026-10-01) */}
-                        {customer.district ? `${customer.province} / ${customer.district}` : customer.province}
-                      </span>
-                    ) : (
-                      '—'
-                    )}
+                  <TableCell className="text-muted-foreground min-w-40">
+                    {/* İl ve ilçe birlikte, tıklayınca düzenlenir (kullanıcı isteği,
+                        2026-10-01: "il/ilçe şeklinde olsun, ayrı bölge yazmasın") —
+                        "İstanbul / Kadıköy", "izmir bornova" ya da sadece "Kadıköy"
+                        yazılabilir; bölge kaydı arka planda il/ilçeye eşlenir. */}
+                    <InlineTextCell
+                      value={customer.province ? (customer.district ? `${customer.province} / ${customer.district}` : customer.province) : ''}
+                      display={
+                        <span className="inline-flex items-center gap-1.5">
+                          <MapPin className="size-3.5 shrink-0" />
+                          {customer.district ? `${customer.province} / ${customer.district}` : customer.province}
+                        </span>
+                      }
+                      placeholder="İl / İlçe ekle"
+                      onSave={(v) => void saveLocation(customer.id, v)}
+                    />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground max-w-52">
+                    <InlineTextCell
+                      value={customer.email ?? ''}
+                      placeholder="E-posta ekle"
+                      inputType="email"
+                      className="truncate"
+                      onSave={(v) => saveField(customer.id, { email: v || null })}
+                    />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground max-w-44">
+                    <InlineTextCell
+                      value={customer.instagram ?? ''}
+                      display={customer.instagram ? `@${customer.instagram.replace(/^@/, '')}` : undefined}
+                      placeholder="Instagram ekle"
+                      className="truncate"
+                      onSave={(v) => saveField(customer.id, { instagram: v.replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/+$/, '') || null })}
+                    />
                   </TableCell>
                   <TableCell>
                     {customer.next_payment_due ? (
@@ -392,7 +544,8 @@ export function CustomersPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>

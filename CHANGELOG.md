@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.292] - 2026-10-01
+
+**Cari Kart listesinde yerinde düzenleme:** İsme, telefona, İl / İlçe'ye, e-postaya ve Instagram'a tıklayınca doğrudan düzenleniyor (Enter/dışarı tıklama kaydeder, Esc vazgeçer). İl / İlçe "İstanbul / Kadıköy", "izmir bornova" ya da sadece "Kadıköy" olarak yazılabiliyor; bölge kaydı arka planda il/ilçeye otomatik eşleniyor. Doktor detayına isim solundaki yuvarlak resimden gidiliyor.
+**İlden sonra E-posta ve Sosyal Medya (Instagram) sütunları.** Ayrı Bölge sütunu ve "Tüm Bölgeler" filtresi kaldırıldı (il filtresiyle aynı işi görüyordu); sıralama "İl / İlçeye Göre".
+**Mükerrer kayıtlar kırmızı:** Aynı isimde (unvan/harf farkı yok sayılarak) ya da aynı numarada başka kaydı olan kişiler kırmızı işaretli, "Aynı isim"/"Aynı numara" etiketiyle; "Mükerrerler" butonu sadece onları yan yana gösteriyor.
+
 ## [2.17.291] - 2026-10-01
 
 **İsimlerden il / ilçe / bölge algılama:** Rehberden aktarırken kişi adında (başında, içinde ya da sonunda), kurumunda veya adresinde geçen il/ilçe adı algılanıyor ("DR ZONGULDAK …" → Zonguldak, "İSTANBUL … Ataşehir" → İstanbul / Ataşehir); İl, İlçe ve Bölge alanlarına yazılıyor, bölge yoksa otomatik oluşturuluyor (il adıyla, ilçe varsa altında alt bölge). Büyük/küçük harf ve Türkçe karakter farkı önemsiz; Antep/Urfa/Maraş/Afyon gibi kısa adlar ve bilinen ilçeler tanınıyor; isim olarak da kullanılan iller (Aydın, Tokat, Ordu, Van, Muş) kişi adında aranmıyor.

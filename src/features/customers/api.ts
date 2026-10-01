@@ -84,6 +84,17 @@ export async function createCustomer(input: CustomerInput): Promise<Customer> {
   )
 }
 
+/**
+ * Tek tek alan güncellemesi — Cari Kart listesinde isme/telefona/bölgeye/
+ * e-postaya/sosyal medyaya tıklayıp yerinde düzenleme için (2026-10-01).
+ * Telefon verilirse diğer kayıtlarla aynı kanonik biçime (+90…) çevrilir.
+ */
+export async function updateCustomerFields(id: string, patch: Partial<CustomerInput>): Promise<Customer> {
+  const body: Partial<CustomerInput> = { ...patch }
+  if (body.phone !== undefined) body.phone = toCanonicalPhone(body.phone)
+  return offlineUpdate<Customer>('customers', id, body, 'Doktor bilgisi düzenleme')
+}
+
 /** Sadece il/ilçe/bölge alanlarını günceller — isimlerden toplu il/bölge doldurma için. */
 export async function updateCustomerLocation(
   id: string,

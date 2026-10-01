@@ -11,6 +11,7 @@ import {
   fetchHospitalNames,
   fetchPendingProducts,
   updateCustomer,
+  updateCustomerFields,
   type CustomerInput,
   type InvoiceFilter,
   type PendingProductInput,
@@ -54,6 +55,21 @@ export function useCreateCustomer() {
       toast.success('Doktor eklendi')
     },
     onError: (error: Error) => toast.error('Doktor eklenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateCustomerFields() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<CustomerInput> }) => updateCustomerFields(id, patch),
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueriesData<Customer[]>({ queryKey: ['customers'], predicate: customerListPredicate }, (old) =>
+        old?.map((c) => (c.id === id ? { ...c, ...updated } : c)),
+      )
+      queryClient.setQueryData<Customer>(['customers', 'detail', id], (old) => (old ? { ...old, ...updated } : old))
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+    },
+    onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
   })
 }
 
