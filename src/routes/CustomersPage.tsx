@@ -31,6 +31,7 @@ import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
 import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
+import { VcfImportDialog } from '@/features/customers/VcfImportDialog'
 import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import type { ImportSummary } from '@/lib/importData'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
@@ -109,8 +110,12 @@ export function CustomersPage() {
     setCustomerToDelete(null)
   }
 
+  // Mükerrer kontrolü için ekrandaki arama/filtreden bağımsız TÜM cariler
+  // (düzeltme, 2026-10-01 — filtre açıkken içe aktarınca filtre dışındaki
+  // kayıtlı doktorlar "yeni" sanılıp tekrar ekleniyordu).
+  const { data: everyCustomer = [] } = useCustomers('')
   async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
-    const summary = await importCustomerRows(rows, allCustomers)
+    const summary = await importCustomerRows(rows, everyCustomer)
     if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['customers'] })
     return summary
   }
@@ -154,6 +159,7 @@ export function CustomersPage() {
               templateHeaders={CUSTOMER_IMPORT_HEADERS}
               templateSampleRows={CUSTOMER_IMPORT_SAMPLE_ROWS}
             />
+            <VcfImportDialog />
             <SmartImportDialog
               title="Doktorları Akıllı İçe Aktar"
               targetLabel="doktor/cari kart"
@@ -387,6 +393,20 @@ export function CustomersPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Kişi sayısı (kullanıcı isteği, 2026-10-01) — toplam, arama/filtreden
+          bağımsız tüm cari sayısı; filtre varsa listede kaçının göründüğü de. */}
+      {!isLoading && (
+        <p className="text-muted-foreground mt-3 text-right text-sm">
+          Cari Kart'ta toplam <span className="text-foreground font-semibold">{everyCustomer.length}</span> kişi
+          {customers.length !== everyCustomer.length && (
+            <>
+              {' '}
+              · listede <span className="text-foreground font-semibold">{customers.length}</span> kişi gösteriliyor
+            </>
+          )}
+        </p>
+      )}
 
       <Dialog open={!!customerToDelete} onOpenChange={(open) => !open && setCustomerToDelete(null)}>
         <DialogContent>

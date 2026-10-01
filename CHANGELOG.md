@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.290] - 2026-10-01
+
+**Rehberden (.vcf) Cari Kart'a aktarma:** Cari Kart'ta yeni "Rehberden Aktar" butonu — Samsung ve Apple rehberinden dışa aktarılan .vcf dosyaları (birden fazla dosya da seçilebilir) okunuyor; Türkçe karakterli isimler, birden fazla numara, kurum, e-posta ve not tanınıyor. Kayıttan önce önizleme açılıyor: zaten kayıtlı numaralar işaretlenip seçilemiyor, dosyada tekrar eden ve numarası olmayan kişiler gösteriliyor, arama ve "Sadece Dr./Doç./Prof./Klinik içerenler" filtresi var; sadece seçilen kişiler aktarılıyor. Aktarılanlara "rehber" etiketi ekleniyor, cep numarası Telefon'a, diğer numaralar Notlar'a yazılıyor.
+**Cari Kart'ın altında kişi sayısı:** Toplam kaç kişi olduğu (filtre varsa listede kaçının göründüğü de) yazıyor.
+**Düzeltme:** Excel içe aktarmada mükerrer numara kontrolü ekrandaki arama/filtreye göre yapılıyordu (filtre açıkken kayıtlı doktorlar tekrar eklenebiliyordu) — artık tüm carilerle yapılıyor.
+
 ## [2.17.289] - 2026-10-01
 
 **Logo parıltısı sürekli ve yavaş:** Altın ışık bandı artık arada beklemeden, sürekli ve yavaşça (her tur 8 sn) logonun üzerinden akıyor; harflerdeki küçük ışıltılar da yavaşça yanıp sönüyor.
