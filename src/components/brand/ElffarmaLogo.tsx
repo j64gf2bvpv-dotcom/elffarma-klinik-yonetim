@@ -29,14 +29,18 @@ export function ElffarmaLogo({ size = 'sm', tagline = false, className, variant 
           draggable={false}
           className={cn(
             'h-auto select-none',
-            size === 'lg' ? 'w-[320px] max-w-full' : 'w-[150px] max-w-full',
+            size === 'lg' ? 'w-[280px] max-w-full' : 'w-[125px] max-w-full',
           )}
           // Hafif kabartma (kullanıcı isteği, 2026-10-01): kabartma görselin
           // kendisinde (harflerin alt-sağ iç kenarları hafif gölgeli, bkz.
           // elffarma-logo-white.png); burada sadece ince bir kenar gölgesi +
           // yumuşak bir gölge logoyu zeminden hafifçe kaldırıyor.
+          // Klasik kabartma: üstte ince açık bir parlama, altta ince koyu bir
+          // kenar + yumuşak gölge — ekran pikseli cinsinden olduğu için logo
+          // ne kadar küçültülürse küçültülsün görünür kalıyor.
           style={{
-            filter: 'drop-shadow(0.5px 1px 0 rgba(0,0,0,0.25)) drop-shadow(0 3px 6px rgba(0,0,0,0.18))',
+            filter:
+              'drop-shadow(0 -1px 0 rgba(255,255,255,0.45)) drop-shadow(0 1.5px 0 rgba(0,0,0,0.35)) drop-shadow(0 3px 5px rgba(0,0,0,0.25))',
           }}
         />
       </div>
