@@ -294,9 +294,9 @@
    renkte, parıltılı olsun"). Katmanlar logo görseliyle maskeleniyor —
    parıltı SADECE harflerin üzerinde görünür, zemine taşmaz:
    1) geniş şampanya-altın ışık bandı, 2) onunla birlikte hafif geriden
-   gelen ince, neredeyse beyaz parlak yansıma, 3) geçiş sırasında harflerde
-   yanıp sönen küçük ışıltı noktaları. ~12 sn'lik döngünün ilk ~4 sn'sinde
-   yavaşça geçer, kalan sürede logo düz beyaz. Gölge/bulanıklık yok. */
+   gelen ince, neredeyse beyaz parlak yansıma, 3) harflerde yavaşça yanıp
+   sönen küçük ışıltı noktaları. Geçiş aralıksız ve yavaş — her tur 8 sn
+   ("geçiş devamlı olsun ama yavaş", 2026-10-01). Gölge/bulanıklık yok. */
 .logo-gold-shine,
 .logo-gold-sparkle {
   pointer-events: none;
@@ -344,18 +344,13 @@
   background-position:
     135% 0,
     125% 0;
-  animation: logo-gold-shine 12s cubic-bezier(0.4, 0, 0.2, 1) 1.5s infinite;
+  animation: logo-gold-shine 8s linear infinite;
 }
 @keyframes logo-gold-shine {
   0% {
     background-position:
       135% 0,
       125% 0;
-  }
-  34% {
-    background-position:
-      -35% 0,
-      -25% 0;
   }
   100% {
     background-position:
@@ -372,28 +367,27 @@
     radial-gradient(circle at 79% 28%, #fffbe8 0 1.2px, transparent 2.2px),
     radial-gradient(circle at 91% 70%, #ffffff 0 1px, transparent 2px);
   opacity: 0;
-  animation: logo-gold-sparkle 12s ease-in-out 1.5s infinite;
+  animation: logo-gold-sparkle 8s ease-in-out infinite;
 }
 @keyframes logo-gold-sparkle {
   0%,
-  6% {
-    opacity: 0;
-  }
-  12% {
-    opacity: 0.9;
-  }
-  17% {
-    opacity: 0.25;
-  }
-  23% {
-    opacity: 1;
-  }
-  29% {
-    opacity: 0.35;
-  }
-  36%,
   100% {
     opacity: 0;
+  }
+  20% {
+    opacity: 0.6;
+  }
+  35% {
+    opacity: 0.15;
+  }
+  55% {
+    opacity: 0.8;
+  }
+  70% {
+    opacity: 0.2;
+  }
+  85% {
+    opacity: 0.55;
   }
 }
 @media (prefers-reduced-motion: reduce) {

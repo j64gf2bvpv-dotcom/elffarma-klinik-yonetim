@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.289] - 2026-10-01
+
+**Logo parıltısı sürekli ve yavaş:** Altın ışık bandı artık arada beklemeden, sürekli ve yavaşça (her tur 8 sn) logonun üzerinden akıyor; harflerdeki küçük ışıltılar da yavaşça yanıp sönüyor.
+
 ## [2.17.288] - 2026-10-01
 
 **Logo: gölge kaldırıldı, ortalandı, altın parıltı eklendi:** Gölge ve kabartma "puslu" gösterdiği için tamamen kaldırıldı — logo düz, keskin beyaz. Sol üstteki logo bandı sağdaki üst çubukla aynı yüksekliğe getirildi ve logo yukarıdan-aşağıdan (göze göre) ortalandı. Logonun üzerinden ~12 saniyede bir, yavaşça (≈4 sn) şampanya-altın bir ışık bandı ve ince parlak bir yansıma geçiyor, geçerken harflerde küçük ışıltılar yanıp sönüyor; parıltı yalnızca harflerin üzerinde görünür. Bilgisayarda "hareketi azalt" açıksa parıltı çalışmaz.
