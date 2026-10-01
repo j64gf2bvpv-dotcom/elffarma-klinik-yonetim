@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { tr } from '@/i18n/tr'
 import { ProductCombobox } from './ProductCombobox'
+import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { useCreateProductLot, useProductLots, useRecordStockMovement, useUpdateStockMovement } from './hooks'
 import type { MovementType, Product, StockUnitKind } from '@/types/database'
 
@@ -57,6 +58,8 @@ export interface EditableStockMovement {
   note: string | null
   lot_id: string | null
   unit_kind: StockUnitKind
+  /** Bağlı doktor/cari — düzenlemede korunmalı (eskiden gönderilmediği için düzenleme bağlantıyı siliyordu) */
+  customer_id: string | null
 }
 
 /**
@@ -91,6 +94,11 @@ export function StockMovementDialog({
   const updateMutation = useUpdateStockMovement()
   const createLotMutation = useCreateProductLot()
   const activeProduct = product ?? pickedProduct
+  // Hareketin bağlı olduğu doktor/cari (kullanıcı isteği, 2026-10-01: "cari
+  // isimdeki kişileri stokla birbirine bağla — gelen giden aldığı ürün
+  // bilgilerine eklensin"). Seçilirse hareket o kişinin Cari Kart'ındaki
+  // "Stok Hareketleri" sekmesinde görünür.
+  const [customerId, setCustomerId] = React.useState<string | null>(movement?.customer_id ?? null)
   const { data: lots = [] } = useProductLots(open && activeProduct ? activeProduct.id : undefined)
 
   const defaultFormValues: FormInput = movement
@@ -186,6 +194,7 @@ export function StockMovementDialog({
       lot_id: lotId,
       unit_price: values.unit_price ?? null,
       unit_kind: values.unit_kind,
+      customer_id: customerId,
     }
     if (movement) {
       await updateMutation.mutateAsync({ id: movement.id, ...payload })
@@ -200,6 +209,7 @@ export function StockMovementDialog({
         note: '',
         lot_id: NO_LOT,
       })
+      setCustomerId(null)
     }
     setNewLot({ lot_no: '', expiry_date: '', warehouse: '', shelf: '' })
     handleOpenChange(false)
@@ -428,6 +438,23 @@ export function StockMovementDialog({
                 </div>
               </div>
             )}
+            <div className="grid gap-2">
+              <Label>Doktor / Cari (opsiyonel)</Label>
+              <div className="flex gap-2">
+                <div className="min-w-0 flex-1">
+                  <CustomerCombobox
+                    value={customerId ?? undefined}
+                    onChange={(id) => setCustomerId(id)}
+                    placeholder="Kime gitti / kimden geldi?"
+                  />
+                </div>
+                {customerId && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setCustomerId(null)}>
+                    Kaldır
+                  </Button>
+                )}
+              </div>
+            </div>
             <FormField
               control={form.control}
               name="reason"

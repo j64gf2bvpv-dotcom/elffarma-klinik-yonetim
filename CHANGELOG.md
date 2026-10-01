@@ -3,6 +3,11 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.293] - 2026-10-01
+
+**Cari ile stok bağlantısı:** Stok hareketi penceresine (Giriş / Çıkış / İade / Numune…) opsiyonel "Doktor / Cari" seçimi geldi. Doktor sayfasında yeni "Stok Hareketleri" sekmesi o kişiye bağlı tüm hareketleri (satış, iade, numune, kargo ve elle girilenler) tarih/ürün/tür/miktar/sebep ile listeliyor; üstte ürün bazında "gitti / geldi" özeti var.
+**Düzeltme:** Stok Kartı'nda bir hareketi kalemle düzenlemek, hareketin bağlı olduğu doktor bilgisini siliyordu — artık korunuyor.
+
 ## [2.17.292] - 2026-10-01
 
 **Cari Kart listesinde yerinde düzenleme:** İsme, telefona, İl / İlçe'ye, e-postaya ve Instagram'a tıklayınca doğrudan düzenleniyor (Enter/dışarı tıklama kaydeder, Esc vazgeçer). İl / İlçe "İstanbul / Kadıköy", "izmir bornova" ya da sadece "Kadıköy" olarak yazılabiliyor; bölge kaydı arka planda il/ilçeye otomatik eşleniyor. Doktor detayına isim solundaki yuvarlak resimden gidiliyor.

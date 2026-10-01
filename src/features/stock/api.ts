@@ -146,6 +146,19 @@ export async function fetchAllStockMovements(): Promise<StockMovementWithProduct
   return data as unknown as StockMovementWithProduct[]
 }
 
+export type CustomerStockMovement = StockMovement & { products: { name: string } | null }
+
+/** Bir doktora/cariye bağlı TÜM stok hareketleri (satış, iade, numune, kargo, elle girilen…) — Cari Kart > Stok Hareketleri. */
+export async function fetchCustomerStockMovements(customerId: string): Promise<CustomerStockMovement[]> {
+  const { data, error } = await supabase
+    .from('stock_movements')
+    .select('*, products(name)')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as unknown as CustomerStockMovement[]
+}
+
 export interface RecordMovementInput {
   product_id: string
   movement_type: MovementType

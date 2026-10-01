@@ -9,6 +9,7 @@ import {
   deleteStockMovement,
   fetchAllProductLots,
   fetchAllStockMovements,
+  fetchCustomerStockMovements,
   fetchProductCatalogs,
   fetchProductLots,
   fetchProducts,
@@ -77,6 +78,14 @@ export function useDeleteProductCatalog() {
       toast.success('Katalog silindi')
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
+  })
+}
+
+export function useCustomerStockMovements(customerId: string | undefined) {
+  return useQuery({
+    queryKey: ['stock_movements', 'customer', customerId],
+    queryFn: () => fetchCustomerStockMovements(customerId as string),
+    enabled: !!customerId,
   })
 }
 

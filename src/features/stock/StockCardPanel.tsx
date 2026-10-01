@@ -635,6 +635,7 @@ export function StockCardPanel() {
                               note: row.note,
                               lot_id: row.lotId,
                               unit_kind: row.unitKind,
+                              customer_id: row.doctorId,
                             }}
                             trigger={
                               <Button variant="ghost" size="icon" title="Hareketi düzenle">
