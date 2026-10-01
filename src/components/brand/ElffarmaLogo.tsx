@@ -1,3 +1,4 @@
+import type * as React from 'react'
 import { cn } from '@/lib/utils'
 import logoWhite from '@/assets/brand/elffarma-logo-white.png'
 
@@ -23,26 +24,29 @@ export function ElffarmaLogo({ size = 'sm', tagline = false, className, variant 
   if (variant === 'premium' || variant === 'onRed') {
     return (
       <div className={cn('flex justify-center', className)}>
-        <img
-          src={logoWhite}
-          alt="elf FARMA — Estetik Sanatı"
-          draggable={false}
+        {/* Gölge/kabartma YOK (kullanıcı isteği, 2026-10-01: "logoda gölge
+            olmasın, puslu oluyor") — düz, keskin beyaz; üstünden ara ara
+            altın parıltı geçiyor (.logo-gold-shine, index.css). translate-y:
+            logonun görsel ağırlığı üstte (büyük "elf FARMA", altta ince
+            slogan), geometrik ortalayınca yukarıda duruyordu — optik ortalama. */}
+        <div
           className={cn(
-            'h-auto select-none',
+            'relative translate-y-[8%] select-none',
             size === 'lg' ? 'w-[280px] max-w-full' : 'w-[125px] max-w-full',
           )}
-          // Hafif kabartma (kullanıcı isteği, 2026-10-01): kabartma görselin
-          // kendisinde (harflerin alt-sağ iç kenarları hafif gölgeli, bkz.
-          // elffarma-logo-white.png); burada sadece ince bir kenar gölgesi +
-          // yumuşak bir gölge logoyu zeminden hafifçe kaldırıyor.
-          // Klasik kabartma: üstte ince açık bir parlama, altta ince koyu bir
-          // kenar + yumuşak gölge — ekran pikseli cinsinden olduğu için logo
-          // ne kadar küçültülürse küçültülsün görünür kalıyor.
-          style={{
-            filter:
-              'drop-shadow(0 -1px 0 rgba(255,255,255,0.45)) drop-shadow(0 1.5px 0 rgba(0,0,0,0.35)) drop-shadow(0 3px 5px rgba(0,0,0,0.25))',
-          }}
-        />
+        >
+          <img src={logoWhite} alt="elf FARMA — Estetik Sanatı" draggable={false} className="block h-auto w-full" />
+          <span
+            aria-hidden
+            className="logo-gold-shine"
+            style={{ '--logo-mask': `url(${logoWhite})` } as React.CSSProperties}
+          />
+          <span
+            aria-hidden
+            className="logo-gold-sparkle"
+            style={{ '--logo-mask': `url(${logoWhite})` } as React.CSSProperties}
+          />
+        </div>
       </div>
     )
   }
