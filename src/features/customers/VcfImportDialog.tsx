@@ -19,6 +19,9 @@ import { parseVCards, rankPhones, type VCardContact } from '@/lib/vcard'
 import { formatTrPhoneForDisplay, normalizeTrPhone } from '@/features/whatsapp/normalizePhone'
 import { getErrorMessage } from '@/lib/utils'
 import { createCustomer } from './api'
+import { detectLocation, type DetectedLocation } from '@/lib/detectProvince'
+import { fetchRegions } from '@/features/regions/api'
+import { ensureRegionFor } from '@/features/regions/ensureRegion'
 import { useCustomers } from './hooks'
 import type { Customer } from '@/types/database'
 
@@ -41,6 +44,8 @@ interface PreviewRow {
   canonical: string | null
   isMobile: boolean
   otherPhones: string[]
+  /** Kişi adı/kurum/adres/nottan algılanan il/ilçe (ör. "Özge Hoca İzmir" → İzmir) */
+  location: DetectedLocation | null
   status: RowStatus
 }
 
@@ -96,6 +101,7 @@ function buildRows(contacts: VCardContact[], existing: Customer[]): PreviewRow[]
         },
         { list: [], seen: new Set() },
       ).list,
+      location: detectLocation({ name: contact.fullName, org: contact.org, address: contact.address, note: contact.note }),
       status,
     }
   })
@@ -152,6 +158,7 @@ export function VcfImportDialog() {
     })
   }, [rows, search, onlyDoctors])
 
+  const withProvince = rows.filter((r) => r.location).length
   const selectableVisible = visible.filter((r) => r.status === 'new')
   const allVisibleSelected = selectableVisible.length > 0 && selectableVisible.every((r) => selected.has(r.key))
   const counts = React.useMemo(() => {
@@ -185,6 +192,8 @@ export function VcfImportDialog() {
     setProgress(0)
     const succeeded = new Set<string>()
     const errors: string[] = []
+    // Algılanan il/ilçe için bölge bulunur ya da oluşturulur (tek liste paylaşılır)
+    const regions = await fetchRegions().catch(() => null)
     for (const r of toImport) {
       const c = r.contact
       const noteParts = [
@@ -194,12 +203,16 @@ export function VcfImportDialog() {
         c.note,
       ].filter(Boolean)
       try {
+        const regionId = r.location && regions ? await ensureRegionFor(r.location, regions) : null
         await createCustomer({
           full_name: c.fullName,
           phone: r.canonical ?? r.phoneRaw,
           mobile_phone: r.canonical && r.isMobile ? r.canonical : null,
           email: c.emails[0] ?? null,
           hospital_name: c.org || null,
+          province: r.location?.province ?? null,
+          district: r.location?.district ?? null,
+          region_id: regionId,
           address: c.address || null,
           notes: noteParts.length > 0 ? noteParts.join('\n') : null,
           doctor_type: 'sahis',
@@ -216,6 +229,7 @@ export function VcfImportDialog() {
     const added = succeeded.size
     if (added > 0) {
       await queryClient.invalidateQueries({ queryKey: ['customers'] })
+      await queryClient.invalidateQueries({ queryKey: ['regions'] })
       toast.success(`${added} kişi Cari Kart'a eklendi`, { description: '"rehber" etiketiyle bulabilirsiniz.' })
     }
     if (errors.length > 0) {
@@ -252,7 +266,8 @@ export function VcfImportDialog() {
             <DialogDescription>
               {fileLabel} — {rows.length} kişi okundu: {counts.new} yeni, {counts.exists} zaten kayıtlı
               {counts.duplicate > 0 && `, ${counts.duplicate} dosyada tekrar`}
-              {counts.noPhone > 0 && `, ${counts.noPhone} numarasız`}. Aktarmak istediğiniz doktorları seçin.
+              {counts.noPhone > 0 && `, ${counts.noPhone} numarasız`}. {withProvince} kişide il/ilçe algılandı (İl, İlçe ve Bölge alanına yazılır).
+              Aktarmak istediğiniz doktorları seçin.
             </DialogDescription>
           </DialogHeader>
 
@@ -305,6 +320,11 @@ export function VcfImportDialog() {
                       {r.contact.org && ` · ${r.contact.org}`}
                     </p>
                   </div>
+                  {r.location && (
+                    <Badge variant="outline" title="Rehberdeki isim/kurum/adresten algılandı — İl ve Bölge alanına yazılacak">
+                      {r.location.district ? `${r.location.province} / ${r.location.district}` : r.location.province}
+                    </Badge>
+                  )}
                   {r.status !== 'new' && <Badge variant="secondary">{STATUS_LABEL[r.status]}</Badge>}
                 </label>
               )

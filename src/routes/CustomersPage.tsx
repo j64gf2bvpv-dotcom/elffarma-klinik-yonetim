@@ -32,6 +32,7 @@ import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
 import { VcfImportDialog } from '@/features/customers/VcfImportDialog'
+import { LocationFillDialog } from '@/features/customers/LocationFillDialog'
 import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import type { ImportSummary } from '@/lib/importData'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
@@ -136,6 +137,7 @@ export function CustomersPage() {
                 { header: 'Telefon', value: (c) => formatTrPhoneForDisplay(c.phone) },
                 { header: 'Tip', value: (c) => (c.doctor_type === 'hastane' ? 'Hastane' : 'Şahıs') },
                 { header: 'İl', value: (c) => c.province ?? '' },
+                { header: 'İlçe', value: (c) => c.district ?? '' },
                 {
                   header: 'Bölge',
                   value: (c) => {
@@ -160,6 +162,7 @@ export function CustomersPage() {
               templateSampleRows={CUSTOMER_IMPORT_SAMPLE_ROWS}
             />
             <VcfImportDialog />
+            <LocationFillDialog />
             <SmartImportDialog
               title="Doktorları Akıllı İçe Aktar"
               targetLabel="doktor/cari kart"
@@ -312,7 +315,8 @@ export function CustomersPage() {
                     {customer.province ? (
                       <span className="inline-flex items-center gap-1.5">
                         <MapPin className="size-3.5" />
-                        {customer.province}
+                        {/* İl ve ilçe birlikte (kullanıcı isteği, 2026-10-01) */}
+                        {customer.district ? `${customer.province} / ${customer.district}` : customer.province}
                       </span>
                     ) : (
                       '—'

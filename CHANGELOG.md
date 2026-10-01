@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.291] - 2026-10-01
+
+**İsimlerden il / ilçe / bölge algılama:** Rehberden aktarırken kişi adında (başında, içinde ya da sonunda), kurumunda veya adresinde geçen il/ilçe adı algılanıyor ("DR ZONGULDAK …" → Zonguldak, "İSTANBUL … Ataşehir" → İstanbul / Ataşehir); İl, İlçe ve Bölge alanlarına yazılıyor, bölge yoksa otomatik oluşturuluyor (il adıyla, ilçe varsa altında alt bölge). Büyük/küçük harf ve Türkçe karakter farkı önemsiz; Antep/Urfa/Maraş/Afyon gibi kısa adlar ve bilinen ilçeler tanınıyor; isim olarak da kullanılan iller (Aydın, Tokat, Ordu, Van, Muş) kişi adında aranmıyor.
+**Cari Kart'ta "İsimlerden İl/Bölge Doldur":** İl/ilçe/bölgesi boş olan mevcut kişiler için önizlemeli toplu doldurma (dolu alanlara dokunmaz).
+**Listede il ve ilçe birlikte** ("İstanbul / Kadıköy"), dışa aktarımda ayrı İlçe sütunu.
+
 ## [2.17.290] - 2026-10-01
 
 **Rehberden (.vcf) Cari Kart'a aktarma:** Cari Kart'ta yeni "Rehberden Aktar" butonu — Samsung ve Apple rehberinden dışa aktarılan .vcf dosyaları (birden fazla dosya da seçilebilir) okunuyor; Türkçe karakterli isimler, birden fazla numara, kurum, e-posta ve not tanınıyor. Kayıttan önce önizleme açılıyor: zaten kayıtlı numaralar işaretlenip seçilemiyor, dosyada tekrar eden ve numarası olmayan kişiler gösteriliyor, arama ve "Sadece Dr./Doç./Prof./Klinik içerenler" filtresi var; sadece seçilen kişiler aktarılıyor. Aktarılanlara "rehber" etiketi ekleniyor, cep numarası Telefon'a, diğer numaralar Notlar'a yazılıyor.

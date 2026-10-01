@@ -84,6 +84,14 @@ export async function createCustomer(input: CustomerInput): Promise<Customer> {
   )
 }
 
+/** Sadece il/ilçe/bölge alanlarını günceller — isimlerden toplu il/bölge doldurma için. */
+export async function updateCustomerLocation(
+  id: string,
+  patch: { province?: string | null; district?: string | null; region_id?: string | null },
+): Promise<Customer> {
+  return offlineUpdate<Customer>('customers', id, { ...patch }, 'Doktor il/bölge güncelleme')
+}
+
 export async function updateCustomer(id: string, input: CustomerInput): Promise<Customer> {
   return offlineUpdate<Customer>(
     'customers',
