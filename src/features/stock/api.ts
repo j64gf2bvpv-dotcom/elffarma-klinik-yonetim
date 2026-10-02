@@ -31,6 +31,7 @@ export interface ProductInput {
   unit_cost?: number | null
   unit_price?: number | null
   unit_price_uninvoiced?: number | null
+  package_size?: string | null
   campaign?: string | null
   expiry_date?: string | null
   barcode?: string | null
@@ -87,6 +88,11 @@ export async function updateProductCategory(id: string, category: string | null)
 
 export async function updateProductName(id: string, name: string): Promise<Product> {
   return offlineUpdate<Product>('products', id, { name }, `Ürün adı güncelleme`)
+}
+
+/** Sadece boyut/içerik alanını günceller — Stok listesinde yerinde düzenleme. */
+export async function updateProductPackageSize(id: string, package_size: string | null): Promise<Product> {
+  return offlineUpdate<Product>('products', id, { package_size }, 'Ürün boyutu güncelleme')
 }
 
 export type ProductPriceField = 'unit_price' | 'unit_price_uninvoiced'

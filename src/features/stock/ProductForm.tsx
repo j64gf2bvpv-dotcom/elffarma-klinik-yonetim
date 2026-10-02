@@ -41,6 +41,7 @@ const schema = z.object({
   unit_cost: z.coerce.number().min(0).optional(),
   unit_price: z.coerce.number().min(0).optional(),
   unit_price_uninvoiced: z.coerce.number().min(0).optional(),
+  package_size: z.string().optional(),
   campaign: z.string().optional(),
   expiry_date: z.string().optional(),
   barcode: z.string().optional(),
@@ -69,6 +70,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
       unit_cost: product?.unit_cost ?? undefined,
       unit_price: product?.unit_price ?? undefined,
       unit_price_uninvoiced: product?.unit_price_uninvoiced ?? undefined,
+      package_size: product?.package_size ?? '',
       campaign: product?.campaign ?? '',
       expiry_date: product?.expiry_date ?? '',
       barcode: product?.barcode ?? '',
@@ -88,6 +90,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
       unit_cost: values.unit_cost ?? null,
       unit_price: values.unit_price ?? null,
       unit_price_uninvoiced: values.unit_price_uninvoiced ?? null,
+      package_size: values.package_size?.trim() || null,
       campaign: values.campaign || null,
       expiry_date: values.expiry_date || null,
       barcode: values.barcode || null,
@@ -248,6 +251,19 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="package_size"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Boyut / İçerik (opsiyonel)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Örn. 6 X 6 ML, 1 X 5 ML, 200 MG X 1 FLAKON" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="unit_price_uninvoiced"

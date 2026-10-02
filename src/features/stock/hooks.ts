@@ -22,6 +22,7 @@ import {
   updateProductCategory,
   updateProductName,
   updateProductPrice,
+  updateProductPackageSize,
   updateStockMovement,
   type ProductInput,
   type ProductLotInput,
@@ -172,6 +173,18 @@ export function useUpdateProductName() {
       toast.success('Ürün adı güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateProductPackageSize() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, package_size }: { id: string; package_size: string | null }) => updateProductPackageSize(id, package_size),
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) => old?.map((p) => (p.id === id ? { ...p, ...updated } : p)))
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+    onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
   })
 }
 

@@ -106,6 +106,8 @@ export interface Product {
   unit_price: number | null
   /** Faturasız satış fiyatı (2026-10-02) */
   unit_price_uninvoiced: number | null
+  /** Boyut / içerik, ör. "6 X 6 ML" (2026-10-02) */
+  package_size: string | null
   campaign: string | null
   image_url: string | null
   expiry_date: string | null

@@ -44,6 +44,7 @@ import {
   useUpdateProductCatalog,
   useUpdateProductCategory,
   useUpdateProductPrice,
+  useUpdateProductPackageSize,
 } from '@/features/stock/hooks'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
@@ -310,6 +311,69 @@ function CampaignCell({ product }: { product: Product }) {
 }
 
 /**
+ * Boyut / içerik ("6 X 6 ML", "1 X 5 ML"…) — ürün adından sonra ayrı sütun
+ * (kullanıcı isteği, 2026-10-02). Yönetici tıklayıp düzenler, personel görür.
+ */
+function PackageSizeCell({ product }: { product: Product }) {
+  const { staff } = useAuth()
+  const isAdmin = staff?.role === 'admin'
+  const [editing, setEditing] = React.useState(false)
+  const [value, setValue] = React.useState(product.package_size ?? '')
+  const mutation = useUpdateProductPackageSize()
+
+  React.useEffect(() => {
+    if (!editing) setValue(product.package_size ?? '')
+  }, [product.package_size, editing])
+
+  function commit() {
+    setEditing(false)
+    const next = value.trim().toLocaleUpperCase('tr-TR')
+    if (next === (product.package_size ?? '')) return
+    mutation.mutate({ id: product.id, package_size: next || null })
+  }
+
+  if (!isAdmin) return <span className="text-muted-foreground text-xs">{product.package_size || '—'}</span>
+
+  if (editing) {
+    return (
+      <Input
+        autoFocus
+        value={value}
+        placeholder="Örn. 6 X 6 ML"
+        onChange={(e) => setValue(e.target.value)}
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit()
+          }
+          if (e.key === 'Escape') {
+            setValue(product.package_size ?? '')
+            setEditing(false)
+          }
+        }}
+        className="h-8 w-36"
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        setEditing(true)
+      }}
+      title="Boyutu düzenlemek için tıklayın"
+      className="-mx-1 rounded-md px-1 py-0.5 text-xs text-muted-foreground hover:bg-accent"
+    >
+      {product.package_size || '—'}
+    </button>
+  )
+}
+
+/**
  * Kampanya — fiyat listesi PDF'indeki gibi dar ve derli toplu (kullanıcı
  * isteği, 2026-10-02: "kampanya kısmı daha küçük sütunda olmalı, benim PDF
  * yaptığım gibi"): " · " ile ayrılmış kademeler ("10+2 · 20+5 · 30+8") küçük
@@ -543,6 +607,7 @@ function ProductsTable({
               </TableHead>
               <TableHead className="w-[60px]"></TableHead>
               <TableHead className="border-l">Ürün</TableHead>
+              <TableHead className="border-l text-center">Boyut</TableHead>
               <TableHead className="border-l text-center">Kategori</TableHead>
               <TableHead className="border-l text-center">Paket</TableHead>
               <TableHead className="border-l text-center">Flakon</TableHead>
@@ -557,7 +622,7 @@ function ProductsTable({
           <TableBody>
             {products.length === 0 && (
               <TableRow>
-                <TableCell colSpan={14} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={15} className="py-8 text-center text-muted-foreground">
                   Ürün bulunamadı
                 </TableCell>
               </TableRow>
@@ -619,6 +684,9 @@ function ProductsTable({
                         </button>
                       }
                     />
+                  </TableCell>
+                  <TableCell className="border-l text-center whitespace-nowrap">
+                    <PackageSizeCell product={product} />
                   </TableCell>
                   <TableCell className="border-l text-center">
                     <CategoryCell product={product} />

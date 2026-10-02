@@ -3,6 +3,11 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.300] - 2026-10-02
+
+**Stok'ta "Boyut" sütunu:** Ürün adından hemen sonra boyut/içerik ("6 X 6 ML", "1 X 5 ML", "200 MG X 1 FLAKON") ayrı sütunda; yönetici tıklayıp düzenler, ürün formunda da "Boyut / İçerik" alanı var. Veritabanına `products.package_size` eklendi (migration 20261002084420); aktif ürünlerin boyutları 2026 fiyat listesine göre dolduruldu.
+**Veri:** SAPPIRE VITAPEP'e broşürdeki ürün görseli, ANTIAGE NADH'a yüksek çözünürlüklü görsel eklendi.
+
 ## [2.17.299] - 2026-10-02
 
 **Stok > Kampanya yazıları kırmızı, arka planı şeffaf** (önceden yeşil zeminli rozetti).
