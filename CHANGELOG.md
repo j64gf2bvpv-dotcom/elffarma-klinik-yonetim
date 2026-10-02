@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.298] - 2026-10-02
+
+**Stok > Ürünler tablosunda satır alt çizgileri** artık dikey çizgilerle aynı renk ve kalınlıkta (her hücrenin altında) — tablo gibi ızgara görünüm.
+
 ## [2.17.297] - 2026-10-02
 
 **Stok listesi düzeni:** Kampanya sütunu fiyat listesi PDF'indeki gibi derli toplu — kademeler ("10+2 · 20+5 · 30+8") alt alta, ortalı, yandaki sütunlara taşmadan (sütun ~192 px). Ürünler arasında belirgin tablo çizgisi.

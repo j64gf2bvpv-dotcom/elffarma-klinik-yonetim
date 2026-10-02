@@ -578,7 +578,9 @@ function ProductsTable({
                   className={cn(
                     // Ürünler arasında belirgin tablo çizgisi (kullanıcı isteği,
                     // 2026-10-02: "ürünler arasına tablo gibi çizgi koy, karışıyor").
-                    'border-b border-foreground/20',
+                    // Dikey çizgilerle (td border-l) aynı renk ve kalınlıkta alt çizgi —
+                    // her hücreye veriliyor ki satır arka planları çizgiyi örtmesin.
+                    '[&>td]:border-b [&>td]:border-border',
                     // Kritik/süresi geçmiş rengi (bg-destructive/5) seçiliyken
                     // ATLANIYOR — aksi halde TableRow'un seçili-satır
                     // koyulaştırması twMerge birleştirmesinde bu renk
