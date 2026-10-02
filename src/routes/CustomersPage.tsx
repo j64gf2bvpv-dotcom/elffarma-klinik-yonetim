@@ -242,6 +242,8 @@ export function CustomersPage() {
                 { header: 'Tip', value: (c) => (c.doctor_type === 'hastane' ? 'Hastane' : 'Şahıs') },
                 { header: 'İl', value: (c) => c.province ?? '' },
                 { header: 'İlçe', value: (c) => c.district ?? '' },
+                { header: 'E-posta', value: (c) => c.email ?? '' },
+                { header: 'Instagram', value: (c) => (c.instagram ? `@${c.instagram.replace(/^@/, '')}` : '') },
                 { header: 'Hastane', value: (c) => c.hospital_name ?? '' },
                 { header: 'Ödeme Vadesi', value: (c) => c.next_payment_due ?? '' },
                 { header: 'TC Kimlik No', value: (c) => c.tc_no ?? '' },

@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.295] - 2026-10-02
+
+**PDF dışa aktarma düzeltildi (tüm listelerde):** Gömülü yazı tipi sadece "Latin Extended" alt kümesiydi — A-Z, a-z, rakamlar ve "ı" yoktu, PDF'lerde sadece İ/Ş gibi harfler görünüyordu. Tam Noto Sans (Türkçe, ₺, € dahil) ile değiştirildi, dosya da küçüldü.
+**PDF düzeni yenilendi:** Tamamen boş sütunlar atlanıyor; sütun sayısına göre A4 dikey/yatay veya A3 yatay ve yazı boyutu otomatik; uzun metin hücre içinde alt satıra kayıyor; sıra numarası, her sayfada tekrarlanan başlık, kayıt sayısı + tarih ve sayfa numarası var.
+**Her listede "PNG (.png)" dışa aktarma:** Beyaz zeminli, çıktı alınabilir tablo görseli (çok uzun listeler birkaç PNG'ye bölünür). Cari dışa aktarımına E-posta ve Instagram sütunları eklendi.
+
 ## [2.17.294] - 2026-10-02
 
 **Toplu WhatsApp (sıralı, ücretsiz):** Cari Kart'ta "Toplu WhatsApp" — mesaj bir kez yazılır ({{ad}} kişinin adıyla değişir, şablon da seçilebilir), alıcılar Cari Kart'ın o anki filtresinden (arama, il, etiket, fatura) gelir ve tek tek seçilebilir. Program sohbetleri mesaj hazır şekilde sırayla açar (varsayılan: doğrudan WhatsApp masaüstü uygulamasında); her kişide "Gönder"e kullanıcı basar, programa dönünce sıradaki otomatik açılır. "Atla"/"Geri", ilerleme çubuğu, ve yarıda kalırsa "Kaldığım Yerden Devam Et" var.

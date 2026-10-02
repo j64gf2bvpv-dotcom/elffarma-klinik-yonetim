@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { buildPlainTextReport, exportToExcel, exportToPdf, exportToWord, printRows, type ExportColumn } from '@/lib/exportData'
+import { buildPlainTextReport, exportToExcel, exportToPdf, exportToPng, exportToWord, printRows, type ExportColumn } from '@/lib/exportData'
 import { WEBMAIL_URL } from '@/lib/companyInfo'
 
 interface ExportMenuProps<T> {
@@ -113,9 +113,22 @@ export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = '
         <DropdownMenuItem onSelect={handlePdf}>
           <FileType className="text-destructive" /> PDF (.pdf)
         </DropdownMenuItem>
-        {imageTarget && (
+        {imageTarget ? (
           <DropdownMenuItem onSelect={handlePng}>
             <ImageDown className="text-primary" /> Görsel (PNG)
+          </DropdownMenuItem>
+        ) : (
+          // Tablo verisinden temiz, çıktı alınabilir PNG (2026-10-02)
+          <DropdownMenuItem
+            onSelect={() => {
+              if (rows.length === 0) {
+                toast.error('Dışa aktarılacak veri yok')
+                return
+              }
+              exportToPng(title, filename, columns, rows)
+            }}
+          >
+            <ImageDown className="text-primary" /> PNG (.png)
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
