@@ -104,6 +104,8 @@ export interface Product {
   flakon_quantity: number
   unit_cost: number | null
   unit_price: number | null
+  /** Faturasız satış fiyatı (2026-10-02) */
+  unit_price_uninvoiced: number | null
   campaign: string | null
   image_url: string | null
   expiry_date: string | null

@@ -25,6 +25,7 @@ import {
   updateStockMovement,
   type ProductInput,
   type ProductLotInput,
+  type ProductPriceField,
   type RecordMovementInput,
   type UpdateMovementInput,
 } from './api'
@@ -177,7 +178,8 @@ export function useUpdateProductName() {
 export function useUpdateProductPrice() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, unit_price }: { id: string; unit_price: number | null }) => updateProductPrice(id, unit_price),
+    mutationFn: ({ id, unit_price, field }: { id: string; unit_price: number | null; field?: ProductPriceField }) =>
+      updateProductPrice(id, unit_price, field),
     onSuccess: (updated, { id }) => {
       queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) =>
         old?.map((p) => (p.id === id ? { ...p, ...updated } : p)),

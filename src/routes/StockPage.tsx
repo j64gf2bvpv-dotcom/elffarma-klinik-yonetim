@@ -55,6 +55,7 @@ import { getExpiryStatus } from '@/lib/expiry'
 import { useAuth } from '@/lib/auth'
 import type { BrandLine, Product, ProductCatalog } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
+import type { ProductPriceField } from '@/features/stock/api'
 
 const ALL_BRANDS = 'all'
 
@@ -308,35 +309,41 @@ function CampaignCell({ product }: { product: Product }) {
   )
 }
 
-/** Satış fiyatına tıklayınca yerinde düzenlenebilir hale gelir — sadece unit_price alanını günceller. */
-function PriceCell({ product }: { product: Product }) {
+/**
+ * Fiyata tıklayınca yerinde düzenlenebilir hale gelir — `field` ile satış
+ * fiyatı (unit_price) ya da faturasız fiyat (unit_price_uninvoiced, 2026-10-02)
+ * seçilir; marj sadece satış fiyatında gösterilir.
+ */
+function PriceCell({ product, field = 'unit_price' }: { product: Product; field?: ProductPriceField }) {
   const { staff } = useAuth()
   const isAdmin = staff?.role === 'admin'
+  const price = product[field]
+  const label = field === 'unit_price' ? 'Satış fiyatını' : 'Faturasız fiyatı'
   const [editing, setEditing] = React.useState(false)
-  const [value, setValue] = React.useState(product.unit_price != null ? String(product.unit_price) : '')
+  const [value, setValue] = React.useState(price != null ? String(price) : '')
   const mutation = useUpdateProductPrice()
 
   React.useEffect(() => {
-    if (!editing) setValue(product.unit_price != null ? String(product.unit_price) : '')
-  }, [product.unit_price, editing])
+    if (!editing) setValue(price != null ? String(price) : '')
+  }, [price, editing])
 
   function commit() {
     setEditing(false)
     const trimmed = value.trim()
-    const current = product.unit_price != null ? String(product.unit_price) : ''
+    const current = price != null ? String(price) : ''
     if (trimmed === current) return
     const parsed = trimmed === '' ? null : Number(trimmed)
     if (parsed !== null && (!Number.isFinite(parsed) || parsed < 0)) {
       setValue(current)
       return
     }
-    mutation.mutate({ id: product.id, unit_price: parsed })
+    mutation.mutate({ id: product.id, unit_price: parsed, field })
   }
 
   if (!isAdmin) {
-    return product.unit_price ? (
+    return price ? (
       <span className="text-muted-foreground">
-        {Number(product.unit_price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+        {Number(price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
       </span>
     ) : (
       <span className="text-muted-foreground">—</span>
@@ -362,7 +369,7 @@ function PriceCell({ product }: { product: Product }) {
               commit()
             }
             if (e.key === 'Escape') {
-              setValue(product.unit_price != null ? String(product.unit_price) : '')
+              setValue(price != null ? String(price) : '')
               setEditing(false)
             }
           }}
@@ -377,16 +384,16 @@ function PriceCell({ product }: { product: Product }) {
     <button
       type="button"
       onClick={() => setEditing(true)}
-      title="Satış fiyatını düzenlemek için tıklayın"
+      title={`${label} düzenlemek için tıklayın`}
       className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 text-muted-foreground hover:bg-accent"
     >
-      {product.unit_price ? (
+      {price ? (
         <>
-          {Number(product.unit_price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-          {product.unit_cost != null && Number(product.unit_price) > 0 && (
+          {Number(price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+          {field === 'unit_price' && product.unit_cost != null && Number(price) > 0 && (
             <span className="text-xs text-success">
               (%
-              {Math.round(((Number(product.unit_price) - Number(product.unit_cost)) / Number(product.unit_price)) * 100)}{' '}
+              {Math.round(((Number(price) - Number(product.unit_cost)) / Number(price)) * 100)}{' '}
               marj)
             </span>
           )}
@@ -524,6 +531,7 @@ function ProductsTable({
               <TableHead className="border-l text-center">Flakon</TableHead>
               <TableHead className="border-l text-center">Güncel Stok Durumu</TableHead>
               <TableHead className="border-l text-center">Satış Fiyatı</TableHead>
+              <TableHead className="border-l text-center">Faturasız Fiyat</TableHead>
               <TableHead className="border-l text-center">Kampanya</TableHead>
               <TableHead className="border-l text-center">SKT</TableHead>
               <TableHead className="border-l text-center">İşlemler</TableHead>
@@ -532,7 +540,7 @@ function ProductsTable({
           <TableBody>
             {products.length === 0 && (
               <TableRow>
-                <TableCell colSpan={13} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={14} className="py-8 text-center text-muted-foreground">
                   Ürün bulunamadı
                 </TableCell>
               </TableRow>
@@ -637,6 +645,9 @@ function ProductsTable({
                   </TableCell>
                   <TableCell className="border-l text-center">
                     <PriceCell product={product} />
+                  </TableCell>
+                  <TableCell className="border-l text-center">
+                    <PriceCell product={product} field="unit_price_uninvoiced" />
                   </TableCell>
                   <TableCell className="border-l text-center">
                     <CampaignCell product={product} />

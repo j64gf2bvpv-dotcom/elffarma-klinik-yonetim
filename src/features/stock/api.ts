@@ -30,6 +30,7 @@ export interface ProductInput {
   flakon_per_package?: number | null
   unit_cost?: number | null
   unit_price?: number | null
+  unit_price_uninvoiced?: number | null
   campaign?: string | null
   expiry_date?: string | null
   barcode?: string | null
@@ -88,8 +89,19 @@ export async function updateProductName(id: string, name: string): Promise<Produ
   return offlineUpdate<Product>('products', id, { name }, `Ürün adı güncelleme`)
 }
 
-export async function updateProductPrice(id: string, unit_price: number | null): Promise<Product> {
-  return offlineUpdate<Product>('products', id, { unit_price }, `Satış fiyatı güncelleme`)
+export type ProductPriceField = 'unit_price' | 'unit_price_uninvoiced'
+
+export async function updateProductPrice(
+  id: string,
+  price: number | null,
+  field: ProductPriceField = 'unit_price',
+): Promise<Product> {
+  return offlineUpdate<Product>(
+    'products',
+    id,
+    { [field]: price },
+    field === 'unit_price' ? 'Satış fiyatı güncelleme' : 'Faturasız fiyat güncelleme',
+  )
 }
 
 /**

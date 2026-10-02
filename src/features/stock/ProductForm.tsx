@@ -40,6 +40,7 @@ const schema = z.object({
   flakon_per_package: z.coerce.number().int().positive('0’dan büyük olmalı').optional(),
   unit_cost: z.coerce.number().min(0).optional(),
   unit_price: z.coerce.number().min(0).optional(),
+  unit_price_uninvoiced: z.coerce.number().min(0).optional(),
   campaign: z.string().optional(),
   expiry_date: z.string().optional(),
   barcode: z.string().optional(),
@@ -67,6 +68,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
       flakon_per_package: product?.flakon_per_package ?? undefined,
       unit_cost: product?.unit_cost ?? undefined,
       unit_price: product?.unit_price ?? undefined,
+      unit_price_uninvoiced: product?.unit_price_uninvoiced ?? undefined,
       campaign: product?.campaign ?? '',
       expiry_date: product?.expiry_date ?? '',
       barcode: product?.barcode ?? '',
@@ -85,6 +87,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
       flakon_per_package: values.flakon_per_package ?? null,
       unit_cost: values.unit_cost ?? null,
       unit_price: values.unit_price ?? null,
+      unit_price_uninvoiced: values.unit_price_uninvoiced ?? null,
       campaign: values.campaign || null,
       expiry_date: values.expiry_date || null,
       barcode: values.barcode || null,
@@ -245,6 +248,19 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="unit_price_uninvoiced"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Faturasız Fiyat (₺, opsiyonel)</FormLabel>
+                  <FormControl>
+                    <CurrencyInput value={field.value} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

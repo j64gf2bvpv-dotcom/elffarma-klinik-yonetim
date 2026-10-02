@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.296] - 2026-10-02
+
+**Stok'ta "Faturasız Fiyat" sütunu:** Ürünler listesinde Satış Fiyatı'nın yanında yeni sütun; tıklayınca yerinde düzenleniyor (satış fiyatı gibi sadece yönetici düzenler, personel görür). Ürün formunda da "Faturasız Fiyat" alanı var. Veritabanına `products.unit_price_uninvoiced` sütunu eklendi (migration 20261002080334).
+
 ## [2.17.295] - 2026-10-02
 
 **PDF dışa aktarma düzeltildi (tüm listelerde):** Gömülü yazı tipi sadece "Latin Extended" alt kümesiydi — A-Z, a-z, rakamlar ve "ı" yoktu, PDF'lerde sadece İ/Ş gibi harfler görünüyordu. Tam Noto Sans (Türkçe, ₺, € dahil) ile değiştirildi, dosya da küçüldü.
