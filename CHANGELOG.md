@@ -3,6 +3,11 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.297] - 2026-10-02
+
+**Stok listesi düzeni:** Kampanya sütunu fiyat listesi PDF'indeki gibi derli toplu — kademeler ("10+2 · 20+5 · 30+8") alt alta, ortalı, yandaki sütunlara taşmadan (sütun ~192 px). Ürünler arasında belirgin tablo çizgisi.
+**Veri (programdan bağımsız, veritabanında):** 2026 faturasız fiyat listesine göre aktif ürünlerin Satış Fiyatı, Faturasız Fiyat ve Kampanya alanları güncellendi; ANTIAGE NADH 1 X 5 ML Swiss grubuna fiyatı (3.500 TL), kampanyası (10+2) ve görseliyle eklendi. Eski değerlerin yedeği alındı.
+
 ## [2.17.296] - 2026-10-02
 
 **Stok'ta "Faturasız Fiyat" sütunu:** Ürünler listesinde Satış Fiyatı'nın yanında yeni sütun; tıklayınca yerinde düzenleniyor (satış fiyatı gibi sadece yönetici düzenler, personel görür). Ürün formunda da "Faturasız Fiyat" alanı var. Veritabanına `products.unit_price_uninvoiced` sütunu eklendi (migration 20261002080334).

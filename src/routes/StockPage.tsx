@@ -263,7 +263,7 @@ function CampaignCell({ product }: { product: Product }) {
   }
 
   if (!isAdmin) {
-    return product.campaign ? <Badge variant="success">{product.campaign}</Badge> : <span className="text-muted-foreground">—</span>
+    return product.campaign ? <CampaignBadge text={product.campaign} /> : <span className="text-muted-foreground">—</span>
   }
 
   if (editing) {
@@ -301,11 +301,28 @@ function CampaignCell({ product }: { product: Product }) {
       className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent"
     >
       {product.campaign ? (
-        <Badge variant="success">{product.campaign}</Badge>
+        <CampaignBadge text={product.campaign} />
       ) : (
         <span className="text-muted-foreground">—</span>
       )}
     </button>
+  )
+}
+
+/**
+ * Kampanya — fiyat listesi PDF'indeki gibi dar ve derli toplu (kullanıcı
+ * isteği, 2026-10-02: "kampanya kısmı daha küçük sütunda olmalı, benim PDF
+ * yaptığım gibi"): " · " ile ayrılmış kademeler ("10+2 · 20+5 · 30+8") küçük
+ * yazıyla alt alta, ortalı.
+ */
+function CampaignBadge({ text }: { text: string }) {
+  const parts = text.split(/\s*·\s*/).filter(Boolean)
+  return (
+    <span className="mx-auto inline-flex w-full max-w-48 flex-col items-center rounded-md bg-success/10 px-2 py-1 text-center text-xs leading-snug font-medium break-words whitespace-normal text-success">
+      {parts.map((part, i) => (
+        <span key={i}>{part}</span>
+      ))}
+    </span>
   )
 }
 
@@ -532,7 +549,7 @@ function ProductsTable({
               <TableHead className="border-l text-center">Güncel Stok Durumu</TableHead>
               <TableHead className="border-l text-center">Satış Fiyatı</TableHead>
               <TableHead className="border-l text-center">Faturasız Fiyat</TableHead>
-              <TableHead className="border-l text-center">Kampanya</TableHead>
+              <TableHead className="w-48 min-w-48 border-l text-center">Kampanya</TableHead>
               <TableHead className="border-l text-center">SKT</TableHead>
               <TableHead className="border-l text-center">İşlemler</TableHead>
             </TableRow>
@@ -559,6 +576,9 @@ function ProductsTable({
                   onClick={() => onSelect(product.id)}
                   selected={product.id === selectedId}
                   className={cn(
+                    // Ürünler arasında belirgin tablo çizgisi (kullanıcı isteği,
+                    // 2026-10-02: "ürünler arasına tablo gibi çizgi koy, karışıyor").
+                    'border-b border-foreground/20',
                     // Kritik/süresi geçmiş rengi (bg-destructive/5) seçiliyken
                     // ATLANIYOR — aksi halde TableRow'un seçili-satır
                     // koyulaştırması twMerge birleştirmesinde bu renk
@@ -649,7 +669,7 @@ function ProductsTable({
                   <TableCell className="border-l text-center">
                     <PriceCell product={product} field="unit_price_uninvoiced" />
                   </TableCell>
-                  <TableCell className="border-l text-center">
+                  <TableCell className="w-48 min-w-48 max-w-48 overflow-hidden border-l text-center whitespace-normal">
                     <CampaignCell product={product} />
                   </TableCell>
                   <TableCell className="border-l text-center">
