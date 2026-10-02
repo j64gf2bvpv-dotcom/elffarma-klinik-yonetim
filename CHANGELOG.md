@@ -3,6 +3,11 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.301] - 2026-10-02
+
+**Stok > "Fiyat Listesi PDF":** Kullanıcının fiyat listesi düzeninde A4 PDF — her marka (Dermakor, Swiss) tek sayfaya sığar; başlık "… ÜRÜNLERİ <yıl> FİYAT LİSTESİ (FATURASIZ/FATURALI)", sütunlar Görsel | Ürün (ad + boyut) | KDV Dahil | Kampanya (kademeler alt alta), ızgara çizgileri ve altta kırmızı Elffarma logosu. Faturasız ve Faturalı (Satış Fiyatı) seçenekleri; fiyatı girilmemiş ürün listeye alınmaz. Ürün görselleri CORS'suz sitelerden de alınabilsin diye ana süreçte dar bir görsel indirme köprüsü eklendi (sadece https + image/*, 8 MB sınırı).
+**Stok'ta Dermakor ve Swiss tabloları yatayda birlikte kayıyor.**
+
 ## [2.17.300] - 2026-10-02
 
 **Stok'ta "Boyut" sütunu:** Ürün adından hemen sonra boyut/içerik ("6 X 6 ML", "1 X 5 ML", "200 MG X 1 FLAKON") ayrı sütunda; yönetici tıklayıp düzenler, ürün formunda da "Boyut / İçerik" alanı var. Veritabanına `products.package_size` eklendi (migration 20261002084420); aktif ürünlerin boyutları 2026 fiyat listesine göre dolduruldu.

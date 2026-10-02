@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { toast } from 'sonner'
 import {
   Search,
   Trash2,
@@ -8,6 +9,7 @@ import {
   Plus,
   ChevronDown,
   Settings2,
+  FileDown,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -57,6 +59,8 @@ import { useAuth } from '@/lib/auth'
 import type { BrandLine, Product, ProductCatalog } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import type { ProductPriceField } from '@/features/stock/api'
+import { exportPriceListPdf, type PriceListKind } from '@/features/stock/exportPriceListPdf'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 const ALL_BRANDS = 'all'
 
@@ -307,6 +311,34 @@ function CampaignCell({ product }: { product: Product }) {
         <span className="text-muted-foreground">—</span>
       )}
     </button>
+  )
+}
+
+/** Stok > "Fiyat Listesi PDF" — kullanıcının fiyat listesi düzeninde, her marka tek A4 sayfa (bkz. exportPriceListPdf). */
+function PriceListPdfMenu({ products }: { products: Product[] }) {
+  const [busy, setBusy] = React.useState(false)
+  async function run(kind: PriceListKind) {
+    setBusy(true)
+    try {
+      await exportPriceListPdf(products, kind)
+    } catch (err) {
+      toast.error('Fiyat listesi oluşturulamadı', { description: err instanceof Error ? err.message : String(err) })
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" variant="outline" disabled={busy}>
+          {busy ? <Loader2 className="size-3.5 animate-spin" /> : <FileDown className="size-3.5" />} Fiyat Listesi PDF
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => void run('uninvoiced')}>Faturasız Fiyat Listesi (A4)</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void run('invoiced')}>Faturalı (Satış Fiyatı) Fiyat Listesi (A4)</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -963,6 +995,27 @@ export function StockPage() {
   const [checkedIds, setCheckedIds] = React.useState<Set<string>>(new Set())
   const { data: products = [], isLoading } = useProducts(search, brandFilter === ALL_BRANDS ? undefined : brandFilter)
   const { data: allProducts = [] } = useProducts('')
+
+  // Dermakor / Swiss (katalog) tabloları yatayda BİRLİKTE kaysın (kullanıcı
+  // isteği, 2026-10-02) — birinin kaydırma kutusu kayınca diğerleri aynı
+  // scrollLeft'e eşitlenir.
+  const groupsRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    const root = groupsRef.current
+    if (!root) return
+    const boxes = Array.from(root.querySelectorAll<HTMLElement>('[data-slot="table-container"]'))
+    if (boxes.length < 2) return
+    const handlers = boxes.map((box) => {
+      // Sadece konum farklıysa eşitlenir — eşitlenen kutunun kendi scroll
+      // olayı geldiğinde konumlar zaten aynı olduğu için döngü oluşmaz.
+      const onScroll = () => {
+        for (const other of boxes) if (other !== box && Math.abs(other.scrollLeft - box.scrollLeft) > 1) other.scrollLeft = box.scrollLeft
+      }
+      box.addEventListener('scroll', onScroll, { passive: true })
+      return [box, onScroll] as const
+    })
+    return () => handlers.forEach(([box, fn]) => box.removeEventListener('scroll', fn))
+  })
   const { data: catalogs = [] } = useProductCatalogs()
   // Tümü/Dermakor/Swiss sekme sırası sabit kalsın diye (kullanıcı isteğiyle,
   // 2026-08-23 — sonradan eklenen kataloglar o sırayı kalabalıklaştırmasın)
@@ -1128,6 +1181,7 @@ export function StockPage() {
             )}
             {isAdmin && <AddCatalogDialog existingNames={catalogs.map((c) => c.name)} />}
             {isAdmin && <ManageCatalogsDialog catalogs={catalogs} />}
+            <PriceListPdfMenu products={allProducts} />
           </div>
 
           {checkedIds.size > 0 && (
@@ -1152,7 +1206,7 @@ export function StockPage() {
           {isLoading && <p className="text-muted-foreground py-8 text-center">Yükleniyor...</p>}
 
           {!isLoading && brandFilter === ALL_BRANDS && (
-            <div className="grid gap-6">
+            <div ref={groupsRef} className="grid gap-6">
               {catalogs.map((c) => (
                 <div key={c.id} className="min-w-0">
                   <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">

@@ -20,6 +20,8 @@ declare global {
   interface Window {
     electronAPI?: {
       openWhatsApp: (waMeUrl: string) => Promise<boolean>
+      /** https görsel adresini (CORS'suz siteler dahil) data: URL olarak indirir — fiyat listesi PDF'i için */
+      fetchImageDataUrl?: (url: string) => Promise<string | null>
       openNetworkSettings: () => Promise<void>
       notify: (title: string, body: string) => Promise<void>
       onDeepLinkRecovery?: (

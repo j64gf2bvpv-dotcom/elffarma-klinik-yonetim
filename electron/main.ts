@@ -191,6 +191,24 @@ function setupAutoUpdater() {
   })
 }
 
+// Fiyat listesi PDF'i için ürün görsellerini indirme (2026-10-02) — ürün
+// görselleri CORS başlığı göndermeyen sitelerde (Dermakor mağazası,
+// elffarma.com) duruyor, renderer piksellere erişemiyor. Sadece https,
+// gerçekten image/* dönen ve 8 MB'tan küçük yanıtlar data: URL olarak döner.
+ipcMain.handle('image:fetch-data-url', async (_event, url: string) => {
+  if (typeof url !== 'string' || !/^https:\/\/[^\s]+$/.test(url)) return null
+  try {
+    const res = await fetch(url, { redirect: 'follow' })
+    const type = res.headers.get('content-type') ?? ''
+    if (!res.ok || !type.startsWith('image/')) return null
+    const buf = Buffer.from(await res.arrayBuffer())
+    if (buf.length > 8 * 1024 * 1024) return null
+    return `data:${type.split(';')[0]};base64,${buf.toString('base64')}`
+  } catch {
+    return null
+  }
+})
+
 // Narrow IPC surface used by the renderer's preload bridge.
 // wa.me (tarayıcı üzerinden) ya da — toplu WhatsApp gönderiminde sohbeti doğrudan
 // masaüstü uygulamasında açmak için (2026-10-02) — SADECE
