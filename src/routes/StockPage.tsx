@@ -313,12 +313,12 @@ function CampaignCell({ product }: { product: Product }) {
  * Kampanya — fiyat listesi PDF'indeki gibi dar ve derli toplu (kullanıcı
  * isteği, 2026-10-02: "kampanya kısmı daha küçük sütunda olmalı, benim PDF
  * yaptığım gibi"): " · " ile ayrılmış kademeler ("10+2 · 20+5 · 30+8") küçük
- * yazıyla alt alta, ortalı.
+ * yazıyla alt alta, ortalı. Kırmızı yazı, şeffaf zemin (2026-10-02).
  */
 function CampaignBadge({ text }: { text: string }) {
   const parts = text.split(/\s*·\s*/).filter(Boolean)
   return (
-    <span className="mx-auto inline-flex w-full max-w-48 flex-col items-center rounded-md bg-success/10 px-2 py-1 text-center text-xs leading-snug font-medium break-words whitespace-normal text-success">
+    <span className="mx-auto inline-flex w-full max-w-48 flex-col items-center px-2 py-1 text-center text-xs leading-snug font-medium break-words whitespace-normal text-destructive">
       {parts.map((part, i) => (
         <span key={i}>{part}</span>
       ))}
