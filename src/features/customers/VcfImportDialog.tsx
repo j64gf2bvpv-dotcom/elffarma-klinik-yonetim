@@ -108,7 +108,7 @@ function buildRows(contacts: VCardContact[], existing: Customer[]): PreviewRow[]
 }
 
 export function VcfImportDialog() {
-  // Mükerrer kontrolü sayfadaki arama/filtreden bağımsız TÜM carilerle yapılır.
+  // Yinelenen numara kontrolü sayfadaki arama/filtreden bağımsız TÜM carilerle yapılır.
   const { data: existingCustomers = [] } = useCustomers('')
   const inputRef = React.useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()

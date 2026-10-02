@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.294] - 2026-10-02
+
+**Toplu WhatsApp (sıralı, ücretsiz):** Cari Kart'ta "Toplu WhatsApp" — mesaj bir kez yazılır ({{ad}} kişinin adıyla değişir, şablon da seçilebilir), alıcılar Cari Kart'ın o anki filtresinden (arama, il, etiket, fatura) gelir ve tek tek seçilebilir. Program sohbetleri mesaj hazır şekilde sırayla açar (varsayılan: doğrudan WhatsApp masaüstü uygulamasında); her kişide "Gönder"e kullanıcı basar, programa dönünce sıradaki otomatik açılır. "Atla"/"Geri", ilerleme çubuğu, ve yarıda kalırsa "Kaldığım Yerden Devam Et" var.
+**"Yinelenenleri Sil":** Aynı isim ya da aynı numaralı kayıtlarda her gruptan tek kayıt bırakan, önizlemeli ve onaylı toplu silme. Kalacak kayıt bağlı işlemi/dolu bilgisi en çok olan; silinenlerin farklı numaraları Notlar'a, boş alanları kalan kayda aktarılıyor; bağlı satış/tahsilat/faturası olan kayıt asla silinmiyor. "Mükerrer" ifadeleri "Yinelenen" oldu.
+**Cari Kart üst butonları sığmayınca alt satıra geçiyor** (küçük ekranda "Yeni Doktor Ekle" kesiliyordu); arama kutusu daralmıyor.
+
 ## [2.17.293] - 2026-10-01
 
 **Cari ile stok bağlantısı:** Stok hareketi penceresine (Giriş / Çıkış / İade / Numune…) opsiyonel "Doktor / Cari" seçimi geldi. Doktor sayfasında yeni "Stok Hareketleri" sekmesi o kişiye bağlı tüm hareketleri (satış, iade, numune, kargo ve elle girilenler) tarih/ürün/tür/miktar/sebep ile listeliyor; üstte ürün bazında "gitti / geldi" özeti var.

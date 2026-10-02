@@ -192,8 +192,12 @@ function setupAutoUpdater() {
 }
 
 // Narrow IPC surface used by the renderer's preload bridge.
+// wa.me (tarayıcı üzerinden) ya da — toplu WhatsApp gönderiminde sohbeti doğrudan
+// masaüstü uygulamasında açmak için (2026-10-02) — SADECE
+// "whatsapp://send?phone=<rakam>&text=<kodlanmış metin>" biçimi kabul edilir.
+const WHATSAPP_APP_URL = /^whatsapp:\/\/send\?phone=\d{10,15}&text=[^\s]*$/
 ipcMain.handle('shell:open-external', (_event, url: string) => {
-  if (typeof url === 'string' && /^https:\/\/wa\.me\//.test(url)) {
+  if (typeof url === 'string' && (/^https:\/\/wa\.me\//.test(url) || WHATSAPP_APP_URL.test(url))) {
     shell.openExternal(url)
     return true
   }

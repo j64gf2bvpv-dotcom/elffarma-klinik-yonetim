@@ -24,6 +24,11 @@ export function buildWhatsAppUrl(waDigits: string, message: string): string {
   return `https://wa.me/${waDigits}?text=${encodeURIComponent(message)}`
 }
 
+/** WhatsApp masaüstü uygulamasında sohbeti mesaj hazır şekilde doğrudan açar (tarayıcı + "uygulamada aç" onayı olmadan). */
+export function buildWhatsAppAppUrl(waDigits: string, message: string): string {
+  return `whatsapp://send?phone=${waDigits}&text=${encodeURIComponent(message)}`
+}
+
 export async function openWhatsApp(url: string): Promise<boolean> {
   if (window.electronAPI?.openWhatsApp) {
     return window.electronAPI.openWhatsApp(url)

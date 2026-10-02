@@ -29,12 +29,15 @@ import {
   CUSTOMER_IMPORT_FIELD_HINTS,
 } from '@/features/customers/importCustomers'
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
-import { formatTrPhoneForDisplay, normalizeTrPhone } from '@/features/whatsapp/normalizePhone'
+import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
 import { VcfImportDialog } from '@/features/customers/VcfImportDialog'
 import { LocationFillDialog } from '@/features/customers/LocationFillDialog'
 import { InlineTextCell } from '@/features/customers/InlineCells'
+import { nameKey, phoneKey } from '@/features/customers/dedupe'
+import { DuplicateCleanupDialog } from '@/features/customers/DuplicateCleanupDialog'
+import { BulkWhatsAppDialog } from '@/features/whatsapp/BulkWhatsAppDialog'
 import { detectLocation, trFold, type DetectedLocation } from '@/lib/detectProvince'
 import { ensureRegionFor } from '@/features/regions/ensureRegion'
 import { cn } from '@/lib/utils'
@@ -90,20 +93,6 @@ function parseLocationInput(text: string): DetectedLocation | null | 'invalid' {
   return detected
 }
 
-/** Mükerrer isim karşılaştırması için: unvanlar, noktalama ve Türkçe karakter/harf farkı yok sayılır. */
-function nameKey(name: string): string {
-  return trFold(name)
-    .replace(/\b(dr|doc|prof|uzm|op|dt|ecz|hoca|hanim|hnm|bey)\b\.?/g, ' ')
-    .replace(/[^a-z]+/g, ' ')
-    .trim()
-}
-
-function phoneKey(phone: string | null | undefined): string | null {
-  if (!phone) return null
-  const digits = phone.replace(/\D/g, '')
-  return normalizeTrPhone(digits.startsWith('00') ? digits.slice(2) : phone)?.canonical ?? null
-}
-
 export function CustomersPage() {
   const [search, setSearch] = React.useState('')
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
@@ -151,7 +140,7 @@ export function CustomersPage() {
     setCustomerToDelete(null)
   }
 
-  // Mükerrer kontrolü için ekrandaki arama/filtreden bağımsız TÜM cariler
+  // Yinelenen numara kontrolü için ekrandaki arama/filtreden bağımsız TÜM cariler
   // (düzeltme, 2026-10-01 — filtre açıkken içe aktarınca filtre dışındaki
   // kayıtlı doktorlar "yeni" sanılıp tekrar ekleniyordu).
   const { data: everyCustomer = [] } = useCustomers('')
@@ -179,7 +168,7 @@ export function CustomersPage() {
     )
   }
 
-  // Mükerrer kayıtlar (kullanıcı isteği, 2026-10-01: "aynı isimde ya da
+  // Yinelenen kayıtlar (kullanıcı isteği, 2026-10-01: "aynı isimde ya da
   // numarada olanları ayır, kırmızıyla işaretle") — arama/filtreden bağımsız
   // TÜM carilerde aynı isim (Dr./Uzm. gibi unvanlar ve harf/Türkçe karakter
   // farkı yok sayılarak) ya da aynı numara (telefon/cep/WhatsApp) varsa.
@@ -210,7 +199,18 @@ export function CustomersPage() {
     [everyCustomer, duplicateKeys],
   )
   const [onlyDuplicates, setOnlyDuplicates] = React.useState(false)
-  // "Mükerrerler" açıkken sadece mükerrer kayıtlar, aynı isim/numara yan yana gelecek şekilde
+  const bulkFilterLabel =
+    [
+      search && `arama: "${search}"`,
+      provinceFilter !== ALL_PROVINCES && `il: ${provinceFilter}`,
+      tagFilter !== ALL_TAGS && `etiket: ${tagFilter}`,
+      invoiceFilter !== 'all' && (invoiceFilter === 'invoiced' ? 'faturalı' : 'faturasız'),
+      onlyDuplicates && 'yinelenenler',
+    ]
+      .filter(Boolean)
+      .join(', ') || 'tüm cariler'
+
+  // "Yinelenenler" açıkken sadece yinelenen kayıtlar, aynı isim/numara yan yana gelecek şekilde
   const shownCustomers = React.useMemo(() => {
     if (!onlyDuplicates) return customers
     return customers
@@ -230,7 +230,8 @@ export function CustomersPage() {
         title="Cari Kart"
         description="Doktor profillerini görüntüleyin, ekleyin ve WhatsApp'tan iletişime geçin — bakiye bilgileri Cari Hesap'ta"
         actions={
-          <div className="flex gap-2">
+          // Butonlar sığmazsa alt satıra geçer (küçük ekranda "Yeni Doktor Ekle" kesiliyordu, 2026-10-02)
+          <div className="flex flex-wrap justify-end gap-2">
             <ExportMenu<Customer>
               title="Cari Listesi"
               filename="musteriler"
@@ -258,6 +259,7 @@ export function CustomersPage() {
               templateSampleRows={CUSTOMER_IMPORT_SAMPLE_ROWS}
             />
             <VcfImportDialog />
+            <BulkWhatsAppDialog customers={shownCustomers} filterLabel={bulkFilterLabel} />
             <LocationFillDialog />
             <SmartImportDialog
               title="Doktorları Akıllı İçe Aktar"
@@ -280,7 +282,7 @@ export function CustomersPage() {
       </Tabs>
 
       <div className="mb-4 flex flex-wrap gap-3">
-        <div className="relative max-w-sm flex-1">
+        <div className="relative max-w-sm min-w-56 flex-1">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="İsim veya telefon ile ara..."
@@ -324,8 +326,9 @@ export function CustomersPage() {
           disabled={duplicateCount === 0 && !onlyDuplicates}
           title="Aynı isimde ya da aynı numarada birden fazla kaydı olan kişiler"
         >
-          Mükerrerler ({duplicateCount})
+          Yinelenenler ({duplicateCount})
         </Button>
+        <DuplicateCleanupDialog customers={everyCustomer} count={duplicateCount} />
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Sırala" />
@@ -405,7 +408,7 @@ export function CustomersPage() {
                       />
                       {dup.name && (
                         <Badge variant="destructive" className="shrink-0" title="Cari Kart'ta aynı isimde başka kayıt var">
-                          Aynı isim
+                          Yinelenen isim
                         </Badge>
                       )}
                     </div>
@@ -423,7 +426,7 @@ export function CustomersPage() {
                       />
                       {dup.phone && (
                         <Badge variant="destructive" className="shrink-0" title="Cari Kart'ta aynı numarada başka kayıt var">
-                          Aynı numara
+                          Yinelenen numara
                         </Badge>
                       )}
                     </span>
