@@ -5,7 +5,6 @@ import {
   Trash2,
   Loader2,
   Check,
-  GripVertical,
   Plus,
   Minus,
   ChevronDown,
@@ -682,7 +681,7 @@ function CategoryCell({ product }: { product: Product }) {
  * dar-ama-uzun bir "çubuk". Gerçek 1400/1024/800/600/400px pencere
  * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
  */
-const PRODUCT_COL_WIDTHS = [44, 40, 32, 60, 180, 140, 160, 96, 90, 176, 110, 134, 192, 120, 340]
+const PRODUCT_COL_WIDTHS = [44, 68, 40, 180, 140, 160, 96, 90, 176, 110, 134, 192, 120, 340]
 const PRODUCT_TABLE_WIDTH = PRODUCT_COL_WIDTHS.reduce((a, b) => a + b, 0)
 
 function ProductsTable({
@@ -737,15 +736,14 @@ function ProductsTable({
                   ALL_BRANDS görünümü) index+1 zaten o kataloğun kendi sırası —
                   her katalogda 1'den başlar. */}
               <TableHead className="w-10 text-center text-muted-foreground">No</TableHead>
-              <TableHead className="w-8"></TableHead>
-              <TableHead className="w-8">
+              <TableHead></TableHead>
+              <TableHead>
                 <Checkbox
                   checked={allChecked}
                   onCheckedChange={(v) => onToggleAll(products, v === true)}
                   aria-label="Tümünü seç"
                 />
               </TableHead>
-              <TableHead className="w-[60px]"></TableHead>
               <TableHead className="border-l">Ürün</TableHead>
               <TableHead className="border-l text-center">Boyut</TableHead>
               <TableHead className="border-l text-center">Kategori</TableHead>
@@ -762,7 +760,7 @@ function ProductsTable({
           <TableBody>
             {products.length === 0 && (
               <TableRow>
-                <TableCell colSpan={15} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={PRODUCT_COL_WIDTHS.length} className="py-8 text-center text-muted-foreground">
                   Ürün bulunamadı
                 </TableCell>
               </TableRow>
@@ -794,22 +792,23 @@ function ProductsTable({
                   )}
                 >
                   <TableCell className="text-center text-muted-foreground tabular-nums">{index + 1}</TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()} className="cursor-grab text-muted-foreground">
-                    <GripVertical className="size-4" />
+                  {/* Sıra: No → görsel (biraz büyük) → seçim kutusu (kullanıcı
+                      isteği, 2026-10-14: "başka bir şey olmasın" — sürükleme
+                      tutamacı kaldırıldı; sıralama için satırın kendisi hâlâ
+                      sürüklenebilir). */}
+                  <TableCell>
+                    <ZoomableThumbnail
+                      src={product.image_url}
+                      alt={product.name}
+                      className="size-12 max-w-none shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted object-cover"
+                      fallback={<div className="size-12 shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted" />}
+                    />
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={checkedIds.has(product.id)}
                       onCheckedChange={() => onToggleChecked(product.id)}
                       aria-label={`${product.name} seç`}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <ZoomableThumbnail
-                      src={product.image_url}
-                      alt={product.name}
-                      className="size-9 max-w-none shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted object-cover"
-                      fallback={<div className="size-9 shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted" />}
                     />
                   </TableCell>
                   <TableCell className="border-l font-medium">
