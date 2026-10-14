@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.314] - 2026-10-14
+
+**Rehberden Aktar herkesi alıyor:** Numarası olmayan kişiler ve dosyada aynı numarayı paylaşan farklı isimler (ör. aynı klinik hattı kayıtlı iki doktor) artık aktarılıyor; dosya açılınca aktarılabilecek herkes seçili geliyor. Sadece aynı isim + aynı numara zaten Cari Kart'ta ya da dosyada ikinci kez varsa atlanıyor (isim karşılaştırmasında unvan ve kelime sırası yok sayılıyor). Numarası Cari Kart'ta başka bir isimle kayıtlı olan kişi seçilebiliyor, yanında kayıtlı isim gösteriliyor.
+
 ## [2.17.313] - 2026-10-14
 
 **Cari Kart tablo çizgileri:** Doktor listesinde her satır ve sütunun arasında çizgi var — tam tablo görünümü.

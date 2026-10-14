@@ -23,6 +23,7 @@ import { detectLocation, type DetectedLocation } from '@/lib/detectProvince'
 import { fetchRegions } from '@/features/regions/api'
 import { ensureRegionFor } from '@/features/regions/ensureRegion'
 import { useCustomers } from './hooks'
+import { nameKey } from './dedupe'
 import type { Customer } from '@/types/database'
 
 /**
@@ -33,9 +34,23 @@ import type { Customer } from '@/types/database'
  * biriyle eşleşen) işaretlenir ve seçilemez, kullanıcı aktarılacakları
  * tek tek ya da toplu seçer. Aktarılanlara sonradan bulunabilsinler diye
  * "rehber" etiketi eklenir.
+ *
+ * 2026-10-14 (kullanıcı isteği: "rehberden aktar tüm kişileri içeri almıyor,
+ * alması gerek"): artık neredeyse herkes aktarılabilir ve açılışta seçili gelir —
+ *  - numarası olmayan kişi de aktarılır (telefon boş kalır)
+ *  - dosyada aynı numarayı paylaşan FARKLI isimler (ör. aynı klinik hattı
+ *    kayıtlı iki doktor) ayrı ayrı aktarılır; sadece aynı isim + aynı numara
+ *    ikinci kez geçiyorsa "dosyada tekrar" sayılıp atlanır
+ *  - numarası Cari Kart'ta BAŞKA bir isimle kayıtlıysa seçilebilir (açılışta
+ *    seçili gelmez — yanında kayıtlı isim gösterilir, kullanıcı karar verir);
+ *    aynı isim + aynı numara zaten kayıtlıysa "zaten kayıtlı" ve seçilemez.
  */
 
-type RowStatus = 'new' | 'exists' | 'duplicate' | 'noPhone'
+type RowStatus = 'new' | 'exists' | 'duplicate' | 'noPhone' | 'sharedPhone' | 'phoneTaken'
+
+/** Aktarılabilen durumlar; `PRESELECTED` olanlar dosya açılınca seçili gelir. */
+const SELECTABLE = new Set<RowStatus>(['new', 'noPhone', 'sharedPhone', 'phoneTaken'])
+const PRESELECTED = new Set<RowStatus>(['new', 'noPhone', 'sharedPhone'])
 
 interface PreviewRow {
   key: string
@@ -47,6 +62,8 @@ interface PreviewRow {
   /** Kişi adı/kurum/adres/nottan algılanan il/ilçe (ör. "Özge Hoca İzmir" → İzmir) */
   location: DetectedLocation | null
   status: RowStatus
+  /** phoneTaken: numaranın Cari Kart'ta kayıtlı olduğu isim */
+  takenBy?: string
 }
 
 const STATUS_LABEL: Record<RowStatus, string> = {
@@ -54,6 +71,8 @@ const STATUS_LABEL: Record<RowStatus, string> = {
   exists: 'Zaten kayıtlı',
   duplicate: 'Dosyada tekrar',
   noPhone: 'Numara yok',
+  sharedPhone: 'Numara başka kişide de var',
+  phoneTaken: 'Numara kayıtlı',
 }
 
 const DOCTOR_PATTERN = /(^|[\s.(])(dr|doç|doc|prof|uzm|op)\b\.?|doktor|hekim|klinik|hastane|estetik|dermatolog/i
@@ -64,26 +83,44 @@ function normalizePhone(raw: string) {
   return normalizeTrPhone(digits.startsWith('00') ? digits.slice(2) : raw)
 }
 
+/** İsim karşılaştırma anahtarı — unvan/harf farkı ve kelime SIRASI yok sayılır ("Dr. Göksu Adana" = "Adana Dr. Göksu"). */
+function nameSig(name: string) {
+  return nameKey(name).split(' ').filter(Boolean).sort().join(' ')
+}
+
 function buildRows(contacts: VCardContact[], existing: Customer[]): PreviewRow[] {
-  const known = new Set<string>()
+  // numara → o numaraya sahip carilerin (unvansız, sadeleştirilmiş) isimleri
+  const known = new Map<string, { keys: Set<string>; firstName: string }>()
   for (const c of existing) {
     for (const p of [c.phone, c.mobile_phone, c.whatsapp_phone]) {
       const n = p ? normalizePhone(p) : null
-      if (n) known.add(n.canonical)
+      if (!n) continue
+      const entry = known.get(n.canonical) ?? { keys: new Set<string>(), firstName: c.full_name }
+      entry.keys.add(nameSig(c.full_name))
+      known.set(n.canonical, entry)
     }
   }
-  const seenInFile = new Set<string>()
+  const seenInFile = new Map<string, Set<string>>()
   return contacts.map((contact, i) => {
     const ranked = rankPhones(contact.phones)
     const best = ranked[0]
     const normalized = best ? normalizePhone(best.value) : null
-    const canonical = normalized?.canonical ?? null
+    const canonical = normalized?.canonical ?? (best ? best.value.replace(/\D/g, '') || null : null)
+    const nk = nameSig(contact.fullName)
     let status: RowStatus = 'new'
+    let takenBy: string | undefined
+    const inDb = canonical ? known.get(canonical) : undefined
+    const inFile = canonical ? seenInFile.get(canonical) : undefined
     if (!best) status = 'noPhone'
-    else if (canonical && known.has(canonical)) status = 'exists'
-    else if (canonical && seenInFile.has(canonical)) status = 'duplicate'
-    if (canonical) seenInFile.add(canonical)
+    else if (inDb?.keys.has(nk)) status = 'exists'
+    else if (inFile?.has(nk)) status = 'duplicate'
+    else if (inDb) {
+      status = 'phoneTaken'
+      takenBy = inDb.firstName
+    } else if (inFile) status = 'sharedPhone'
+    if (canonical) seenInFile.set(canonical, (inFile ?? new Set<string>()).add(nk))
     return {
+      takenBy,
       key: `${i}-${contact.fullName}`,
       contact,
       phoneRaw: best?.value ?? '',
@@ -135,7 +172,7 @@ export function VcfImportDialog() {
       for (const c of contacts) if (!c.fullName) c.fullName = c.phones[0]?.value ?? 'İsimsiz'
       const built = buildRows(contacts, existingCustomers)
       setRows(built)
-      setSelected(new Set())
+      setSelected(new Set(built.filter((r) => PRESELECTED.has(r.status)).map((r) => r.key)))
       setSearch('')
       setOnlyDoctors(false)
       setFileLabel(files.length === 1 ? files[0].name : `${files.length} dosya`)
@@ -159,10 +196,10 @@ export function VcfImportDialog() {
   }, [rows, search, onlyDoctors])
 
   const withProvince = rows.filter((r) => r.location).length
-  const selectableVisible = visible.filter((r) => r.status === 'new')
+  const selectableVisible = visible.filter((r) => SELECTABLE.has(r.status))
   const allVisibleSelected = selectableVisible.length > 0 && selectableVisible.every((r) => selected.has(r.key))
   const counts = React.useMemo(() => {
-    const c: Record<RowStatus, number> = { new: 0, exists: 0, duplicate: 0, noPhone: 0 }
+    const c: Record<RowStatus, number> = { new: 0, exists: 0, duplicate: 0, noPhone: 0, sharedPhone: 0, phoneTaken: 0 }
     for (const r of rows) c[r.status]++
     return c
   }, [rows])
@@ -186,7 +223,7 @@ export function VcfImportDialog() {
   }
 
   async function handleImport() {
-    const toImport = rows.filter((r) => selected.has(r.key) && r.status === 'new')
+    const toImport = rows.filter((r) => selected.has(r.key) && SELECTABLE.has(r.status))
     if (toImport.length === 0) return
     setImporting(true)
     setProgress(0)
@@ -264,10 +301,12 @@ export function VcfImportDialog() {
           <DialogHeader>
             <DialogTitle>Rehberden Cari Kart'a Aktar</DialogTitle>
             <DialogDescription>
-              {fileLabel} — {rows.length} kişi okundu: {counts.new} yeni, {counts.exists} zaten kayıtlı
-              {counts.duplicate > 0 && `, ${counts.duplicate} dosyada tekrar`}
-              {counts.noPhone > 0 && `, ${counts.noPhone} numarasız`}. {withProvince} kişide il/ilçe algılandı (İl, İlçe ve Bölge alanına yazılır).
-              Aktarmak istediğiniz doktorları seçin.
+              {fileLabel} — {rows.length} kişi okundu: {counts.new + counts.sharedPhone} yeni
+              {counts.noPhone > 0 && `, ${counts.noPhone} numarasız (o da aktarılır)`}
+              {counts.phoneTaken > 0 && `, ${counts.phoneTaken} kişinin numarası başka isimle kayıtlı`}
+              {counts.exists > 0 && `, ${counts.exists} zaten kayıtlı`}
+              {counts.duplicate > 0 && `, ${counts.duplicate} dosyada tekrar`}. {withProvince} kişide il/ilçe algılandı (İl, İlçe ve Bölge alanına yazılır).
+              Aktarılabilecek herkes seçili geldi; istemediklerinizin işaretini kaldırın.
             </DialogDescription>
           </DialogHeader>
 
@@ -294,7 +333,7 @@ export function VcfImportDialog() {
                 onCheckedChange={toggleAllVisible}
                 disabled={selectableVisible.length === 0}
               />
-              Görünen yenilerin tümünü seç ({selectableVisible.length})
+              Görünenlerin tümünü seç ({selectableVisible.length})
             </label>
             <span className="text-muted-foreground">{selected.size} kişi seçili</span>
           </div>
@@ -302,7 +341,7 @@ export function VcfImportDialog() {
           <div className="max-h-[45vh] overflow-y-auto">
             {visible.length === 0 && <p className="text-muted-foreground py-6 text-center text-sm">Eşleşen kişi yok.</p>}
             {visible.map((r) => {
-              const disabled = r.status !== 'new'
+              const disabled = !SELECTABLE.has(r.status)
               return (
                 <label
                   key={r.key}
@@ -325,7 +364,11 @@ export function VcfImportDialog() {
                       {r.location.district ? `${r.location.province} / ${r.location.district}` : r.location.province}
                     </Badge>
                   )}
-                  {r.status !== 'new' && <Badge variant="secondary">{STATUS_LABEL[r.status]}</Badge>}
+                  {r.status !== 'new' && (
+                    <Badge variant="secondary" title={r.takenBy ? `Bu numara Cari Kart'ta "${r.takenBy}" adıyla kayıtlı` : undefined}>
+                      {r.takenBy ? `${STATUS_LABEL[r.status]}: ${r.takenBy}` : STATUS_LABEL[r.status]}
+                    </Badge>
+                  )}
                 </label>
               )
             })}
