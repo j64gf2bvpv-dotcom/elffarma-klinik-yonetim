@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.303] - 2026-10-14
+
+**Stok: Dermakor ve Swiss tablolarının sütunları yukarıdan aşağıya hizalı** — iki tablo da aynı sabit sütun genişliklerini kullanıyor (önceden her tablo kendi içeriğine göre genişlediği için sütunlar alt alta denk gelmiyordu); birlikte yatay kaydırma ile tam hizalı kayıyorlar.
+
 ## [2.17.302] - 2026-10-14
 
 **Bütün veri girişleri bütün kullanıcılara açıldı:** Ürün ekleme/silme ve tüm ürün alanları (satış fiyatı, faturasız fiyat, kampanya, boyut, SKT…), katalog ekleme/yönetme, ürün/katalog ekleri, WhatsApp şablonları ve ziyaret planları artık yönetici olmayan personel tarafından da düzenlenebiliyor (veritabanı: migration 20261014113428 ve 20261014120000). Bilerek yöneticide kalanlar: personel yetkileri/rol atama, sistem ayarları, yapay zekâ anahtarları, yedekleme, örnek veri ve "tüm hareketleri sil" gibi toplu silmeler.

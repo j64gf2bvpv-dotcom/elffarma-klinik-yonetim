@@ -633,6 +633,9 @@ function CategoryCell({ product }: { product: Product }) {
  * dar-ama-uzun bir "çubuk". Gerçek 1400/1024/800/600/400px pencere
  * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
  */
+const PRODUCT_COL_WIDTHS = [44, 40, 32, 60, 180, 140, 160, 96, 90, 176, 110, 134, 192, 120, 340]
+const PRODUCT_TABLE_WIDTH = PRODUCT_COL_WIDTHS.reduce((a, b) => a + b, 0)
+
 function ProductsTable({
   products,
   onRemove,
@@ -668,7 +671,15 @@ function ProductsTable({
   return (
     <Card>
       <CardContent className="p-0">
-        <Table>
+        {/* Dermakor / Swiss tablolarında sütunlar yukarıdan aşağıya hizalı olsun diye
+            (kullanıcı isteği, 2026-10-14) sabit genişlikli tablo düzeni — her
+            iki tablo aynı PRODUCT_COL_WIDTHS'i kullanır. */}
+        <Table className="table-fixed" style={{ width: PRODUCT_TABLE_WIDTH, minWidth: PRODUCT_TABLE_WIDTH }}>
+          <colgroup>
+            {PRODUCT_COL_WIDTHS.map((w, i) => (
+              <col key={i} style={{ width: w }} />
+            ))}
+          </colgroup>
           <TableHeader>
             <TableRow>
               {/* Sıra numarası — kullanıcı isteği, 2026-08-28: "toplam kaç
