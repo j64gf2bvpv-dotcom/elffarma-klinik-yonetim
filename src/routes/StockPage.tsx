@@ -597,7 +597,7 @@ function PriceCell({ product, field = 'unit_price' }: { product: Product; field?
     >
       {price ? (
         <>
-          {Number(price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+          {`${Number(price).toLocaleString('tr-TR', { maximumFractionDigits: 2 })} TL`}
           {field === 'unit_price' && product.unit_cost != null && Number(price) > 0 && (
             <span className="text-xs text-success">
               (%

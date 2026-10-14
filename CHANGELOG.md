@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.307] - 2026-10-14
+
+**Stok fiyatlarında TL sonda:** Satış fiyatı ve faturasız fiyat "36.000 TL" biçiminde gösteriliyor (₺ işareti başta değil, TL rakamdan sonra).
+
 ## [2.17.306] - 2026-10-14
 
 **Stok fiyatları kuruşsuz:** Satış fiyatı ve faturasız fiyat sonda ",00" olmadan gösteriliyor (₺36.000); kuruşlu fiyatlarda kuruş yine görünür.
