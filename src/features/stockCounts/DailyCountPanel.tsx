@@ -913,7 +913,8 @@ export function DailyCountPanel() {
           ).map(([groupLabel, groupItems]) =>
             groupItems.length === 0 ? null : (
               <div key={groupLabel} className="min-w-0">
-                <h3 className="text-muted-foreground px-3 pb-1 text-sm font-semibold tracking-wide uppercase">
+                {/* Grup başlığı tam genişlikte şeffaf kırmızı şerit (kullanıcı isteği, 2026-10-14) */}
+                <h3 className="border-y border-destructive/20 bg-destructive/10 px-3 py-2 text-sm font-bold tracking-wide text-destructive uppercase">
                   {groupLabel}
                 </h3>
                 <Table className={cn('table-fixed', COUNT_TABLE_GRID)}>
