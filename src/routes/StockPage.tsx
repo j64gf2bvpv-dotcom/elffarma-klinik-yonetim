@@ -593,11 +593,13 @@ function PriceCell({ product, field = 'unit_price' }: { product: Product; field?
       type="button"
       onClick={() => setEditing(true)}
       title={`${label} düzenlemek için tıklayın`}
-      className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 text-muted-foreground hover:bg-accent"
+      className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent"
     >
       {price ? (
         <>
-          {`${Number(price).toLocaleString('tr-TR', { maximumFractionDigits: 2 })} TL`}
+          <span className="font-bold text-foreground tabular-nums">
+            {`${Number(price).toLocaleString('tr-TR', { maximumFractionDigits: 2 })} TL`}
+          </span>
           {field === 'unit_price' && product.unit_cost != null && Number(price) > 0 && (
             <span className="text-xs text-success">
               (%
@@ -607,7 +609,7 @@ function PriceCell({ product, field = 'unit_price' }: { product: Product; field?
           )}
         </>
       ) : (
-        <span>—</span>
+        <span className="text-muted-foreground">—</span>
       )}
     </button>
   )
