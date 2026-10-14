@@ -44,6 +44,7 @@ import { useAutoBackupOnLaunch } from '@/features/backup/useAutoBackupOnLaunch'
 import { useWhatsNewNotification } from '@/features/appUpdate/useWhatsNewNotification'
 import { AIChatWidget } from '@/features/ai/AIChatWidget'
 import { PresenceProvider, useOnlineStaff } from '@/features/presence/PresenceProvider'
+import { StaffChatProvider, useStaffChat } from '@/features/staffChat/StaffChatProvider'
 import { useStockRealtimeSync } from '@/features/stock/useStockRealtimeSync'
 import { useUpdateStaff } from '@/features/staff/hooks'
 import { useKeyboardSound } from '@/features/soundSettings/useKeyboardSound'
@@ -226,13 +227,20 @@ function SidebarOnlineList() {
   const { staff } = useAuth()
   const online = useOnlineStaff()
   const others = online.filter((o) => o.staff_id !== staff?.id)
+  const { openChat, unread } = useStaffChat()
 
   if (others.length === 0) return null
 
   return (
     <div className="relative z-10 mx-3 mb-2 grid gap-1">
       {others.map((o) => (
-        <div key={o.staff_id} className="flex items-center gap-2 rounded-lg px-2 py-1 text-xs text-sidebar-foreground/70">
+        <button
+          type="button"
+          key={o.staff_id}
+          onClick={() => openChat(o.staff_id)}
+          title={`${o.full_name} ile mesajlaş`}
+          className="flex items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-sidebar-foreground/70 transition-colors hover:bg-white/10 hover:text-sidebar-foreground"
+        >
           <span className="relative shrink-0">
             <Avatar className="size-6">
               {o.avatar_url && <AvatarImage src={o.avatar_url} alt={o.full_name} />}
@@ -242,8 +250,13 @@ function SidebarOnlineList() {
             </Avatar>
             <span className="absolute -right-0.5 -bottom-0.5 size-1.5 rounded-full border border-sidebar bg-[oklch(0.72_0.16_150)]" />
           </span>
-          <span className="truncate">{o.full_name}</span>
-        </div>
+          <span className="min-w-0 flex-1 truncate">{o.full_name}</span>
+          {unread[o.staff_id] ? (
+            <span className="rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+              {unread[o.staff_id]}
+            </span>
+          ) : null}
+        </button>
       ))}
     </div>
   )
@@ -764,6 +777,7 @@ export function AppShell() {
 
   return (
     <PresenceProvider>
+    <StaffChatProvider>
     <div className="flex h-screen w-screen overflow-hidden bg-background">
       <aside className="bg-sidebar text-sidebar-foreground relative flex w-64 shrink-0 flex-col overflow-hidden border-r border-sidebar-border">
         <div
@@ -919,6 +933,7 @@ export function AppShell() {
 
       <AIChatWidget />
     </div>
+    </StaffChatProvider>
     </PresenceProvider>
   )
 }

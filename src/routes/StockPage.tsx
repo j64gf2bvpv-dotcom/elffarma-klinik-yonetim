@@ -7,6 +7,7 @@ import {
   Check,
   GripVertical,
   Plus,
+  Minus,
   ChevronDown,
   Settings2,
   FileDown,
@@ -98,6 +99,96 @@ function SaveButton({ onCommit }: { onCommit: () => void }) {
 
 
 /**
+ * Paket / flakon adedi ve fiyat hücrelerinin ortak yerinde düzenleyicisi
+ * (kullanıcı isteği, 2026-10-14: "üzerine tıklayınca rakamın tamamı görünsün,
+ * rakam silinmesin, o anki rakamı görüp eksiltip yükseltebilmeliyim"):
+ *  - tıklayınca mevcut değer seçili gelmez (yazınca silinmesin diye), imleç
+ *    sonda durur; kutu hücrenin tamamını kaplar, rakam kesilmez
+ *  - altta − / + düğmeleri (ve klavyede ↑ / ↓) değeri `step` kadar değiştirir
+ *  - Enter / ✓ / dışarı tıklama kaydeder, Esc vazgeçer
+ * Ondalık için virgül de kabul edilir ("1500,50").
+ */
+function parseEditorNumber(raw: string): number | null {
+  const t = raw.trim().replace(/\s/g, '').replace(',', '.')
+  if (t === '') return null
+  const n = Number(t)
+  return Number.isFinite(n) ? n : NaN
+}
+
+function formatEditorNumber(n: number | null): string {
+  if (n == null) return ''
+  return String(Math.round(n * 100) / 100).replace('.', ',')
+}
+
+function InlineNumberEditor({
+  value,
+  onChange,
+  onCommit,
+  onCancel,
+  step = 1,
+  decimals = false,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  onCommit: () => void
+  onCancel: () => void
+  step?: number
+  decimals?: boolean
+  placeholder?: string
+}) {
+  function bump(dir: 1 | -1) {
+    const cur = parseEditorNumber(value)
+    const base = cur == null || Number.isNaN(cur) ? 0 : cur
+    onChange(formatEditorNumber(Math.max(0, base + dir * step)))
+  }
+  const keepFocus = (e: React.MouseEvent) => e.preventDefault()
+
+  return (
+    <div className="flex w-full flex-col items-stretch gap-1">
+      <Input
+        type="text"
+        inputMode={decimals ? 'decimal' : 'numeric'}
+        autoFocus
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(decimals ? e.target.value.replace(/[^\d.,]/g, '') : e.target.value.replace(/\D/g, ''))}
+        onFocus={(e) => {
+          const el = e.currentTarget
+          const end = el.value.length
+          el.setSelectionRange(end, end)
+        }}
+        onBlur={onCommit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            onCommit()
+          } else if (e.key === 'Escape') {
+            onCancel()
+          } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault()
+            bump(e.key === 'ArrowUp' ? 1 : -1)
+          }
+        }}
+        className="h-8 w-full min-w-0 px-1.5 text-center tabular-nums"
+      />
+      <div className="flex items-center justify-center gap-1">
+        <Button type="button" variant="outline" size="icon" className="size-7" onMouseDown={keepFocus} onClick={() => bump(-1)} title={`${step} azalt`}>
+          <Minus className="size-3.5" />
+        </Button>
+        <Button type="button" variant="outline" size="icon" className="size-7" onMouseDown={keepFocus} onClick={() => bump(1)} title={`${step} artır`}>
+          <Plus className="size-3.5" />
+        </Button>
+        <Button type="button" size="icon" className="size-7" onMouseDown={keepFocus} onClick={onCommit} title="Kaydet">
+          <Check className="size-3.5" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+
+/**
  * Stok adedine tıklayınca yerinde (inline) düzenlenebilir hale gelir. Yeni
  * değer doğrudan products.current_quantity'ye yazılmıyor — CLAUDE.md kuralı
  * gereği fark, record_stock_movement RPC'si üzerinden (artışta 'adjustment',
@@ -132,30 +223,15 @@ function QuantityCell({ product }: { product: Product }) {
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1">
-        <Input
-          type="number"
-          min="0"
-          step="1"
-          autoFocus
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onFocus={(e) => e.currentTarget.select()}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              commit()
-            }
-            if (e.key === 'Escape') {
-              setValue(String(product.current_quantity))
-              setEditing(false)
-            }
-          }}
-          className="h-8 w-20"
-        />
-        <SaveButton onCommit={commit} />
-      </div>
+      <InlineNumberEditor
+        value={value}
+        onChange={setValue}
+        onCommit={commit}
+        onCancel={() => {
+          setValue(String(product.current_quantity))
+          setEditing(false)
+        }}
+      />
     )
   }
 
@@ -209,30 +285,15 @@ function FlakonQuantityCell({ product }: { product: Product }) {
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1">
-        <Input
-          type="number"
-          min="0"
-          step="1"
-          autoFocus
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onFocus={(e) => e.currentTarget.select()}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              commit()
-            }
-            if (e.key === 'Escape') {
-              setValue(String(product.flakon_quantity))
-              setEditing(false)
-            }
-          }}
-          className="h-8 w-20"
-        />
-        <SaveButton onCommit={commit} />
-      </div>
+      <InlineNumberEditor
+        value={value}
+        onChange={setValue}
+        onCommit={commit}
+        onCancel={() => {
+          setValue(String(product.flakon_quantity))
+          setEditing(false)
+        }}
+      />
     )
   }
 
@@ -491,53 +552,39 @@ function PriceCell({ product, field = 'unit_price' }: { product: Product; field?
   const price = product[field]
   const label = field === 'unit_price' ? 'Satış fiyatını' : 'Faturasız fiyatı'
   const [editing, setEditing] = React.useState(false)
-  const [value, setValue] = React.useState(price != null ? String(price) : '')
+  const current = formatEditorNumber(price != null ? Number(price) : null)
+  const [value, setValue] = React.useState(current)
   const mutation = useUpdateProductPrice()
 
   React.useEffect(() => {
-    if (!editing) setValue(price != null ? String(price) : '')
-  }, [price, editing])
+    if (!editing) setValue(current)
+  }, [current, editing])
 
   function commit() {
     setEditing(false)
-    const trimmed = value.trim()
-    const current = price != null ? String(price) : ''
-    if (trimmed === current) return
-    const parsed = trimmed === '' ? null : Number(trimmed)
-    if (parsed !== null && (!Number.isFinite(parsed) || parsed < 0)) {
+    const parsed = parseEditorNumber(value)
+    if (parsed !== null && (Number.isNaN(parsed) || parsed < 0)) {
       setValue(current)
       return
     }
+    if (parsed === (price != null ? Number(price) : null)) return
     mutation.mutate({ id: product.id, unit_price: parsed, field })
   }
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1">
-        <Input
-          type="number"
-          min="0"
-          step="0.01"
-          autoFocus
-          placeholder="Örn. 1500"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onFocus={(e) => e.currentTarget.select()}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              commit()
-            }
-            if (e.key === 'Escape') {
-              setValue(price != null ? String(price) : '')
-              setEditing(false)
-            }
-          }}
-          className="h-8 w-28"
-        />
-        <SaveButton onCommit={commit} />
-      </div>
+      <InlineNumberEditor
+        value={value}
+        onChange={setValue}
+        onCommit={commit}
+        onCancel={() => {
+          setValue(formatEditorNumber(price != null ? Number(price) : null))
+          setEditing(false)
+        }}
+        step={10}
+        decimals
+        placeholder="Örn. 1500"
+      />
     )
   }
 

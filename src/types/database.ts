@@ -858,3 +858,15 @@ export interface StaffMessage {
   attachment_name: string | null
   created_at: string
 }
+
+/** Personel mesajı — recipient_id doluysa kişiye özel, boşsa ortak "Ekip Sohbeti" (2026-10-14). */
+export interface StaffMessage {
+  id: string
+  sender_id: string | null
+  recipient_id: string | null
+  body: string | null
+  attachment_path: string | null
+  attachment_name: string | null
+  read_at: string | null
+  created_at: string
+}

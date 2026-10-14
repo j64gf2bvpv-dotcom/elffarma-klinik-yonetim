@@ -3,6 +3,11 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.305] - 2026-10-14
+
+**Personel arası mesajlaşma:** Çevrimiçi personelin (yan menüde ve Ana Sayfa'daki "Çevrimiçi Personel" kartında) üzerine tıklayınca o kişiyle özel sohbet penceresi açılıyor; gelen mesaj anında bildirim olarak çıkıyor ("Yanıtla" ile sohbet açılır), okunmamış sayısı rozetle, gönderilenlerde "İletildi / Okundu" görünüyor. Kart artık tüm kullanıcılara açık (migration 20261014150000).
+**Stok — fiyat / paket / flakon düzenleme:** Satış fiyatı, faturasız fiyat, paket ve flakon adedine tıklayınca mevcut rakam silinmeden tamamı görünüyor (imleç sonda); altındaki − / + düğmeleriyle (klavyede ↑ / ↓) azaltıp artırılabiliyor — fiyatta 10 TL, adette 1'er.
+
 ## [2.17.304] - 2026-10-14
 
 **Faturalar'a "Abone No":** Fatura ve tekrarlayan fatura şablonu formlarında Sözleşme Numarası'nın yanında "Abone Numarası" alanı; listede (abonelik satırında ve şablonlarda) ve dışa aktarımda "Abone No" görünüyor, hatırlatma notuna da yazılıyor. Şablondan her ay otomatik oluşan faturalar abone numarasını da taşıyor (migration 20261014140000).
