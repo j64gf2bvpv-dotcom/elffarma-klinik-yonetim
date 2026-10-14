@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.311] - 2026-10-14
+
+**Günlük Sayım tablo çizgileri:** Sayım ekranındaki tablolarda (güncel sayım, geçmiş sayım detayı) her satır ve sütunun arasında çizgi var — tam tablo görünümü.
+
 ## [2.17.310] - 2026-10-14
 
 **Stok tablosu baş sütunları sadeleşti:** Sıra artık No → ürün görseli (biraz daha büyük) → seçim kutusu; sürükleme tutamacı (⋮⋮) kaldırıldı — sıralamayı değiştirmek için satır yine sürüklenebiliyor.

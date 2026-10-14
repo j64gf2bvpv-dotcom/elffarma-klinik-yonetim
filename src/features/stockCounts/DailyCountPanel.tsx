@@ -50,6 +50,14 @@ import type { StockCount } from '@/types/database'
 import { cn } from '@/lib/utils'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
+/**
+ * Sayım tablolarında her hücrenin etrafında çizgi — tablo görünümü
+ * (kullanıcı isteği, 2026-10-14: "aralarda çizgi şeklinde tablo şeklinde yap").
+ */
+const COUNT_TABLE_GRID =
+  'border-collapse border border-border [&_td]:border [&_td]:border-border [&_th]:border [&_th]:border-border [&_th]:bg-muted/40'
+
+
 /** "Sistemdeki Miktar" / "Son Sayım" / "O Günkü Stok" gibi taban hücreleri için —
  * paket ve flakon ikisi de 0 ise "—"; sadece biri 0 olan tarafta o taraf hiç
  * yazılmaz (kullanıcı isteğiyle, 2026-08-23 — "0 olanlar hiç yazmasın", önceden
@@ -416,7 +424,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
               sayımı değil, İSTENEN herhangi bir gün tamamlanabilir/güncellenebilir. */}
           {!isLoading && items.length > 0 && isOpenCount && (
             <>
-              <Table>
+              <Table className={COUNT_TABLE_GRID}>
                 <TableHeader>
                   <TableRow className="border-b-2! border-border!">
                     <TableHead>Ürün</TableHead>
@@ -481,7 +489,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
             </>
           )}
           {!isLoading && items.length > 0 && !isOpenCount && (
-            <Table>
+            <Table className={COUNT_TABLE_GRID}>
               <TableHeader>
                 <TableRow className="border-b-2! border-border!">
                   <TableHead>Ürün</TableHead>
@@ -908,7 +916,7 @@ export function DailyCountPanel() {
                 <h3 className="text-muted-foreground px-3 pb-1 text-sm font-semibold tracking-wide uppercase">
                   {groupLabel}
                 </h3>
-                <Table className="table-fixed">
+                <Table className={cn('table-fixed', COUNT_TABLE_GRID)}>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-56">Ürün</TableHead>
