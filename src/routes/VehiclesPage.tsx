@@ -13,6 +13,7 @@ import { VehicleDialog } from '@/features/vehicles/VehicleDialog'
 import { FuelLogDialog } from '@/features/vehicles/FuelLogDialog'
 import { useVehicles, useDeleteVehicle, useAllVehicleFuelLogs, useDeleteVehicleFuelLog } from '@/features/vehicles/hooks'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
+import { vehicleUserName } from '@/features/vehicles/api'
 
 function currency(n: number | null) {
   if (n == null) return '—'
@@ -57,7 +58,7 @@ export function VehiclesPage() {
                 { header: 'Araç Modeli', value: (v) => v.brand_model },
                 { header: 'Yıl', value: (v) => v.year ?? '' },
                 { header: 'Plaka', value: (v) => v.plate_number ?? '' },
-                { header: 'Kullanan Temsilci', value: (v) => v.sales_reps?.name ?? '' },
+                { header: 'Kullanıcı', value: (v) => vehicleUserName(v) ?? '' },
                 { header: 'Firma', value: (v) => v.vendor_company ?? '' },
                 { header: 'Aylık Kira', value: (v) => v.monthly_rental_price ?? '' },
                 { header: 'Bakım Tarihi', value: (v) => v.maintenance_date ?? '' },
@@ -76,7 +77,7 @@ export function VehiclesPage() {
               <TableRow>
                 <TableHead>Araç</TableHead>
                 <TableHead>Plaka</TableHead>
-                <TableHead>Kullanan Temsilci</TableHead>
+                <TableHead>Kullanıcı</TableHead>
                 <TableHead>Firma</TableHead>
                 <TableHead>Aylık Kira</TableHead>
                 <TableHead>Bakım Tarihi</TableHead>
@@ -106,7 +107,7 @@ export function VehiclesPage() {
                     {v.year ? ` (${v.year})` : ''}
                   </TableCell>
                   <TableCell>{v.plate_number ?? '—'}</TableCell>
-                  <TableCell>{v.sales_reps?.name ?? '—'}</TableCell>
+                  <TableCell>{vehicleUserName(v) ?? '—'}</TableCell>
                   <TableCell>{v.vendor_company ?? '—'}</TableCell>
                   <TableCell>{currency(v.monthly_rental_price)}</TableCell>
                   <TableCell>
@@ -157,7 +158,7 @@ export function VehiclesPage() {
                 <TableHead>Tarih</TableHead>
                 <TableHead>Araç</TableHead>
                 <TableHead>Plaka</TableHead>
-                <TableHead>Temsilci</TableHead>
+                <TableHead>Kullanıcı</TableHead>
                 <TableHead>Tutar</TableHead>
                 <TableHead>Not</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
@@ -180,7 +181,7 @@ export function VehiclesPage() {
                     </TableCell>
                     <TableCell>{vehicle?.brand_model ?? '—'}</TableCell>
                     <TableCell>{vehicle?.plate_number ?? '—'}</TableCell>
-                    <TableCell>{vehicle?.sales_reps?.name ?? '—'}</TableCell>
+                    <TableCell>{vehicleUserName(vehicle) ?? '—'}</TableCell>
                     <TableCell>{currency(log.amount)}</TableCell>
                     <TableCell className="text-muted-foreground">{log.note ?? '—'}</TableCell>
                     <TableCell className="text-right">

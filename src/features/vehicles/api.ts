@@ -6,6 +6,11 @@ export interface VehicleWithRelations extends Vehicle {
   sales_reps: { name: string } | null
 }
 
+/** Aracı kullanan kişinin görünen adı — elle yazılan isim, yoksa bağlı satış temsilcisi. */
+export function vehicleUserName(v: VehicleWithRelations | null | undefined): string | null {
+  return v?.driver_name?.trim() || v?.sales_reps?.name || null
+}
+
 export async function fetchVehicles(): Promise<VehicleWithRelations[]> {
   const { data, error } = await supabase
     .from('vehicles')
@@ -22,6 +27,7 @@ export interface VehicleInput {
   registration_info: string | null
   vendor_company: string | null
   sales_rep_id: string | null
+  driver_name?: string | null
   monthly_rental_price: number | null
   maintenance_date: string | null
   has_utts: boolean

@@ -23,6 +23,7 @@ import {
   updateProductName,
   updateProductPrice,
   updateProductPackageSize,
+  updateProductExpiry,
   updateStockMovement,
   type ProductInput,
   type ProductLotInput,
@@ -173,6 +174,18 @@ export function useUpdateProductName() {
       toast.success('Ürün adı güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateProductExpiry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, expiry_date }: { id: string; expiry_date: string | null }) => updateProductExpiry(id, expiry_date),
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueriesData<Product[]>({ queryKey: ['products'] }, (old) => old?.map((p) => (p.id === id ? { ...p, ...updated } : p)))
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+    onError: (error: Error) => toast.error('SKT kaydedilemedi', { description: error.message }),
   })
 }
 

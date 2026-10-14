@@ -15,7 +15,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CurrencyInput } from '@/components/ui/currency-input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { useCreateVehicle, useUpdateVehicle } from './hooks'
 import type { VehicleWithRelations } from './api'
@@ -31,7 +30,9 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
   const [plateNumber, setPlateNumber] = React.useState('')
   const [registrationInfo, setRegistrationInfo] = React.useState('')
   const [vendorCompany, setVendorCompany] = React.useState('')
-  const [salesRepId, setSalesRepId] = React.useState<string>('none')
+  // "Kullanıcı" — serbest metin; kayıtlı satış temsilcileri öneri olarak çıkar,
+  // listede olmayan herhangi bir isim de yazılabilir (kullanıcı isteği, 2026-10-14).
+  const [userName, setUserName] = React.useState('')
   const [monthlyRental, setMonthlyRental] = React.useState<number | undefined>(undefined)
   const [maintenanceDate, setMaintenanceDate] = React.useState('')
   const [hasUtts, setHasUtts] = React.useState(false)
@@ -44,7 +45,7 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
     setPlateNumber(vehicle?.plate_number ?? '')
     setRegistrationInfo(vehicle?.registration_info ?? '')
     setVendorCompany(vehicle?.vendor_company ?? '')
-    setSalesRepId(vehicle?.sales_rep_id ?? 'none')
+    setUserName(vehicle?.driver_name ?? vehicle?.sales_reps?.name ?? '')
     setMonthlyRental(vehicle?.monthly_rental_price ?? undefined)
     setMaintenanceDate(vehicle?.maintenance_date ?? '')
     setHasUtts(vehicle?.has_utts ?? false)
@@ -62,7 +63,10 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
       plate_number: plateNumber.trim() || null,
       registration_info: registrationInfo.trim() || null,
       vendor_company: vendorCompany.trim() || null,
-      sales_rep_id: salesRepId === 'none' ? null : salesRepId,
+      // Yazılan isim bir satış temsilcisiyle birebir eşleşirse o temsilciye de bağlanır
+      // (temsilci raporları için); eşleşmezse sadece isim olarak saklanır.
+      sales_rep_id: salesReps.find((r) => r.name.trim().toLocaleLowerCase('tr-TR') === userName.trim().toLocaleLowerCase('tr-TR'))?.id ?? null,
+      driver_name: userName.trim() || null,
       monthly_rental_price: monthlyRental ?? null,
       maintenance_date: maintenanceDate || null,
       has_utts: hasUtts,
@@ -144,20 +148,19 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
               />
             </div>
             <div className="grid gap-1.5">
-              <Label>Kullanan Satış Personeli</Label>
-              <Select value={salesRepId} onValueChange={setSalesRepId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">— Atanmadı —</SelectItem>
-                  {salesReps.map((rep) => (
-                    <SelectItem key={rep.id} value={rep.id}>
-                      {rep.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="vehicle-user">Kullanıcı</Label>
+              <Input
+                id="vehicle-user"
+                list="vehicle-user-suggestions"
+                placeholder="Aracı kullanan kişinin adı"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+              />
+              <datalist id="vehicle-user-suggestions">
+                {salesReps.map((rep) => (
+                  <option key={rep.id} value={rep.name} />
+                ))}
+              </datalist>
             </div>
           </div>
 

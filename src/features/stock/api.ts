@@ -90,6 +90,11 @@ export async function updateProductName(id: string, name: string): Promise<Produ
   return offlineUpdate<Product>('products', id, { name }, `Ürün adı güncelleme`)
 }
 
+/** Sadece son kullanma tarihini günceller — Stok listesinde SKT'ye tıklayıp yazma (2026-10-14). */
+export async function updateProductExpiry(id: string, expiry_date: string | null): Promise<Product> {
+  return offlineUpdate<Product>('products', id, { expiry_date }, 'SKT güncelleme')
+}
+
 /** Sadece boyut/içerik alanını günceller — Stok listesinde yerinde düzenleme. */
 export async function updateProductPackageSize(id: string, package_size: string | null): Promise<Product> {
   return offlineUpdate<Product>('products', id, { package_size }, 'Ürün boyutu güncelleme')

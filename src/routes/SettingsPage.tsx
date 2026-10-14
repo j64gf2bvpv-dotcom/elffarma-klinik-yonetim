@@ -782,7 +782,7 @@ export function SettingsPage() {
           {templates.map((template) => (
             <TemplateRow key={template.id} template={template} readOnly={currentStaff?.role !== 'admin'} />
           ))}
-          {currentStaff?.role === 'admin' && <NewTemplateForm />}
+          <NewTemplateForm />
         </CollapsibleCard>
 
         <CollapsibleCard

@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.302] - 2026-10-14
+
+**Bütün veri girişleri bütün kullanıcılara açıldı:** Ürün ekleme/silme ve tüm ürün alanları (satış fiyatı, faturasız fiyat, kampanya, boyut, SKT…), katalog ekleme/yönetme, ürün/katalog ekleri, WhatsApp şablonları ve ziyaret planları artık yönetici olmayan personel tarafından da düzenlenebiliyor (veritabanı: migration 20261014113428 ve 20261014120000). Bilerek yöneticide kalanlar: personel yetkileri/rol atama, sistem ayarları, yapay zekâ anahtarları, yedekleme, örnek veri ve "tüm hareketleri sil" gibi toplu silmeler.
+**Stok'ta SKT'ye tıklayınca tarih yazılabiliyor** (takvimli kutu; süresi geçmiş/yaklaşan renkli uyarı korunuyor; tarih gg.aa.yyyy gösteriliyor).
+**Araçlar: "Kullanan Satış Personeli" yerine serbest "Kullanıcı" alanı** — istenen isim elle yazılıyor, kayıtlı satış temsilcileri öneri olarak çıkıyor (yazılan isim bir temsilciyle eşleşirse ona da bağlanıyor). Veritabanına `vehicles.driver_name` eklendi.
+
 ## [2.17.301] - 2026-10-02
 
 **Stok > "Fiyat Listesi PDF":** Kullanıcının fiyat listesi düzeninde A4 PDF — her marka (Dermakor, Swiss) tek sayfaya sığar; başlık "… ÜRÜNLERİ <yıl> FİYAT LİSTESİ (FATURASIZ/FATURALI)", sütunlar Görsel | Ürün (ad + boyut) | KDV Dahil | Kampanya (kademeler alt alta), ızgara çizgileri ve altta kırmızı Elffarma logosu. Faturasız ve Faturalı (Satış Fiyatı) seçenekleri; fiyatı girilmemiş ürün listeye alınmaz. Ürün görselleri CORS'suz sitelerden de alınabilsin diye ana süreçte dar bir görsel indirme köprüsü eklendi (sadece https + image/*, 8 MB sınırı).

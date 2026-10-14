@@ -47,6 +47,7 @@ import {
   useUpdateProductCategory,
   useUpdateProductPrice,
   useUpdateProductPackageSize,
+  useUpdateProductExpiry,
 } from '@/features/stock/hooks'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
@@ -55,7 +56,6 @@ import { CongressShipmentsPanel } from '@/features/congressShipments/CongressShi
 import { ZoomableThumbnail } from '@/components/ZoomableThumbnail'
 import { cn } from '@/lib/utils'
 import { getExpiryStatus } from '@/lib/expiry'
-import { useAuth } from '@/lib/auth'
 import type { BrandLine, Product, ProductCatalog } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import type { ProductPriceField } from '@/features/stock/api'
@@ -250,8 +250,6 @@ function FlakonQuantityCell({ product }: { product: Product }) {
 
 /** Kampanya metnine tıklayınca yerinde düzenlenebilir hale gelir — sadece campaign alanını günceller. */
 function CampaignCell({ product }: { product: Product }) {
-  const { staff } = useAuth()
-  const isAdmin = staff?.role === 'admin'
   const [editing, setEditing] = React.useState(false)
   const [value, setValue] = React.useState(product.campaign ?? '')
   const mutation = useUpdateProductCampaign()
@@ -267,9 +265,6 @@ function CampaignCell({ product }: { product: Product }) {
     mutation.mutate({ id: product.id, campaign: trimmed || null })
   }
 
-  if (!isAdmin) {
-    return product.campaign ? <CampaignBadge text={product.campaign} /> : <span className="text-muted-foreground">—</span>
-  }
 
   if (editing) {
     return (
@@ -343,12 +338,76 @@ function PriceListPdfMenu({ products }: { products: Product[] }) {
 }
 
 /**
+ * SKT — tıklayınca takvimli tarih kutusu açılır, seçilen/yazılan tarih
+ * kaydedilir (kullanıcı isteği, 2026-10-14: "SKT bölümlerinin üzerine
+ * tıkladığımızda tarihleri yazabileyim"). Süresi geçmiş kırmızı, yaklaşan
+ * turuncu rozet davranışı aynen korunuyor; boşaltıp kaydetmek SKT'yi siler.
+ */
+function ExpiryCell({ product, status }: { product: Product; status: ReturnType<typeof getExpiryStatus> }) {
+  const [editing, setEditing] = React.useState(false)
+  const [value, setValue] = React.useState(product.expiry_date ?? '')
+  const mutation = useUpdateProductExpiry()
+
+  React.useEffect(() => {
+    if (!editing) setValue(product.expiry_date ?? '')
+  }, [product.expiry_date, editing])
+
+  function commit() {
+    setEditing(false)
+    const next = value || null
+    if (next === (product.expiry_date ?? null)) return
+    mutation.mutate({ id: product.id, expiry_date: next })
+  }
+
+  if (editing) {
+    return (
+      <Input
+        type="date"
+        autoFocus
+        value={value}
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit()
+          }
+          if (e.key === 'Escape') {
+            setValue(product.expiry_date ?? '')
+            setEditing(false)
+          }
+        }}
+        className="mx-auto h-8 w-36"
+      />
+    )
+  }
+
+  const label = product.expiry_date ? product.expiry_date.split('-').reverse().join('.') : null
+  return (
+    <button
+      type="button"
+      title="SKT'yi yazmak / değiştirmek için tıklayın"
+      onClick={(e) => {
+        e.stopPropagation()
+        setEditing(true)
+      }}
+      className="rounded-md px-1 py-0.5 hover:bg-accent"
+    >
+      {label ? (
+        <Badge variant={status === 'expired' ? 'destructive' : status === 'soon' ? 'warning' : 'outline'}>{label}</Badge>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      )}
+    </button>
+  )
+}
+
+/**
  * Boyut / içerik ("6 X 6 ML", "1 X 5 ML"…) — ürün adından sonra ayrı sütun
- * (kullanıcı isteği, 2026-10-02). Yönetici tıklayıp düzenler, personel görür.
+ * (kullanıcı isteği, 2026-10-02). Tüm kullanıcılar tıklayıp düzenler (2026-10-14).
  */
 function PackageSizeCell({ product }: { product: Product }) {
-  const { staff } = useAuth()
-  const isAdmin = staff?.role === 'admin'
   const [editing, setEditing] = React.useState(false)
   const [value, setValue] = React.useState(product.package_size ?? '')
   const mutation = useUpdateProductPackageSize()
@@ -363,8 +422,6 @@ function PackageSizeCell({ product }: { product: Product }) {
     if (next === (product.package_size ?? '')) return
     mutation.mutate({ id: product.id, package_size: next || null })
   }
-
-  if (!isAdmin) return <span className="text-muted-foreground text-xs">{product.package_size || '—'}</span>
 
   if (editing) {
     return (
@@ -428,8 +485,9 @@ function CampaignBadge({ text }: { text: string }) {
  * seçilir; marj sadece satış fiyatında gösterilir.
  */
 function PriceCell({ product, field = 'unit_price' }: { product: Product; field?: ProductPriceField }) {
-  const { staff } = useAuth()
-  const isAdmin = staff?.role === 'admin'
+  // Satış fiyatı ve faturasız fiyatı tüm aktif personel düzenleyebilir
+  // (kullanıcı isteği, 2026-10-14; veritabanı tetikleyicisi de buna göre
+  // güncellendi — migration 20261014113428).
   const price = product[field]
   const label = field === 'unit_price' ? 'Satış fiyatını' : 'Faturasız fiyatı'
   const [editing, setEditing] = React.useState(false)
@@ -451,16 +509,6 @@ function PriceCell({ product, field = 'unit_price' }: { product: Product; field?
       return
     }
     mutation.mutate({ id: product.id, unit_price: parsed, field })
-  }
-
-  if (!isAdmin) {
-    return price ? (
-      <span className="text-muted-foreground">
-        {Number(price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-      </span>
-    ) : (
-      <span className="text-muted-foreground">—</span>
-    )
   }
 
   if (editing) {
@@ -779,17 +827,7 @@ function ProductsTable({
                         (süresi geçmiş/yaklaşan) rozet kırmızı/turuncu kalıyor
                         (kullanıcı isteği, 2026-08-28: "takvim simgesi olmasın
                         sadece kritiklerde kırmızı olarak kalsın tarih"). */}
-                    {product.expiry_date ? (
-                      <Badge
-                        variant={
-                          expiryStatus === 'expired' ? 'destructive' : expiryStatus === 'soon' ? 'warning' : 'outline'
-                        }
-                      >
-                        {product.expiry_date}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                    <ExpiryCell product={product} status={expiryStatus} />
                   </TableCell>
                   <TableCell className="border-l">
                     <div className="flex justify-center gap-2">
@@ -906,10 +944,7 @@ function CatalogRow({ catalog }: { catalog: ProductCatalog }) {
 }
 
 function ManageCatalogsDialog({ catalogs }: { catalogs: ProductCatalog[] }) {
-  const { staff } = useAuth()
   const [open, setOpen] = React.useState(false)
-
-  if (staff?.role !== 'admin') return null
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -935,12 +970,9 @@ function ManageCatalogsDialog({ catalogs }: { catalogs: ProductCatalog[] }) {
 }
 
 function AddCatalogDialog({ existingNames }: { existingNames: string[] }) {
-  const { staff } = useAuth()
   const createCatalog = useCreateProductCatalog()
   const [open, setOpen] = React.useState(false)
   const [name, setName] = React.useState('')
-
-  if (staff?.role !== 'admin') return null
 
   const trimmed = name.trim()
   const duplicate = trimmed.length > 0 && existingNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())
@@ -985,8 +1017,6 @@ function AddCatalogDialog({ existingNames }: { existingNames: string[] }) {
 }
 
 export function StockPage() {
-  const { staff } = useAuth()
-  const isAdmin = staff?.role === 'admin'
   const [search, setSearch] = React.useState('')
   const [brandFilter, setBrandFilter] = React.useState<typeof ALL_BRANDS | BrandLine>(ALL_BRANDS)
   // Kaydırırken hangi satırla ilgilendiğini kaybetmemek için tıklanan satır
@@ -1170,17 +1200,15 @@ export function StockPage() {
                 </SelectContent>
               </Select>
             )}
-            {isAdmin && (
-              <ProductForm
-                trigger={
-                  <Button size="sm">
-                    <Plus className="size-3.5" /> Yeni Ürün Ekle
-                  </Button>
-                }
-              />
-            )}
-            {isAdmin && <AddCatalogDialog existingNames={catalogs.map((c) => c.name)} />}
-            {isAdmin && <ManageCatalogsDialog catalogs={catalogs} />}
+            <ProductForm
+              trigger={
+                <Button size="sm">
+                  <Plus className="size-3.5" /> Yeni Ürün Ekle
+                </Button>
+              }
+            />
+            <AddCatalogDialog existingNames={catalogs.map((c) => c.name)} />
+            <ManageCatalogsDialog catalogs={catalogs} />
             <PriceListPdfMenu products={allProducts} />
           </div>
 
@@ -1190,16 +1218,14 @@ export function StockPage() {
               <Button variant="outline" size="sm" onClick={() => setCheckedIds(new Set())}>
                 Seçimi Temizle
               </Button>
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={handleBulkRemove}
-                >
-                  <Trash2 className="size-3.5" /> Seçilenleri Kaldır
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={handleBulkRemove}
+              >
+                <Trash2 className="size-3.5" /> Seçilenleri Kaldır
+              </Button>
             </div>
           )}
 

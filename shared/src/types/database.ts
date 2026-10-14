@@ -688,6 +688,8 @@ export interface Vehicle {
   registration_info: string | null
   vendor_company: string | null
   sales_rep_id: string | null
+  /** Kullanan kişi — elle yazılan (2026-10-14) */
+  driver_name: string | null
   monthly_rental_price: number | null
   maintenance_date: string | null
   has_utts: boolean

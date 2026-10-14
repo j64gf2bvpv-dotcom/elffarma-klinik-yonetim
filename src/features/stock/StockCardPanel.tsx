@@ -289,8 +289,6 @@ export function StockCardPanel() {
   const [selectedRowId, setSelectedRowId] = React.useState<string | null>(null)
 
   const queryClient = useQueryClient()
-  const { staff } = useAuth()
-  const isAdmin = staff?.role === 'admin'
   const { data: movements = [] } = useAllStockMovements()
   const { data: sales = [] } = useSales()
   const { data: sampleRequests = [] } = useSampleRequests()
@@ -646,16 +644,14 @@ export function StockCardPanel() {
                           <Button variant="ghost" size="icon" title="Hareketi sil" onClick={() => handleDeleteMovement(row)}>
                             <Trash2 className="size-4 text-destructive" />
                           </Button>
-                          {isAdmin && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Ürünü kaldır"
-                              onClick={() => handleDeleteProduct(row)}
-                            >
-                              <PackageX className="size-4 text-destructive" />
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Ürünü kaldır"
+                            onClick={() => handleDeleteProduct(row)}
+                          >
+                            <PackageX className="size-4 text-destructive" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
