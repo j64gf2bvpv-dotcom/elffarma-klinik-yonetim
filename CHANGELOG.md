@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.306] - 2026-10-14
+
+**Stok fiyatları kuruşsuz:** Satış fiyatı ve faturasız fiyat sonda ",00" olmadan gösteriliyor (₺36.000); kuruşlu fiyatlarda kuruş yine görünür.
+
 ## [2.17.305] - 2026-10-14
 
 **Personel arası mesajlaşma:** Çevrimiçi personelin (yan menüde ve Ana Sayfa'daki "Çevrimiçi Personel" kartında) üzerine tıklayınca o kişiyle özel sohbet penceresi açılıyor; gelen mesaj anında bildirim olarak çıkıyor ("Yanıtla" ile sohbet açılır), okunmamış sayısı rozetle, gönderilenlerde "İletildi / Okundu" görünüyor. Kart artık tüm kullanıcılara açık (migration 20261014150000).
