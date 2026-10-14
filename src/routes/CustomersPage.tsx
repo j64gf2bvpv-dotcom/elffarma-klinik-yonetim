@@ -347,7 +347,9 @@ export function CustomersPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
+          {/* Hücreler arasında çizgi — tablo görünümü (kullanıcı isteği, 2026-10-14);
+              dış çerçeveyi Card zaten çiziyor, o yüzden sadece iç çizgiler. */}
+          <Table className="[&_td]:border-b [&_td]:border-border [&_td:not(:last-child)]:border-r [&_th]:border-b [&_th]:border-border [&_th]:bg-muted/40 [&_th:not(:last-child)]:border-r">
             <TableHeader>
               <TableRow>
                 <TableHead>Ad Soyad</TableHead>
