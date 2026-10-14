@@ -49,6 +49,7 @@ const ALL_CATEGORIES = '__all__'
 interface BillFormState {
   category: UtilityBillCategory
   contract_number: string
+  subscriber_number: string
   amount: number
   due_date: string
   note: string
@@ -61,7 +62,7 @@ function todayDate() {
 }
 
 function emptyForm(): BillFormState {
-  return { category: 'elektrik', contract_number: '', amount: 0, due_date: todayDate(), note: '' }
+  return { category: 'elektrik', contract_number: '', subscriber_number: '', amount: 0, due_date: todayDate(), note: '' }
 }
 
 function BillFormDialog({ bill }: { bill?: UtilityBill }) {
@@ -72,6 +73,7 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
       ? {
           category: bill.category,
           contract_number: bill.contract_number ?? '',
+          subscriber_number: bill.subscriber_number ?? '',
           amount: Number(bill.amount),
           due_date: bill.due_date,
           note: bill.note ?? '',
@@ -86,6 +88,7 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
     const input = {
       category: form.category,
       contract_number: form.contract_number.trim() || null,
+      subscriber_number: form.subscriber_number.trim() || null,
       amount: form.amount,
       due_date: form.due_date,
       note: form.note.trim() || null,
@@ -134,12 +137,21 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-1.5">
-            <Label>Sözleşme Numarası (opsiyonel)</Label>
-            <Input
-              value={form.contract_number}
-              onChange={(e) => setForm((f) => ({ ...f, contract_number: e.target.value }))}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label>Sözleşme Numarası (opsiyonel)</Label>
+              <Input
+                value={form.contract_number}
+                onChange={(e) => setForm((f) => ({ ...f, contract_number: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Abone Numarası (opsiyonel)</Label>
+              <Input
+                value={form.subscriber_number}
+                onChange={(e) => setForm((f) => ({ ...f, subscriber_number: e.target.value }))}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
@@ -176,13 +188,14 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
 interface TemplateFormState {
   category: UtilityBillCategory
   contract_number: string
+  subscriber_number: string
   amount: number
   day_of_month: number
   note: string
 }
 
 function emptyTemplateForm(): TemplateFormState {
-  return { category: 'elektrik', contract_number: '', amount: 0, day_of_month: 1, note: '' }
+  return { category: 'elektrik', contract_number: '', subscriber_number: '', amount: 0, day_of_month: 1, note: '' }
 }
 
 /**
@@ -200,6 +213,7 @@ function TemplateFormDialog({ template }: { template?: UtilityBillTemplate }) {
       ? {
           category: template.category,
           contract_number: template.contract_number ?? '',
+          subscriber_number: template.subscriber_number ?? '',
           amount: Number(template.amount),
           day_of_month: template.day_of_month,
           note: template.note ?? '',
@@ -214,6 +228,7 @@ function TemplateFormDialog({ template }: { template?: UtilityBillTemplate }) {
     const input = {
       category: form.category,
       contract_number: form.contract_number.trim() || null,
+      subscriber_number: form.subscriber_number.trim() || null,
       amount: form.amount,
       day_of_month: form.day_of_month,
       note: form.note.trim() || null,
@@ -265,12 +280,21 @@ function TemplateFormDialog({ template }: { template?: UtilityBillTemplate }) {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-1.5">
-            <Label>Sözleşme Numarası (opsiyonel)</Label>
-            <Input
-              value={form.contract_number}
-              onChange={(e) => setForm((f) => ({ ...f, contract_number: e.target.value }))}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label>Sözleşme Numarası (opsiyonel)</Label>
+              <Input
+                value={form.contract_number}
+                onChange={(e) => setForm((f) => ({ ...f, contract_number: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Abone Numarası (opsiyonel)</Label>
+              <Input
+                value={form.subscriber_number}
+                onChange={(e) => setForm((f) => ({ ...f, subscriber_number: e.target.value }))}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
@@ -322,6 +346,7 @@ function TemplateRow({ template }: { template: UtilityBillTemplate }) {
         <p className="font-medium">
           {UTILITY_BILL_CATEGORY_LABELS[template.category]}
           {template.contract_number ? ` — ${template.contract_number}` : ''}
+          {template.subscriber_number ? ` · Abone No: ${template.subscriber_number}` : ''}
           {!template.is_active && <span className="text-muted-foreground text-xs"> (duraklatıldı)</span>}
         </p>
         <p className="text-muted-foreground text-xs">
@@ -382,6 +407,7 @@ function TemplatesManagerDialog() {
 interface SubscriptionGroup {
   key: string
   contractNumber: string | null
+  subscriberNumber: string | null
   category: UtilityBillCategory
   bills: UtilityBill[]
   unpaidTotal: number
@@ -419,6 +445,7 @@ function SubscriptionGroupRow({ group }: { group: SubscriptionGroup }) {
           <span className="font-medium">{UTILITY_BILL_CATEGORY_LABELS[group.category]}</span>
           <span className="text-muted-foreground text-sm">
             {group.contractNumber ? `Sözleşme No: ${group.contractNumber}` : 'Sözleşme numarası yok'}
+            {group.subscriberNumber ? ` · Abone No: ${group.subscriberNumber}` : ''}
           </span>
         </span>
         <span className="flex items-center gap-2">
@@ -506,7 +533,7 @@ export function BillsPage() {
       const key = b.contract_number?.trim() ? `c:${b.contract_number.trim()}` : `b:${b.id}`
       let group = map.get(key)
       if (!group) {
-        group = { key, contractNumber: b.contract_number, category: b.category, bills: [], unpaidTotal: 0, unpaidCount: 0 }
+        group = { key, contractNumber: b.contract_number, subscriberNumber: b.subscriber_number, category: b.category, bills: [], unpaidTotal: 0, unpaidCount: 0 }
         map.set(key, group)
       }
       group.bills.push(b)
@@ -534,6 +561,7 @@ export function BillsPage() {
               columns={[
                 { header: 'Kategori', value: (b) => UTILITY_BILL_CATEGORY_LABELS[b.category] },
                 { header: 'Sözleşme No', value: (b) => b.contract_number ?? '' },
+                { header: 'Abone No', value: (b) => b.subscriber_number ?? '' },
                 { header: 'Son Ödeme Tarihi', value: (b) => b.due_date },
                 { header: 'Tutar', value: (b) => Number(b.amount) },
                 { header: 'Durum', value: (b) => (b.is_paid ? 'Ödendi' : 'Bekliyor') },

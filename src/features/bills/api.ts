@@ -17,6 +17,7 @@ export const UTILITY_BILL_CATEGORY_LABELS: Record<UtilityBillCategory, string> =
 export interface UtilityBillInput {
   category: UtilityBillCategory
   contract_number?: string | null
+  subscriber_number?: string | null
   amount: number
   due_date: string
   note?: string | null
@@ -35,6 +36,7 @@ function reminderNote(input: UtilityBillInput): string {
   const parts = [
     `Son ödeme tarihi: ${format(new Date(input.due_date), 'd MMMM yyyy', { locale: trLocale })}`,
     input.contract_number ? `Sözleşme No: ${input.contract_number}` : null,
+    input.subscriber_number ? `Abone No: ${input.subscriber_number}` : null,
     `Tutar: ${input.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}`,
     input.note?.trim() || null,
   ]
@@ -91,6 +93,7 @@ export async function deleteUtilityBill(id: string, reminderId: string | null): 
 export interface UtilityBillTemplateInput {
   category: UtilityBillCategory
   contract_number?: string | null
+  subscriber_number?: string | null
   amount: number
   day_of_month: number
   note?: string | null

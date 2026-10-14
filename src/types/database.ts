@@ -507,6 +507,8 @@ export interface UtilityBill {
   id: string
   category: UtilityBillCategory
   contract_number: string | null
+  /** Abone numarası (2026-10-14) */
+  subscriber_number: string | null
   amount: number
   due_date: string
   is_paid: boolean
@@ -522,6 +524,8 @@ export interface UtilityBillTemplate {
   id: string
   category: UtilityBillCategory
   contract_number: string | null
+  /** Abone numarası (2026-10-14) */
+  subscriber_number: string | null
   amount: number
   day_of_month: number
   note: string | null

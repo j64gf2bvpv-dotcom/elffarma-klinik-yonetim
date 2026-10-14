@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.304] - 2026-10-14
+
+**Faturalar'a "Abone No":** Fatura ve tekrarlayan fatura şablonu formlarında Sözleşme Numarası'nın yanında "Abone Numarası" alanı; listede (abonelik satırında ve şablonlarda) ve dışa aktarımda "Abone No" görünüyor, hatırlatma notuna da yazılıyor. Şablondan her ay otomatik oluşan faturalar abone numarasını da taşıyor (migration 20261014140000).
+
 ## [2.17.303] - 2026-10-14
 
 **Stok: Dermakor ve Swiss tablolarının sütunları yukarıdan aşağıya hizalı** — iki tablo da aynı sabit sütun genişliklerini kullanıyor (önceden her tablo kendi içeriğine göre genişlediği için sütunlar alt alta denk gelmiyordu); birlikte yatay kaydırma ile tam hizalı kayıyorlar.
