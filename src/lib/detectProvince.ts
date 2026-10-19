@@ -94,6 +94,17 @@ for (const [alias, p] of Object.entries(ALIASES)) LOOKUP.set(alias, { province: 
 for (const [p, districts] of Object.entries(DISTRICTS))
   for (const d of districts) if (!LOOKUP.has(trFold(d))) LOOKUP.set(trFold(d), { province: p, district: d })
 
+/**
+ * Tek bir kelime il / kısa il adı / bilinen ilçe mi? (isim temizleme için —
+ * bkz. cleanDoctorName). `allowAmbiguous` false ise kişi adı olarak da
+ * kullanılan iller (Aydın, Tokat…) eşleşmez.
+ */
+export function lookupLocationWord(word: string, allowAmbiguous = false): DetectedLocation | null {
+  const t = trFold(word).replace(/[^a-z]/g, '')
+  if (!t || (!allowAmbiguous && AMBIGUOUS_IN_NAME.has(t))) return null
+  return LOOKUP.get(t) ?? null
+}
+
 function tokens(text: string): string[] {
   return trFold(text)
     .split(/[^a-z]+/)

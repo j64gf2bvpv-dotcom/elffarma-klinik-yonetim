@@ -24,6 +24,7 @@ import { fetchRegions } from '@/features/regions/api'
 import { ensureRegionFor } from '@/features/regions/ensureRegion'
 import { useCustomers } from './hooks'
 import { nameKey } from './dedupe'
+import { buildSpellingDictionary, cleanDoctorName } from '@/lib/cleanDoctorName'
 import type { Customer } from '@/types/database'
 
 /**
@@ -231,6 +232,9 @@ export function VcfImportDialog() {
     const errors: string[] = []
     // Algılanan il/ilçe için bölge bulunur ya da oluşturulur (tek liste paylaşılır)
     const regions = await fetchRegions().catch(() => null)
+    // İsimler "Dr. Deniz Demir" biçiminde kaydedilir — araya yazılmış il/semt
+    // çıkarılır (il zaten İl alanına yazılıyor), bkz. cleanDoctorName (2026-10-19)
+    const dict = buildSpellingDictionary([...existingCustomers.map((c) => c.full_name), ...rows.map((r) => r.contact.fullName)])
     for (const r of toImport) {
       const c = r.contact
       const noteParts = [
@@ -240,18 +244,20 @@ export function VcfImportDialog() {
         c.note,
       ].filter(Boolean)
       try {
-        const regionId = r.location && regions ? await ensureRegionFor(r.location, regions) : null
+        const cleaned = cleanDoctorName(c.fullName, dict)
+        const location = r.location ?? cleaned.location
+        const regionId = location && regions ? await ensureRegionFor(location, regions) : null
         await createCustomer({
-          full_name: c.fullName,
+          full_name: cleaned.name,
           phone: r.canonical ?? r.phoneRaw,
           mobile_phone: r.canonical && r.isMobile ? r.canonical : null,
           email: c.emails[0] ?? null,
-          hospital_name: c.org || null,
-          province: r.location?.province ?? null,
-          district: r.location?.district ?? null,
+          hospital_name: c.org || (cleaned.prefix ? (location ? `${location.province} ${cleaned.prefix}` : cleaned.prefix) : null),
+          province: location?.province ?? null,
+          district: location?.district ?? null,
           region_id: regionId,
           address: c.address || null,
-          notes: noteParts.length > 0 ? noteParts.join('\n') : null,
+          notes: [...noteParts, cleaned.note].filter(Boolean).join('\n') || null,
           doctor_type: 'sahis',
           is_invoiced: false,
           tags: ['rehber'],

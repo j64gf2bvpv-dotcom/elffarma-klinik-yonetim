@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.316] - 2026-10-19
+
+**Cari Kart isimleri temizlendi:** Tüm cari adları "Dr. Ahmet YILMAZ" biçimine getirildi — araya yazılmış il/semt ("Dr. Antep Deniz Demir", "Adana Eğitim Dr. …") kaldırıldı (il, İl alanına yazıldı), ad baş harfi büyük, soyadı tamamen büyük, bitişik ad-soyad ayrıldı, Türkçe harf ve yazım hataları düzeltildi (Hatiçe → Hatice, Dogan → Doğan, -oglu → -oğlu…); "Ahmet Hoca Workshop" gibi notlar Not alanına taşındı. 979 kayıt güncellendi (243'ü tek tek elle kontrol edildi); eski isimlerin yedeği alındı.
+**İsimleri Düzelt aracı + rehber aktarımı:** Cari Kart'a önizlemeli "İsimleri Düzelt" düğmesi eklendi; Rehberden Aktar'da yeni kişilerin adları otomatik bu biçimde kaydediliyor.
+**Liste 1000 kişide kesilmiyor:** Cari sayısı 1000'i geçince fazlası listede görünmüyordu (1048 cari vardı) — artık hepsi geliyor. İl adları standart yazıma çevriliyor ("BURSA" → Bursa) ki bölge/il aramasında çıksın.
+
 ## [2.17.315] - 2026-10-19
 
 **Cari Kart'ta bölge araması:** İl filtresi "Bölge / İl" oldu — 7 coğrafi bölge (Marmara, Ege, Akdeniz, İç Anadolu, Karadeniz, Doğu Anadolu, Güneydoğu Anadolu) altında illeri; bölgeye tıklayınca o bölgedeki tüm illerin carileri, ile tıklayınca sadece o il listeleniyor. Üstteki kutuya il ya da bölge adı yazınca liste daralıyor ("izmir", "ege"…); her bölge/ilin yanında cari sayısı görünüyor.

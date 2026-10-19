@@ -34,6 +34,7 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
 import { VcfImportDialog } from '@/features/customers/VcfImportDialog'
 import { LocationFillDialog } from '@/features/customers/LocationFillDialog'
+import { NameCleanupDialog } from '@/features/customers/NameCleanupDialog'
 import { InlineTextCell } from '@/features/customers/InlineCells'
 import { nameKey, phoneKey } from '@/features/customers/dedupe'
 import { DuplicateCleanupDialog } from '@/features/customers/DuplicateCleanupDialog'
@@ -273,6 +274,7 @@ export function CustomersPage() {
             <VcfImportDialog />
             <BulkWhatsAppDialog customers={shownCustomers} filterLabel={bulkFilterLabel} />
             <LocationFillDialog />
+            <NameCleanupDialog />
             <SmartImportDialog
               title="Doktorları Akıllı İçe Aktar"
               targetLabel="doktor/cari kart"

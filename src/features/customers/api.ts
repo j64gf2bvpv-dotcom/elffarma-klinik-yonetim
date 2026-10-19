@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
 import { normalizeTrPhone } from '@/features/whatsapp/normalizePhone'
+import { trFold } from '@/lib/detectProvince'
+import { turkeyProvinces } from '@/lib/turkeyProvinces'
 import type { Customer, CustomerPendingProduct, DoctorType, PaymentMethod } from '@/types/database'
 
 export interface CustomerInput {
@@ -48,7 +50,27 @@ export async function fetchCustomers(
   /** Tek il ya da il listesi (coğrafi bölge araması — bkz. turkeyRegions) */
   province?: string | string[],
 ): Promise<Customer[]> {
-  let query = supabase.from('customers').select('*').order('full_name', { ascending: true })
+  // Supabase tek sorguda en fazla 1000 satır döndürüyor — cari sayısı 1000'i
+  // geçince (rehber aktarımından sonra 1048 oldu, 2026-10-19) fazlası listede
+  // hiç görünmüyordu. Sayfa sayfa (1000'er) hepsi çekilir; id ikinci sıralama
+  // anahtarı, aynı isimli kayıtlar sayfa sınırında kaybolmasın/çiftlenmesin diye.
+  const PAGE = 1000
+  const all: Customer[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await customersQuery(search, invoiceFilter, province).range(from, from + PAGE - 1)
+    if (error) throw error
+    all.push(...(data as Customer[]))
+    if (!data || data.length < PAGE) break
+  }
+  return all
+}
+
+function customersQuery(search: string, invoiceFilter: InvoiceFilter, province?: string | string[]) {
+  let query = supabase
+    .from('customers')
+    .select('*')
+    .order('full_name', { ascending: true })
+    .order('id', { ascending: true })
   if (search.trim()) {
     // Virgül PostgREST .or() filtresinde koşul ayıracı — arama teriminde
     // geçerse (ör. "Dr. Ayşe, İstanbul") filtreyi bozup sorguyu hataya
@@ -61,15 +83,25 @@ export async function fetchCustomers(
   if (invoiceFilter === 'not_invoiced') query = query.eq('is_invoiced', false)
   if (Array.isArray(province)) query = query.in('province', province)
   else if (province) query = query.eq('province', province)
-  const { data, error } = await query
-  if (error) throw error
-  return data as Customer[]
+  return query
 }
 
 export async function fetchCustomer(id: string): Promise<Customer> {
   const { data, error } = await supabase.from('customers').select('*').eq('id', id).single()
   if (error) throw error
   return data as Customer
+}
+
+/**
+ * İl adını standart yazıma çevirir ("BURSA" → "Bursa", "izmir" → "İzmir") —
+ * bölge / il filtresi il adını birebir eşleştirdiği için (2026-10-19).
+ * Listede olmayan değerlere dokunulmaz.
+ */
+function toCanonicalProvince<T extends { province?: string | null }>(input: T): T {
+  if (!input.province) return input
+  const key = trFold(input.province.trim())
+  const canonical = turkeyProvinces.find((p) => trFold(p) === key)
+  return canonical && canonical !== input.province ? { ...input, province: canonical } : input
 }
 
 function toCanonicalPhone(input: string): string {
@@ -81,7 +113,7 @@ export async function createCustomer(input: CustomerInput): Promise<Customer> {
   const createdBy = await getCurrentUserId()
   return offlineInsert<Customer>(
     'customers',
-    { ...input, phone: toCanonicalPhone(input.phone), created_by: createdBy },
+    { ...toCanonicalProvince(input), phone: toCanonicalPhone(input.phone), created_by: createdBy },
     `Doktor: ${input.full_name}`,
   )
 }
@@ -92,7 +124,7 @@ export async function createCustomer(input: CustomerInput): Promise<Customer> {
  * Telefon verilirse diğer kayıtlarla aynı kanonik biçime (+90…) çevrilir.
  */
 export async function updateCustomerFields(id: string, patch: Partial<CustomerInput>): Promise<Customer> {
-  const body: Partial<CustomerInput> = { ...patch }
+  const body: Partial<CustomerInput> = toCanonicalProvince({ ...patch })
   if (body.phone !== undefined) body.phone = toCanonicalPhone(body.phone)
   return offlineUpdate<Customer>('customers', id, body, 'Doktor bilgisi düzenleme')
 }
@@ -102,14 +134,14 @@ export async function updateCustomerLocation(
   id: string,
   patch: { province?: string | null; district?: string | null; region_id?: string | null },
 ): Promise<Customer> {
-  return offlineUpdate<Customer>('customers', id, { ...patch }, 'Doktor il/bölge güncelleme')
+  return offlineUpdate<Customer>('customers', id, toCanonicalProvince({ ...patch }), 'Doktor il/bölge güncelleme')
 }
 
 export async function updateCustomer(id: string, input: CustomerInput): Promise<Customer> {
   return offlineUpdate<Customer>(
     'customers',
     id,
-    { ...input, phone: toCanonicalPhone(input.phone) },
+    { ...toCanonicalProvince(input), phone: toCanonicalPhone(input.phone) },
     `Doktor güncelleme: ${input.full_name}`,
   )
 }
