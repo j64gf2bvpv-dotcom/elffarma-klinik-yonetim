@@ -24,7 +24,7 @@ import { useInvoices } from '@/features/invoices/hooks'
 const customerListPredicate = (query: { queryKey: readonly unknown[] }) =>
   query.queryKey[1] !== 'hospital_names' && query.queryKey[1] !== 'detail'
 
-export function useCustomers(search: string, invoiceFilter: InvoiceFilter = 'all', province?: string) {
+export function useCustomers(search: string, invoiceFilter: InvoiceFilter = 'all', province?: string | string[]) {
   return useQuery({
     queryKey: ['customers', search, invoiceFilter, province],
     queryFn: () => fetchCustomers(search, invoiceFilter, province),

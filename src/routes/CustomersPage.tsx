@@ -44,9 +44,10 @@ import { cn } from '@/lib/utils'
 import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import type { ImportSummary } from '@/lib/importData'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
+import { RegionProvinceFilter } from '@/features/customers/RegionProvinceFilter'
+import { ALL_PROVINCES, REGION_PREFIX, provinceQuery } from '@/lib/turkeyRegions'
 import type { Customer } from '@/types/database'
 
-const ALL_PROVINCES = '__all__'
 const ALL_TAGS = '__all_tags__'
 
 type SortOption = 'name_asc' | 'name_desc' | 'province_asc'
@@ -103,7 +104,7 @@ export function CustomersPage() {
   const { data: allCustomers = [], isLoading } = useCustomers(
     search,
     invoiceFilter,
-    provinceFilter === ALL_PROVINCES ? undefined : provinceFilter,
+    provinceQuery(provinceFilter),
   )
   const { data: regions = [] } = useRegions()
   const availableTags = React.useMemo(
@@ -144,6 +145,12 @@ export function CustomersPage() {
   // (düzeltme, 2026-10-01 — filtre açıkken içe aktarınca filtre dışındaki
   // kayıtlı doktorlar "yeni" sanılıp tekrar ekleniyordu).
   const { data: everyCustomer = [] } = useCustomers('')
+  // Bölge / il filtresindeki sayılar — arama/filtreden bağımsız tüm cariler
+  const provinceCounts = React.useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const c of everyCustomer) if (c.province) counts.set(c.province, (counts.get(c.province) ?? 0) + 1)
+    return counts
+  }, [everyCustomer])
   const updateFields = useUpdateCustomerFields()
   function saveField(id: string, patch: Partial<CustomerInput>) {
     updateFields.mutate({ id, patch })
@@ -202,7 +209,10 @@ export function CustomersPage() {
   const bulkFilterLabel =
     [
       search && `arama: "${search}"`,
-      provinceFilter !== ALL_PROVINCES && `il: ${provinceFilter}`,
+      provinceFilter !== ALL_PROVINCES &&
+        (provinceFilter.startsWith(REGION_PREFIX)
+          ? `bölge: ${provinceFilter.slice(REGION_PREFIX.length)}`
+          : `il: ${provinceFilter}`),
       tagFilter !== ALL_TAGS && `etiket: ${tagFilter}`,
       invoiceFilter !== 'all' && (invoiceFilter === 'invoiced' ? 'faturalı' : 'faturasız'),
       onlyDuplicates && 'yinelenenler',
@@ -293,19 +303,7 @@ export function CustomersPage() {
             className="pl-9"
           />
         </div>
-        <Select value={provinceFilter} onValueChange={setProvinceFilter}>
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="İl" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_PROVINCES}>Tüm İller</SelectItem>
-            {turkeyProvinces.map((il) => (
-              <SelectItem key={il} value={il}>
-                {il}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <RegionProvinceFilter value={provinceFilter} onChange={setProvinceFilter} provinceCounts={provinceCounts} />
         {availableTags.length > 0 && (
           <Select value={tagFilter} onValueChange={setTagFilter}>
             <SelectTrigger className="w-44">

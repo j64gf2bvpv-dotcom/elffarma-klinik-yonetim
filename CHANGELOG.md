@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.315] - 2026-10-19
+
+**Cari Kart'ta bölge araması:** İl filtresi "Bölge / İl" oldu — 7 coğrafi bölge (Marmara, Ege, Akdeniz, İç Anadolu, Karadeniz, Doğu Anadolu, Güneydoğu Anadolu) altında illeri; bölgeye tıklayınca o bölgedeki tüm illerin carileri, ile tıklayınca sadece o il listeleniyor. Üstteki kutuya il ya da bölge adı yazınca liste daralıyor ("izmir", "ege"…); her bölge/ilin yanında cari sayısı görünüyor.
+
 ## [2.17.314] - 2026-10-14
 
 **Rehberden Aktar herkesi alıyor:** Numarası olmayan kişiler ve dosyada aynı numarayı paylaşan farklı isimler (ör. aynı klinik hattı kayıtlı iki doktor) artık aktarılıyor; dosya açılınca aktarılabilecek herkes seçili geliyor. Sadece aynı isim + aynı numara zaten Cari Kart'ta ya da dosyada ikinci kez varsa atlanıyor (isim karşılaştırmasında unvan ve kelime sırası yok sayılıyor). Numarası Cari Kart'ta başka bir isimle kayıtlı olan kişi seçilebiliyor, yanında kayıtlı isim gösteriliyor.

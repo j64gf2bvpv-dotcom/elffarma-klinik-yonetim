@@ -45,7 +45,8 @@ export type InvoiceFilter = 'all' | 'invoiced' | 'not_invoiced'
 export async function fetchCustomers(
   search: string,
   invoiceFilter: InvoiceFilter = 'all',
-  province?: string,
+  /** Tek il ya da il listesi (coğrafi bölge araması — bkz. turkeyRegions) */
+  province?: string | string[],
 ): Promise<Customer[]> {
   let query = supabase.from('customers').select('*').order('full_name', { ascending: true })
   if (search.trim()) {
@@ -58,7 +59,8 @@ export async function fetchCustomers(
   }
   if (invoiceFilter === 'invoiced') query = query.eq('is_invoiced', true)
   if (invoiceFilter === 'not_invoiced') query = query.eq('is_invoiced', false)
-  if (province) query = query.eq('province', province)
+  if (Array.isArray(province)) query = query.in('province', province)
+  else if (province) query = query.eq('province', province)
   const { data, error } = await query
   if (error) throw error
   return data as Customer[]
