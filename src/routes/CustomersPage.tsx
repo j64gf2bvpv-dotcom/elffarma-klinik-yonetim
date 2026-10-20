@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Search, Phone, Tag, ReceiptText, MapPin, Building2, User, CalendarClock, FileSpreadsheet, Trash2, Loader2, Star, Pencil } from 'lucide-react'
+import { Search, Phone, Tag, ReceiptText, MapPin, Building2, User, CalendarClock, FileSpreadsheet, Trash2, Loader2, Star, Pencil, Contact } from 'lucide-react'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -31,6 +31,8 @@ import {
 import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
 import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { ExportMenu } from '@/components/ExportMenu'
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { exportCustomersVcf } from '@/features/customers/exportVcf'
 import { ImportMenu } from '@/components/ImportMenu'
 import { VcfImportDialog } from '@/features/customers/VcfImportDialog'
 import { LocationFillDialog } from '@/features/customers/LocationFillDialog'
@@ -247,6 +249,22 @@ export function CustomersPage() {
               title="Cari Listesi"
               filename="musteriler"
               rows={customers}
+              extraItems={
+                <DropdownMenuItem
+                  onSelect={() => {
+                    if (customers.length === 0) {
+                      toast.error('Dışa aktarılacak veri yok')
+                      return
+                    }
+                    exportCustomersVcf(customers)
+                    toast.success(`${customers.length} kişi vCard olarak indirildi`, {
+                      description: 'Dosyayı telefona gönderip açarak ya da Mac Kişiler uygulamasına sürükleyerek rehbere ekleyebilirsiniz.',
+                    })
+                  }}
+                >
+                  <Contact className="text-primary" /> vCard (.vcf) — Rehber
+                </DropdownMenuItem>
+              }
               columns={[
                 { header: 'Ad Soyad', value: (c) => c.full_name },
                 { header: 'Telefon', value: (c) => formatTrPhoneForDisplay(c.phone) },

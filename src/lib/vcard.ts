@@ -211,3 +211,65 @@ export function rankPhones(phones: VCardPhone[]): VCardPhone[] {
     p.types.some((t) => t === 'fax') ? 3 : p.types.some((t) => ['cell', 'mobile', 'iphone'].includes(t) || t.startsWith('x-mobil')) ? 0 : p.types.includes('pref') ? 1 : 2
   return [...phones].sort((a, b) => score(a) - score(b))
 }
+
+// ---------------------------------------------------------------------------
+// Yazma — Cari Kart > Dışa Aktar > vCard (kullanıcı isteği, 2026-10-20)
+// ---------------------------------------------------------------------------
+
+export interface VCardExportContact {
+  fullName: string
+  phones: { value: string; type: 'CELL' | 'WORK' | 'VOICE' }[]
+  email?: string | null
+  org?: string | null
+  /** sokak/adres satırı */
+  street?: string | null
+  district?: string | null
+  province?: string | null
+  note?: string | null
+  url?: string | null
+}
+
+function escapeValue(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/([,;])/g, '\\$1')
+}
+
+const TITLE_WORDS = /^(Prof\.|Doç\.|Uzm\.|Op\.|Dr\.|Dt\.|Ecz\.)$/
+
+/** "Dr. Ahmet YILMAZ" → N: YILMAZ;Ahmet;;Dr.; — rehberde soyadına göre sıralansın diye. */
+function structuredName(fullName: string): string {
+  const words = fullName.trim().split(/\s+/)
+  const titles: string[] = []
+  while (words.length > 1 && TITLE_WORDS.test(words[0])) titles.push(words.shift()!)
+  const family = words.length > 1 ? words.pop()! : ''
+  return [family, words.join(' '), '', titles.join(' '), ''].map(escapeValue).join(';')
+}
+
+/**
+ * vCard 3.0 (UTF-8, CRLF) — iPhone / Android rehberi ve macOS Kişiler
+ * doğrudan içe aktarır; tek dosyada çok kişi olabilir. Aynı numara bir
+ * kişide iki kez yazılmaz.
+ */
+export function buildVCards(contacts: VCardExportContact[]): string {
+  const out: string[] = []
+  for (const c of contacts) {
+    const lines = ['BEGIN:VCARD', 'VERSION:3.0', `N:${structuredName(c.fullName)}`, `FN:${escapeValue(c.fullName.trim())}`]
+    const seen = new Set<string>()
+    for (const p of c.phones) {
+      const digits = p.value.replace(/[^\d+]/g, '')
+      if (!digits || seen.has(digits)) continue
+      seen.add(digits)
+      lines.push(`TEL;TYPE=${p.type}:${p.value.trim()}`)
+    }
+    if (c.email) lines.push(`EMAIL;TYPE=INTERNET:${escapeValue(c.email.trim())}`)
+    if (c.org) lines.push(`ORG:${escapeValue(c.org.trim())}`)
+    if (c.street || c.district || c.province) {
+      // PO Box;Ek;Sokak;İlçe/Şehir;Bölge;Posta kodu;Ülke
+      lines.push(`ADR;TYPE=WORK:;;${escapeValue(c.street ?? '')};${escapeValue(c.district ?? '')};${escapeValue(c.province ?? '')};;Türkiye`)
+    }
+    if (c.url) lines.push(`URL:${c.url}`)
+    if (c.note) lines.push(`NOTE:${escapeValue(c.note.trim())}`)
+    lines.push('END:VCARD')
+    out.push(lines.join('\r\n'))
+  }
+  return out.join('\r\n') + '\r\n'
+}

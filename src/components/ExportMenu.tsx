@@ -25,9 +25,11 @@ interface ExportMenuProps<T> {
    * indirilir. Haftalık Satış Temsilcisi Raporu gibi tablo olarak ifade
    * edilemeyen, kart tabanlı görünümler için (kullanıcı isteği, 2026-08-24). */
   imageTarget?: React.RefObject<HTMLElement | null>
+  /** Sayfaya özel ek biçimler (ör. Cari Kart'ta vCard) — PNG'nin altına eklenir. */
+  extraItems?: React.ReactNode
 }
 
-export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = 'Dışa Aktar', imageTarget }: ExportMenuProps<T>) {
+export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = 'Dışa Aktar', imageTarget, extraItems }: ExportMenuProps<T>) {
   function handleExcel() {
     if (rows.length === 0) {
       toast.error('Dışa aktarılacak veri yok')
@@ -131,6 +133,7 @@ export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = '
             <ImageDown className="text-primary" /> PNG (.png)
           </DropdownMenuItem>
         )}
+        {extraItems}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handlePrint}>
           <Printer className="text-muted-foreground" /> Yazdır

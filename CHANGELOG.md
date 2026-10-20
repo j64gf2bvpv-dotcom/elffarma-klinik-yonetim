@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.317] - 2026-10-20
+
+**Cari Kart'tan vCard dışa aktarma:** Dışa Aktar menüsünde "vCard (.vcf) — Rehber" seçeneği — ekrandaki (filtrelenmiş) cari listesi telefon rehberine / Mac Kişiler'e aktarılabilir tek bir .vcf dosyası olarak iner; ad (soyadına göre sıralanır), unvan, telefon/cep/WhatsApp, e-posta, hastane, il-ilçe-adres, Instagram ve not dahil.
+
 ## [2.17.316] - 2026-10-19
 
 **Cari Kart isimleri temizlendi:** Tüm cari adları "Dr. Ahmet YILMAZ" biçimine getirildi — araya yazılmış il/semt ("Dr. Antep Deniz Demir", "Adana Eğitim Dr. …") kaldırıldı (il, İl alanına yazıldı), ad baş harfi büyük, soyadı tamamen büyük, bitişik ad-soyad ayrıldı, Türkçe harf ve yazım hataları düzeltildi (Hatiçe → Hatice, Dogan → Doğan, -oglu → -oğlu…); "Ahmet Hoca Workshop" gibi notlar Not alanına taşındı. 979 kayıt güncellendi (243'ü tek tek elle kontrol edildi); eski isimlerin yedeği alındı.
