@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.328] - 2026-10-21
+
+**Fatura hatırlatması — her ayın aynı günü, açılışta popup:** Faturalar her ay aynı günde ödendiği için girilen tarihin ayı değil günü esas alınıyor: her abonelik için "her ayın X'i" ve sıradaki ödeme günü hesaplanıyor; o güne 5 gün ya da daha az kaldıysa ve o ayın faturası ödendi işaretlenmediyse program açılışta kapatılabilir bir popup çıkıyor (günde bir kez masaüstü bildirimi de). Popup'tan "Ödendi" ile kapatılıyor (o ayın kaydı yoksa açılıp ödendi yapılıyor); kapatınca ana ekranda tek satırlık hatırlatma kalıyor. Fatura ekranında abonelik başlıklarında "Her ayın X'i · sıradaki tarih (N gün)" yazıyor; yeni faturada "Her ay bu günde tekrarla" seçeneği ve mevcutlara "Kaydı her ay otomatik aç" düğmesi var. Hatırlatma kaydı da 7 yerine 5 gün önceye düşüyor (migration 20261021200000).
+
 ## [2.17.327] - 2026-10-21
 
 **Ana ekranda canlı döviz kuru:** Saat ve hava durumunun altında, aynı küçük yazıyla canlı Dolar / Euro kuru (saniyede bir güncellenir, 24 saatlik değişim yüzdesiyle; değişince yeşil/kırmızı parlar) ve "TL çevir" penceresi (USD / EUR / TL arasında çevirme). Kaynak anlık piyasa kuru (USDT/TRY; EUR = USDT/TRY × EUR/USDT), bağlantı koparsa 5 sn'de bir yeniden yüklenir. Özelleştirilebilir görünümdeki "Döviz Kurları" kartı da canlı kura çevrildi.

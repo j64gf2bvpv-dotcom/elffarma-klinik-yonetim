@@ -7,6 +7,7 @@ import {
   deleteUtilityBillTemplate,
   fetchUtilityBillTemplates,
   fetchUtilityBills,
+  makeBillRecurring,
   updateUtilityBill,
   updateUtilityBillPaid,
   updateUtilityBillTemplate,
@@ -14,6 +15,7 @@ import {
   type UtilityBillInput,
   type UtilityBillTemplateInput,
 } from './api'
+import type { UtilityBill } from '@/types/database'
 
 export function useUtilityBills() {
   return useQuery({ queryKey: ['utility_bills'], queryFn: fetchUtilityBills })
@@ -116,6 +118,19 @@ export function useUpdateUtilityBillTemplateActive() {
       queryClient.invalidateQueries({ queryKey: ['utility_bill_templates'] })
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
+  })
+}
+
+export function useMakeBillRecurring() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (bill: UtilityBill) => makeBillRecurring(bill),
+    onSuccess: (t) => {
+      invalidateBillsAndReminders(queryClient)
+      queryClient.invalidateQueries({ queryKey: ['utility_bill_templates'] })
+      toast.success(`Her ayın ${t.day_of_month}. günü tekrarlanacak`, { description: 'Fatura her ay o güne otomatik açılır; 5 gün kala ana ekranda hatırlatma çıkar.' })
+    },
+    onError: (error: Error) => toast.error('Tekrarlama açılamadı', { description: error.message }),
   })
 }
 

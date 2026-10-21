@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { format } from 'date-fns'
 import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, Coins, DollarSign } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,13 +9,13 @@ import { cn } from '@/lib/utils'
 import { useExchangeRates } from './hooks'
 
 /**
- * Ana ekranda canlı dolar / euro kuru (kullanıcı isteği, 2026-10-21: "dolar ve
- * euro kuru anında saniyelik bilgiler şeklinde görünsün, TL'ye çevirebilme de
- * olsun"). Kaynak: Binance herkese açık piyasa akışı (WebSocket, saniyede bir) —
- * USD/TL = USDT/TRY, EUR/TL = USDT/TRY × EUR/USDT. Anahtar gerektirmez. Akış
- * koparsa 5 sn'de bir REST ile yoklanır ve akışa yeniden bağlanılır. Piyasa
- * kuru olduğu için resmi (Merkez Bankası / ECB) kurdan küçük fark olabilir —
- * kartta günlük resmi kur da referans olarak yazar.
+ * Ana ekranda dolar / euro kuru + TL çevirici (kullanıcı isteği, 2026-10-21).
+ * İlk istek "saniyelik"ti; aynı gün "10 dakikada bir güncellensin" olarak
+ * değişti — kur 10 dakikada bir (ve sekme/pencere tekrar öne gelince) yüklenir.
+ * Kaynak: Binance herkese açık piyasa verisi (anahtar gerektirmez) —
+ * USD/TL = USDT/TRY, EUR/TL = USDT/TRY × EUR/USDT. Piyasa kuru olduğu için
+ * resmi (Merkez Bankası / ECB) kurdan küçük fark olabilir — kartta günlük resmi
+ * kur da referans olarak yazar.
  */
 
 interface Quote {
@@ -30,7 +31,6 @@ interface LiveRates {
   live: boolean
 }
 
-const STREAM_URL = 'wss://stream.binance.com:9443/stream?streams=usdttry@ticker/eurusdt@ticker'
 const REST_URL = 'https://api.binance.com/api/v3/ticker/24hr?symbols=%5B%22USDTTRY%22,%22EURUSDT%22%5D'
 
 function combine(usdTry: Quote | null, eurUsd: Quote | null): Quote | null {
@@ -41,76 +41,42 @@ function combine(usdTry: Quote | null, eurUsd: Quote | null): Quote | null {
   }
 }
 
+/** Kur yenileme aralığı — 10 dakika (kullanıcı isteği, 2026-10-21). */
+const REFRESH_MS = 10 * 60 * 1000
+
 function useLiveRates(): LiveRates {
   const [state, setState] = React.useState<LiveRates>({ usd: null, eur: null, updatedAt: null, live: false })
-  const raw = React.useRef<{ usdTry: Quote | null; eurUsd: Quote | null }>({ usdTry: null, eurUsd: null })
 
   React.useEffect(() => {
-    let ws: WebSocket | null = null
-    let poll: ReturnType<typeof setInterval> | null = null
-    let reconnect: ReturnType<typeof setTimeout> | null = null
-    let stopped = false
-
-    const publish = (live: boolean) =>
-      setState({ usd: raw.current.usdTry, eur: combine(raw.current.usdTry, raw.current.eurUsd), updatedAt: new Date(), live })
-
-    async function fetchRest() {
+    let cancelled = false
+    async function load() {
       try {
         const res = await fetch(REST_URL)
-        if (!res.ok) return
+        if (!res.ok) throw new Error(String(res.status))
         const data = (await res.json()) as { symbol: string; lastPrice: string; priceChangePercent: string }[]
+        let usdTry: Quote | null = null
+        let eurUsd: Quote | null = null
         for (const t of data) {
           const q = { price: Number(t.lastPrice), changePct: Number(t.priceChangePercent) }
-          if (t.symbol === 'USDTTRY') raw.current.usdTry = q
-          if (t.symbol === 'EURUSDT') raw.current.eurUsd = q
+          if (t.symbol === 'USDTTRY') usdTry = q
+          if (t.symbol === 'EURUSDT') eurUsd = q
         }
-        publish(false)
+        if (!cancelled) setState({ usd: usdTry, eur: combine(usdTry, eurUsd), updatedAt: new Date(), live: true })
       } catch {
-        /* ağ yok — sonraki denemede */
+        if (!cancelled) setState((s) => ({ ...s, live: false }))
       }
     }
-
-    function startPolling() {
-      if (!poll) poll = setInterval(fetchRest, 5000)
+    void load()
+    const timer = setInterval(load, REFRESH_MS)
+    // Bilgisayar uykudan / pencere arka plandan dönünce bekletmeden tazele
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void load()
     }
-
-    function connect() {
-      if (stopped) return
-      try {
-        ws = new WebSocket(STREAM_URL)
-      } catch {
-        startPolling()
-        return
-      }
-      ws.onopen = () => {
-        if (poll) clearInterval(poll)
-        poll = null
-      }
-      ws.onmessage = (e) => {
-        const msg = JSON.parse(e.data as string) as { data?: { s: string; c: string; P: string } }
-        const d = msg.data
-        if (!d) return
-        const q = { price: Number(d.c), changePct: Number(d.P) }
-        if (d.s === 'USDTTRY') raw.current.usdTry = q
-        else if (d.s === 'EURUSDT') raw.current.eurUsd = q
-        publish(true)
-      }
-      ws.onclose = () => {
-        if (stopped) return
-        setState((s) => ({ ...s, live: false }))
-        startPolling()
-        reconnect = setTimeout(connect, 5000)
-      }
-      ws.onerror = () => ws?.close()
-    }
-
-    void fetchRest()
-    connect()
+    document.addEventListener('visibilitychange', onVisible)
     return () => {
-      stopped = true
-      ws?.close()
-      if (poll) clearInterval(poll)
-      if (reconnect) clearTimeout(reconnect)
+      cancelled = true
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])
 
@@ -184,12 +150,12 @@ export function LiveRatesCard({ className }: { className?: string }) {
     <Card className={cn('@container', className)}>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Coins className="size-4 text-primary" /> Canlı Döviz Kuru
+          <Coins className="size-4 text-primary" /> Döviz Kuru
         </CardTitle>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className={cn('size-2 rounded-full', rates.live ? 'animate-pulse bg-success' : 'bg-warning')} />
-          {rates.live ? 'Canlı' : 'Bağlanıyor'}
-          {secondsAgo != null && ` · ${secondsAgo <= 1 ? 'şimdi' : `${secondsAgo} sn önce`}`}
+          {rates.live ? 'Güncel' : 'Bağlanıyor'}
+          {secondsAgo != null && ` · ${secondsAgo < 60 ? 'az önce' : `${Math.floor(secondsAgo / 60)} dk önce`}`}
         </span>
       </CardHeader>
       <CardContent className="grid gap-3 @lg:grid-cols-[1fr_1fr_1.4fr]">
@@ -197,7 +163,7 @@ export function LiveRatesCard({ className }: { className?: string }) {
         <RateTile label="Euro / TL" flag="🇪🇺" quote={rates.eur} />
         <RatesConverter rates={rates} className="rounded-xl border bg-muted/30 p-3" />
         <p className="text-[11px] text-muted-foreground @lg:col-span-3">
-          Anlık piyasa kuru (saniyede bir güncellenir). Resmi kurdan küçük fark olabilir
+          Piyasa kuru (10 dakikada bir güncellenir). Resmi kurdan küçük fark olabilir
           {official.length > 0 &&
             ` — günlük resmi kur: ${official.map((o) => `${o.currency} ${fmt(o.rate, 3)}`).join(', ')} (${official[0].date})`}
           .
@@ -290,7 +256,7 @@ function InlineQuote({ code, quote }: { code: string; quote: Quote | null }) {
 }
 
 /**
- * Ana ekran başlığında saat / hava durumunun altında, aynı küçük yazıyla canlı kur
+ * Ana ekran başlığında saat / hava durumunun altında, aynı küçük yazıyla kur
  * satırı (kullanıcı isteği, 2026-10-21: "döviz kuru saat ve hava durumu kısmı
  * gibi küçük, aynı fontta olsun, altında olsun"). "TL çevir" küçük bir pencere açar.
  */
@@ -305,9 +271,12 @@ export function LiveRatesInline() {
       <span className="text-border">|</span>
       <InlineQuote code="EUR" quote={rates.eur} />
       <span className="text-border">|</span>
-      <span className="flex items-center gap-1" title={rates.live ? 'Canlı piyasa kuru — saniyede bir güncellenir' : 'Bağlanıyor…'}>
-        <span className={cn('size-1.5 rounded-full', rates.live ? 'animate-pulse bg-success' : 'bg-warning')} />
-        {rates.live ? 'canlı' : 'bağlanıyor'}
+      <span
+        className="flex items-center gap-1"
+        title={rates.live ? 'Piyasa kuru — 10 dakikada bir güncellenir' : 'Kur alınamadı, tekrar denenecek'}
+      >
+        <span className={cn('size-1.5 rounded-full', rates.live ? 'bg-success' : 'bg-warning')} />
+        {rates.updatedAt ? format(rates.updatedAt, 'HH:mm') : 'yükleniyor'}
       </span>
       <Popover>
         <PopoverTrigger asChild>
@@ -317,7 +286,7 @@ export function LiveRatesInline() {
         </PopoverTrigger>
         <PopoverContent className="w-72" align="start">
           <RatesConverter rates={rates} />
-          <p className="mt-2 text-[11px] text-muted-foreground">Anlık piyasa kuru; resmi kurdan küçük fark olabilir.</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">Piyasa kuru, 10 dakikada bir güncellenir; resmi kurdan küçük fark olabilir.</p>
         </PopoverContent>
       </Popover>
     </span>

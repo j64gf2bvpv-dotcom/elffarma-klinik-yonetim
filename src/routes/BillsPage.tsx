@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { format } from 'date-fns'
+import { differenceInCalendarDays, format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { Plus, Trash2, Pencil, Zap, CheckCircle2, ChevronDown, Repeat, Pause, Play } from 'lucide-react'
 
@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -34,6 +35,7 @@ import {
   useUpdateUtilityBillTemplate,
   useUpdateUtilityBillTemplateActive,
   useUtilityBillTemplates,
+  useMakeBillRecurring,
   useUtilityBills,
 } from '@/features/bills/hooks'
 import type { UtilityBill, UtilityBillCategory, UtilityBillTemplate } from '@/types/database'
@@ -82,6 +84,11 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
   )
   const createMutation = useCreateUtilityBill()
   const updateMutation = useUpdateUtilityBill()
+  const createTemplateMutation = useCreateUtilityBillTemplate()
+  // Faturalar her ay aynı günde ödeniyor (kullanıcı isteği, 2026-10-21) — yeni
+  // faturada varsayılan açık: kaydedilince tekrarlayan şablon da oluşur, sunucu
+  // her ay o güne faturayı ve 5 gün önceye hatırlatmayı kendisi açar.
+  const [repeatMonthly, setRepeatMonthly] = React.useState(true)
 
   async function handleSubmit() {
     if (!form.due_date || form.amount < 0) return
@@ -96,13 +103,25 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
     if (isEdit) {
       await updateMutation.mutateAsync({ id: bill.id, input, reminderId: bill.reminder_id })
     } else {
-      await createMutation.mutateAsync(input)
+      let templateId: string | null = null
+      if (repeatMonthly) {
+        const template = await createTemplateMutation.mutateAsync({
+          category: input.category,
+          contract_number: input.contract_number,
+          subscriber_number: input.subscriber_number,
+          amount: input.amount,
+          day_of_month: Number(input.due_date.slice(8, 10)),
+          note: input.note,
+        })
+        templateId = template.id
+      }
+      await createMutation.mutateAsync({ ...input, template_id: templateId })
       setForm(emptyForm())
     }
     setOpen(false)
   }
 
-  const submitting = createMutation.isPending || updateMutation.isPending
+  const submitting = createMutation.isPending || updateMutation.isPending || createTemplateMutation.isPending
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -171,6 +190,19 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
             <Label>Not (opsiyonel)</Label>
             <Input value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
           </div>
+          {!isEdit && (
+            <label className="flex cursor-pointer items-start gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
+              <Checkbox className="mt-0.5" checked={repeatMonthly} onCheckedChange={(v) => setRepeatMonthly(v === true)} />
+              <span>
+                <span className="font-medium">
+                  Her ay {form.due_date ? `${Number(form.due_date.slice(8, 10))}.` : 'bu'} günde tekrarla
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  Fatura her ay bu güne otomatik açılır; son ödeme tarihine 5 gün kala ana ekranda hatırlatma çıkar.
+                </span>
+              </span>
+            </label>
+          )}
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
@@ -421,8 +453,30 @@ interface SubscriptionGroup {
  * 2026-08-21). Varsayılan açık — kaç borç olduğunu görmek için tıklamaya
  * gerek kalmasın.
  */
-function SubscriptionGroupRow({ group }: { group: SubscriptionGroup }) {
+/** Bir sonraki "her ayın X'i" günü (bugün dahil). */
+function nextMonthlyDue(day: number): Date {
+  const now = new Date()
+  const clamp = (y: number, m: number) => Math.min(day, new Date(y, m + 1, 0).getDate())
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), clamp(now.getFullYear(), now.getMonth()))
+  if (differenceInCalendarDays(thisMonth, now) >= 0) return thisMonth
+  return new Date(now.getFullYear(), now.getMonth() + 1, clamp(now.getFullYear(), now.getMonth() + 1))
+}
+
+function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; templates: UtilityBillTemplate[] }) {
   const [open, setOpen] = React.useState(true)
+  const makeRecurring = useMakeBillRecurring()
+  // Bu abonelik için aktif tekrarlayan şablon var mı (kategori + abone/sözleşme no eşleşmesi)
+  const template = templates.find(
+    (t) =>
+      t.is_active &&
+      t.category === group.category &&
+      (t.subscriber_number ?? '') === (group.subscriberNumber ?? '') &&
+      (t.contract_number ?? '') === (group.contractNumber ?? ''),
+  )
+  const latest = [...group.bills].sort((a, b) => b.due_date.localeCompare(a.due_date))[0]
+  // Faturalar her ay aynı günde ödenir (2026-10-21) — girilen tarihin ayı değil günü esas
+  const day = template?.day_of_month ?? (latest ? Number(latest.due_date.slice(8, 10)) : null)
+  const nextDue = day ? nextMonthlyDue(day) : null
   const deleteMutation = useDeleteUtilityBill()
   const paidMutation = useUpdateUtilityBillPaid()
   const { confirm, dialog } = useConfirmDialog()
@@ -449,6 +503,35 @@ function SubscriptionGroupRow({ group }: { group: SubscriptionGroup }) {
           </span>
         </span>
         <span className="flex items-center gap-2">
+          {day && nextDue && (
+            <span className="text-xs text-muted-foreground" title="Faturalar her ay aynı günde ödenir; 5 gün kala ana ekranda hatırlatma çıkar">
+              Her ayın {day}. günü · sıradaki {format(nextDue, 'd MMMM', { locale: trLocale })} ({differenceInCalendarDays(nextDue, new Date())} gün)
+            </span>
+          )}
+          {template ? (
+            <Badge variant="outline" className="border-primary/30 text-primary" title="Fatura kaydı her ay bu güne otomatik açılır">
+              <Repeat className="size-3" /> Otomatik
+            </Badge>
+          ) : latest ? (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation()
+                makeRecurring.mutate(latest)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.stopPropagation()
+                  makeRecurring.mutate(latest)
+                }
+              }}
+              title={`Bu faturayı her ayın ${Number(latest.due_date.slice(8, 10))}. günü için tekrarla`}
+              className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs text-primary hover:bg-primary/10"
+            >
+              <Repeat className="size-3" /> Kaydı her ay otomatik aç
+            </span>
+          ) : null}
           {group.unpaidCount > 0 ? (
             <Badge variant="outline" className="border-destructive/30 text-destructive">
               {group.unpaidCount} borç · {currency(group.unpaidTotal)}
@@ -513,6 +596,7 @@ function SubscriptionGroupRow({ group }: { group: SubscriptionGroup }) {
 }
 
 export function BillsPage() {
+  const { data: allTemplates = [] } = useUtilityBillTemplates()
   const { data: bills = [], isLoading } = useUtilityBills()
   const [categoryFilter, setCategoryFilter] = React.useState<string>(ALL_CATEGORIES)
 
@@ -622,7 +706,7 @@ export function BillsPage() {
           {isLoading && <p className="text-muted-foreground p-6">Yükleniyor...</p>}
           {!isLoading && groups.length === 0 && <p className="text-muted-foreground p-6">Henüz fatura kaydı yok.</p>}
           {groups.map((g) => (
-            <SubscriptionGroupRow key={g.key} group={g} />
+            <SubscriptionGroupRow key={g.key} group={g} templates={allTemplates} />
           ))}
         </CardContent>
       </Card>

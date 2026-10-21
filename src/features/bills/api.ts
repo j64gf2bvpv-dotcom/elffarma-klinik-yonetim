@@ -16,6 +16,8 @@ export const UTILITY_BILL_CATEGORY_LABELS: Record<UtilityBillCategory, string> =
 
 export interface UtilityBillInput {
   category: UtilityBillCategory
+  /** Tekrarlayan şablona bağlıysa — o ay için sunucu ikinci bir fatura üretmesin diye */
+  template_id?: string | null
   contract_number?: string | null
   subscriber_number?: string | null
   amount: number
@@ -23,9 +25,14 @@ export interface UtilityBillInput {
   note?: string | null
 }
 
-/** Hatırlatma, son ödeme tarihinin KENDİSİNDE değil bir hafta ÖNCESİNDE düşsün diye (kullanıcı isteğiyle, 2026-08-21) — ödemeye yetişecek zaman kalsın. */
+/**
+ * Hatırlatma, son ödeme tarihinin KENDİSİNDE değil öncesinde düşsün diye — ödemeye
+ * yetişecek zaman kalsın. 2026-08-21: bir hafta önce; 2026-10-21 (kullanıcı isteği:
+ * "son ödeme tarihine 5 gün kala hatırlatma gelsin"): 5 gün önce — ana ekrandaki
+ * fatura uyarısıyla (BillDueBanner, BILL_WARN_DAYS) aynı gün.
+ */
 function reminderDueDate(dueDate: string): string {
-  return format(subDays(new Date(dueDate), 7), 'yyyy-MM-dd')
+  return format(subDays(new Date(dueDate), 5), 'yyyy-MM-dd')
 }
 
 function reminderTitle(input: UtilityBillInput): string {
@@ -129,4 +136,29 @@ export async function updateUtilityBillTemplateActive(id: string, isActive: bool
 
 export async function deleteUtilityBillTemplate(id: string): Promise<void> {
   return offlineDelete('utility_bill_templates', id, 'Tekrarlayan fatura şablonu silme')
+}
+
+/**
+ * Var olan bir faturadan "her ay bu günde" tekrarlayan şablon oluşturur
+ * (kullanıcı isteği, 2026-10-21: "faturalarda her ayın o gününde ödenmesi
+ * gerekli, o şekilde bildirim olsun"). Şablonun günü faturanın son ödeme günü,
+ * tutarı faturanın tutarıdır; sunucu (generate_due_utility_bills, her sabah)
+ * her ay o güne faturayı ve 5 gün önceye hatırlatmasını otomatik açar.
+ * Bu ayın (ya da sonrasının) faturası şablona bağlanır ki aynı ay için ikinci
+ * fatura üretilmesin.
+ */
+export async function makeBillRecurring(bill: UtilityBill): Promise<UtilityBillTemplate> {
+  const template = await createUtilityBillTemplate({
+    category: bill.category,
+    contract_number: bill.contract_number,
+    subscriber_number: bill.subscriber_number,
+    amount: Number(bill.amount),
+    day_of_month: Number(bill.due_date.slice(8, 10)),
+    note: bill.note,
+  })
+  const monthStart = format(new Date(), 'yyyy-MM-01')
+  if (bill.due_date >= monthStart && !bill.template_id) {
+    await offlineUpdate<UtilityBill>('utility_bills', bill.id, { template_id: template.id }, 'Faturayı tekrarlayan şablona bağlama')
+  }
+  return template
 }

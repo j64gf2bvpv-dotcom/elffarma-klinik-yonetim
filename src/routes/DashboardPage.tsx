@@ -91,6 +91,7 @@ import { usePayments } from '@/features/payments/hooks'
 import { useProducts } from '@/features/stock/hooks'
 import { useExchangeRates } from '@/features/exchangeRates/hooks'
 import { LiveRatesCard, LiveRatesInline } from '@/features/exchangeRates/LiveRatesCard'
+import { BillDueBanner } from '@/features/bills/BillDueBanner'
 import { useCongresses } from '@/features/congresses/hooks'
 import { useAllParticipantProductSales } from '@/features/congresses/hooks'
 import { useSales } from '@/features/sales/hooks'
@@ -1668,6 +1669,8 @@ export function DashboardPage() {
       </div>
       )}
 
+      {/* Son ödeme tarihine ≤ 5 gün kalan ödenmemiş faturalar (2026-10-21) */}
+      <BillDueBanner />
       {view === 'classic' && <PixelDashboard />}
 
       {view === 'widgets' && editMode && (

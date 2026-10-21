@@ -45,6 +45,7 @@ import { useWhatsNewNotification } from '@/features/appUpdate/useWhatsNewNotific
 import { AIChatWidget } from '@/features/ai/AIChatWidget'
 import { PresenceProvider, useOnlineStaff } from '@/features/presence/PresenceProvider'
 import { StaffChatProvider, useStaffChat } from '@/features/staffChat/StaffChatProvider'
+import { BillDuePopup } from '@/features/bills/BillDueBanner'
 import { useStockRealtimeSync } from '@/features/stock/useStockRealtimeSync'
 import { useUpdateStaff } from '@/features/staff/hooks'
 import { useKeyboardSound } from '@/features/soundSettings/useKeyboardSound'
@@ -932,6 +933,8 @@ export function AppShell() {
       </div>
 
       <AIChatWidget />
+      {/* Açılışta fatura hatırlatma popup'ı (2026-10-21) */}
+      <BillDuePopup />
     </div>
     </StaffChatProvider>
     </PresenceProvider>
