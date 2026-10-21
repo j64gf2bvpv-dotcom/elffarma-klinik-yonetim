@@ -90,6 +90,7 @@ import { CustomerForm } from '@/features/customers/CustomerForm'
 import { usePayments } from '@/features/payments/hooks'
 import { useProducts } from '@/features/stock/hooks'
 import { useExchangeRates } from '@/features/exchangeRates/hooks'
+import { LiveRatesCard, LiveRatesInline } from '@/features/exchangeRates/LiveRatesCard'
 import { useCongresses } from '@/features/congresses/hooks'
 import { useAllParticipantProductSales } from '@/features/congresses/hooks'
 import { useSales } from '@/features/sales/hooks'
@@ -1142,91 +1143,7 @@ export function DashboardPage() {
     }
 
     if (id === 'exchange_rates') {
-      return (
-        <Card>
-          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
-              <Coins className="size-4 text-primary" /> Günlük Döviz Kurları
-            </CardTitle>
-            {exchangeRates[0]?.date && (
-              <span className="text-xs text-muted-foreground">{exchangeRates[0].date}</span>
-            )}
-          </CardHeader>
-          <CardContent>
-            {ratesLoading ? (
-              <p className="text-sm text-muted-foreground">Yükleniyor...</p>
-            ) : exchangeRates.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Kur bilgisi alınamadı</p>
-            ) : (
-              <>
-                <div className="mb-4 grid grid-cols-2 gap-4">
-                  {exchangeRates.map((r) => (
-                    <div key={r.currency} className="rounded-lg border p-3">
-                      <p className="text-xs font-medium text-muted-foreground">{r.currency}/TRY</p>
-                      <p className="text-xl font-semibold tabular-nums">
-                        {r.rate.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="rounded-lg border bg-muted/30 p-3">
-                  <Label htmlFor="convert-amount" className="text-xs font-medium text-muted-foreground">
-                    Döviz Çevir
-                  </Label>
-                  <div className="mt-1.5 flex items-end gap-2">
-                    <div className="flex-1">
-                      <Input
-                        id="convert-amount"
-                        type="text"
-                        inputMode="numeric"
-                        value={convertAmountDisplay}
-                        onChange={(e) => handleConvertAmountChange(e.target.value)}
-                      />
-                    </div>
-                    <Select value={fromCurrency} onValueChange={(v) => setFromCurrency(v as typeof fromCurrency)}>
-                      <SelectTrigger className="w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="TRY">TRY</SelectItem>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="mb-0.5 shrink-0"
-                      onClick={() => {
-                        setFromCurrency(toCurrency)
-                        setToCurrency(fromCurrency)
-                      }}
-                    >
-                      <ArrowLeftRight className="size-4" />
-                    </Button>
-                    <Select value={toCurrency} onValueChange={(v) => setToCurrency(v as typeof toCurrency)}>
-                      <SelectTrigger className="w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="TRY">TRY</SelectItem>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <p className="mt-3 text-lg font-semibold tabular-nums">
-                    {(Number(convertAmount) || 0).toLocaleString('tr-TR')} {fromCurrency} ={' '}
-                    {convertedAmount.toLocaleString('tr-TR', { style: 'currency', currency: toCurrency })}
-                  </p>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )
+      return <LiveRatesCard />
     }
 
     if (id === 'revenue_chart') {
@@ -1596,12 +1513,16 @@ export function DashboardPage() {
           </span>
         }
         description={
-          <span className="flex flex-wrap items-center gap-3">
-            {format(new Date(), 'd MMMM yyyy, EEEE', { locale: trLocale })}
-            <span className="text-border">|</span>
-            <LiveClock />
-            <span className="text-border">|</span>
-            <WeatherWidget city={weatherCity} />
+          <span className="flex flex-col gap-1">
+            <span className="flex flex-wrap items-center gap-3">
+              {format(new Date(), 'd MMMM yyyy, EEEE', { locale: trLocale })}
+              <span className="text-border">|</span>
+              <LiveClock />
+              <span className="text-border">|</span>
+              <WeatherWidget city={weatherCity} />
+            </span>
+            {/* Canlı dolar / euro kuru — saat ve hava durumunun altında, aynı küçük yazıyla (2026-10-21) */}
+            <LiveRatesInline />
           </span>
         }
         actions={

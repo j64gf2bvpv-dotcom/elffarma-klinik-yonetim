@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.327] - 2026-10-21
+
+**Ana ekranda canlı döviz kuru:** Saat ve hava durumunun altında, aynı küçük yazıyla canlı Dolar / Euro kuru (saniyede bir güncellenir, 24 saatlik değişim yüzdesiyle; değişince yeşil/kırmızı parlar) ve "TL çevir" penceresi (USD / EUR / TL arasında çevirme). Kaynak anlık piyasa kuru (USDT/TRY; EUR = USDT/TRY × EUR/USDT), bağlantı koparsa 5 sn'de bir yeniden yüklenir. Özelleştirilebilir görünümdeki "Döviz Kurları" kartı da canlı kura çevrildi.
+
 ## [2.17.326] - 2026-10-21
 
 **Kongre tarihleri kısa biçimde + web sitesinden bilgi çekme + Ajanda'da yazılı tarih:** Kongre tarihleri "5–8 Kasım 2026" biçiminde (ay farklıysa "28 Ekim – 2 Kasım 2026"). Kongre formuna Web Sitesi alanı ve "Siteden bilgileri getir" düğmesi eklendi — sitedeki ad, tarih aralığı, şehir, salon/otel, görsel ve açıklama okunup önizleniyor, işaretlenenler forma aktarılıyor; detay sayfasında "Web sitesi" bağlantısı var (migration 20261021180000: congresses.website_url; Electron'a sadece http(s) HTML okuyan dar bir page:fetch-html köprüsü eklendi). Ajanda'da kongrelerin yanında tarih aralığı yazıyor.
