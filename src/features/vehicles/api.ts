@@ -32,6 +32,25 @@ export interface VehicleInput {
   maintenance_date: string | null
   has_utts: boolean
   notes: string | null
+  /** Ruhsat bilgileri (2026-10-21) — hepsi opsiyonel */
+  registration_image_path?: string | null
+  owner_name?: string | null
+  owner_tax_id?: string | null
+  owner_address?: string | null
+  chassis_number?: string | null
+  engine_number?: string | null
+  first_registration_date?: string | null
+  registration_date?: string | null
+  vehicle_class?: string | null
+  vehicle_type?: string | null
+  color?: string | null
+  fuel_type?: string | null
+  engine_capacity?: string | null
+  engine_power?: string | null
+  seat_count?: number | null
+  usage_purpose?: string | null
+  document_serial?: string | null
+  inspection_valid_until?: string | null
 }
 
 export async function createVehicle(input: VehicleInput): Promise<Vehicle> {

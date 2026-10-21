@@ -25,6 +25,19 @@ export class AIService {
     this.provider = createAIProvider(config)
   }
 
+  /** Aynı sağlayıcı/anahtarla farklı bir model — yoğunlukta yedek modele geçmek için (2026-10-21). */
+  withModel(model: string): AIService {
+    return new AIService({ ...this.config, model })
+  }
+
+  get providerName(): AIProviderConfig['provider'] {
+    return this.config.provider
+  }
+
+  get modelName(): string {
+    return this.config.model
+  }
+
   async chat(messages: AIMessage[], options?: AIChatOptions): Promise<AIChatResult> {
     const start = performance.now()
     try {

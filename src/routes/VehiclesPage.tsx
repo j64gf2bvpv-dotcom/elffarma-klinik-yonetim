@@ -1,7 +1,9 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Pencil, Trash2, CheckCircle2, XCircle, Fuel } from 'lucide-react'
+import { Pencil, Trash2, CheckCircle2, XCircle, Fuel, FileImage } from 'lucide-react'
+import { toast } from 'sonner'
+import { getRegistrationImageUrl } from '@/features/vehicles/registration'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -63,6 +65,13 @@ export function VehiclesPage() {
                 { header: 'Aylık Kira', value: (v) => v.monthly_rental_price ?? '' },
                 { header: 'Bakım Tarihi', value: (v) => v.maintenance_date ?? '' },
                 { header: 'UTTS', value: (v) => (v.has_utts ? 'Var' : 'Yok') },
+                { header: 'Muayene Geçerlilik', value: (v) => v.inspection_valid_until ?? '' },
+                { header: 'Ruhsat Sahibi', value: (v) => v.owner_name ?? '' },
+                { header: 'Şase No', value: (v) => v.chassis_number ?? '' },
+                { header: 'Motor No', value: (v) => v.engine_number ?? '' },
+                { header: 'İlk Tescil', value: (v) => v.first_registration_date ?? '' },
+                { header: 'Renk', value: (v) => v.color ?? '' },
+                { header: 'Yakıt', value: (v) => v.fuel_type ?? '' },
               ]}
             />
             <VehicleDialog />
@@ -82,6 +91,7 @@ export function VehiclesPage() {
                 <TableHead>Aylık Kira</TableHead>
                 <TableHead>Bakım Tarihi</TableHead>
                 <TableHead>UTTS</TableHead>
+                <TableHead>Muayene</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>
@@ -95,7 +105,7 @@ export function VehiclesPage() {
               )}
               {!isLoading && vehicles.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={9} className="text-muted-foreground py-8 text-center">
                     Henüz araç kaydı yok
                   </TableCell>
                 </TableRow>
@@ -124,8 +134,28 @@ export function VehiclesPage() {
                       </Badge>
                     )}
                   </TableCell>
+                  <TableCell>
+                    <InspectionBadge date={v.inspection_valid_until} />
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      {v.registration_image_path && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Ruhsat fotoğrafını aç"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            try {
+                              window.open(await getRegistrationImageUrl(v.registration_image_path!), '_blank')
+                            } catch {
+                              toast.error('Ruhsat fotoğrafı açılamadı')
+                            }
+                          }}
+                        >
+                          <FileImage className="size-3.5" />
+                        </Button>
+                      )}
                       <FuelLogDialog vehicleId={v.id} vehicleName={v.brand_model} />
                       <VehicleDialog
                         vehicle={v}
@@ -199,4 +229,14 @@ export function VehiclesPage() {
       {dialog}
     </div>
   )
+}
+
+/** Muayene geçerlilik tarihi — geçmişse kırmızı, 30 gün içindeyse turuncu. */
+function InspectionBadge({ date }: { date: string | null }) {
+  if (!date) return <span className="text-muted-foreground">—</span>
+  const days = Math.round((new Date(`${date}T00:00:00`).getTime() - Date.now()) / 86400000)
+  const label = format(new Date(`${date}T00:00:00`), 'd MMM yyyy', { locale: trLocale })
+  if (days < 0) return <Badge variant="destructive" title="Muayene süresi geçmiş">{label}</Badge>
+  if (days <= 30) return <Badge variant="outline" className="border-warning/40 bg-warning/10 text-warning-foreground" title={`${days} gün kaldı`}>{label}</Badge>
+  return <span>{label}</span>
 }
