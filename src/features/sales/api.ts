@@ -94,6 +94,32 @@ export async function createSale(input: SaleInput): Promise<Sale> {
   }
 }
 
+/**
+ * Satır düzenleme (Doktor Hesapları, 2026-10-21: "bütün kısımlar üzerine
+ * tıklanınca manuel girilebilsin"). Adet değişir ve kayıt bir stok ürününe
+ * bağlıysa FARK kadar stok hareketi yazılır (satışta artış = çıkış, azalış =
+ * giriş; iadede tersi) — CLAUDE.md kuralı: stok yalnızca record_stock_movement ile.
+ */
+export async function updateSale(
+  sale: Sale,
+  patch: Partial<Pick<Sale, 'product_name' | 'quantity' | 'unit_price' | 'sale_date' | 'note'>>,
+): Promise<Sale> {
+  const diff = patch.quantity !== undefined ? patch.quantity - sale.quantity : 0
+  if (sale.product_id && diff !== 0) {
+    const moreOut = sale.type === 'sale' ? diff > 0 : diff < 0
+    await recordStockMovement({
+      product_id: sale.product_id,
+      movement_type: moreOut ? 'out' : 'in',
+      quantity: Math.abs(diff),
+      reason: sale.type === 'sale' ? 'Satış adedi düzeltme' : 'İade adedi düzeltme',
+      customer_id: sale.customer_id,
+      unit_price: patch.unit_price ?? sale.unit_price,
+      note: sale.product_name,
+    })
+  }
+  return offlineUpdate<Sale>('sales', sale.id, patch, `${sale.type === 'sale' ? 'Satış' : 'İade'} düzenleme: ${sale.product_name}`)
+}
+
 export async function updateSaleRep(id: string, salesRepId: string | null): Promise<Sale> {
   return offlineUpdate<Sale>('sales', id, { sales_rep_id: salesRepId }, 'Satış/iade temsilcisini değiştirme')
 }

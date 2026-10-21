@@ -15,6 +15,7 @@ import {
   type PaymentFilters,
   type PaymentInput,
   type PaymentWithCustomer,
+  updatePayment,
 } from './api'
 
 export function usePayments(filters: PaymentFilters) {
@@ -36,6 +37,15 @@ export function useCreatePayment() {
       queryClient.invalidateQueries({ queryKey: ['payments'] })
       toast.success('Tahsilat kaydedildi')
     },
+    onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
+  })
+}
+
+export function useUpdatePayment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Parameters<typeof updatePayment>[1] }) => updatePayment(id, patch),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['payments'] }),
     onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
   })
 }

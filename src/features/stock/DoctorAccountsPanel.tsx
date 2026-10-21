@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Check, ChevronDown, ChevronRight, ExternalLink, PackageCheck, PackageOpen, Plus, Search, ShoppingCart, Trash2, Wallet, Receipt } from 'lucide-react'
+import { ChevronDown, ChevronRight, ExternalLink, PackageCheck, PackageOpen, Plus, Search, ShoppingCart, Trash2, Wallet, Receipt } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
@@ -18,11 +18,12 @@ import {
   useCreatePendingProduct,
   useCustomers,
   useDeletePendingProduct,
+  useUpdateCustomerFields,
   useUpdatePendingProduct,
 } from '@/features/customers/hooks'
 import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
-import { usePayments } from '@/features/payments/hooks'
-import { useCreateSale, useDeleteSale, useSales } from '@/features/sales/hooks'
+import { usePayments, useUpdatePayment } from '@/features/payments/hooks'
+import { useCreateSale, useDeleteSale, useSales, useUpdateSale } from '@/features/sales/hooks'
 import { useProducts } from '@/features/stock/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
 import { trFold } from '@/lib/detectProvince'
@@ -288,7 +289,7 @@ export function DoctorAccountsPanel() {
                         {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                       </TableCell>
                       <TableCell>
-                        <p className="font-medium">{a.customer.full_name}</p>
+                        <EditableName customer={a.customer} />
                         {a.customer.province && <p className="text-xs text-muted-foreground">{a.customer.province}</p>}
                       </TableCell>
                       <TableCell className="text-center">
@@ -387,42 +388,13 @@ function SummaryCard({
 }
 
 function AccountDetail({ account: a, products }: { account: DoctorAccount; products: Product[] }) {
-  const deleteSale = useDeleteSale()
   const saleRows = [...a.sales, ...a.returns].sort((x, y) => y.sale_date.localeCompare(x.sale_date))
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <DetailBlock title="Aldığı Ürünler" total={money(a.boughtAmount - a.returnAmount)}>
         {saleRows.length === 0 && a.invoices.length === 0 && <Empty>Satış yok</Empty>}
         {saleRows.map((s) => (
-          <DetailLine
-            key={s.id}
-            left={
-              <>
-                <span className="font-medium">{s.product_name}</span>
-                {s.type === 'return' && <Badge variant="secondary" className="ml-1.5">İade</Badge>}
-                <span className="block text-xs text-muted-foreground">
-                  {day(s.sale_date)} · {s.quantity} x {money(Number(s.unit_price))}
-                  {s.congress_name ? ` · ${s.congress_name}` : ''}
-                </span>
-              </>
-            }
-            right={
-              <span className="flex items-center gap-1">
-                <span className={cn(s.type === 'return' && 'text-success')}>
-                  {s.type === 'return' ? '−' : ''}
-                  {money(s.quantity * Number(s.unit_price))}
-                </span>
-                <IconAction
-                  title={s.product_id ? 'Sil (stok geri eklenir)' : 'Sil'}
-                  onClick={() => {
-                    if (window.confirm(`"${s.product_name}" kaydı silinsin mi?${s.product_id ? ' Stok geri eklenir.' : ''}`)) deleteSale.mutate(s.id)
-                  }}
-                >
-                  <Trash2 className="size-3.5" />
-                </IconAction>
-              </span>
-            }
-          />
+          <SaleLine key={s.id} sale={s} />
         ))}
         <AddSaleForm customerId={a.customer.id} products={products} />
         {a.invoices.map((inv) => (
@@ -456,20 +428,7 @@ function AccountDetail({ account: a, products }: { account: DoctorAccount; produ
         {[...a.payments]
           .sort((x, y) => y.paid_at.localeCompare(x.paid_at))
           .map((p) => (
-            <DetailLine
-              key={p.id}
-              left={
-                <>
-                  <span className="font-medium">{tr.paymentMethod[p.payment_method] ?? p.payment_method}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {day(p.paid_at)}
-                    {p.description ? ` · ${p.description}` : ''}
-                    {p.invoice_number ? ` · Fatura ${p.invoice_number}` : ''}
-                  </span>
-                </>
-              }
-              right={<span className="text-success">{money(Number(p.amount))}</span>}
-            />
+            <PaymentLine key={p.id} payment={p} />
           ))}
         {a.returnAmount > 0 && (
           <p className="pt-1 text-xs text-muted-foreground">İadeler ({money(a.returnAmount)}) ödenen tutara dahildir.</p>
@@ -668,59 +627,207 @@ function AddPendingForm({ customerId, products }: { customerId: string; products
   )
 }
 
-/** Alacağı ürün satırı — adede tıklayınca değiştirilir; teslim edilince listeden çıkar. */
-function PendingLine({ item: p }: { item: CustomerPendingProduct }) {
-  const update = useUpdatePendingProduct()
-  const remove = useDeletePendingProduct()
+/**
+ * Tıklayınca yerinde düzenlenen alan (kullanıcı isteği, 2026-10-21: "hoca ismi,
+ * aldığı ürün, toplam tutar vb. bütün kısımlar üzerine tıklanınca manuel
+ * girilebilsin"). Enter / dışarı tıklama kaydeder, Esc vazgeçer. Satıra
+ * tıklayınca açılıp kapanma tetiklenmesin diye tıklama yukarı iletilmez.
+ */
+type EditKind = 'text' | 'int' | 'money' | 'date'
+
+function EditableField({
+  value,
+  kind = 'text',
+  onSave,
+  children,
+  className,
+  inputClassName,
+  title = 'Düzenlemek için tıklayın',
+}: {
+  value: string | number | null
+  kind?: EditKind
+  onSave: (value: string | number) => void
+  children: React.ReactNode
+  className?: string
+  inputClassName?: string
+  title?: string
+}) {
+  const initial = value == null ? '' : kind === 'money' ? String(Math.round(Number(value) * 100) / 100).replace('.', ',') : String(value)
   const [editing, setEditing] = React.useState(false)
-  const [qty, setQty] = React.useState(String(p.quantity))
+  const [text, setText] = React.useState(initial)
+
+  function start(e: React.MouseEvent) {
+    e.stopPropagation()
+    setText(initial)
+    setEditing(true)
+  }
 
   function commit() {
     setEditing(false)
-    const n = Number(qty)
-    if (!Number.isFinite(n) || n <= 0 || Math.round(n) !== n) return setQty(String(p.quantity))
-    if (n !== p.quantity) update.mutate({ id: p.id, patch: { quantity: n } })
+    const t = text.trim()
+    if (t === initial) return
+    if (kind === 'text' || kind === 'date') {
+      if (!t && kind === 'date') return
+      onSave(t)
+      return
+    }
+    const n = Number(t.replace(/\s/g, '').replace(',', '.'))
+    if (!t || !Number.isFinite(n) || n < 0 || (kind === 'int' && (n === 0 || Math.round(n) !== n))) {
+      toast.error(kind === 'int' ? 'Adet 0’dan büyük tam sayı olmalı' : 'Geçerli bir tutar yazın')
+      return
+    }
+    onSave(n)
   }
 
+  if (editing) {
+    return (
+      <Input
+        autoFocus
+        type={kind === 'date' ? 'date' : 'text'}
+        inputMode={kind === 'int' ? 'numeric' : kind === 'money' ? 'decimal' : undefined}
+        value={text}
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => setText(kind === 'int' ? e.target.value.replace(/\D/g, '') : kind === 'money' ? e.target.value.replace(/[^\d.,]/g, '') : e.target.value)}
+        onFocus={(e) => {
+          if (kind === 'date') return
+          const end = e.currentTarget.value.length
+          e.currentTarget.setSelectionRange(end, end)
+        }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          e.stopPropagation()
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') setEditing(false)
+        }}
+        className={cn('h-7 px-1.5 text-sm', kind === 'int' && 'w-16', kind === 'money' && 'w-28', kind === 'date' && 'w-36', inputClassName)}
+      />
+    )
+  }
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={start}
+      className={cn('-mx-1 rounded px-1 text-left transition-colors hover:bg-accent hover:ring-1 hover:ring-primary/30', className)}
+    >
+      {children}
+    </button>
+  )
+}
+
+function EditableName({ customer }: { customer: Customer }) {
+  const update = useUpdateCustomerFields()
+  return (
+    <div>
+      <EditableField
+        value={customer.full_name}
+        onSave={(v) => update.mutate({ id: customer.id, patch: { full_name: String(v) } })}
+        className="font-medium"
+        inputClassName="w-56"
+        title="Doktor adını düzenlemek için tıklayın"
+      >
+        {customer.full_name}
+      </EditableField>
+      {customer.province && <p className="text-xs text-muted-foreground">{customer.province}</p>}
+    </div>
+  )
+}
+
+/** Aldığı ürün (satış/iade) satırı — ad, tarih, adet, birim fiyat ve tutar tıklanıp değişir. */
+function SaleLine({ sale: s }: { sale: Sale }) {
+  const update = useUpdateSale()
+  const remove = useDeleteSale()
+  const save = (patch: Parameters<typeof update.mutate>[0]['patch']) => update.mutate({ sale: s, patch })
+  const total = s.quantity * Number(s.unit_price)
   return (
     <DetailLine
       left={
         <>
-          <span className="font-medium">{p.product_name}</span>
-          <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-            {day(p.created_at)} ·
-            {editing ? (
-              <span className="inline-flex items-center gap-1">
-                <Input
-                  autoFocus
-                  className="h-6 w-14 px-1 text-xs"
-                  inputMode="numeric"
-                  value={qty}
-                  onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))}
-                  onBlur={commit}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commit()
-                    if (e.key === 'Escape') {
-                      setQty(String(p.quantity))
-                      setEditing(false)
-                    }
-                  }}
-                />
-                <Check className="size-3" />
-              </span>
-            ) : (
-              <button type="button" title="Adedi değiştirmek için tıklayın" className="rounded px-1 font-medium text-foreground hover:bg-accent" onClick={() => setEditing(true)}>
-                {p.quantity} adet
-              </button>
-            )}
-            x {money(Number(p.unit_price))}
-            {p.note ? ` · ${p.note}` : ''}
+          <EditableField value={s.product_name} onSave={(v) => save({ product_name: String(v) })} className="font-medium" inputClassName="w-48">
+            {s.product_name}
+          </EditableField>
+          {s.type === 'return' && <Badge variant="secondary" className="ml-1.5">İade</Badge>}
+          <span className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+            <EditableField value={s.sale_date} kind="date" onSave={(v) => save({ sale_date: String(v) })}>
+              {day(s.sale_date)}
+            </EditableField>
+            ·
+            <EditableField value={s.quantity} kind="int" onSave={(v) => save({ quantity: Number(v) })} className="font-medium text-foreground" title={s.product_id ? 'Adedi değiştirin (stok farkı otomatik düzeltilir)' : 'Adedi değiştirin'}>
+              {s.quantity} adet
+            </EditableField>
+            x
+            <EditableField value={Number(s.unit_price)} kind="money" onSave={(v) => save({ unit_price: Number(v) })} title="Birim fiyatı değiştirin">
+              {money(Number(s.unit_price))}
+            </EditableField>
+            {s.congress_name ? ` · ${s.congress_name}` : ''}
           </span>
         </>
       }
       right={
         <span className="flex items-center gap-1">
-          {money(p.quantity * Number(p.unit_price))}
+          <EditableField
+            value={total}
+            kind="money"
+            onSave={(v) => save({ unit_price: Math.round((Number(v) / s.quantity) * 100) / 100 })}
+            className={cn(s.type === 'return' && 'text-success')}
+            title="Tutarı değiştirin (birim fiyat buna göre hesaplanır)"
+          >
+            {s.type === 'return' ? '−' : ''}
+            {money(total)}
+          </EditableField>
+          <IconAction
+            title={s.product_id ? 'Sil (stok geri eklenir)' : 'Sil'}
+            onClick={() => {
+              if (window.confirm(`"${s.product_name}" kaydı silinsin mi?${s.product_id ? ' Stok geri eklenir.' : ''}`)) remove.mutate(s.id)
+            }}
+          >
+            <Trash2 className="size-3.5" />
+          </IconAction>
+        </span>
+      }
+    />
+  )
+}
+
+/** Alacağı ürün satırı — ad, adet, birim fiyat, tutar ve not tıklanıp değişir; teslim edilince listeden çıkar. */
+function PendingLine({ item: p }: { item: CustomerPendingProduct }) {
+  const update = useUpdatePendingProduct()
+  const remove = useDeletePendingProduct()
+  const save = (patch: Parameters<typeof update.mutate>[0]['patch']) => update.mutate({ id: p.id, patch })
+  const total = p.quantity * Number(p.unit_price)
+  return (
+    <DetailLine
+      left={
+        <>
+          <EditableField value={p.product_name} onSave={(v) => save({ product_name: String(v) })} className="font-medium" inputClassName="w-48">
+            {p.product_name}
+          </EditableField>
+          <span className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+            {day(p.created_at)} ·
+            <EditableField value={p.quantity} kind="int" onSave={(v) => save({ quantity: Number(v) })} className="font-medium text-foreground">
+              {p.quantity} adet
+            </EditableField>
+            x
+            <EditableField value={Number(p.unit_price)} kind="money" onSave={(v) => save({ unit_price: Number(v) })}>
+              {money(Number(p.unit_price))}
+            </EditableField>
+            ·
+            <EditableField value={p.note ?? ''} onSave={(v) => save({ note: String(v) || null })} inputClassName="w-40">
+              {p.note || <span className="italic">not ekle</span>}
+            </EditableField>
+          </span>
+        </>
+      }
+      right={
+        <span className="flex items-center gap-1">
+          <EditableField
+            value={total}
+            kind="money"
+            onSave={(v) => save({ unit_price: Math.round((Number(v) / p.quantity) * 100) / 100 })}
+            title="Tutarı değiştirin (birim fiyat buna göre hesaplanır)"
+          >
+            {money(total)}
+          </EditableField>
           <button
             type="button"
             title="Teslim edildi — listeden çıkar"
@@ -732,6 +839,48 @@ function PendingLine({ item: p }: { item: CustomerPendingProduct }) {
             <PackageCheck className="size-3.5" />
           </button>
         </span>
+      }
+    />
+  )
+}
+
+/** Ödeme satırı — ödeme şekli, tarih, açıklama ve tutar tıklanıp değişir. */
+function PaymentLine({ payment: p }: { payment: Payment }) {
+  const update = useUpdatePayment()
+  const save = (patch: Parameters<typeof update.mutate>[0]['patch']) => update.mutate({ id: p.id, patch })
+  return (
+    <DetailLine
+      left={
+        <>
+          <select
+            value={p.payment_method}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => save({ payment_method: e.target.value as Payment['payment_method'] })}
+            title="Ödeme şeklini değiştirin"
+            className="-mx-1 cursor-pointer rounded bg-transparent px-0.5 font-medium hover:bg-accent"
+          >
+            {Object.entries(tr.paymentMethod).map(([k, label]) => (
+              <option key={k} value={k}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <span className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+            <EditableField value={p.paid_at.slice(0, 10)} kind="date" onSave={(v) => save({ paid_at: String(v) })}>
+              {day(p.paid_at)}
+            </EditableField>
+            ·
+            <EditableField value={p.description ?? ''} onSave={(v) => save({ description: String(v) || null })} inputClassName="w-40">
+              {p.description || <span className="italic">açıklama ekle</span>}
+            </EditableField>
+            {p.invoice_number ? ` · Fatura ${p.invoice_number}` : ''}
+          </span>
+        </>
+      }
+      right={
+        <EditableField value={Number(p.amount)} kind="money" onSave={(v) => save({ amount: Number(v) })} className="text-success" title="Tutarı değiştirin">
+          {money(Number(p.amount))}
+        </EditableField>
       }
     />
   )

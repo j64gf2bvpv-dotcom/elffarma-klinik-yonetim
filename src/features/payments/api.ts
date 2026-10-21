@@ -37,6 +37,14 @@ export async function fetchPayments(filters: PaymentFilters): Promise<PaymentWit
   return data as unknown as PaymentWithCustomer[]
 }
 
+/** Tahsilat satırı düzenleme (Doktor Hesapları, 2026-10-21). */
+export async function updatePayment(
+  id: string,
+  patch: Partial<Pick<Payment, 'amount' | 'paid_at' | 'payment_method' | 'description'>>,
+): Promise<Payment> {
+  return offlineUpdate<Payment>('payments', id, patch, 'Tahsilat düzenleme')
+}
+
 export async function createPayment(input: PaymentInput): Promise<Payment> {
   const staffId = await getCurrentUserId()
   return offlineInsert<Payment>(

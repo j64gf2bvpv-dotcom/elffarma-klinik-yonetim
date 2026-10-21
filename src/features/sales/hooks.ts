@@ -8,7 +8,9 @@ import {
   deleteAllSales,
   type SaleInput,
   type SaleWithRelations,
+  updateSale,
 } from './api'
+import type { Sale } from '@/types/database'
 
 export function useSales() {
   return useQuery({ queryKey: ['sales'], queryFn: () => fetchSales() })
@@ -30,6 +32,18 @@ export function useCreateSale() {
       queryClient.invalidateQueries({ queryKey: ['sales'] })
       queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success('Kaydedildi')
+    },
+    onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateSale() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ sale, patch }: { sale: Sale; patch: Parameters<typeof updateSale>[1] }) => updateSale(sale, patch),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
     },
     onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
   })
