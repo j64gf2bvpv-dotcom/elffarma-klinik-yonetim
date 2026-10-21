@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.318] - 2026-10-21
+
+**Stok > Doktor Hesapları:** Doktor başına aldığı ürünler (adet/kalem), alacağı yani henüz teslim edilmemiş ürünler, toplam tutar, ödenen ve kalan tahsilat tek tabloda; üstte toplam satış / ödenen / kalan tahsilat / teslim bekleyen ürün özeti, "Kalan tahsilatı olan", "Alacağı ürünü olan", "Ödemesi tamam" filtreleri. Satıra tıklayınca satış, teslim bekleyen ürün ve ödeme dökümü açılıyor; oradan eksik ürün eklenebiliyor. Rakamlar Cari Hesap ile aynı formülle hesaplanıyor; Excel/PDF dışa aktarma var.
+
 ## [2.17.317] - 2026-10-20
 
 **Cari Kart'tan vCard dışa aktarma:** Dışa Aktar menüsünde "vCard (.vcf) — Rehber" seçeneği — ekrandaki (filtrelenmiş) cari listesi telefon rehberine / Mac Kişiler'e aktarılabilir tek bir .vcf dosyası olarak iner; ad (soyadına göre sıralanır), unvan, telefon/cep/WhatsApp, e-posta, hastane, il-ilçe-adres, Instagram ve not dahil.

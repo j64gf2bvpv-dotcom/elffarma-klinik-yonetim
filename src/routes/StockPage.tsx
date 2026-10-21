@@ -52,6 +52,7 @@ import {
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
 import { CargoPanel } from '@/features/cargo/CargoPanel'
+import { DoctorAccountsPanel } from '@/features/stock/DoctorAccountsPanel'
 import { CongressShipmentsPanel } from '@/features/congressShipments/CongressShipmentsPanel'
 import { ZoomableThumbnail } from '@/components/ZoomableThumbnail'
 import { cn } from '@/lib/utils'
@@ -1219,6 +1220,7 @@ export function StockPage() {
           <TabsTrigger value="card">Stok Kartı</TabsTrigger>
           <TabsTrigger value="congress">Kongre/Workshop</TabsTrigger>
           <TabsTrigger value="cargo">Kargo</TabsTrigger>
+          <TabsTrigger value="accounts">Doktor Hesapları</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products">
@@ -1340,6 +1342,10 @@ export function StockPage() {
 
         <TabsContent value="cargo">
           <CargoPanel />
+        </TabsContent>
+
+        <TabsContent value="accounts">
+          <DoctorAccountsPanel />
         </TabsContent>
       </Tabs>
       {dialog}
