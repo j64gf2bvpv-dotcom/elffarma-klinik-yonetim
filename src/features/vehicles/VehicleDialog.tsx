@@ -19,6 +19,9 @@ import { CurrencyInput } from '@/components/ui/currency-input'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { useCreateVehicle, useUpdateVehicle } from './hooks'
 import type { VehicleWithRelations } from './api'
+import { CarModelCombobox } from './CarModelCombobox'
+import { modelYearOptions } from '@/lib/carModels'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAIService } from '@/features/ai/useAIService'
 import { getErrorMessage } from '@/lib/utils'
 import {
@@ -212,23 +215,25 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 grid gap-1.5">
               <Label htmlFor="vehicle-brand-model">Araç Modeli</Label>
-              <Input
-                id="vehicle-brand-model"
-                placeholder="Renault Clio"
-                value={brandModel}
-                onChange={(e) => setBrandModel(e.target.value)}
-                autoFocus
-              />
+              <CarModelCombobox value={brandModel} onChange={setBrandModel} />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="vehicle-year">Model Yılı</Label>
-              <Input
-                id="vehicle-year"
-                type="number"
-                placeholder="2024"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-              />
+              {/* Yıl listeden seçilir (kullanıcı isteği, 2026-10-21); ruhsattan okunan yıl da otomatik seçilir */}
+              <Select value={year || undefined} onValueChange={setYear}>
+                <SelectTrigger id="vehicle-year" className="w-full">
+                  <SelectValue placeholder="Yıl seçin" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {[...new Set([...(year ? [Number(year)] : []), ...modelYearOptions()])]
+                    .sort((a, b) => b - a)
+                    .map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="vehicle-plate">Plaka</Label>

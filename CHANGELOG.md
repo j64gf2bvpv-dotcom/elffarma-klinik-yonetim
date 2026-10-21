@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.332] - 2026-10-21
+
+**Araçlar: model listeden seçim + yıl seçimi:** Araç Modeli alanı aranabilir listeye dönüştü — 39 marka altında 366 model (Türkiye'de satılan binek ve hafif ticari araçlar); yazınca marka ya da modele göre süzülüyor, listede olmayan model "… olarak kullan" ile yazılabiliyor. Model yılı 1990'dan gelecek yıla kadar listeden seçiliyor; ruhsattan okunan yıl otomatik seçiliyor.
+
 ## [2.17.331] - 2026-10-21
 
 **Kongreler: kare görsel + kısa açıklama + silme:** Kongre kartlarında web sitesinden çekilen, kareye uyarlanmış küçük görsel (logolar kesilmeden sığdırılır, fotoğraflar ortadan kırpılır; programın kendi deposuna yüklenir), şehir/salon ve 1-2 cümlelik Türkçe kısa açıklama; kartta silme düğmesi (onaylı). "Sitelerden görsel ve açıklama getir" düğmesi web sitesi olan kongrelerde boş görsel/açıklamayı doldurur; kongre formuna "Kısa Açıklama" alanı eklendi, "Siteden bilgileri getir" görseli kareye uyarlayıp yüklüyor ve Türkçe açıklama üretiyor. Yapay zekâ yoğunken yedek modele geçiş ortak hale getirildi (chatWithFallback) — ruhsat okuma da bunu kullanıyor (migration 20261021230000: congresses.summary).
