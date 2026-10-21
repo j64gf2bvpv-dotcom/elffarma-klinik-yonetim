@@ -204,6 +204,8 @@ export interface Congress {
   budget: number | null
   campaign_info: string | null
   video_urls: string[]
+  /** Kongrenin web sitesi — detayda bağlantı, formda "Siteden bilgileri getir" (2026-10-21) */
+  website_url: string | null
   created_by: string | null
   created_at: string
   updated_at: string

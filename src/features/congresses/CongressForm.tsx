@@ -2,7 +2,7 @@ import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Loader2, Pencil, ImagePlus, Presentation } from 'lucide-react'
+import { Plus, Loader2, Pencil, ImagePlus, Presentation, Globe, Download } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useCreateCongress, useUpdateCongress } from './hooks'
 import { extractImageFile, uploadCongressImage } from './api'
+import { extractCongressInfo, type ExtractedCongressInfo } from './extractCongressInfo'
+import { formatDateRange } from '@/lib/dateRange'
 import type { Congress } from '@/types/database'
 
 const schema = z.object({
@@ -45,6 +47,7 @@ const schema = z.object({
   budget: z.coerce.number().min(0).optional(),
   campaign_info: z.string().optional(),
   video_urls: z.string().optional(),
+  website_url: z.string().optional(),
 })
 
 type FormInput = z.input<typeof schema>
@@ -73,6 +76,7 @@ function defaults(congress: Congress | undefined): FormInput {
     budget: congress?.budget ?? undefined,
     campaign_info: congress?.campaign_info ?? '',
     video_urls: congress?.video_urls?.join('\n') ?? '',
+    website_url: congress?.website_url ?? '',
   }
 }
 
@@ -137,6 +141,7 @@ export function CongressForm({ congress }: { congress?: Congress }) {
       video_urls: values.video_urls
         ? values.video_urls.split('\n').map((v) => v.trim()).filter(Boolean)
         : [],
+      website_url: normalizeUrl(values.website_url) || null,
     }
     if (congress) {
       await updateMutation.mutateAsync({ id: congress.id, input })
@@ -180,6 +185,7 @@ export function CongressForm({ congress }: { congress?: Congress }) {
                 </FormItem>
               )}
             />
+            <WebsiteImport form={form} />
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -511,5 +517,146 @@ export function CongressForm({ congress }: { congress?: Congress }) {
         </Form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function normalizeUrl(raw: string | undefined): string {
+  const t = (raw ?? '').trim()
+  if (!t) return ''
+  return /^https?:\/\//i.test(t) ? t : `https://${t}`
+}
+
+type ImportField = keyof ExtractedCongressInfo
+const IMPORT_LABELS: Record<ImportField, string> = {
+  name: 'Ad',
+  start_date: 'Başlangıç',
+  end_date: 'Bitiş',
+  city: 'Şehir',
+  venue: 'Salon / yer',
+  hotel: 'Otel',
+  image_url: 'Görsel',
+  notes: 'Açıklama (Notlar)',
+}
+
+/**
+ * Web sitesi + "Siteden bilgileri getir" (kullanıcı isteği, 2026-10-21: "web
+ * sitesi üzerinden bağlanabilsin, gerçek bilgiler çekilebilsin"). Sayfa ana
+ * süreç üzerinden indirilir (electronAPI.fetchPageHtml — CORS'suz), bilgiler
+ * extractCongressInfo ile çıkarılır; bulunanlar önizlenir, işaretlenenler forma
+ * yazılır (kayıt için yine "Kaydet"e basılır).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function WebsiteImport({ form }: { form: any }) {
+  const [loading, setLoading] = React.useState(false)
+  const [found, setFound] = React.useState<ExtractedCongressInfo | null>(null)
+  const [picked, setPicked] = React.useState<Set<ImportField>>(new Set())
+
+  async function load() {
+    const url = normalizeUrl(form.getValues('website_url'))
+    if (!url) return toast.error('Önce web sitesi adresini yazın')
+    form.setValue('website_url', url, { shouldDirty: true })
+    setLoading(true)
+    setFound(null)
+    try {
+      let page = (await window.electronAPI?.fetchPageHtml?.(url)) ?? null
+      if (!page) {
+        // Electron dışında (tarayıcı önizlemesi) doğrudan dene — çoğu sitede CORS engeller
+        try {
+          const res = await fetch(url)
+          if (res.ok) page = { url: res.url, html: await res.text() }
+        } catch {
+          /* yok say */
+        }
+      }
+      if (!page) {
+        toast.error('Siteye ulaşılamadı', { description: 'Adresi kontrol edin; site HTML sayfası döndürmüyor ya da erişime kapalı olabilir.' })
+        return
+      }
+      const info = extractCongressInfo(page.html, page.url)
+      const keys = (Object.keys(IMPORT_LABELS) as ImportField[]).filter((k) => info[k])
+      if (keys.length === 0) {
+        toast.error('Sitede kongre bilgisi bulunamadı', { description: 'Bilgileri elle girebilirsiniz.' })
+        return
+      }
+      setFound(info)
+      // Boş form alanları varsayılan seçili; dolu olanlar (üzerine yazılmasın diye) seçili gelmez
+      setPicked(new Set(keys.filter((k) => !form.getValues(k))))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function apply() {
+    if (!found) return
+    for (const k of picked) if (found[k]) form.setValue(k, found[k], { shouldDirty: true })
+    toast.success(`${picked.size} bilgi forma aktarıldı`, { description: 'Kaydetmek için "Kaydet"e basın.' })
+    setFound(null)
+  }
+
+  const show = (k: ImportField, v: string) =>
+    k === 'start_date' || k === 'end_date' ? formatDateRange(v) : k === 'image_url' ? v.replace(/^https?:\/\//, '').slice(0, 60) : v
+
+  return (
+    <div className="grid gap-2">
+      <FormField
+        control={form.control}
+        name="website_url"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Web Sitesi (opsiyonel)</FormLabel>
+            <div className="flex gap-2">
+              <FormControl>
+                <div className="relative flex-1">
+                  <Globe className="text-muted-foreground absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+                  <Input placeholder="ekamkongresi.com" className="pl-8" {...field} />
+                </div>
+              </FormControl>
+              <Button type="button" variant="outline" onClick={() => void load()} disabled={loading}>
+                {loading ? <Loader2 className="animate-spin" /> : <Download />} Siteden bilgileri getir
+              </Button>
+            </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      {found && (
+        <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+          <p className="mb-2 font-medium">Sitede bulunan bilgiler — forma aktarmak istediklerinizi işaretleyin:</p>
+          <div className="grid gap-1.5">
+            {(Object.keys(IMPORT_LABELS) as ImportField[])
+              .filter((k) => found[k])
+              .map((k) => (
+                <label key={k} className="flex cursor-pointer items-start gap-2">
+                  <Checkbox
+                    className="mt-0.5"
+                    checked={picked.has(k)}
+                    onCheckedChange={(v) =>
+                      setPicked((prev) => {
+                        const next = new Set(prev)
+                        if (v === true) next.add(k)
+                        else next.delete(k)
+                        return next
+                      })
+                    }
+                  />
+                  <span className="min-w-0">
+                    <span className="text-muted-foreground">{IMPORT_LABELS[k]}: </span>
+                    <span className="break-words">{show(k, found[k]!)}</span>
+                    {form.getValues(k) ? <span className="text-muted-foreground"> (formda dolu — işaretlerseniz değişir)</span> : null}
+                  </span>
+                </label>
+              ))}
+          </div>
+          <div className="mt-2 flex justify-end gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setFound(null)}>
+              Vazgeç
+            </Button>
+            <Button type="button" size="sm" onClick={apply} disabled={picked.size === 0}>
+              Seçilenleri forma aktar
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

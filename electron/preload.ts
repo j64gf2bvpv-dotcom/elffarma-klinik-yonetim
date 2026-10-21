@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('shell:open-external', waMeUrl),
   openNetworkSettings: (): Promise<void> => ipcRenderer.invoke('shell:open-network-settings'),
   fetchImageDataUrl: (url: string): Promise<string | null> => ipcRenderer.invoke('image:fetch-data-url', url),
+  fetchPageHtml: (url: string): Promise<{ url: string; html: string } | null> => ipcRenderer.invoke('page:fetch-html', url),
   notify: (title: string, body: string): Promise<void> =>
     ipcRenderer.invoke('app:notify', title, body),
   onDeepLinkRecovery: (callback: (payload: RecoveryPayload) => void) => {

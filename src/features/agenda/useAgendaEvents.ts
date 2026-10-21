@@ -5,6 +5,7 @@ import { Presentation, Wallet, BellRing, type LucideIcon } from 'lucide-react'
 
 import { useReminders } from '@/features/reminders/hooks'
 import { useCongresses } from '@/features/congresses/hooks'
+import { formatDateRange } from '@/lib/dateRange'
 import { useCustomers } from '@/features/customers/hooks'
 
 export type AgendaEventType = 'reminder' | 'congress' | 'payment_due'
@@ -92,7 +93,9 @@ export function useAgendaEvents() {
       if (!c.start_date) continue
       list.push({
         id: `congress-${c.id}`,
-        title: c.name,
+        // Tarih aralığı yazılı olarak da görünsün (kullanıcı isteği, 2026-10-21:
+        // "ajanda üzerinde de olduğu tarihler yazılı olarak görünsün")
+        title: `${c.name} · ${formatDateRange(c.start_date, c.end_date)}`,
         start: c.start_date,
         end: c.end_date ?? undefined,
         type: 'congress',

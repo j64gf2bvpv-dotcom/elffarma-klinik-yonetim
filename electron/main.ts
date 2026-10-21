@@ -209,6 +209,32 @@ ipcMain.handle('image:fetch-data-url', async (_event, url: string) => {
   }
 })
 
+// Kongre web sitesinden bilgi çekme (kullanıcı isteği, 2026-10-21: "web sitesi
+// üzerinden bağlanabilsin, gerçek bilgiler çekilebilsin") — çoğu site CORS
+// başlığı göndermediği için renderer doğrudan okuyamıyor. SADECE http(s), GET,
+// 15 sn zaman aşımı, HTML dönen ve 3 MB'tan küçük yanıtlar; sadece metin döner.
+ipcMain.handle('page:fetch-html', async (_event, url: string) => {
+  if (typeof url !== 'string' || !/^https?:\/\/[^\s]+$/i.test(url)) return null
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 15000)
+  try {
+    const res = await fetch(url, {
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Elffarma Paket Programi)', Accept: 'text/html,application/xhtml+xml' },
+    })
+    const type = res.headers.get('content-type') ?? ''
+    if (!res.ok || !/text\/html|application\/xhtml/i.test(type)) return null
+    const buf = Buffer.from(await res.arrayBuffer())
+    if (buf.length > 3 * 1024 * 1024) return null
+    return { url: res.url, html: buf.toString('utf8') }
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+})
+
 // Narrow IPC surface used by the renderer's preload bridge.
 // wa.me (tarayıcı üzerinden) ya da — toplu WhatsApp gönderiminde sohbeti doğrudan
 // masaüstü uygulamasında açmak için (2026-10-02) — SADECE

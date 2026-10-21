@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.326] - 2026-10-21
+
+**Kongre tarihleri kısa biçimde + web sitesinden bilgi çekme + Ajanda'da yazılı tarih:** Kongre tarihleri "5–8 Kasım 2026" biçiminde (ay farklıysa "28 Ekim – 2 Kasım 2026"). Kongre formuna Web Sitesi alanı ve "Siteden bilgileri getir" düğmesi eklendi — sitedeki ad, tarih aralığı, şehir, salon/otel, görsel ve açıklama okunup önizleniyor, işaretlenenler forma aktarılıyor; detay sayfasında "Web sitesi" bağlantısı var (migration 20261021180000: congresses.website_url; Electron'a sadece http(s) HTML okuyan dar bir page:fetch-html köprüsü eklendi). Ajanda'da kongrelerin yanında tarih aralığı yazıyor.
+
 ## [2.17.325] - 2026-10-21
 
 **Beklemedeki ürünler kırmızı ve yanıp sönüyor:** Doktor Hesapları'nda kargoya verilmemiş (beklemede) ürünler — tablodaki Kalan Ürünler listesi, detaydaki Kalan Ürünler satırları ve "Beklemede" etiketleri — kırmızı yazıyla yanıp sönüyor; tamamı verilenler yeşil kalıyor.

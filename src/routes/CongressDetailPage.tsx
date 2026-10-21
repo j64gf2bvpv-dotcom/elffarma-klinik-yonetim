@@ -1,6 +1,5 @@
+import { formatDateRange } from '@/lib/dateRange'
 import { useNavigate, useParams } from 'react-router-dom'
-import { format } from 'date-fns'
-import { tr as trLocale } from 'date-fns/locale'
 import {
   Loader2,
   Plane,
@@ -133,13 +132,20 @@ export function CongressDetailPage() {
       <PageHeader
         title={congress.name}
         description={
-          congress.start_date
-            ? `${format(new Date(congress.start_date), 'd MMMM yyyy', { locale: trLocale })}${
-                congress.end_date
-                  ? ' – ' + format(new Date(congress.end_date), 'd MMMM yyyy', { locale: trLocale })
-                  : ''
-              }`
-            : 'Tarih belirtilmedi'
+          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>{congress.start_date ? formatDateRange(congress.start_date, congress.end_date) : 'Tarih belirtilmedi'}</span>
+            {congress.website_url && (
+              <a
+                href={congress.website_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+                title="Kongrenin web sitesini aç"
+              >
+                🌐 Web sitesi
+              </a>
+            )}
+          </span>
         }
         actions={
           <div className="flex items-center gap-2">

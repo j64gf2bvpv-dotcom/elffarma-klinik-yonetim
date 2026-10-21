@@ -34,6 +34,7 @@ export interface CongressInput {
   budget?: number | null
   campaign_info?: string | null
   video_urls?: string[]
+  website_url?: string | null
 }
 
 /**

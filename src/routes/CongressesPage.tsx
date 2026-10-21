@@ -1,6 +1,5 @@
+import { formatDateRange } from '@/lib/dateRange'
 import { Link } from 'react-router-dom'
-import { format } from 'date-fns'
-import { tr as trLocale } from 'date-fns/locale'
 import { CalendarRange, ArrowRight, AlertTriangle } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -59,11 +58,7 @@ export function CongressesPage() {
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <CalendarRange className="size-3.5 shrink-0" />
                       <span className="truncate">
-                        {congress.start_date
-                          ? format(new Date(congress.start_date), 'd MMMM yyyy', { locale: trLocale })
-                          : 'Tarih belirtilmedi'}
-                        {congress.end_date &&
-                          ` – ${format(new Date(congress.end_date), 'd MMMM yyyy', { locale: trLocale })}`}
+                        {congress.start_date ? formatDateRange(congress.start_date, congress.end_date) : 'Tarih belirtilmedi'}
                       </span>
                     </span>
                   </div>

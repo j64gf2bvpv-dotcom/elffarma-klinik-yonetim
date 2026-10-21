@@ -22,6 +22,8 @@ declare global {
       openWhatsApp: (waMeUrl: string) => Promise<boolean>
       /** https görsel adresini (CORS'suz siteler dahil) data: URL olarak indirir — fiyat listesi PDF'i için */
       fetchImageDataUrl?: (url: string) => Promise<string | null>
+      /** Kongre web sitesinden bilgi çekmek için HTML (ana süreç üzerinden, CORS'suz) */
+      fetchPageHtml?: (url: string) => Promise<{ url: string; html: string } | null>
       openNetworkSettings: () => Promise<void>
       notify: (title: string, body: string) => Promise<void>
       onDeepLinkRecovery?: (
