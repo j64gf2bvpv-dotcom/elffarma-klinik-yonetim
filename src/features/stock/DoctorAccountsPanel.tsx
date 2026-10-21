@@ -358,11 +358,11 @@ export function DoctorAccountsPanel() {
                       <TableCell className="max-w-56 text-left whitespace-normal">
                         <OverrideCell account={a} field="pending_qty" kind="int" autoLabel={`${a.auto.pendingQty} adet`}>
                           {a.manual.has('pending_qty') ? (
-                            <span>{a.pendingQty} adet beklemede</span>
+                            <span className="animate-text-blink font-medium text-destructive">{a.pendingQty} adet beklemede</span>
                           ) : a.pendingQty > 0 ? (
                             <span className="block text-left">
-                              <Badge variant="outline" className="mb-0.5 border-warning/40 bg-warning/10 text-warning-foreground">Beklemede</Badge>
-                              <ItemList items={waitingItems(a)} />
+                              <Badge variant="outline" className="mb-0.5 animate-text-blink border-destructive/40 bg-destructive/10 text-destructive">Beklemede</Badge>
+                              <ItemList items={waitingItems(a)} className="animate-text-blink font-medium text-destructive" />
                             </span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
@@ -906,12 +906,12 @@ function PendingLine({ item: p }: { item: CustomerPendingProduct }) {
     <DetailLine
       left={
         <>
-          <EditableField value={p.product_name} onSave={(v) => save({ product_name: String(v) })} className="font-medium" inputClassName="w-48">
+          <EditableField value={p.product_name} onSave={(v) => save({ product_name: String(v) })} className="animate-text-blink font-semibold text-destructive" inputClassName="w-48">
             {p.product_name}
           </EditableField>
           <span className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
             {day(p.created_at)} ·
-            <EditableField value={p.quantity} kind="int" onSave={(v) => save({ quantity: Number(v) })} className="font-medium text-foreground">
+            <EditableField value={p.quantity} kind="int" onSave={(v) => save({ quantity: Number(v) })} className="animate-text-blink font-semibold text-destructive">
               {p.quantity} adet
             </EditableField>
             x
@@ -1052,7 +1052,7 @@ function ShippedToggle({ sale: s }: { sale: Sale }) {
       onClick={(e) => e.stopPropagation()}
       className={cn(
         'ml-2 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 align-middle text-[11px]',
-        full ? 'border-success/40 bg-success/10 text-success' : 'border-warning/40 bg-warning/10 text-warning-foreground',
+        full ? 'border-success/40 bg-success/10 text-success' : 'animate-text-blink border-destructive/40 bg-destructive/10 text-destructive',
       )}
     >
       <Checkbox
@@ -1080,10 +1080,10 @@ function UnshippedLine({ sale: s }: { sale: Sale }) {
     <DetailLine
       left={
         <>
-          <span className="font-medium">{s.product_name}</span>
+          <span className="animate-text-blink font-semibold text-destructive">{s.product_name}</span>
           <ShippedToggle sale={s} />
           <span className="block text-xs text-muted-foreground">
-            <span className="font-medium text-warning-foreground">{s.quantity - (s.shipped_quantity ?? 0)} adet beklemede</span>
+            <span className="animate-text-blink font-semibold text-destructive">{s.quantity - (s.shipped_quantity ?? 0)} adet beklemede</span>
             {(s.shipped_quantity ?? 0) > 0 ? ` (${s.shipped_quantity}/${s.quantity} verildi)` : ''} · {day(s.sale_date)} · {money(Number(s.unit_price))}/adet
             {s.congress_name ? ` · ${s.congress_name}` : ''}
           </span>
@@ -1126,11 +1126,11 @@ function waitingItems(a: DoctorAccount): { product_name: string; quantity: numbe
 }
 
 /** Tablo hücresinde ürün adı × adet listesi (aynı ürün birleştirilir). */
-function ItemList({ items }: { items: { product_name: string; quantity: number }[] }) {
+function ItemList({ items, className }: { items: { product_name: string; quantity: number }[]; className?: string }) {
   const merged = new Map<string, number>()
   for (const i of items) merged.set(i.product_name, (merged.get(i.product_name) ?? 0) + i.quantity)
   return (
-    <span className="flex flex-col gap-0.5 text-sm leading-tight">
+    <span className={cn('flex flex-col gap-0.5 text-sm leading-tight', className)}>
       {[...merged].map(([name, q]) => (
         <span key={name}>
           {name} <span className="font-semibold tabular-nums">×{q}</span>
