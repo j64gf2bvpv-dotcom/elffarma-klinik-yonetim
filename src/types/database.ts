@@ -565,6 +565,17 @@ export interface CustomerPendingProduct {
   created_at: string
 }
 
+/** Stok > Doktor Hesapları tablo hücrelerine elle girilen değerler — NULL ise otomatik hesaplanır (2026-10-21). */
+export interface DoctorAccountOverride {
+  customer_id: string
+  bought_qty: number | null
+  pending_qty: number | null
+  total_amount: number | null
+  paid_amount: number | null
+  updated_by: string | null
+  updated_at: string
+}
+
 export interface AppSetting<T = unknown> {
   key: string
   value: T

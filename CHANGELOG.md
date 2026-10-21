@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.321] - 2026-10-21
+
+**Doktor Hesapları tablosunda elle değer:** Aldığı, Alacağı, Toplam Tutar ve Ödenen hücrelerine tıklayıp doğrudan değer yazılabiliyor; elle girilen hücrede "elle" işareti var, üzerine gelince kayıtlardan hesaplanan değer görünüyor, kutu boşaltılınca otomatik hesaba dönüyor. Kalan tahsilat ve üstteki özet elle girilen değerlere göre hesaplanıyor. Değerler yeni doctor_account_overrides tablosunda tutuluyor; satış/tahsilat kayıtlarına ve Cari Hesap'a dokunmuyor (migration 20261021120000).
+
 ## [2.17.320] - 2026-10-21
 
 **Doktor Hesapları'nda her alan tıklanıp düzenleniyor:** Doktor adı, aldığı ürünlerde ürün adı / tarih / adet / birim fiyat / satır tutarı (tutar değişince birim fiyat hesaplanır), alacağı ürünlerde ad / adet / fiyat / tutar / not, ödemelerde ödeme şekli / tarih / açıklama / tutar. Stoğa bağlı bir satışın adedi değişince fark kadar stok hareketi otomatik yazılıyor (stok yalnızca stok hareketiyle değişir).

@@ -25,6 +25,7 @@ import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { usePayments, useUpdatePayment } from '@/features/payments/hooks'
 import { useCreateSale, useDeleteSale, useSales, useUpdateSale } from '@/features/sales/hooks'
 import { useProducts } from '@/features/stock/hooks'
+import { useDoctorAccountOverrides, useSaveDoctorAccountOverride, type OverrideField } from './doctorAccountOverrides'
 import { useInvoices } from '@/features/invoices/hooks'
 import { trFold } from '@/lib/detectProvince'
 import { cn } from '@/lib/utils'
@@ -69,6 +70,10 @@ interface DoctorAccount {
   /** tahsilat + iade */
   paid: number
   remaining: number
+  /** Kayıtlardan otomatik hesaplanan değerler — elle değer girilince karşılaştırma için */
+  auto: { boughtQty: number; pendingQty: number; totalDebt: number; paid: number }
+  /** Elle girilmiş hücreler (doctor_account_overrides) */
+  manual: Set<OverrideField>
 }
 
 type Filter = 'all' | 'remaining' | 'pending' | 'paid'
@@ -88,6 +93,7 @@ export function DoctorAccountsPanel() {
   // "Doktor ekle" ile listeye alınan, henüz hareketi olmayan doktorlar
   const [extraIds, setExtraIds] = React.useState<string[]>([])
   const { data: products = [] } = useProducts('')
+  const { data: overrides = [] } = useDoctorAccountOverrides()
 
   const accounts = React.useMemo<DoctorAccount[]>(() => {
     const by = new Map<string, DoctorAccount>()
@@ -101,6 +107,7 @@ export function DoctorAccountsPanel() {
           customer, sales: [], returns: [], invoices: [], payments: [], pending: [],
           boughtQty: 0, boughtAmount: 0, returnAmount: 0, invoiceAmount: 0, pendingQty: 0, pendingAmount: 0,
           totalDebt: 0, paid: 0, remaining: 0,
+          auto: { boughtQty: 0, pendingQty: 0, totalDebt: 0, paid: 0 }, manual: new Set(),
         }
         by.set(id, a)
       }
@@ -138,10 +145,36 @@ export function DoctorAccountsPanel() {
       a.pendingAmount += p.quantity * Number(p.unit_price)
     }
     for (const id of extraIds) get(id)
+    // Elle değer girilmiş ama başka hareketi olmayan doktorlar da listede kalsın
+    for (const o of overrides) {
+      if (o.bought_qty != null || o.pending_qty != null || o.total_amount != null || o.paid_amount != null) get(o.customer_id)
+    }
+    const overrideById = new Map(overrides.map((o) => [o.customer_id, o]))
     for (const a of by.values()) {
       const paymentTotal = a.payments.reduce((sum, p) => sum + Number(p.amount), 0)
       a.totalDebt = a.boughtAmount + a.invoiceAmount
       a.paid = paymentTotal + a.returnAmount
+      a.auto = { boughtQty: a.boughtQty, pendingQty: a.pendingQty, totalDebt: a.totalDebt, paid: a.paid }
+      // Elle girilen hücre değerleri otomatik hesabın yerine geçer (kalan da buna göre)
+      const o = overrideById.get(a.customer.id)
+      if (o) {
+        if (o.bought_qty != null) {
+          a.boughtQty = o.bought_qty
+          a.manual.add('bought_qty')
+        }
+        if (o.pending_qty != null) {
+          a.pendingQty = o.pending_qty
+          a.manual.add('pending_qty')
+        }
+        if (o.total_amount != null) {
+          a.totalDebt = Number(o.total_amount)
+          a.manual.add('total_amount')
+        }
+        if (o.paid_amount != null) {
+          a.paid = Number(o.paid_amount)
+          a.manual.add('paid_amount')
+        }
+      }
       a.remaining = a.totalDebt - a.paid
     }
     // Elle eklenen doktorlar en üstte (giriş yapılsın diye), sonra kalan tahsilata göre
@@ -151,7 +184,7 @@ export function DoctorAccountsPanel() {
         y.remaining - x.remaining ||
         y.pendingAmount - x.pendingAmount,
     )
-  }, [customers, sales, payments, invoices, pending, extraIds])
+  }, [customers, sales, payments, invoices, pending, extraIds, overrides])
 
   const visible = React.useMemo(() => {
     const q = trFold(search).trim()
@@ -290,28 +323,39 @@ export function DoctorAccountsPanel() {
                       </TableCell>
                       <TableCell>
                         <EditableName customer={a.customer} />
-                        {a.customer.province && <p className="text-xs text-muted-foreground">{a.customer.province}</p>}
                       </TableCell>
                       <TableCell className="text-center">
-                        {a.boughtQty > 0 ? (
-                          <span>
-                            {a.boughtQty} adet <span className="text-xs text-muted-foreground">· {a.sales.length} kalem</span>
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        <OverrideCell account={a} field="bought_qty" kind="int" autoLabel={`${a.auto.boughtQty} adet`}>
+                          {a.boughtQty > 0 ? (
+                            <span>
+                              {a.boughtQty} adet <span className="text-xs text-muted-foreground">· {a.sales.length} kalem</span>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </OverrideCell>
                       </TableCell>
                       <TableCell className="text-center">
-                        {a.pendingQty > 0 ? (
-                          <Badge variant="outline" className="border-warning/40 bg-warning/10 text-warning-foreground">
-                            {a.pendingQty} adet · {money(a.pendingAmount)}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        <OverrideCell account={a} field="pending_qty" kind="int" autoLabel={`${a.auto.pendingQty} adet`}>
+                          {a.pendingQty > 0 ? (
+                            <Badge variant="outline" className="border-warning/40 bg-warning/10 text-warning-foreground">
+                              {a.pendingQty} adet{a.pendingAmount > 0 ? ` · ${money(a.pendingAmount)}` : ''}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </OverrideCell>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{money(a.totalDebt)}</TableCell>
-                      <TableCell className="text-right text-success tabular-nums">{money(a.paid)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        <OverrideCell account={a} field="total_amount" kind="money" autoLabel={money(a.auto.totalDebt)}>
+                          {money(a.totalDebt)}
+                        </OverrideCell>
+                      </TableCell>
+                      <TableCell className="text-right text-success tabular-nums">
+                        <OverrideCell account={a} field="paid_amount" kind="money" autoLabel={money(a.auto.paid)}>
+                          {money(a.paid)}
+                        </OverrideCell>
+                      </TableCell>
                       <TableCell className={cn('text-right font-semibold tabular-nums', a.remaining > 0.005 ? 'text-destructive' : 'text-muted-foreground')}>
                         {money(a.remaining)}
                       </TableCell>
@@ -643,14 +687,17 @@ function EditableField({
   className,
   inputClassName,
   title = 'Düzenlemek için tıklayın',
+  allowClear = false,
 }: {
   value: string | number | null
   kind?: EditKind
-  onSave: (value: string | number) => void
+  onSave: (value: string | number | null) => void
   children: React.ReactNode
   className?: string
   inputClassName?: string
   title?: string
+  /** Boş bırakılınca null kaydedilir (elle değeri silip otomatiğe dönmek için) */
+  allowClear?: boolean
 }) {
   const initial = value == null ? '' : kind === 'money' ? String(Math.round(Number(value) * 100) / 100).replace('.', ',') : String(value)
   const [editing, setEditing] = React.useState(false)
@@ -671,8 +718,12 @@ function EditableField({
       onSave(t)
       return
     }
+    if (!t && allowClear) {
+      onSave(null)
+      return
+    }
     const n = Number(t.replace(/\s/g, '').replace(',', '.'))
-    if (!t || !Number.isFinite(n) || n < 0 || (kind === 'int' && (n === 0 || Math.round(n) !== n))) {
+    if (!t || !Number.isFinite(n) || n < 0 || (kind === 'int' && ((n === 0 && !allowClear) || Math.round(n) !== n))) {
       toast.error(kind === 'int' ? 'Adet 0’dan büyük tam sayı olmalı' : 'Geçerli bir tutar yazın')
       return
     }
@@ -883,5 +934,48 @@ function PaymentLine({ payment: p }: { payment: Payment }) {
         </EditableField>
       }
     />
+  )
+}
+
+/**
+ * Tablo hücresine elle değer (kullanıcı isteği, 2026-10-21: "aldığı, alacağı,
+ * toplam tutar bunların da üstüne tıklanınca manuel düzenlenebilsin"). Yazılan
+ * değer doctor_account_overrides'a kaydedilir ve gösterilir; kutu boşaltılınca
+ * otomatik hesaba döner. Elle değerin yanında "elle" işareti, üzerinde otomatik
+ * hesaplanan değer görünür.
+ */
+function OverrideCell({
+  account: a,
+  field,
+  kind,
+  autoLabel,
+  children,
+}: {
+  account: DoctorAccount
+  field: OverrideField
+  kind: 'int' | 'money'
+  autoLabel: string
+  children: React.ReactNode
+}) {
+  const save = useSaveDoctorAccountOverride()
+  const manual = a.manual.has(field)
+  const current = { bought_qty: a.boughtQty, pending_qty: a.pendingQty, total_amount: a.totalDebt, paid_amount: a.paid }[field]
+  return (
+    <span className="inline-flex items-center gap-1">
+      <EditableField
+        value={current}
+        kind={kind}
+        allowClear
+        onSave={(v) => save.mutate({ customerId: a.customer.id, patch: { [field]: v == null ? null : Number(v) } })}
+        title={manual ? `Elle girildi — kayıtlardan hesaplanan: ${autoLabel}. Otomatiğe dönmek için kutuyu boşaltın.` : 'Elle değer girmek için tıklayın (boş bırakılırsa otomatik hesaplanır)'}
+      >
+        {children}
+      </EditableField>
+      {manual && (
+        <Badge variant="outline" className="h-4 px-1 text-[9px] font-normal" title={`Kayıtlardan hesaplanan: ${autoLabel}`}>
+          elle
+        </Badge>
+      )}
+    </span>
   )
 }
