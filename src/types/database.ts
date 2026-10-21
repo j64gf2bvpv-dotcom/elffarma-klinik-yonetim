@@ -598,6 +598,8 @@ export interface Sale {
   note: string | null
   /** Bu satışın hangi kongre/workshop'ta yapıldığına dair serbest metin — Kongreler modülüne bağlı bir foreign key değil. */
   congress_name: string | null
+  /** Kargoya verildiği an — null ise henüz verilmedi (Doktor Hesapları > Kalan Ürünler, 2026-10-21) */
+  shipped_at: string | null
   status: SaleStatus
   created_by: string | null
   created_at: string

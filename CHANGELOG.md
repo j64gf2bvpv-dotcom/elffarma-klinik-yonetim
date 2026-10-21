@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.322] - 2026-10-21
+
+**Doktor Hesapları: Kalan Ürünler + Kargoya verildi işareti:** "Alacağı Ürünler" artık "Kalan Ürünler". Aldığı her ürün satırında "Kargoya verildi / verilmedi" işareti var; işaretlenmeyenler Kalan Ürünler'de ve tablodaki Kalan Ürünler sütununda görünüyor, işaretleyince listeden çıkıyor (işaret kaldırılınca geri gelir). Satışı girilmemiş kalan ürün yine elle eklenebiliyor. İşaret stoka dokunmuyor (migration 20261021140000: sales.shipped_at).
+
 ## [2.17.321] - 2026-10-21
 
 **Doktor Hesapları tablosunda elle değer:** Aldığı, Alacağı, Toplam Tutar ve Ödenen hücrelerine tıklayıp doğrudan değer yazılabiliyor; elle girilen hücrede "elle" işareti var, üzerine gelince kayıtlardan hesaplanan değer görünüyor, kutu boşaltılınca otomatik hesaba dönüyor. Kalan tahsilat ve üstteki özet elle girilen değerlere göre hesaplanıyor. Değerler yeni doctor_account_overrides tablosunda tutuluyor; satış/tahsilat kayıtlarına ve Cari Hesap'a dokunmuyor (migration 20261021120000).

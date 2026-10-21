@@ -44,6 +44,12 @@ import type { Customer, CustomerPendingProduct, Invoice, Payment, Product, Sale 
  *    iki ekran aynı rakamı göstersin diye
  * Satıra tıklayınca satış, teslim bekleyen ürün ve ödeme dökümü açılır.
  *
+ * Kalan Ürünler (kullanıcı isteği, 2026-10-21: "alacağı ürünler değil kalan
+ * ürünler olacak; kargoya verildi / verilmedi tiki olmalı"): aldığı her ürün
+ * satırında "Kargoya verildi" işareti (sales.shipped_at) var; işaretlenmeyen
+ * satışlar + elle eklenen kalan ürünler (customer_pending_products) "Kalan
+ * Ürünler"de görünür. İşaret stoka dokunmaz (satış zaten stoktan düşmüştür).
+ *
  * Elle giriş (kullanıcı isteği, 2026-10-21: "isim, adet, aldığı ve alacağı
  * ürünler manuel girilebilmeli"): detayda aldığı ürün (satış) ve alacağı ürün
  * doğrudan eklenir; ürün adı serbest yazılır (stoktaki ürünler öneri olarak
@@ -63,6 +69,9 @@ interface DoctorAccount {
   boughtAmount: number
   returnAmount: number
   invoiceAmount: number
+  /** Kargoya verilmemiş satışlar */
+  unshipped: Sale[]
+  /** Kalan ürün = kargoya verilmemiş satış adedi + elle eklenen kalan ürün adedi */
   pendingQty: number
   pendingAmount: number
   /** satış + fatura */
@@ -104,7 +113,7 @@ export function DoctorAccountsPanel() {
         const customer = byId.get(id)
         if (!customer) return null
         a = {
-          customer, sales: [], returns: [], invoices: [], payments: [], pending: [],
+          customer, sales: [], returns: [], invoices: [], payments: [], pending: [], unshipped: [],
           boughtQty: 0, boughtAmount: 0, returnAmount: 0, invoiceAmount: 0, pendingQty: 0, pendingAmount: 0,
           totalDebt: 0, paid: 0, remaining: 0,
           auto: { boughtQty: 0, pendingQty: 0, totalDebt: 0, paid: 0 }, manual: new Set(),
@@ -121,6 +130,11 @@ export function DoctorAccountsPanel() {
         a.sales.push(s)
         a.boughtQty += s.quantity
         a.boughtAmount += amount
+        if (!s.shipped_at) {
+          a.unshipped.push(s)
+          a.pendingQty += s.quantity
+          a.pendingAmount += amount
+        }
       } else {
         a.returns.push(s)
         a.returnAmount += amount
@@ -191,7 +205,7 @@ export function DoctorAccountsPanel() {
     return accounts.filter((a) => {
       if (q && !trFold(a.customer.full_name).includes(q) && !trFold(a.customer.province ?? '').includes(q)) return false
       if (filter === 'remaining') return a.remaining > 0.005
-      if (filter === 'pending') return a.pending.length > 0
+      if (filter === 'pending') return a.pendingQty > 0
       if (filter === 'paid') return a.totalDebt > 0 && a.remaining <= 0.005
       return true
     })
@@ -207,7 +221,7 @@ export function DoctorAccountsPanel() {
           pendingQty: t.pendingQty + a.pendingQty,
           pendingAmount: t.pendingAmount + a.pendingAmount,
           owing: t.owing + (a.remaining > 0.005 ? 1 : 0),
-          pendingDoctors: t.pendingDoctors + (a.pending.length > 0 ? 1 : 0),
+          pendingDoctors: t.pendingDoctors + (a.pendingQty > 0 ? 1 : 0),
         }),
         { debt: 0, paid: 0, remaining: 0, pendingQty: 0, pendingAmount: 0, owing: 0, pendingDoctors: 0 },
       ),
@@ -238,7 +252,7 @@ export function DoctorAccountsPanel() {
         <SummaryCard icon={Receipt} label="Kalan Tahsilat" value={money(totals.remaining)} hint={`${totals.owing} doktor`} tone="destructive" />
         <SummaryCard
           icon={PackageOpen}
-          label="Teslim Bekleyen Ürün"
+          label="Kalan Ürün (kargoya verilmedi)"
           value={`${totals.pendingQty} adet`}
           hint={`${money(totals.pendingAmount)} · ${totals.pendingDoctors} doktor`}
           tone="warning"
@@ -254,7 +268,7 @@ export function DoctorAccountsPanel() {
           <TabsList>
             <TabsTrigger value="all">Tümü ({counts.all})</TabsTrigger>
             <TabsTrigger value="remaining">Kalan Tahsilatı Olan ({counts.remaining})</TabsTrigger>
-            <TabsTrigger value="pending">Alacağı Ürünü Olan ({counts.pending})</TabsTrigger>
+            <TabsTrigger value="pending">Kalan Ürünü Olan ({counts.pending})</TabsTrigger>
             <TabsTrigger value="paid">Ödemesi Tamam ({counts.paid})</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -280,8 +294,8 @@ export function DoctorAccountsPanel() {
               { header: 'İl', value: (a) => a.customer.province ?? '' },
               { header: 'Aldığı Ürün (adet)', value: (a) => a.boughtQty },
               { header: 'Aldığı Ürünler', value: (a) => summarizeItems(a.sales) },
-              { header: 'Alacağı Ürün (adet)', value: (a) => a.pendingQty },
-              { header: 'Alacağı Ürünler', value: (a) => summarizeItems(a.pending) },
+              { header: 'Kalan Ürün (adet)', value: (a) => a.pendingQty },
+              { header: 'Kalan Ürünler', value: (a) => summarizeItems([...a.unshipped, ...a.pending]) },
               { header: 'Toplam Tutar', value: (a) => a.totalDebt },
               { header: 'Ödenen', value: (a) => a.paid },
               { header: 'Kalan Tahsilat', value: (a) => a.remaining },
@@ -298,7 +312,7 @@ export function DoctorAccountsPanel() {
                 <TableHead className="w-8" />
                 <TableHead>Doktor</TableHead>
                 <TableHead className="text-center">Aldığı Ürünler</TableHead>
-                <TableHead className="text-center">Alacağı Ürünler</TableHead>
+                <TableHead className="text-center">Kalan Ürünler</TableHead>
                 <TableHead className="text-right">Toplam Tutar</TableHead>
                 <TableHead className="text-right">Ödenen</TableHead>
                 <TableHead className="text-right">Kalan Tahsilat</TableHead>
@@ -390,7 +404,7 @@ function summarizeItems(items: { product_name: string; quantity: number }[]): st
 function StatusBadge({ account: a }: { account: DoctorAccount }) {
   if (a.remaining > 0.005) return <Badge variant="destructive">Borçlu</Badge>
   if (a.remaining < -0.005) return <Badge variant="secondary">Fazla ödeme</Badge>
-  if (a.pending.length > 0) return <Badge variant="outline" className="border-warning/40 text-warning-foreground">Ürün bekliyor</Badge>
+  if (a.pendingQty > 0) return <Badge variant="outline" className="border-warning/40 text-warning-foreground">Kalan ürün var</Badge>
   if (a.totalDebt > 0) return <Badge className="bg-success text-success-foreground">Ödendi</Badge>
   return <span className="text-muted-foreground">—</span>
 }
@@ -456,14 +470,18 @@ function AccountDetail({ account: a, products }: { account: DoctorAccount; produ
       </DetailBlock>
 
       <DetailBlock
-        title="Alacağı Ürünler"
-        total={a.pending.length > 0 ? `${a.pendingQty} adet · ${money(a.pendingAmount)}` : undefined}
+        title="Kalan Ürünler"
+        total={a.unshipped.length + a.pending.length > 0 ? `${a.auto.pendingQty} adet · ${money(a.pendingAmount)}` : undefined}
       >
-        <p className="-mt-1 text-xs text-muted-foreground">Doktora henüz teslim edilmemiş ürünler</p>
-        {a.pending.length === 0 && <Empty>Teslim bekleyen ürün yok</Empty>}
+        <p className="-mt-1 text-xs text-muted-foreground">Kargoya verilmemiş ürünler — kargoya verince işaretleyin</p>
+        {a.unshipped.length + a.pending.length === 0 && <Empty>Kalan ürün yok — hepsi kargoya verildi</Empty>}
+        {a.unshipped.map((s) => (
+          <UnshippedLine key={s.id} sale={s} />
+        ))}
         {a.pending.map((p) => (
           <PendingLine key={p.id} item={p} />
         ))}
+        <p className="pt-1 text-xs text-muted-foreground">Satışı girilmemiş kalan ürünü elle ekleyin:</p>
         <AddPendingForm customerId={a.customer.id} products={products} />
       </DetailBlock>
 
@@ -620,7 +638,7 @@ function AddSaleForm({ customerId, products }: { customerId: string; products: P
   )
 }
 
-/** Alacağı ürün — doktora henüz teslim edilmemiş ürün (stok değişmez). */
+/** Elle kalan ürün — satışı girilmemiş, doktora henüz verilmemiş ürün (stok değişmez). */
 function AddPendingForm({ customerId, products }: { customerId: string; products: Product[] }) {
   const createPending = useCreatePendingProduct()
   const [name, setName] = React.useState('')
@@ -798,6 +816,7 @@ function SaleLine({ sale: s }: { sale: Sale }) {
             {s.product_name}
           </EditableField>
           {s.type === 'return' && <Badge variant="secondary" className="ml-1.5">İade</Badge>}
+          {s.type === 'sale' && <ShippedToggle sale={s} />}
           <span className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
             <EditableField value={s.sale_date} kind="date" onSave={(v) => save({ sale_date: String(v) })}>
               {day(s.sale_date)}
@@ -840,7 +859,7 @@ function SaleLine({ sale: s }: { sale: Sale }) {
   )
 }
 
-/** Alacağı ürün satırı — ad, adet, birim fiyat, tutar ve not tıklanıp değişir; teslim edilince listeden çıkar. */
+/** Elle eklenen kalan ürün satırı — ad, adet, birim fiyat, tutar ve not tıklanıp değişir; teslim edilince listeden çıkar. */
 function PendingLine({ item: p }: { item: CustomerPendingProduct }) {
   const update = useUpdatePendingProduct()
   const remove = useDeletePendingProduct()
@@ -977,5 +996,46 @@ function OverrideCell({
         </Badge>
       )}
     </span>
+  )
+}
+
+/** "Kargoya verildi" işareti — satışın shipped_at alanını doldurur / boşaltır (stoka dokunmaz). */
+function ShippedToggle({ sale: s }: { sale: Sale }) {
+  const update = useUpdateSale()
+  const shipped = !!s.shipped_at
+  return (
+    <label
+      onClick={(e) => e.stopPropagation()}
+      title={shipped ? `Kargoya verildi: ${day(s.shipped_at!)} — geri almak için işareti kaldırın` : 'Kargoya verince işaretleyin'}
+      className={cn(
+        'ml-2 inline-flex cursor-pointer items-center gap-1 rounded-full border px-1.5 py-0.5 align-middle text-[11px]',
+        shipped ? 'border-success/40 bg-success/10 text-success' : 'border-warning/40 bg-warning/10 text-warning-foreground',
+      )}
+    >
+      <Checkbox
+        className="size-3.5"
+        checked={shipped}
+        onCheckedChange={(v) => update.mutate({ sale: s, patch: { shipped_at: v === true ? new Date().toISOString() : null } })}
+      />
+      {shipped ? 'Kargoya verildi' : 'Kargoya verilmedi'}
+    </label>
+  )
+}
+
+/** Kalan Ürünler'de kargoya verilmemiş satış satırı — işaretleyince listeden çıkar. */
+function UnshippedLine({ sale: s }: { sale: Sale }) {
+  return (
+    <DetailLine
+      left={
+        <>
+          <span className="font-medium">{s.product_name}</span>
+          <ShippedToggle sale={s} />
+          <span className="block text-xs text-muted-foreground">
+            {day(s.sale_date)} · {s.quantity} adet x {money(Number(s.unit_price))}
+          </span>
+        </>
+      }
+      right={money(s.quantity * Number(s.unit_price))}
+    />
   )
 }

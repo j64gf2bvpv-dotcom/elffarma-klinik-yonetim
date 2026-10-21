@@ -102,7 +102,7 @@ export async function createSale(input: SaleInput): Promise<Sale> {
  */
 export async function updateSale(
   sale: Sale,
-  patch: Partial<Pick<Sale, 'product_name' | 'quantity' | 'unit_price' | 'sale_date' | 'note'>>,
+  patch: Partial<Pick<Sale, 'product_name' | 'quantity' | 'unit_price' | 'sale_date' | 'note' | 'shipped_at'>>,
 ): Promise<Sale> {
   const diff = patch.quantity !== undefined ? patch.quantity - sale.quantity : 0
   if (sale.product_id && diff !== 0) {
