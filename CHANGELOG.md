@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.324] - 2026-10-21
+
+**Doktor Hesapları: ürün adlarıyla liste + kısmi kargo (Beklemede):** Tablodaki Aldığı Ürünler sütununda "10 adet" yerine ürün adı × adet listesi (FILLICIA ×5, ELISIR COL ×2…); Kalan Ürünler sütununda "Beklemede" başlığıyla gönderilmemiş adetler. Bir üründen alınan adedin bir kısmı kargoya verildiyse "verilen" adet yazılıyor ("3/5 verildi · 2 beklemede"), eksik kalan adet Kalan Ürünler'e beklemede olarak işleniyor; işaret tamamını verildi / verilmedi yapıyor (migration 20261021160000: sales.shipped_quantity).
+
 ## [2.17.323] - 2026-10-21
 
 **Doktor Hesapları: kongre / workshop / masterclass bilgisi + taşma düzeltmesi:** Aldığı her üründe "Nereden aldı" alanı — eklerken ve sonradan tıklayıp girilebiliyor; programdaki kongreler ve Workshop / Masterclass öneri olarak geliyor (Kalan Ürünler'de ve dışa aktarmada da görünüyor). Detay kutularındaki yazılar artık kutu dışına taşmıyor, alt satıra geçiyor.

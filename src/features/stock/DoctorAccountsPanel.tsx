@@ -73,7 +73,7 @@ interface DoctorAccount {
   boughtAmount: number
   returnAmount: number
   invoiceAmount: number
-  /** Kargoya verilmemiş satışlar */
+  /** Tamamı kargoya verilmemiş satışlar (kalan = quantity - shipped_quantity "Beklemede") */
   unshipped: Sale[]
   /** Kalan ürün = kargoya verilmemiş satış adedi + elle eklenen kalan ürün adedi */
   pendingQty: number
@@ -134,10 +134,11 @@ export function DoctorAccountsPanel() {
         a.sales.push(s)
         a.boughtQty += s.quantity
         a.boughtAmount += amount
-        if (!s.shipped_at) {
+        const waiting = s.quantity - (s.shipped_quantity ?? 0)
+        if (waiting > 0) {
           a.unshipped.push(s)
-          a.pendingQty += s.quantity
-          a.pendingAmount += amount
+          a.pendingQty += waiting
+          a.pendingAmount += waiting * Number(s.unit_price)
         }
       } else {
         a.returns.push(s)
@@ -300,7 +301,7 @@ export function DoctorAccountsPanel() {
               { header: 'Aldığı Ürünler', value: (a) => summarizeItems(a.sales) },
               { header: 'Nereden (kongre / workshop)', value: (a) => [...new Set(a.sales.map((x) => x.congress_name).filter(Boolean))].join(', ') },
               { header: 'Kalan Ürün (adet)', value: (a) => a.pendingQty },
-              { header: 'Kalan Ürünler', value: (a) => summarizeItems([...a.unshipped, ...a.pending]) },
+              { header: 'Kalan Ürünler (beklemede)', value: (a) => summarizeItems(waitingItems(a)) },
               { header: 'Toplam Tutar', value: (a) => a.totalDebt },
               { header: 'Ödenen', value: (a) => a.paid },
               { header: 'Kalan Tahsilat', value: (a) => a.remaining },
@@ -316,8 +317,8 @@ export function DoctorAccountsPanel() {
               <TableRow>
                 <TableHead className="w-8" />
                 <TableHead>Doktor</TableHead>
-                <TableHead className="text-center">Aldığı Ürünler</TableHead>
-                <TableHead className="text-center">Kalan Ürünler</TableHead>
+                <TableHead>Aldığı Ürünler</TableHead>
+                <TableHead>Kalan Ürünler</TableHead>
                 <TableHead className="text-right">Toplam Tutar</TableHead>
                 <TableHead className="text-right">Ödenen</TableHead>
                 <TableHead className="text-right">Kalan Tahsilat</TableHead>
@@ -343,23 +344,26 @@ export function DoctorAccountsPanel() {
                       <TableCell>
                         <EditableName customer={a.customer} />
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="max-w-56 text-left whitespace-normal">
                         <OverrideCell account={a} field="bought_qty" kind="int" autoLabel={`${a.auto.boughtQty} adet`}>
-                          {a.boughtQty > 0 ? (
-                            <span>
-                              {a.boughtQty} adet <span className="text-xs text-muted-foreground">· {a.sales.length} kalem</span>
-                            </span>
+                          {a.manual.has('bought_qty') ? (
+                            <span>{a.boughtQty} adet</span>
+                          ) : a.sales.length > 0 ? (
+                            <ItemList items={a.sales} />
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
                         </OverrideCell>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="max-w-56 text-left whitespace-normal">
                         <OverrideCell account={a} field="pending_qty" kind="int" autoLabel={`${a.auto.pendingQty} adet`}>
-                          {a.pendingQty > 0 ? (
-                            <Badge variant="outline" className="border-warning/40 bg-warning/10 text-warning-foreground">
-                              {a.pendingQty} adet{a.pendingAmount > 0 ? ` · ${money(a.pendingAmount)}` : ''}
-                            </Badge>
+                          {a.manual.has('pending_qty') ? (
+                            <span>{a.pendingQty} adet beklemede</span>
+                          ) : a.pendingQty > 0 ? (
+                            <span className="block text-left">
+                              <Badge variant="outline" className="mb-0.5 border-warning/40 bg-warning/10 text-warning-foreground">Beklemede</Badge>
+                              <ItemList items={waitingItems(a)} />
+                            </span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
@@ -476,9 +480,9 @@ function AccountDetail({ account: a, products }: { account: DoctorAccount; produ
 
       <DetailBlock
         title="Kalan Ürünler"
-        total={a.unshipped.length + a.pending.length > 0 ? `${a.auto.pendingQty} adet · ${money(a.pendingAmount)}` : undefined}
+        total={a.unshipped.length + a.pending.length > 0 ? `${a.auto.pendingQty} adet beklemede · ${money(a.pendingAmount)}` : undefined}
       >
-        <p className="-mt-1 text-xs text-muted-foreground">Kargoya verilmemiş ürünler — kargoya verince işaretleyin</p>
+        <p className="-mt-1 text-xs text-muted-foreground">Beklemede: alınıp henüz kargoya verilmeyen adetler. Kısmen gönderdiyseniz "verilen" adedi yazın.</p>
         {a.unshipped.length + a.pending.length === 0 && <Empty>Kalan ürün yok — hepsi kargoya verildi</Empty>}
         {a.unshipped.map((s) => (
           <UnshippedLine key={s.id} sale={s} />
@@ -1032,26 +1036,41 @@ function OverrideCell({
   )
 }
 
-/** "Kargoya verildi" işareti — satışın shipped_at alanını doldurur / boşaltır (stoka dokunmaz). */
+/**
+ * Kargo durumu — işaret tamamını verildi / verilmedi yapar; adet 1'den fazlaysa
+ * "verilen" adet tıklanıp yazılır (kısmi kargo, kalan "Beklemede"). Stoka dokunmaz.
+ */
 function ShippedToggle({ sale: s }: { sale: Sale }) {
   const update = useUpdateSale()
-  const shipped = !!s.shipped_at
+  const shippedQty = s.shipped_quantity ?? 0
+  const full = shippedQty >= s.quantity
+  const partial = shippedQty > 0 && !full
+  const setShipped = (n: number) =>
+    update.mutate({ sale: s, patch: { shipped_quantity: n, shipped_at: n > 0 ? new Date().toISOString() : null } })
   return (
-    <label
+    <span
       onClick={(e) => e.stopPropagation()}
-      title={shipped ? `Kargoya verildi: ${day(s.shipped_at!)} — geri almak için işareti kaldırın` : 'Kargoya verince işaretleyin'}
       className={cn(
-        'ml-2 inline-flex cursor-pointer items-center gap-1 rounded-full border px-1.5 py-0.5 align-middle text-[11px]',
-        shipped ? 'border-success/40 bg-success/10 text-success' : 'border-warning/40 bg-warning/10 text-warning-foreground',
+        'ml-2 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 align-middle text-[11px]',
+        full ? 'border-success/40 bg-success/10 text-success' : 'border-warning/40 bg-warning/10 text-warning-foreground',
       )}
     >
       <Checkbox
         className="size-3.5"
-        checked={shipped}
-        onCheckedChange={(v) => update.mutate({ sale: s, patch: { shipped_at: v === true ? new Date().toISOString() : null } })}
+        checked={full ? true : partial ? 'indeterminate' : false}
+        title={full ? 'Tamamı kargoya verildi — geri almak için işareti kaldırın' : 'Tamamını kargoya verildi olarak işaretle'}
+        onCheckedChange={() => setShipped(full ? 0 : s.quantity)}
       />
-      {shipped ? 'Kargoya verildi' : 'Kargoya verilmedi'}
-    </label>
+      {full ? (
+        'Kargoya verildi'
+      ) : s.quantity > 1 ? (
+        <EditableField value={shippedQty} kind="int" allowClear onSave={(v) => setShipped(Math.min(s.quantity, Math.max(0, Number(v ?? 0))))} title="Kargoya verilen adedi yazın (kalan beklemede görünür)">
+          {partial ? `${shippedQty}/${s.quantity} verildi · ${s.quantity - shippedQty} beklemede` : 'Beklemede'}
+        </EditableField>
+      ) : (
+        'Beklemede'
+      )}
+    </span>
   )
 }
 
@@ -1064,12 +1083,13 @@ function UnshippedLine({ sale: s }: { sale: Sale }) {
           <span className="font-medium">{s.product_name}</span>
           <ShippedToggle sale={s} />
           <span className="block text-xs text-muted-foreground">
-            {day(s.sale_date)} · {s.quantity} adet x {money(Number(s.unit_price))}
+            <span className="font-medium text-warning-foreground">{s.quantity - (s.shipped_quantity ?? 0)} adet beklemede</span>
+            {(s.shipped_quantity ?? 0) > 0 ? ` (${s.shipped_quantity}/${s.quantity} verildi)` : ''} · {day(s.sale_date)} · {money(Number(s.unit_price))}/adet
             {s.congress_name ? ` · ${s.congress_name}` : ''}
           </span>
         </>
       }
-      right={money(s.quantity * Number(s.unit_price))}
+      right={money((s.quantity - (s.shipped_quantity ?? 0)) * Number(s.unit_price))}
     />
   )
 }
@@ -1093,6 +1113,29 @@ function SourceField({ sale: s }: { sale: Sale }) {
           <span className="italic text-muted-foreground">+ nereden aldı (kongre / workshop)</span>
         )}
       </EditableField>
+    </span>
+  )
+}
+
+/** Kalan (beklemede) adetler — satışlardan kalan + elle eklenen kalan ürünler. */
+function waitingItems(a: DoctorAccount): { product_name: string; quantity: number }[] {
+  return [
+    ...a.unshipped.map((x) => ({ product_name: x.product_name, quantity: x.quantity - (x.shipped_quantity ?? 0) })),
+    ...a.pending.map((x) => ({ product_name: x.product_name, quantity: x.quantity })),
+  ]
+}
+
+/** Tablo hücresinde ürün adı × adet listesi (aynı ürün birleştirilir). */
+function ItemList({ items }: { items: { product_name: string; quantity: number }[] }) {
+  const merged = new Map<string, number>()
+  for (const i of items) merged.set(i.product_name, (merged.get(i.product_name) ?? 0) + i.quantity)
+  return (
+    <span className="flex flex-col gap-0.5 text-sm leading-tight">
+      {[...merged].map(([name, q]) => (
+        <span key={name}>
+          {name} <span className="font-semibold tabular-nums">×{q}</span>
+        </span>
+      ))}
     </span>
   )
 }

@@ -102,8 +102,12 @@ export async function createSale(input: SaleInput): Promise<Sale> {
  */
 export async function updateSale(
   sale: Sale,
-  patch: Partial<Pick<Sale, 'product_name' | 'quantity' | 'unit_price' | 'sale_date' | 'note' | 'shipped_at' | 'congress_name'>>,
+  patch: Partial<Pick<Sale, 'product_name' | 'quantity' | 'unit_price' | 'sale_date' | 'note' | 'shipped_at' | 'congress_name' | 'shipped_quantity'>>,
 ): Promise<Sale> {
+  // Adet, kargoya verilen adedin altına inerse verilen adet de düşürülür (veritabanı kuralı)
+  if (patch.quantity !== undefined && patch.shipped_quantity === undefined && patch.quantity < (sale.shipped_quantity ?? 0)) {
+    patch = { ...patch, shipped_quantity: patch.quantity }
+  }
   const diff = patch.quantity !== undefined ? patch.quantity - sale.quantity : 0
   if (sale.product_id && diff !== 0) {
     const moreOut = sale.type === 'sale' ? diff > 0 : diff < 0

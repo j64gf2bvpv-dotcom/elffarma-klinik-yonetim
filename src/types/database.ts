@@ -600,6 +600,8 @@ export interface Sale {
   congress_name: string | null
   /** Kargoya verildiği an — null ise henüz verilmedi (Doktor Hesapları > Kalan Ürünler, 2026-10-21) */
   shipped_at: string | null
+  /** Kargoya verilen adet — kalan (quantity - shipped_quantity) "Beklemede" görünür (2026-10-21) */
+  shipped_quantity: number
   status: SaleStatus
   created_by: string | null
   created_at: string
