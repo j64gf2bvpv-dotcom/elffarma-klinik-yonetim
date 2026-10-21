@@ -19,6 +19,11 @@ type UpdaterEvent =
   | { type: 'downloaded'; version: string }
   | { type: 'error'; message: string }
 
+interface InstagramPostsResult {
+  posts?: { id: string; shortcode: string; takenAt: number; isVideo: boolean; caption: string; thumbnail: string }[]
+  error?: string
+}
+
 interface UpdaterCheckResult {
   ok: boolean
   reason?: 'not-packaged' | 'error'
@@ -33,6 +38,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openNetworkSettings: (): Promise<void> => ipcRenderer.invoke('shell:open-network-settings'),
   fetchImageDataUrl: (url: string): Promise<string | null> => ipcRenderer.invoke('image:fetch-data-url', url),
   fetchPageHtml: (url: string): Promise<{ url: string; html: string } | null> => ipcRenderer.invoke('page:fetch-html', url),
+  instagramLogin: (): Promise<boolean> => ipcRenderer.invoke('instagram:login'),
+  instagramStatus: (): Promise<{ loggedIn: boolean }> => ipcRenderer.invoke('instagram:status'),
+  instagramRecentPosts: (username: string): Promise<InstagramPostsResult> => ipcRenderer.invoke('instagram:recent-posts', username),
   notify: (title: string, body: string): Promise<void> =>
     ipcRenderer.invoke('app:notify', title, body),
   onDeepLinkRecovery: (callback: (payload: RecoveryPayload) => void) => {

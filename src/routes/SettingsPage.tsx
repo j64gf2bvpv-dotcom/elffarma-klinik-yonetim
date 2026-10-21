@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { InstagramConnectCard } from '@/features/instagramWatch/InstagramPostWatcher'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -810,6 +811,9 @@ export function SettingsPage() {
               icon={MapPin}
               label={companyInfo.address}
             />
+          </div>
+          <div className="mt-3">
+            <InstagramConnectCard />
           </div>
         </CollapsibleCard>
 

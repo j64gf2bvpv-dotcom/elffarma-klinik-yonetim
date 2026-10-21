@@ -46,6 +46,7 @@ import { AIChatWidget } from '@/features/ai/AIChatWidget'
 import { PresenceProvider, useOnlineStaff } from '@/features/presence/PresenceProvider'
 import { StaffChatProvider, useStaffChat } from '@/features/staffChat/StaffChatProvider'
 import { BillDuePopup } from '@/features/bills/BillDueBanner'
+import { InstagramPostWatcher } from '@/features/instagramWatch/InstagramPostWatcher'
 import { useStockRealtimeSync } from '@/features/stock/useStockRealtimeSync'
 import { useUpdateStaff } from '@/features/staff/hooks'
 import { useKeyboardSound } from '@/features/soundSettings/useKeyboardSound'
@@ -935,6 +936,8 @@ export function AppShell() {
       <AIChatWidget />
       {/* Açılışta fatura hatırlatma popup'ı (2026-10-21) */}
       <BillDuePopup />
+      {/* @elffarma yeni Instagram paylaşımı popup'ı (2026-10-21) */}
+      <InstagramPostWatcher />
     </div>
     </StaffChatProvider>
     </PresenceProvider>

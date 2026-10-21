@@ -22,6 +22,13 @@ declare global {
       openWhatsApp: (waMeUrl: string) => Promise<boolean>
       /** https görsel adresini (CORS'suz siteler dahil) data: URL olarak indirir — fiyat listesi PDF'i için */
       fetchImageDataUrl?: (url: string) => Promise<string | null>
+      /** Instagram yeni paylaşım bildirimi — programın içinde ayrı oturumla giriş + son paylaşımlar */
+      instagramLogin?: () => Promise<boolean>
+      instagramStatus?: () => Promise<{ loggedIn: boolean }>
+      instagramRecentPosts?: (username: string) => Promise<{
+        posts?: { id: string; shortcode: string; takenAt: number; isVideo: boolean; caption: string; thumbnail: string }[]
+        error?: string
+      }>
       /** Kongre web sitesinden bilgi çekmek için HTML (ana süreç üzerinden, CORS'suz) */
       fetchPageHtml?: (url: string) => Promise<{ url: string; html: string } | null>
       openNetworkSettings: () => Promise<void>

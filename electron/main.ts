@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, shell, Notification, ipcMain } from 'electron'
+import { app, BrowserWindow, Menu, shell, Notification, ipcMain, session } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import path from 'node:path'
 import fs from 'node:fs'
@@ -232,6 +232,68 @@ ipcMain.handle('page:fetch-html', async (_event, url: string) => {
     return null
   } finally {
     clearTimeout(timer)
+  }
+})
+
+// Instagram yeni paylaşım bildirimi (kullanıcı isteği, 2026-10-21: "@elffarma
+// instagram adresinden paylaşım yapıldığında bildirim gelsin, popup şeklinde").
+// Instagram oturumsuz isteklere veri vermiyor; kullanıcı programın içinde AYRI
+// bir oturumda (persist:instagram — uygulamanın kendi oturumundan bağımsız) bir
+// kez giriş yapar, sonra son paylaşımlar bu oturumla okunur. Sadece kullanıcı
+// adı (harf/rakam/._) kabul edilir, sadece okunur; şifre programda saklanmaz.
+const IG_PARTITION = 'persist:instagram'
+const IG_USERNAME = /^[A-Za-z0-9._]{1,30}$/
+
+ipcMain.handle('instagram:login', async () => {
+  const win = new BrowserWindow({
+    width: 480,
+    height: 760,
+    title: 'Instagram — giriş',
+    webPreferences: { partition: IG_PARTITION, nodeIntegration: false, contextIsolation: true },
+  })
+  await win.loadURL('https://www.instagram.com/accounts/login/')
+  return new Promise<boolean>((resolve) => {
+    win.on('closed', async () => {
+      const cookies = await session.fromPartition(IG_PARTITION).cookies.get({ domain: 'instagram.com', name: 'sessionid' })
+      resolve(cookies.length > 0)
+    })
+  })
+})
+
+ipcMain.handle('instagram:status', async () => {
+  const cookies = await session.fromPartition(IG_PARTITION).cookies.get({ domain: 'instagram.com', name: 'sessionid' })
+  return { loggedIn: cookies.length > 0 }
+})
+
+ipcMain.handle('instagram:recent-posts', async (_event, username: string) => {
+  if (typeof username !== 'string' || !IG_USERNAME.test(username)) return { error: 'invalid' }
+  const ses = session.fromPartition(IG_PARTITION)
+  const loggedIn = (await ses.cookies.get({ domain: 'instagram.com', name: 'sessionid' })).length > 0
+  if (!loggedIn) return { error: 'login' }
+  try {
+    const res = await ses.fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
+      headers: { 'x-ig-app-id': '936619743392459', Accept: 'application/json' },
+    })
+    if (res.status === 401 || res.status === 403) return { error: 'login' }
+    if (!res.ok) return { error: `http-${res.status}` }
+    const data = (await res.json()) as {
+      data?: { user?: { edge_owner_to_timeline_media?: { edges?: { node: Record<string, unknown> }[] } } }
+    }
+    const edges = data.data?.user?.edge_owner_to_timeline_media?.edges ?? []
+    const posts = edges.slice(0, 6).map(({ node }) => {
+      const captionEdges = (node.edge_media_to_caption as { edges?: { node: { text: string } }[] } | undefined)?.edges ?? []
+      return {
+        id: String(node.id),
+        shortcode: String(node.shortcode),
+        takenAt: Number(node.taken_at_timestamp) * 1000,
+        isVideo: Boolean(node.is_video),
+        caption: captionEdges[0]?.node.text ?? '',
+        thumbnail: String(node.thumbnail_src ?? node.display_url ?? ''),
+      }
+    })
+    return { posts }
+  } catch {
+    return { error: 'network' }
   }
 })
 

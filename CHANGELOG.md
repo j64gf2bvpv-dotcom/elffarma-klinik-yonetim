@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.329] - 2026-10-21
+
+**@elffarma Instagram yeni paylaşım bildirimi:** Instagram'da yeni gönderi paylaşılınca ana ekranda görsel ve açıklamayla popup (+ masaüstü bildirimi) çıkıyor; tıklayınca gönderi Instagram'da açılıyor. 15 dakikada bir kontrol ediliyor. Instagram oturumsuz veri vermediği için Ayarlar > Kurumsal Bilgiler > "Instagram'a bağlan" ile programın içinde bir kez giriş yapılıyor (ayrı oturum; şifre saklanmıyor). Electron'a sadece okuma yapan instagram:login / status / recent-posts köprüleri eklendi.
+
 ## [2.17.328] - 2026-10-21
 
 **Fatura hatırlatması — her ayın aynı günü, açılışta popup:** Faturalar her ay aynı günde ödendiği için girilen tarihin ayı değil günü esas alınıyor: her abonelik için "her ayın X'i" ve sıradaki ödeme günü hesaplanıyor; o güne 5 gün ya da daha az kaldıysa ve o ayın faturası ödendi işaretlenmediyse program açılışta kapatılabilir bir popup çıkıyor (günde bir kez masaüstü bildirimi de). Popup'tan "Ödendi" ile kapatılıyor (o ayın kaydı yoksa açılıp ödendi yapılıyor); kapatınca ana ekranda tek satırlık hatırlatma kalıyor. Fatura ekranında abonelik başlıklarında "Her ayın X'i · sıradaki tarih (N gün)" yazıyor; yeni faturada "Her ay bu günde tekrarla" seçeneği ve mevcutlara "Kaydı her ay otomatik aç" düğmesi var. Hatırlatma kaydı da 7 yerine 5 gün önceye düşüyor (migration 20261021200000).
