@@ -22,6 +22,8 @@ declare global {
       openWhatsApp: (waMeUrl: string) => Promise<boolean>
       /** https görsel adresini (CORS'suz siteler dahil) data: URL olarak indirir — fiyat listesi PDF'i için */
       fetchImageDataUrl?: (url: string) => Promise<string | null>
+      /** İşletim sisteminin yazı tanıması (macOS Vision / Windows OCR) — satırlar, kutular 0-1 oranında, y alttan */
+      nativeOcr?: (dataUrl: string) => Promise<{ t: string; c?: number; x: number; y: number; w: number; h: number }[] | null>
       /** Instagram yeni paylaşım bildirimi — programın içinde ayrı oturumla giriş + son paylaşımlar */
       instagramLogin?: () => Promise<boolean>
       instagramStatus?: () => Promise<{ loggedIn: boolean }>

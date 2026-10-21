@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.334] - 2026-10-21
+
+**Ruhsat okuma çok daha isabetli — işletim sisteminin yazı tanıması:** Ruhsat fotoğrafı artık Mac'te Apple'ın, Windows'ta Windows'un kendi yazı tanımasıyla okunuyor (yine tamamen bilgisayarda, internete/yapay zekâya gönderilmeden). Şase no, motor no, tarihler, marka/model, sahibi, adres, vergi/TC no, muayene tarihi, seri no, silindir/güç dahil alanlar dolduruluyor. Fotoğraf birkaç farklı biçimde okunup her alan için en tutarlı sonuç seçiliyor; soluk basılmış etiketler esnek tanınıyor, şase no'nun üretici kodu markaya göre düzeltiliyor, ticari ad yakın yazımdan modele eşleştiriliyor. Fotoğraf daha yüksek çözünürlükte işleniyor. Sistem okuyamazsa eski Türkçe yazı tanıma (Tesseract) devreye giriyor.
+
 ## [2.17.333] - 2026-10-21
 
 **Ruhsat bilgisayarda okunuyor — yapay zekâ (Gemini) kullanılmıyor:** Ruhsat fotoğrafı artık bilgisayarın kendisinde yazı tanıma (Tesseract, Türkçe) ile okunuyor; hiçbir servise gönderilmiyor, kota/limit sorunu yok, ~1-3 saniye sürüyor. Alanlar ruhsattaki etiketlerin konumuna göre (etiketin altındaki/yanındaki hücre) çıkarılıyor; eğik/bulanık fotoğraflara toleranslı; şase no'daki OCR karışıklıkları (I/O → 1/0) düzeltiliyor, marka/model listeden eşleştiriliyor. Fotoğraf artık sadece "Kaydet"e basınca yükleniyor (iptalde depoda dosya kalmıyor). Gemini kotası dolunca yedek modele geçiş de düzeltildi (Türkçe hata mesajı yüzünden devreye girmiyordu). İlk kullanımda Türkçe yazı tanıma verisi bir kez indirilir.

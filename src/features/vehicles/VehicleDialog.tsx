@@ -155,7 +155,7 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
     try {
       setRegPreview(URL.createObjectURL(list[0]))
       setRegFile(list[0])
-      const dataUrls = await Promise.all(list.map((f) => fileToDataUrl(f)))
+      const dataUrls = await Promise.all(list.map((f) => fileToDataUrl(f, 3200)))
       setLastDataUrls(dataUrls)
       await runExtraction(dataUrls)
     } catch (err) {

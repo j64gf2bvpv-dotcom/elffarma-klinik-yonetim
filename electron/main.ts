@@ -2,6 +2,8 @@ import { app, BrowserWindow, Menu, shell, Notification, ipcMain, session } from 
 import { autoUpdater } from 'electron-updater'
 import path from 'node:path'
 import fs from 'node:fs'
+import os from 'node:os'
+import { execFile } from 'node:child_process'
 import { uploadBackupToGoogleDrive, testGoogleDriveConnection, type GoogleServiceAccount } from './googleDrive.js'
 
 process.env.APP_ROOT = path.join(__dirname, '..')
@@ -296,6 +298,96 @@ ipcMain.handle('instagram:recent-posts', async (_event, username: string) => {
     return { error: 'network' }
   }
 })
+
+// Ruhsat okuma için İŞLETİM SİSTEMİNİN yazı tanıması (kullanıcı isteği, 2026-10-21:
+// "şase, motor no vb. okumuyor, hepsini okusun") — macOS'ta Apple Vision
+// (Canlı Metin ile aynı motor, JXA üzerinden), Windows'ta Windows.Media.Ocr
+// (PowerShell + WinRT). Tamamen bilgisayarda çalışır, internete/yapay zekâya
+// gönderilmez. Sadece PNG/JPEG data URL kabul edilir; görsel geçici dosyaya
+// yazılıp okunduktan sonra silinir. Desteklenmezse null döner (renderer
+// Tesseract'a düşer). Dönen kutular piksel cinsinden, sol-üst köşe orijinli.
+const MAC_VISION_SCRIPT = `
+ObjC.import('Foundation'); ObjC.import('Vision');
+function run(argv) {
+  const url = $.NSURL.fileURLWithPath(argv[0]);
+  const handler = $.VNImageRequestHandler.alloc.initWithURLOptions(url, $.NSDictionary.dictionary);
+  const req = $.VNRecognizeTextRequest.alloc.init;
+  req.recognitionLevel = 0;
+  req.usesLanguageCorrection = false;
+  req.recognitionLanguages = $(['tr-TR', 'en-US']);
+  handler.performRequestsError($([req]), Ref());
+  const r = req.results; const out = [];
+  for (let i = 0; i < r.count; i++) {
+    const o = r.objectAtIndex(i); const c = o.topCandidates(1).objectAtIndex(0); const b = o.boundingBox;
+    out.push({ t: c.string.js, c: c.confidence, x: b.origin.x, y: b.origin.y, w: b.size.width, h: b.size.height });
+  }
+  return JSON.stringify(out);
+}`
+
+const WIN_OCR_SCRIPT = `
+param([string]$path)
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$null = [Windows.Storage.StorageFile,Windows.Storage,ContentType=WindowsRuntime]
+$null = [Windows.Media.Ocr.OcrEngine,Windows.Foundation,ContentType=WindowsRuntime]
+$null = [Windows.Graphics.Imaging.BitmapDecoder,Windows.Graphics,ContentType=WindowsRuntime]
+$asTask = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation\`1' })[0]
+function Await($op, [Type]$t) { $task = $asTask.MakeGenericMethod($t).Invoke($null, @($op)); $task.Wait(-1) | Out-Null; $task.Result }
+$file = Await ([Windows.Storage.StorageFile]::GetFileFromPathAsync($path)) ([Windows.Storage.StorageFile])
+$stream = Await ($file.OpenAsync([Windows.Storage.FileAccessMode]::Read)) ([Windows.Storage.Streams.IRandomAccessStream])
+$decoder = Await ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder])
+$bitmap = Await ($decoder.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap])
+$lang = New-Object Windows.Globalization.Language('tr')
+if ([Windows.Media.Ocr.OcrEngine]::IsLanguageSupported($lang)) { $engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromLanguage($lang) } else { $engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromUserProfileLanguages() }
+if ($null -eq $engine) { Write-Output '[]'; exit 0 }
+$result = Await ($engine.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
+$W = [double]$bitmap.PixelWidth; $H = [double]$bitmap.PixelHeight
+$out = @()
+foreach ($line in $result.Lines) {
+  $rs = $line.Words | ForEach-Object { $_.BoundingRect }
+  $x0 = ($rs | Measure-Object -Property X -Minimum).Minimum
+  $y0 = ($rs | Measure-Object -Property Y -Minimum).Minimum
+  $x1 = ($rs | ForEach-Object { $_.X + $_.Width } | Measure-Object -Maximum).Maximum
+  $y1 = ($rs | ForEach-Object { $_.Y + $_.Height } | Measure-Object -Maximum).Maximum
+  $out += [pscustomobject]@{ t = $line.Text; x = $x0 / $W; y = 1 - ($y1 / $H); w = ($x1 - $x0) / $W; h = ($y1 - $y0) / $H }
+}
+ConvertTo-Json -InputObject @($out) -Compress
+`
+
+ipcMain.handle('ocr:native', async (_event, dataUrl: string) => {
+  if (typeof dataUrl !== 'string') return null
+  const m = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl)
+  if (!m) return null
+  if (process.platform !== 'darwin' && process.platform !== 'win32') return null
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'elffarma-ocr-'))
+  const imgPath = path.join(dir, `ruhsat.${m[1] === 'png' ? 'png' : 'jpg'}`)
+  try {
+    fs.writeFileSync(imgPath, Buffer.from(m[2], 'base64'))
+    let stdout: string
+    if (process.platform === 'darwin') {
+      const scriptPath = path.join(dir, 'vision.js')
+      fs.writeFileSync(scriptPath, MAC_VISION_SCRIPT)
+      stdout = await execFileText('osascript', ['-l', 'JavaScript', scriptPath, imgPath])
+    } else {
+      const scriptPath = path.join(dir, 'ocr.ps1')
+      fs.writeFileSync(scriptPath, WIN_OCR_SCRIPT)
+      stdout = await execFileText('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, imgPath])
+    }
+    const lines = JSON.parse(stdout.trim() || '[]') as { t: string; c?: number; x: number; y: number; w: number; h: number }[]
+    return Array.isArray(lines) ? lines : null
+  } catch (err) {
+    console.error('[ocr:native]', err)
+    return null
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+function execFileText(cmd: string, args: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile(cmd, args, { timeout: 60_000, maxBuffer: 16 * 1024 * 1024, windowsHide: true }, (err, stdout) => (err ? reject(err) : resolve(stdout)))
+  })
+}
 
 // Narrow IPC surface used by the renderer's preload bridge.
 // wa.me (tarayıcı üzerinden) ya da — toplu WhatsApp gönderiminde sohbeti doğrudan
