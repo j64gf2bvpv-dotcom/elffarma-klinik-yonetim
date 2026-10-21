@@ -2,23 +2,33 @@ import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { ChevronDown, ChevronRight, ExternalLink, PackageOpen, Search, ShoppingCart, Wallet, Receipt } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, ExternalLink, PackageCheck, PackageOpen, Plus, Search, ShoppingCart, Trash2, Wallet, Receipt } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
-import { useAllPendingProducts, useCustomers } from '@/features/customers/hooks'
+import {
+  useAllPendingProducts,
+  useCreatePendingProduct,
+  useCustomers,
+  useDeletePendingProduct,
+  useUpdatePendingProduct,
+} from '@/features/customers/hooks'
+import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { usePayments } from '@/features/payments/hooks'
-import { useSales } from '@/features/sales/hooks'
+import { useCreateSale, useDeleteSale, useSales } from '@/features/sales/hooks'
+import { useProducts } from '@/features/stock/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
-import { PendingProductDialog } from '@/features/customers/PendingProductDialog'
 import { trFold } from '@/lib/detectProvince'
 import { cn } from '@/lib/utils'
 import { tr } from '@/i18n/tr'
-import type { Customer, CustomerPendingProduct, Invoice, Payment, Sale } from '@/types/database'
+import type { Customer, CustomerPendingProduct, Invoice, Payment, Product, Sale } from '@/types/database'
 
 /**
  * Stok > Doktor Hesapları (kullanıcı isteği, 2026-10-21: "borçlu olduğumuz
@@ -31,6 +41,13 @@ import type { Customer, CustomerPendingProduct, Invoice, Payment, Sale } from '@
  *    (satış + fatura borç; tahsilat + iade alacak — bkz. computeCariLedger),
  *    iki ekran aynı rakamı göstersin diye
  * Satıra tıklayınca satış, teslim bekleyen ürün ve ödeme dökümü açılır.
+ *
+ * Elle giriş (kullanıcı isteği, 2026-10-21: "isim, adet, aldığı ve alacağı
+ * ürünler manuel girilebilmeli"): detayda aldığı ürün (satış) ve alacağı ürün
+ * doğrudan eklenir; ürün adı serbest yazılır (stoktaki ürünler öneri olarak
+ * gelir). Stoktaki bir ürünle eşleşen satış istenirse stoktan düşülür. Alacağı
+ * ürünlerin adedi yerinde değiştirilir, "Teslim edildi" ile listeden çıkar.
+ * Henüz hiç hareketi olmayan doktor "Doktor ekle" ile listeye alınır.
  */
 
 interface DoctorAccount {
@@ -67,6 +84,9 @@ export function DoctorAccountsPanel() {
   const [search, setSearch] = React.useState('')
   const [filter, setFilter] = React.useState<Filter>('all')
   const [open, setOpen] = React.useState<Set<string>>(new Set())
+  // "Doktor ekle" ile listeye alınan, henüz hareketi olmayan doktorlar
+  const [extraIds, setExtraIds] = React.useState<string[]>([])
+  const { data: products = [] } = useProducts('')
 
   const accounts = React.useMemo<DoctorAccount[]>(() => {
     const by = new Map<string, DoctorAccount>()
@@ -116,14 +136,21 @@ export function DoctorAccountsPanel() {
       a.pendingQty += p.quantity
       a.pendingAmount += p.quantity * Number(p.unit_price)
     }
+    for (const id of extraIds) get(id)
     for (const a of by.values()) {
       const paymentTotal = a.payments.reduce((sum, p) => sum + Number(p.amount), 0)
       a.totalDebt = a.boughtAmount + a.invoiceAmount
       a.paid = paymentTotal + a.returnAmount
       a.remaining = a.totalDebt - a.paid
     }
-    return [...by.values()].sort((x, y) => y.remaining - x.remaining || y.pendingAmount - x.pendingAmount)
-  }, [customers, sales, payments, invoices, pending])
+    // Elle eklenen doktorlar en üstte (giriş yapılsın diye), sonra kalan tahsilata göre
+    return [...by.values()].sort(
+      (x, y) =>
+        Number(extraIds.includes(y.customer.id)) - Number(extraIds.includes(x.customer.id)) ||
+        y.remaining - x.remaining ||
+        y.pendingAmount - x.pendingAmount,
+    )
+  }, [customers, sales, payments, invoices, pending, extraIds])
 
   const visible = React.useMemo(() => {
     const q = trFold(search).trim()
@@ -197,6 +224,18 @@ export function DoctorAccountsPanel() {
             <TabsTrigger value="paid">Ödemesi Tamam ({counts.paid})</TabsTrigger>
           </TabsList>
         </Tabs>
+        <div className="w-60">
+          <CustomerCombobox
+            value={undefined}
+            placeholder="Doktor ekle…"
+            onChange={(id) => {
+              setExtraIds((prev) => (prev.includes(id) ? prev : [id, ...prev]))
+              setOpen((prev) => new Set(prev).add(id))
+              setFilter('all')
+              setSearch('')
+            }}
+          />
+        </div>
         <div className="ml-auto">
           <ExportMenu<DoctorAccount>
             title="Doktor Hesapları"
@@ -282,7 +321,7 @@ export function DoctorAccountsPanel() {
                     {isOpen && (
                       <TableRow className="bg-muted/20 hover:bg-muted/20">
                         <TableCell colSpan={8} className="p-4">
-                          <AccountDetail account={a} />
+                          <AccountDetail account={a} products={products} />
                         </TableCell>
                       </TableRow>
                     )}
@@ -347,7 +386,8 @@ function SummaryCard({
   )
 }
 
-function AccountDetail({ account: a }: { account: DoctorAccount }) {
+function AccountDetail({ account: a, products }: { account: DoctorAccount; products: Product[] }) {
+  const deleteSale = useDeleteSale()
   const saleRows = [...a.sales, ...a.returns].sort((x, y) => y.sale_date.localeCompare(x.sale_date))
   return (
     <div className="grid gap-4 lg:grid-cols-3">
@@ -366,9 +406,25 @@ function AccountDetail({ account: a }: { account: DoctorAccount }) {
                 </span>
               </>
             }
-            right={<span className={cn(s.type === 'return' && 'text-success')}>{s.type === 'return' ? '−' : ''}{money(s.quantity * Number(s.unit_price))}</span>}
+            right={
+              <span className="flex items-center gap-1">
+                <span className={cn(s.type === 'return' && 'text-success')}>
+                  {s.type === 'return' ? '−' : ''}
+                  {money(s.quantity * Number(s.unit_price))}
+                </span>
+                <IconAction
+                  title={s.product_id ? 'Sil (stok geri eklenir)' : 'Sil'}
+                  onClick={() => {
+                    if (window.confirm(`"${s.product_name}" kaydı silinsin mi?${s.product_id ? ' Stok geri eklenir.' : ''}`)) deleteSale.mutate(s.id)
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                </IconAction>
+              </span>
+            }
           />
         ))}
+        <AddSaleForm customerId={a.customer.id} products={products} />
         {a.invoices.map((inv) => (
           <DetailLine
             key={inv.id}
@@ -386,25 +442,13 @@ function AccountDetail({ account: a }: { account: DoctorAccount }) {
       <DetailBlock
         title="Alacağı Ürünler"
         total={a.pending.length > 0 ? `${a.pendingQty} adet · ${money(a.pendingAmount)}` : undefined}
-        action={<PendingProductDialog customerId={a.customer.id} />}
       >
         <p className="-mt-1 text-xs text-muted-foreground">Doktora henüz teslim edilmemiş ürünler</p>
         {a.pending.length === 0 && <Empty>Teslim bekleyen ürün yok</Empty>}
         {a.pending.map((p) => (
-          <DetailLine
-            key={p.id}
-            left={
-              <>
-                <span className="font-medium">{p.product_name}</span>
-                <span className="block text-xs text-muted-foreground">
-                  {day(p.created_at)} · {p.quantity} x {money(Number(p.unit_price))}
-                  {p.note ? ` · ${p.note}` : ''}
-                </span>
-              </>
-            }
-            right={money(p.quantity * Number(p.unit_price))}
-          />
+          <PendingLine key={p.id} item={p} />
         ))}
+        <AddPendingForm customerId={a.customer.id} products={products} />
       </DetailBlock>
 
       <DetailBlock title="Ödemeler" total={money(a.paid)}>
@@ -471,4 +515,224 @@ function DetailLine({ left, right }: { left: React.ReactNode; right: React.React
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="py-2 text-sm text-muted-foreground">{children}</p>
+}
+
+function IconAction({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+    >
+      {children}
+    </button>
+  )
+}
+
+const PRODUCT_LIST_ID = 'doctor-accounts-products'
+
+/** Stoktaki ürün adları — ürün adı kutularında öneri olarak (serbest yazı da olur). */
+function ProductSuggestions({ products }: { products: Product[] }) {
+  return (
+    <datalist id={PRODUCT_LIST_ID}>
+      {products.map((p) => (
+        <option key={p.id} value={p.name} />
+      ))}
+    </datalist>
+  )
+}
+
+function findProduct(products: Product[], name: string): Product | undefined {
+  const key = trFold(name).trim()
+  return key ? products.find((p) => trFold(p.name).trim() === key) : undefined
+}
+
+const smallInput = 'h-8 px-2 text-sm'
+
+/** Aldığı ürün — satış olarak kaydedilir; stoktaki ürünse istenirse stoktan düşer. */
+function AddSaleForm({ customerId, products }: { customerId: string; products: Product[] }) {
+  const createSale = useCreateSale()
+  const [name, setName] = React.useState('')
+  const [qty, setQty] = React.useState('1')
+  const [price, setPrice] = React.useState('')
+  const [date, setDate] = React.useState(() => format(new Date(), 'yyyy-MM-dd'))
+  const [fromStock, setFromStock] = React.useState(true)
+  const match = findProduct(products, name)
+
+  function onNameChange(v: string) {
+    setName(v)
+    const p = findProduct(products, v)
+    if (p && !price) setPrice(String(p.unit_price ?? ''))
+    // Stokta yoksa "stoktan düş" baştan işaretli gelmesin ("yetersiz stok" hatası vermesin)
+    if (p) setFromStock(p.current_quantity > 0)
+  }
+
+  async function submit() {
+    const quantity = Number(qty)
+    const unit = Number(price.replace(',', '.') || 0)
+    if (!name.trim()) return toast.error('Ürün adı yazın')
+    if (!Number.isFinite(quantity) || quantity <= 0 || Math.round(quantity) !== quantity) return toast.error('Adet geçerli bir sayı olmalı')
+    if (!Number.isFinite(unit) || unit < 0) return toast.error('Fiyat geçerli bir sayı olmalı')
+    if (match && fromStock && match.current_quantity < quantity) {
+      return toast.error(`Stokta ${match.current_quantity} paket var`, { description: '"Stoktan düş" işaretini kaldırarak stok değişmeden kaydedebilirsiniz.' })
+    }
+    await createSale.mutateAsync({
+      type: 'sale',
+      customer_id: customerId,
+      product_id: match && fromStock ? match.id : null,
+      product_name: match ? match.name : name.trim(),
+      quantity,
+      unit_price: unit,
+      sale_date: date,
+    })
+    setName('')
+    setQty('1')
+    setPrice('')
+  }
+
+  return (
+    <div className="mt-1 grid gap-1.5 rounded-md border border-dashed p-2">
+      <ProductSuggestions products={products} />
+      <Input className={smallInput} list={PRODUCT_LIST_ID} placeholder="Ürün adı" value={name} onChange={(e) => onNameChange(e.target.value)} />
+      <div className="grid grid-cols-[4rem_1fr_8.5rem] gap-1.5">
+        <Input className={smallInput} inputMode="numeric" placeholder="Adet" value={qty} onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))} />
+        <Input className={smallInput} inputMode="decimal" placeholder="Birim fiyat (TL)" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d.,]/g, ''))} />
+        <Input className={smallInput} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        {match ? (
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs">
+            <Checkbox checked={fromStock} onCheckedChange={(v) => setFromStock(v === true)} />
+            Stoktan düş (stokta {match.current_quantity} paket)
+          </label>
+        ) : (
+          <span className="text-xs text-muted-foreground">{name.trim() ? 'Stokta olmayan ürün — stok değişmez' : ''}</span>
+        )}
+        <Button type="button" size="sm" className="h-8" onClick={() => void submit()} disabled={createSale.isPending}>
+          <Plus className="size-3.5" /> Ekle
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+/** Alacağı ürün — doktora henüz teslim edilmemiş ürün (stok değişmez). */
+function AddPendingForm({ customerId, products }: { customerId: string; products: Product[] }) {
+  const createPending = useCreatePendingProduct()
+  const [name, setName] = React.useState('')
+  const [qty, setQty] = React.useState('1')
+  const [price, setPrice] = React.useState('')
+  const [note, setNote] = React.useState('')
+
+  function onNameChange(v: string) {
+    setName(v)
+    const p = findProduct(products, v)
+    if (p && !price) setPrice(String(p.unit_price ?? ''))
+  }
+
+  async function submit() {
+    const quantity = Number(qty)
+    const unit = Number(price.replace(',', '.') || 0)
+    if (!name.trim()) return toast.error('Ürün adı yazın')
+    if (!Number.isFinite(quantity) || quantity <= 0 || Math.round(quantity) !== quantity) return toast.error('Adet geçerli bir sayı olmalı')
+    if (!Number.isFinite(unit) || unit < 0) return toast.error('Fiyat geçerli bir sayı olmalı')
+    await createPending.mutateAsync({
+      customer_id: customerId,
+      product_name: findProduct(products, name)?.name ?? name.trim(),
+      quantity,
+      unit_price: unit,
+      note: note.trim() || null,
+    })
+    setName('')
+    setQty('1')
+    setPrice('')
+    setNote('')
+  }
+
+  return (
+    <div className="mt-1 grid gap-1.5 rounded-md border border-dashed p-2">
+      <ProductSuggestions products={products} />
+      <Input className={smallInput} list={PRODUCT_LIST_ID} placeholder="Ürün adı" value={name} onChange={(e) => onNameChange(e.target.value)} />
+      <div className="grid grid-cols-[4rem_1fr] gap-1.5">
+        <Input className={smallInput} inputMode="numeric" placeholder="Adet" value={qty} onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))} />
+        <Input className={smallInput} inputMode="decimal" placeholder="Birim fiyat (TL)" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d.,]/g, ''))} />
+      </div>
+      <Input className={smallInput} placeholder="Not (opsiyonel)" value={note} onChange={(e) => setNote(e.target.value)} />
+      <div className="flex justify-end">
+        <Button type="button" size="sm" className="h-8" onClick={() => void submit()} disabled={createPending.isPending}>
+          <Plus className="size-3.5" /> Ekle
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+/** Alacağı ürün satırı — adede tıklayınca değiştirilir; teslim edilince listeden çıkar. */
+function PendingLine({ item: p }: { item: CustomerPendingProduct }) {
+  const update = useUpdatePendingProduct()
+  const remove = useDeletePendingProduct()
+  const [editing, setEditing] = React.useState(false)
+  const [qty, setQty] = React.useState(String(p.quantity))
+
+  function commit() {
+    setEditing(false)
+    const n = Number(qty)
+    if (!Number.isFinite(n) || n <= 0 || Math.round(n) !== n) return setQty(String(p.quantity))
+    if (n !== p.quantity) update.mutate({ id: p.id, patch: { quantity: n } })
+  }
+
+  return (
+    <DetailLine
+      left={
+        <>
+          <span className="font-medium">{p.product_name}</span>
+          <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            {day(p.created_at)} ·
+            {editing ? (
+              <span className="inline-flex items-center gap-1">
+                <Input
+                  autoFocus
+                  className="h-6 w-14 px-1 text-xs"
+                  inputMode="numeric"
+                  value={qty}
+                  onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))}
+                  onBlur={commit}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commit()
+                    if (e.key === 'Escape') {
+                      setQty(String(p.quantity))
+                      setEditing(false)
+                    }
+                  }}
+                />
+                <Check className="size-3" />
+              </span>
+            ) : (
+              <button type="button" title="Adedi değiştirmek için tıklayın" className="rounded px-1 font-medium text-foreground hover:bg-accent" onClick={() => setEditing(true)}>
+                {p.quantity} adet
+              </button>
+            )}
+            x {money(Number(p.unit_price))}
+            {p.note ? ` · ${p.note}` : ''}
+          </span>
+        </>
+      }
+      right={
+        <span className="flex items-center gap-1">
+          {money(p.quantity * Number(p.unit_price))}
+          <button
+            type="button"
+            title="Teslim edildi — listeden çıkar"
+            onClick={() => {
+              if (window.confirm(`"${p.product_name}" (${p.quantity} adet) teslim edildi olarak işaretlensin mi? Listeden çıkar; stok değişmez.`)) remove.mutate(p.id)
+            }}
+            className="rounded p-1 text-muted-foreground transition-colors hover:bg-success/10 hover:text-success"
+          >
+            <PackageCheck className="size-3.5" />
+          </button>
+        </span>
+      }
+    />
+  )
 }

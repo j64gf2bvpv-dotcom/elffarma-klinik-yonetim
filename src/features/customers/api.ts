@@ -198,6 +198,14 @@ export async function createPendingProduct(input: PendingProductInput): Promise<
   )
 }
 
+/** Doktor Hesapları'nda adet / fiyat / not yerinde düzenleme (2026-10-21). */
+export async function updatePendingProduct(
+  id: string,
+  patch: Partial<Pick<CustomerPendingProduct, 'product_name' | 'quantity' | 'unit_price' | 'note'>>,
+): Promise<CustomerPendingProduct> {
+  return offlineUpdate<CustomerPendingProduct>('customer_pending_products', id, patch, 'Eksik ürün düzenleme')
+}
+
 export async function deletePendingProduct(id: string): Promise<void> {
   return offlineDelete('customer_pending_products', id, 'Eksik ürün silme')
 }

@@ -5,6 +5,7 @@ import {
   createPendingProduct,
   deleteCustomer,
   deletePendingProduct,
+  updatePendingProduct,
   fetchAllPendingProducts,
   fetchCustomer,
   fetchCustomers,
@@ -128,6 +129,15 @@ export function useCreatePendingProduct() {
       toast.success('Eksik ürün eklendi')
     },
     onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
+  })
+}
+
+export function useUpdatePendingProduct() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Parameters<typeof updatePendingProduct>[1] }) => updatePendingProduct(id, patch),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customer_pending_products'] }),
+    onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
   })
 }
 

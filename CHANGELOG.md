@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.319] - 2026-10-21
+
+**Doktor Hesapları'nda elle giriş:** Detayda aldığı ürün (ürün adı serbest ya da stoktan öneri, adet, birim fiyat, tarih) ve alacağı ürün (ad, adet, fiyat, not) doğrudan eklenebiliyor. Stoktaki bir ürünse "Stoktan düş" seçilebiliyor (stokta yoksa işaretsiz gelir); aldığı ürün satırı silinebiliyor (stok geri eklenir). Alacağı ürünün adedine tıklayıp değiştirilebiliyor, "Teslim edildi" ile listeden çıkarılıyor. "Doktor ekle…" ile henüz hareketi olmayan doktor listeye alınıp giriş yapılabiliyor (yeni doktor da oluşturulabiliyor).
+
 ## [2.17.318] - 2026-10-21
 
 **Stok > Doktor Hesapları:** Doktor başına aldığı ürünler (adet/kalem), alacağı yani henüz teslim edilmemiş ürünler, toplam tutar, ödenen ve kalan tahsilat tek tabloda; üstte toplam satış / ödenen / kalan tahsilat / teslim bekleyen ürün özeti, "Kalan tahsilatı olan", "Alacağı ürünü olan", "Ödemesi tamam" filtreleri. Satıra tıklayınca satış, teslim bekleyen ürün ve ödeme dökümü açılıyor; oradan eksik ürün eklenebiliyor. Rakamlar Cari Hesap ile aynı formülle hesaplanıyor; Excel/PDF dışa aktarma var.
