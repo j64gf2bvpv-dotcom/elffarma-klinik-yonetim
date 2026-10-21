@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.323] - 2026-10-21
+
+**Doktor Hesapları: kongre / workshop / masterclass bilgisi + taşma düzeltmesi:** Aldığı her üründe "Nereden aldı" alanı — eklerken ve sonradan tıklayıp girilebiliyor; programdaki kongreler ve Workshop / Masterclass öneri olarak geliyor (Kalan Ürünler'de ve dışa aktarmada da görünüyor). Detay kutularındaki yazılar artık kutu dışına taşmıyor, alt satıra geçiyor.
+
 ## [2.17.322] - 2026-10-21
 
 **Doktor Hesapları: Kalan Ürünler + Kargoya verildi işareti:** "Alacağı Ürünler" artık "Kalan Ürünler". Aldığı her ürün satırında "Kargoya verildi / verilmedi" işareti var; işaretlenmeyenler Kalan Ürünler'de ve tablodaki Kalan Ürünler sütununda görünüyor, işaretleyince listeden çıkıyor (işaret kaldırılınca geri gelir). Satışı girilmemiş kalan ürün yine elle eklenebiliyor. İşaret stoka dokunmuyor (migration 20261021140000: sales.shipped_at).

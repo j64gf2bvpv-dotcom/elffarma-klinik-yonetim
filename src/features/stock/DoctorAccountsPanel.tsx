@@ -25,6 +25,7 @@ import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { usePayments, useUpdatePayment } from '@/features/payments/hooks'
 import { useCreateSale, useDeleteSale, useSales, useUpdateSale } from '@/features/sales/hooks'
 import { useProducts } from '@/features/stock/hooks'
+import { useCongresses } from '@/features/congresses/hooks'
 import { useDoctorAccountOverrides, useSaveDoctorAccountOverride, type OverrideField } from './doctorAccountOverrides'
 import { useInvoices } from '@/features/invoices/hooks'
 import { trFold } from '@/lib/detectProvince'
@@ -49,6 +50,9 @@ import type { Customer, CustomerPendingProduct, Invoice, Payment, Product, Sale 
  * satırında "Kargoya verildi" işareti (sales.shipped_at) var; işaretlenmeyen
  * satışlar + elle eklenen kalan ürünler (customer_pending_products) "Kalan
  * Ürünler"de görünür. İşaret stoka dokunmaz (satış zaten stoktan düşmüştür).
+ *
+ * Her aldığı üründe "Nereden" (kongre / workshop / masterclass — sales.congress_name)
+ * girilir; programdaki kongreler öneri olarak gelir, serbest yazı da olur.
  *
  * Elle giriş (kullanıcı isteği, 2026-10-21: "isim, adet, aldığı ve alacağı
  * ürünler manuel girilebilmeli"): detayda aldığı ürün (satış) ve alacağı ürün
@@ -294,6 +298,7 @@ export function DoctorAccountsPanel() {
               { header: 'İl', value: (a) => a.customer.province ?? '' },
               { header: 'Aldığı Ürün (adet)', value: (a) => a.boughtQty },
               { header: 'Aldığı Ürünler', value: (a) => summarizeItems(a.sales) },
+              { header: 'Nereden (kongre / workshop)', value: (a) => [...new Set(a.sales.map((x) => x.congress_name).filter(Boolean))].join(', ') },
               { header: 'Kalan Ürün (adet)', value: (a) => a.pendingQty },
               { header: 'Kalan Ürünler', value: (a) => summarizeItems([...a.unshipped, ...a.pending]) },
               { header: 'Toplam Tutar', value: (a) => a.totalDebt },
@@ -379,7 +384,7 @@ export function DoctorAccountsPanel() {
                     </TableRow>
                     {isOpen && (
                       <TableRow className="bg-muted/20 hover:bg-muted/20">
-                        <TableCell colSpan={8} className="p-4">
+                        <TableCell colSpan={8} className="p-4 whitespace-normal">
                           <AccountDetail account={a} products={products} />
                         </TableCell>
                       </TableRow>
@@ -448,7 +453,7 @@ function SummaryCard({
 function AccountDetail({ account: a, products }: { account: DoctorAccount; products: Product[] }) {
   const saleRows = [...a.sales, ...a.returns].sort((x, y) => y.sale_date.localeCompare(x.sale_date))
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
       <DetailBlock title="Aldığı Ürünler" total={money(a.boughtAmount - a.returnAmount)}>
         {saleRows.length === 0 && a.invoices.length === 0 && <Empty>Satış yok</Empty>}
         {saleRows.map((s) => (
@@ -512,7 +517,7 @@ function AccountDetail({ account: a, products }: { account: DoctorAccount; produ
 
 function DetailBlock({ title, total, action, children }: { title: string; total?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border bg-card p-3" onClick={(e) => e.stopPropagation()}>
+    <div className="min-w-0 rounded-lg border bg-card p-3" onClick={(e) => e.stopPropagation()}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h4 className="text-sm font-semibold">{title}</h4>
         <div className="flex flex-wrap items-center gap-2">
@@ -528,7 +533,7 @@ function DetailBlock({ title, total, action, children }: { title: string; total?
 function DetailLine({ left, right }: { left: React.ReactNode; right: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-3 border-b pb-1.5 text-sm last:border-b-0">
-      <div className="min-w-0">{left}</div>
+      <div className="min-w-0 break-words">{left}</div>
       <div className="shrink-0 tabular-nums">{right}</div>
     </div>
   )
@@ -552,6 +557,20 @@ function IconAction({ title, onClick, children }: { title: string; onClick: () =
 }
 
 const PRODUCT_LIST_ID = 'doctor-accounts-products'
+const SOURCE_LIST_ID = 'doctor-accounts-sources'
+
+/** "Nereden aldı" önerileri — programdaki kongre/workshop adları + genel türler. */
+function SourceSuggestions() {
+  const { data: congresses = [] } = useCongresses()
+  const names = [...new Set([...congresses.map((c) => c.name), 'Workshop', 'Masterclass', 'Kongre', 'Webinar', 'Doğrudan satış'])]
+  return (
+    <datalist id={SOURCE_LIST_ID}>
+      {names.map((n) => (
+        <option key={n} value={n} />
+      ))}
+    </datalist>
+  )
+}
 
 /** Stoktaki ürün adları — ürün adı kutularında öneri olarak (serbest yazı da olur). */
 function ProductSuggestions({ products }: { products: Product[] }) {
@@ -579,6 +598,7 @@ function AddSaleForm({ customerId, products }: { customerId: string; products: P
   const [price, setPrice] = React.useState('')
   const [date, setDate] = React.useState(() => format(new Date(), 'yyyy-MM-dd'))
   const [fromStock, setFromStock] = React.useState(true)
+  const [source, setSource] = React.useState('')
   const match = findProduct(products, name)
 
   function onNameChange(v: string) {
@@ -606,6 +626,7 @@ function AddSaleForm({ customerId, products }: { customerId: string; products: P
       quantity,
       unit_price: unit,
       sale_date: date,
+      congress_name: source.trim() || null,
     })
     setName('')
     setQty('1')
@@ -616,11 +637,19 @@ function AddSaleForm({ customerId, products }: { customerId: string; products: P
     <div className="mt-1 grid gap-1.5 rounded-md border border-dashed p-2">
       <ProductSuggestions products={products} />
       <Input className={smallInput} list={PRODUCT_LIST_ID} placeholder="Ürün adı" value={name} onChange={(e) => onNameChange(e.target.value)} />
-      <div className="grid grid-cols-[4rem_1fr_8.5rem] gap-1.5">
+      <div className="grid grid-cols-[4rem_minmax(0,1fr)_minmax(0,8.5rem)] gap-1.5">
         <Input className={smallInput} inputMode="numeric" placeholder="Adet" value={qty} onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))} />
         <Input className={smallInput} inputMode="decimal" placeholder="Birim fiyat (TL)" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d.,]/g, ''))} />
         <Input className={smallInput} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
+      <SourceSuggestions />
+      <Input
+        className={smallInput}
+        list={SOURCE_LIST_ID}
+        placeholder="Nereden aldı? (kongre / workshop / masterclass — opsiyonel)"
+        value={source}
+        onChange={(e) => setSource(e.target.value)}
+      />
       <div className="flex items-center justify-between gap-2">
         {match ? (
           <label className="flex cursor-pointer items-center gap-1.5 text-xs">
@@ -675,7 +704,7 @@ function AddPendingForm({ customerId, products }: { customerId: string; products
     <div className="mt-1 grid gap-1.5 rounded-md border border-dashed p-2">
       <ProductSuggestions products={products} />
       <Input className={smallInput} list={PRODUCT_LIST_ID} placeholder="Ürün adı" value={name} onChange={(e) => onNameChange(e.target.value)} />
-      <div className="grid grid-cols-[4rem_1fr] gap-1.5">
+      <div className="grid grid-cols-[4rem_minmax(0,1fr)] gap-1.5">
         <Input className={smallInput} inputMode="numeric" placeholder="Adet" value={qty} onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))} />
         <Input className={smallInput} inputMode="decimal" placeholder="Birim fiyat (TL)" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d.,]/g, ''))} />
       </div>
@@ -706,6 +735,7 @@ function EditableField({
   inputClassName,
   title = 'Düzenlemek için tıklayın',
   allowClear = false,
+  list,
 }: {
   value: string | number | null
   kind?: EditKind
@@ -716,6 +746,8 @@ function EditableField({
   title?: string
   /** Boş bırakılınca null kaydedilir (elle değeri silip otomatiğe dönmek için) */
   allowClear?: boolean
+  /** <datalist> kimliği — yazarken öneri */
+  list?: string
 }) {
   const initial = value == null ? '' : kind === 'money' ? String(Math.round(Number(value) * 100) / 100).replace('.', ',') : String(value)
   const [editing, setEditing] = React.useState(false)
@@ -753,6 +785,7 @@ function EditableField({
       <Input
         autoFocus
         type={kind === 'date' ? 'date' : 'text'}
+        list={list}
         inputMode={kind === 'int' ? 'numeric' : kind === 'money' ? 'decimal' : undefined}
         value={text}
         onClick={(e) => e.stopPropagation()}
@@ -829,8 +862,8 @@ function SaleLine({ sale: s }: { sale: Sale }) {
             <EditableField value={Number(s.unit_price)} kind="money" onSave={(v) => save({ unit_price: Number(v) })} title="Birim fiyatı değiştirin">
               {money(Number(s.unit_price))}
             </EditableField>
-            {s.congress_name ? ` · ${s.congress_name}` : ''}
           </span>
+          <SourceField sale={s} />
         </>
       }
       right={
@@ -1032,10 +1065,34 @@ function UnshippedLine({ sale: s }: { sale: Sale }) {
           <ShippedToggle sale={s} />
           <span className="block text-xs text-muted-foreground">
             {day(s.sale_date)} · {s.quantity} adet x {money(Number(s.unit_price))}
+            {s.congress_name ? ` · ${s.congress_name}` : ''}
           </span>
         </>
       }
       right={money(s.quantity * Number(s.unit_price))}
     />
+  )
+}
+
+/** "Nereden aldı" — kongre / workshop / masterclass (sales.congress_name), tıklayıp değişir. */
+function SourceField({ sale: s }: { sale: Sale }) {
+  const update = useUpdateSale()
+  return (
+    <span className="mt-0.5 flex items-center gap-1 text-xs">
+      <SourceSuggestions />
+      <EditableField
+        value={s.congress_name ?? ''}
+        list={SOURCE_LIST_ID}
+        onSave={(v) => update.mutate({ sale: s, patch: { congress_name: String(v).trim() || null } })}
+        inputClassName="w-56"
+        title="Hangi kongre / workshop / masterclass'tan aldığını yazın"
+      >
+        {s.congress_name ? (
+          <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-primary">📍 {s.congress_name}</span>
+        ) : (
+          <span className="italic text-muted-foreground">+ nereden aldı (kongre / workshop)</span>
+        )}
+      </EditableField>
+    </span>
   )
 }
