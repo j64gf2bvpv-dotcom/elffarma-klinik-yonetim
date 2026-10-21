@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.333] - 2026-10-21
+
+**Ruhsat bilgisayarda okunuyor — yapay zekâ (Gemini) kullanılmıyor:** Ruhsat fotoğrafı artık bilgisayarın kendisinde yazı tanıma (Tesseract, Türkçe) ile okunuyor; hiçbir servise gönderilmiyor, kota/limit sorunu yok, ~1-3 saniye sürüyor. Alanlar ruhsattaki etiketlerin konumuna göre (etiketin altındaki/yanındaki hücre) çıkarılıyor; eğik/bulanık fotoğraflara toleranslı; şase no'daki OCR karışıklıkları (I/O → 1/0) düzeltiliyor, marka/model listeden eşleştiriliyor. Fotoğraf artık sadece "Kaydet"e basınca yükleniyor (iptalde depoda dosya kalmıyor). Gemini kotası dolunca yedek modele geçiş de düzeltildi (Türkçe hata mesajı yüzünden devreye girmiyordu). İlk kullanımda Türkçe yazı tanıma verisi bir kez indirilir.
+
 ## [2.17.332] - 2026-10-21
 
 **Araçlar: model listeden seçim + yıl seçimi:** Araç Modeli alanı aranabilir listeye dönüştü — 39 marka altında 366 model (Türkiye'de satılan binek ve hafif ticari araçlar); yazınca marka ya da modele göre süzülüyor, listede olmayan model "… olarak kullan" ile yazılabiliyor. Model yılı 1990'dan gelecek yıla kadar listeden seçiliyor; ruhsattan okunan yıl otomatik seçiliyor.

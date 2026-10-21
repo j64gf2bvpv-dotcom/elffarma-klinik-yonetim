@@ -20,13 +20,12 @@ import { useSalesReps } from '@/features/salesReps/hooks'
 import { useCreateVehicle, useUpdateVehicle } from './hooks'
 import type { VehicleWithRelations } from './api'
 import { CarModelCombobox } from './CarModelCombobox'
+import { readRuhsatLocally } from './ruhsatOcr'
 import { modelYearOptions } from '@/lib/carModels'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAIService } from '@/features/ai/useAIService'
 import { getErrorMessage } from '@/lib/utils'
 import {
   REGISTRATION_LABELS,
-  extractRegistrationInfo,
   fileToDataUrl,
   getRegistrationImageUrl,
   uploadRegistrationImage,
@@ -77,12 +76,14 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
   // Ruhsat (2026-10-21)
   const [reg, setReg] = React.useState<Record<RegKey, string>>(() => emptyReg())
   const [regImagePath, setRegImagePath] = React.useState<string | null>(null)
+  // Seçilen ama henüz yüklenmemiş fotoğraf — "Kaydet"e basınca yüklenir (iptalde depoda sahipsiz dosya kalmasın)
+  const [regFile, setRegFile] = React.useState<File | null>(null)
   const [regPreview, setRegPreview] = React.useState<string | null>(null)
   const [reading, setReading] = React.useState(false)
   // Okuma başarısız olursa (sağlayıcı yoğun vb.) aynı fotoğrafla "Tekrar oku"
   const [lastDataUrls, setLastDataUrls] = React.useState<string[] | null>(null)
   const fileRef = React.useRef<HTMLInputElement>(null)
-  const aiService = useAIService()
+  const [readStep, setReadStep] = React.useState('')
 
   React.useEffect(() => {
     if (!open) return
@@ -100,6 +101,7 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
     if (vehicle) for (const k of REG_FIELD_KEYS) r[k] = vehicle[k] != null ? String(vehicle[k]) : ''
     setReg(r)
     setRegImagePath(vehicle?.registration_image_path ?? null)
+    setRegFile(null)
     setRegPreview(null)
     if (vehicle?.registration_image_path) {
       getRegistrationImageUrl(vehicle.registration_image_path).then(setRegPreview).catch(() => setRegPreview(null))
@@ -110,10 +112,11 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
   async function runExtraction(dataUrls: string[]) {
     let found: RegistrationFields = {}
     try {
-      found = await extractRegistrationInfo(aiService, dataUrls)
+      // Bilgisayarda yazı tanıma (OCR) — hiçbir yapay zekâ servisine gönderilmez (2026-10-21)
+      found = (await readRuhsatLocally(dataUrls, setReadStep)).fields
     } catch (err) {
       toast.error('Ruhsat okunamadı', {
-        description: `${getErrorMessage(err)} — fotoğraf kaydedildi. Biraz sonra "Tekrar oku"ya basın ya da bilgileri elle girin.`,
+        description: `${getErrorMessage(err)} — "Tekrar oku"ya basın ya da bilgileri elle girin; fotoğraf kayıtla birlikte saklanır.`,
       })
       return
     }
@@ -151,12 +154,12 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
     setReading(true)
     try {
       setRegPreview(URL.createObjectURL(list[0]))
-      const [path, dataUrls] = await Promise.all([uploadRegistrationImage(list[0]), Promise.all(list.map((f) => fileToDataUrl(f)))])
-      setRegImagePath(path)
+      setRegFile(list[0])
+      const dataUrls = await Promise.all(list.map((f) => fileToDataUrl(f)))
       setLastDataUrls(dataUrls)
       await runExtraction(dataUrls)
     } catch (err) {
-      toast.error('Fotoğraf yüklenemedi', { description: getErrorMessage(err) })
+      toast.error('Fotoğraf okunamadı', { description: getErrorMessage(err) })
     } finally {
       setReading(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -182,7 +185,7 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
       maintenance_date: maintenanceDate || null,
       has_utts: hasUtts,
       notes: notes.trim() || null,
-      registration_image_path: regImagePath,
+      registration_image_path: regFile ? await uploadRegistrationImage(regFile) : regImagePath,
       ...Object.fromEntries(
         REG_FIELD_KEYS.map((k) => {
           const v = reg[k].trim()
@@ -266,7 +269,7 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
               )}
               <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={reading}>
                 {reading ? <Loader2 className="animate-spin" /> : <ScanText />}
-                {reading ? 'Ruhsat okunuyor…' : regImagePath ? 'Ruhsat fotoğrafını değiştir' : 'Ruhsat fotoğrafı ekle'}
+                {reading ? readStep || 'Ruhsat okunuyor…' : regImagePath || regFile ? 'Ruhsat fotoğrafını değiştir' : 'Ruhsat fotoğrafı ekle'}
               </Button>
               </span>
             </div>
