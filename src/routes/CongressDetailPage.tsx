@@ -132,19 +132,22 @@ export function CongressDetailPage() {
       <PageHeader
         title={congress.name}
         description={
-          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>{congress.start_date ? formatDateRange(congress.start_date, congress.end_date) : 'Tarih belirtilmedi'}</span>
-            {congress.website_url && (
-              <a
-                href={congress.website_url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline"
-                title="Kongrenin web sitesini aç"
-              >
-                🌐 Web sitesi
-              </a>
-            )}
+          <span className="flex flex-col gap-1">
+            <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>{congress.start_date ? formatDateRange(congress.start_date, congress.end_date) : 'Tarih belirtilmedi'}</span>
+              {congress.website_url && (
+                <a
+                  href={congress.website_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                  title="Kongrenin web sitesini aç"
+                >
+                  🌐 Web sitesi
+                </a>
+              )}
+            </span>
+            {congress.summary && <span className="max-w-3xl text-sm">{congress.summary}</span>}
           </span>
         }
         actions={

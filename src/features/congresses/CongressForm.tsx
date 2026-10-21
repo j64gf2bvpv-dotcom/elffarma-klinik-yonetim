@@ -21,8 +21,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useCreateCongress, useUpdateCongress } from './hooks'
 import { extractImageFile, uploadCongressImage } from './api'
-import { extractCongressInfo, type ExtractedCongressInfo } from './extractCongressInfo'
+import type { ExtractedCongressInfo } from './extractCongressInfo'
 import { formatDateRange } from '@/lib/dateRange'
+import { useAIService } from '@/features/ai/useAIService'
+import { readCongressWebsite, summarizeCongress, uploadSquareCongressImage } from './websiteAssets'
 import type { Congress } from '@/types/database'
 
 const schema = z.object({
@@ -48,6 +50,7 @@ const schema = z.object({
   campaign_info: z.string().optional(),
   video_urls: z.string().optional(),
   website_url: z.string().optional(),
+  summary: z.string().optional(),
 })
 
 type FormInput = z.input<typeof schema>
@@ -77,6 +80,7 @@ function defaults(congress: Congress | undefined): FormInput {
     campaign_info: congress?.campaign_info ?? '',
     video_urls: congress?.video_urls?.join('\n') ?? '',
     website_url: congress?.website_url ?? '',
+    summary: congress?.summary ?? '',
   }
 }
 
@@ -142,6 +146,7 @@ export function CongressForm({ congress }: { congress?: Congress }) {
         ? values.video_urls.split('\n').map((v) => v.trim()).filter(Boolean)
         : [],
       website_url: normalizeUrl(values.website_url) || null,
+      summary: values.summary?.trim() || null,
     }
     if (congress) {
       await updateMutation.mutateAsync({ id: congress.id, input })
@@ -186,6 +191,19 @@ export function CongressForm({ congress }: { congress?: Congress }) {
               )}
             />
             <WebsiteImport form={form} />
+            <FormField
+              control={form.control}
+              name="summary"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Kısa Açıklama (opsiyonel)</FormLabel>
+                  <FormControl>
+                    <Textarea rows={2} placeholder="Kongrenin konusu ve kime yönelik olduğu — 1-2 cümle" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -526,7 +544,8 @@ function normalizeUrl(raw: string | undefined): string {
   return /^https?:\/\//i.test(t) ? t : `https://${t}`
 }
 
-type ImportField = keyof ExtractedCongressInfo
+type ImportInfo = ExtractedCongressInfo & { summary?: string }
+type ImportField = keyof ImportInfo
 const IMPORT_LABELS: Record<ImportField, string> = {
   name: 'Ad',
   start_date: 'Başlangıç',
@@ -534,8 +553,9 @@ const IMPORT_LABELS: Record<ImportField, string> = {
   city: 'Şehir',
   venue: 'Salon / yer',
   hotel: 'Otel',
-  image_url: 'Görsel',
-  notes: 'Açıklama (Notlar)',
+  image_url: 'Görsel (kareye uyarlanıp yüklenir)',
+  summary: 'Kısa açıklama',
+  notes: 'Sitedeki açıklama (Notlar)',
 }
 
 /**
@@ -548,7 +568,9 @@ const IMPORT_LABELS: Record<ImportField, string> = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function WebsiteImport({ form }: { form: any }) {
   const [loading, setLoading] = React.useState(false)
-  const [found, setFound] = React.useState<ExtractedCongressInfo | null>(null)
+  const [found, setFound] = React.useState<ImportInfo | null>(null)
+  const [applying, setApplying] = React.useState(false)
+  const aiService = useAIService()
   const [picked, setPicked] = React.useState<Set<ImportField>>(new Set())
 
   async function load() {
@@ -558,21 +580,13 @@ function WebsiteImport({ form }: { form: any }) {
     setLoading(true)
     setFound(null)
     try {
-      let page = (await window.electronAPI?.fetchPageHtml?.(url)) ?? null
-      if (!page) {
-        // Electron dışında (tarayıcı önizlemesi) doğrudan dene — çoğu sitede CORS engeller
-        try {
-          const res = await fetch(url)
-          if (res.ok) page = { url: res.url, html: await res.text() }
-        } catch {
-          /* yok say */
-        }
-      }
-      if (!page) {
+      const site = await readCongressWebsite(url)
+      if (!site) {
         toast.error('Siteye ulaşılamadı', { description: 'Adresi kontrol edin; site HTML sayfası döndürmüyor ya da erişime kapalı olabilir.' })
         return
       }
-      const info = extractCongressInfo(page.html, page.url)
+      const summary = await summarizeCongress(aiService, form.getValues('name') || site.info.name || 'Kongre', site.info, site.text)
+      const info: ImportInfo = { ...site.info, ...(summary ? { summary } : {}) }
       const keys = (Object.keys(IMPORT_LABELS) as ImportField[]).filter((k) => info[k])
       if (keys.length === 0) {
         toast.error('Sitede kongre bilgisi bulunamadı', { description: 'Bilgileri elle girebilirsiniz.' })
@@ -586,11 +600,27 @@ function WebsiteImport({ form }: { form: any }) {
     }
   }
 
-  function apply() {
+  async function apply() {
     if (!found) return
-    for (const k of picked) if (found[k]) form.setValue(k, found[k], { shouldDirty: true })
-    toast.success(`${picked.size} bilgi forma aktarıldı`, { description: 'Kaydetmek için "Kaydet"e basın.' })
-    setFound(null)
+    setApplying(true)
+    try {
+      for (const k of picked) {
+        const v = found[k]
+        if (!v) continue
+        if (k === 'image_url') {
+          // Görsel siteye bağlı kalmasın: indirip kareye uyarla, kendi depomuza yükle
+          const uploaded = await uploadSquareCongressImage(v).catch(() => null)
+          if (uploaded) form.setValue('image_url', uploaded, { shouldDirty: true })
+          else toast.error('Görsel indirilemedi — diğer bilgiler aktarıldı')
+          continue
+        }
+        form.setValue(k, v, { shouldDirty: true })
+      }
+      toast.success(`${picked.size} bilgi forma aktarıldı`, { description: 'Kaydetmek için "Kaydet"e basın.' })
+      setFound(null)
+    } finally {
+      setApplying(false)
+    }
   }
 
   const show = (k: ImportField, v: string) =>
@@ -651,8 +681,8 @@ function WebsiteImport({ form }: { form: any }) {
             <Button type="button" variant="ghost" size="sm" onClick={() => setFound(null)}>
               Vazgeç
             </Button>
-            <Button type="button" size="sm" onClick={apply} disabled={picked.size === 0}>
-              Seçilenleri forma aktar
+            <Button type="button" size="sm" onClick={() => void apply()} disabled={picked.size === 0 || applying}>
+              {applying && <Loader2 className="animate-spin" />} Seçilenleri forma aktar
             </Button>
           </div>
         </div>

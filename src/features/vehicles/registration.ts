@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { resizeImageFile } from '@/lib/resizeImage'
 import type { AIService } from '@/features/ai/AIService'
 import { parseAiJsonObject } from '@/features/smartImport/parseAiJsonArray'
+import { chatWithFallback } from '@/features/ai/chatWithFallback'
 
 /**
  * Araç ruhsatı (Araç Tescil Belgesi) — fotoğraf yükleme + yapay zekâ ile okuma
@@ -141,31 +142,9 @@ export async function extractRegistrationInfo(aiService: AIService, dataUrls: st
       content: [{ type: 'text' as const, text: INSTRUCTION }, ...dataUrls.map((url) => ({ type: 'image_url' as const, image_url: { url } }))],
     },
   ]
-  // Sağlayıcı yoğunken (503 / 429 "high demand"): her modelde 2 deneme, sonra aynı
-  // sağlayıcının daha hafif modeline geç (Gemini'de sık yaşanıyor, 2026-10-21)
-  const FALLBACK_MODELS: Partial<Record<string, string[]>> = {
-    gemini: ['gemini-flash-lite-latest', 'gemini-2.5-flash'],
-    openai: ['gpt-4o-mini'],
-  }
-  const candidates = [aiService, ...(FALLBACK_MODELS[aiService.providerName] ?? []).filter((m) => m !== aiService.modelName).map((m) => aiService.withModel(m))]
-  const transient = (msg: string) => /\b(503|429|500|502|504)\b|UNAVAILABLE|high demand|overloaded|rate/i.test(msg)
-  let result: Awaited<ReturnType<AIService['chat']>> | null = null
-  let lastError: unknown = null
-  outer: for (const svc of candidates) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        // "Düşünen" modeller (Gemini flash) cevap öncesi de token harcıyor — düşük sınır boş yanıt döndürüyordu
-        result = await svc.chat(messages, { maxTokens: 8000 })
-        if (result.content.trim()) break outer
-      } catch (err) {
-        lastError = err
-        const msg = err instanceof Error ? err.message : String(err)
-        if (!transient(msg)) throw err
-        if (attempt < 2) await new Promise((r) => setTimeout(r, 2500))
-      }
-    }
-  }
-  if (!result || !result.content.trim()) throw lastError ?? new Error('Yapay zekâdan yanıt alınamadı')
+  // "Düşünen" modeller (Gemini flash) cevap öncesi de token harcıyor — düşük sınır boş yanıt döndürüyordu;
+  // sağlayıcı yoğunsa yedek modele geçilir (chatWithFallback)
+  const result = await chatWithFallback(aiService, messages, { maxTokens: 8000 })
   const o = parseAiJsonObject(result.content)
   const brand = [str(o.brand), str(o.commercial_name) || str(o.model_type)].filter(Boolean).join(' ')
   const owner = [str(o.owner_name), str(o.owner_surname)].filter(Boolean).join(' ')

@@ -203,6 +203,8 @@ export interface Congress {
   video_urls: string[]
   /** Kongrenin web sitesi — detayda bağlantı, formda "Siteden bilgileri getir" (2026-10-21) */
   website_url: string | null
+  /** Kısa açıklama — web sitesinden çekilir (2026-10-21) */
+  summary: string | null
   created_by: string | null
   created_at: string
   updated_at: string

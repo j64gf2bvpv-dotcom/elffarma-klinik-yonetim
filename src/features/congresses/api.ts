@@ -35,6 +35,7 @@ export interface CongressInput {
   campaign_info?: string | null
   video_urls?: string[]
   website_url?: string | null
+  summary?: string | null
 }
 
 /**

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.331] - 2026-10-21
+
+**Kongreler: kare görsel + kısa açıklama + silme:** Kongre kartlarında web sitesinden çekilen, kareye uyarlanmış küçük görsel (logolar kesilmeden sığdırılır, fotoğraflar ortadan kırpılır; programın kendi deposuna yüklenir), şehir/salon ve 1-2 cümlelik Türkçe kısa açıklama; kartta silme düğmesi (onaylı). "Sitelerden görsel ve açıklama getir" düğmesi web sitesi olan kongrelerde boş görsel/açıklamayı doldurur; kongre formuna "Kısa Açıklama" alanı eklendi, "Siteden bilgileri getir" görseli kareye uyarlayıp yüklüyor ve Türkçe açıklama üretiyor. Yapay zekâ yoğunken yedek modele geçiş ortak hale getirildi (chatWithFallback) — ruhsat okuma da bunu kullanıyor (migration 20261021230000: congresses.summary).
+
 ## [2.17.330] - 2026-10-21
 
 **Araçlar: ruhsat bilgileri + ruhsat fotoğrafından otomatik doldurma:** Araç formunda "Ruhsat Bilgileri" bölümü — ruhsat fotoğrafı (ön/arka, 2 adede kadar) eklenince yapay zekâ ile okunup plaka, marka/model, model yılı, ruhsat sahibi, T.C./vergi no, adres, şase no, motor no, ilk tescil / tescil / muayene geçerlilik tarihleri, sınıf, cins, renk, yakıt, silindir hacmi, motor gücü, koltuk sayısı, kullanım amacı ve belge seri no otomatik dolduruluyor (kontrol edip kaydedilir). Fotoğraf private documents deposunda saklanıyor; listede "Ruhsat fotoğrafını aç" düğmesi ve renkli Muayene sütunu (geçmiş kırmızı, 30 gün içinde turuncu) var, dışa aktarmaya ruhsat alanları eklendi. Sağlayıcı yoğunsa otomatik yeniden deneme + yedek modele geçiş ve "Tekrar oku" düğmesi (migration 20261021220000).
