@@ -800,6 +800,21 @@ export interface Vehicle {
   usage_purpose: string | null
   document_serial: string | null
   inspection_valid_until: string | null
+  issued_place: string | null
+  registration_sequence_no: string | null
+  model_type: string | null
+  net_weight: string | null
+  max_laden_weight: string | null
+  train_weight: string | null
+  trailer_max_weight: string | null
+  standing_capacity: string | null
+  power_weight_ratio: string | null
+  type_approval_no: string | null
+  rights_holders: string | null
+  notary_sale_date: string | null
+  notary_sale_no: string | null
+  notary_name: string | null
+  other_info: string | null
   notes: string | null
   created_by: string | null
   created_at: string

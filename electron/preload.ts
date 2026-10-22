@@ -39,8 +39,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   fetchImageDataUrl: (url: string): Promise<string | null> => ipcRenderer.invoke('image:fetch-data-url', url),
   fetchPageHtml: (url: string): Promise<{ url: string; html: string } | null> => ipcRenderer.invoke('page:fetch-html', url),
   instagramLogin: (): Promise<boolean> => ipcRenderer.invoke('instagram:login'),
-  nativeOcr: (dataUrl: string): Promise<{ t: string; c?: number; x: number; y: number; w: number; h: number }[] | null> =>
-    ipcRenderer.invoke('ocr:native', dataUrl),
+  nativeOcr: ((input: string | string[]) => ipcRenderer.invoke('ocr:native', input)) as {
+    (dataUrl: string): Promise<{ t: string; c?: number; x: number; y: number; w: number; h: number }[] | null>
+    (dataUrls: string[]): Promise<{ t: string; c?: number; x: number; y: number; w: number; h: number }[][] | null>
+  },
   instagramStatus: (): Promise<{ loggedIn: boolean }> => ipcRenderer.invoke('instagram:status'),
   instagramRecentPosts: (username: string): Promise<InstagramPostsResult> => ipcRenderer.invoke('instagram:recent-posts', username),
   notify: (title: string, body: string): Promise<void> =>

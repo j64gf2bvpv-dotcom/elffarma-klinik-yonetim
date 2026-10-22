@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.335] - 2026-10-22
+
+**Ruhsat: tüm kutular, ruhsatta yazdığı gibi:** Araç formuna ruhsattaki eksik alanlar eklendi (Verildiği İl/İlçe, Tescil Sıra No, Tipi, Net / Azami Yüklü / Katar / Römork ağırlıkları, Ayakta Yolcu, Güç Ağırlık Oranı, Tip Onay No, Hak ve Menfaati Bulunanlar, Noter satış bilgileri, Diğer Bilgiler); alanlar ruhsattaki sırayla. Okuma baştan güçlendirildi: ruhsatın sabit kutu düzeni şablon olarak tanımlandı, basılı etiketlerden fotoğrafın konumu hesaplanıp her kutu ayrı kesilerek okunuyor; nokta vuruşlu yazı için bulanıklaştırılmış birkaç okuma oylanıyor. T.C. kimlik no kontrol haneleriyle, plaka Türk plaka biçimiyle, şase no üretici koduyla doğrulanıyor; Türkçe harfler (İ, Ö, Ü, Ş, Ğ) sözlükle düzeltiliyor ("İSTANBUL / ÜSKÜDAR 37 NOTERLİĞİ", "YOLCU NAKLİ - HUSUSİ"). Okuması kesin olmayan alanlar formda sarı çerçeve ve "kontrol edin" ile işaretleniyor.
+
 ## [2.17.334] - 2026-10-21
 
 **Ruhsat okuma çok daha isabetli — işletim sisteminin yazı tanıması:** Ruhsat fotoğrafı artık Mac'te Apple'ın, Windows'ta Windows'un kendi yazı tanımasıyla okunuyor (yine tamamen bilgisayarda, internete/yapay zekâya gönderilmeden). Şase no, motor no, tarihler, marka/model, sahibi, adres, vergi/TC no, muayene tarihi, seri no, silindir/güç dahil alanlar dolduruluyor. Fotoğraf birkaç farklı biçimde okunup her alan için en tutarlı sonuç seçiliyor; soluk basılmış etiketler esnek tanınıyor, şase no'nun üretici kodu markaya göre düzeltiliyor, ticari ad yakın yazımdan modele eşleştiriliyor. Fotoğraf daha yüksek çözünürlükte işleniyor. Sistem okuyamazsa eski Türkçe yazı tanıma (Tesseract) devreye giriyor.

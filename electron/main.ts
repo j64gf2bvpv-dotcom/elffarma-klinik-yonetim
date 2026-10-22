@@ -309,23 +309,26 @@ ipcMain.handle('instagram:recent-posts', async (_event, username: string) => {
 const MAC_VISION_SCRIPT = `
 ObjC.import('Foundation'); ObjC.import('Vision');
 function run(argv) {
-  const url = $.NSURL.fileURLWithPath(argv[0]);
-  const handler = $.VNImageRequestHandler.alloc.initWithURLOptions(url, $.NSDictionary.dictionary);
-  const req = $.VNRecognizeTextRequest.alloc.init;
-  req.recognitionLevel = 0;
-  req.usesLanguageCorrection = false;
-  req.recognitionLanguages = $(['tr-TR', 'en-US']);
-  handler.performRequestsError($([req]), Ref());
-  const r = req.results; const out = [];
-  for (let i = 0; i < r.count; i++) {
-    const o = r.objectAtIndex(i); const c = o.topCandidates(1).objectAtIndex(0); const b = o.boundingBox;
-    out.push({ t: c.string.js, c: c.confidence, x: b.origin.x, y: b.origin.y, w: b.size.width, h: b.size.height });
+  const all = [];
+  for (const p of argv) {
+    const url = $.NSURL.fileURLWithPath(p);
+    const handler = $.VNImageRequestHandler.alloc.initWithURLOptions(url, $.NSDictionary.dictionary);
+    const req = $.VNRecognizeTextRequest.alloc.init;
+    req.recognitionLevel = 0;
+    req.usesLanguageCorrection = false;
+    req.recognitionLanguages = $(['tr-TR', 'en-US']);
+    handler.performRequestsError($([req]), Ref());
+    const r = req.results; const out = [];
+    for (let i = 0; i < r.count; i++) {
+      const o = r.objectAtIndex(i); const c = o.topCandidates(1).objectAtIndex(0); const b = o.boundingBox;
+      out.push({ t: c.string.js, c: c.confidence, x: b.origin.x, y: b.origin.y, w: b.size.width, h: b.size.height });
+    }
+    all.push(out);
   }
-  return JSON.stringify(out);
+  return JSON.stringify(all);
 }`
 
 const WIN_OCR_SCRIPT = `
-param([string]$path)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Runtime.WindowsRuntime
 $null = [Windows.Storage.StorageFile,Windows.Storage,ContentType=WindowsRuntime]
@@ -333,48 +336,62 @@ $null = [Windows.Media.Ocr.OcrEngine,Windows.Foundation,ContentType=WindowsRunti
 $null = [Windows.Graphics.Imaging.BitmapDecoder,Windows.Graphics,ContentType=WindowsRuntime]
 $asTask = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation\`1' })[0]
 function Await($op, [Type]$t) { $task = $asTask.MakeGenericMethod($t).Invoke($null, @($op)); $task.Wait(-1) | Out-Null; $task.Result }
-$file = Await ([Windows.Storage.StorageFile]::GetFileFromPathAsync($path)) ([Windows.Storage.StorageFile])
-$stream = Await ($file.OpenAsync([Windows.Storage.FileAccessMode]::Read)) ([Windows.Storage.Streams.IRandomAccessStream])
-$decoder = Await ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder])
-$bitmap = Await ($decoder.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap])
 $lang = New-Object Windows.Globalization.Language('tr')
 if ([Windows.Media.Ocr.OcrEngine]::IsLanguageSupported($lang)) { $engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromLanguage($lang) } else { $engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromUserProfileLanguages() }
-if ($null -eq $engine) { Write-Output '[]'; exit 0 }
-$result = Await ($engine.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
-$W = [double]$bitmap.PixelWidth; $H = [double]$bitmap.PixelHeight
-$out = @()
-foreach ($line in $result.Lines) {
-  $rs = $line.Words | ForEach-Object { $_.BoundingRect }
-  $x0 = ($rs | Measure-Object -Property X -Minimum).Minimum
-  $y0 = ($rs | Measure-Object -Property Y -Minimum).Minimum
-  $x1 = ($rs | ForEach-Object { $_.X + $_.Width } | Measure-Object -Maximum).Maximum
-  $y1 = ($rs | ForEach-Object { $_.Y + $_.Height } | Measure-Object -Maximum).Maximum
-  $out += [pscustomobject]@{ t = $line.Text; x = $x0 / $W; y = 1 - ($y1 / $H); w = ($x1 - $x0) / $W; h = ($y1 - $y0) / $H }
+$all = @()
+foreach ($path in $args) {
+  if ($null -eq $engine) { $all += '[]'; continue }
+  $file = Await ([Windows.Storage.StorageFile]::GetFileFromPathAsync($path)) ([Windows.Storage.StorageFile])
+  $stream = Await ($file.OpenAsync([Windows.Storage.FileAccessMode]::Read)) ([Windows.Storage.Streams.IRandomAccessStream])
+  $decoder = Await ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder])
+  $bitmap = Await ($decoder.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap])
+  $result = Await ($engine.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
+  $W = [double]$bitmap.PixelWidth; $H = [double]$bitmap.PixelHeight
+  $out = @()
+  foreach ($line in $result.Lines) {
+    $rs = $line.Words | ForEach-Object { $_.BoundingRect }
+    $x0 = ($rs | Measure-Object -Property X -Minimum).Minimum
+    $y0 = ($rs | Measure-Object -Property Y -Minimum).Minimum
+    $x1 = ($rs | ForEach-Object { $_.X + $_.Width } | Measure-Object -Maximum).Maximum
+    $y1 = ($rs | ForEach-Object { $_.Y + $_.Height } | Measure-Object -Maximum).Maximum
+    $out += [pscustomobject]@{ t = $line.Text; x = $x0 / $W; y = 1 - ($y1 / $H); w = ($x1 - $x0) / $W; h = ($y1 - $y0) / $H }
+  }
+  $stream.Dispose()
+  if ($out.Count -eq 0) { $all += '[]' } else { $all += (ConvertTo-Json -InputObject @($out) -Compress) }
 }
-ConvertTo-Json -InputObject @($out) -Compress
+Write-Output ('[' + ($all -join ',') + ']')
 `
 
-ipcMain.handle('ocr:native', async (_event, dataUrl: string) => {
-  if (typeof dataUrl !== 'string') return null
-  const m = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl)
-  if (!m) return null
+type NativeOcrLine = { t: string; c?: number; x: number; y: number; w: number; h: number }
+
+// Tek görsel (string) ya da toplu (string[] — ruhsat kutuları tek seferde, en fazla 200) kabul edilir.
+ipcMain.handle('ocr:native', async (_event, input: string | string[]) => {
+  const list = typeof input === 'string' ? [input] : Array.isArray(input) ? input.slice(0, 200) : []
+  if (list.length === 0 || list.some((d) => typeof d !== 'string')) return null
   if (process.platform !== 'darwin' && process.platform !== 'win32') return null
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'elffarma-ocr-'))
-  const imgPath = path.join(dir, `ruhsat.${m[1] === 'png' ? 'png' : 'jpg'}`)
   try {
-    fs.writeFileSync(imgPath, Buffer.from(m[2], 'base64'))
+    const imgPaths: string[] = []
+    for (const [i, dataUrl] of list.entries()) {
+      const m = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl)
+      if (!m) return null
+      const imgPath = path.join(dir, `img${i}.${m[1] === 'png' ? 'png' : 'jpg'}`)
+      fs.writeFileSync(imgPath, Buffer.from(m[2], 'base64'))
+      imgPaths.push(imgPath)
+    }
     let stdout: string
     if (process.platform === 'darwin') {
       const scriptPath = path.join(dir, 'vision.js')
       fs.writeFileSync(scriptPath, MAC_VISION_SCRIPT)
-      stdout = await execFileText('osascript', ['-l', 'JavaScript', scriptPath, imgPath])
+      stdout = await execFileText('osascript', ['-l', 'JavaScript', scriptPath, ...imgPaths])
     } else {
       const scriptPath = path.join(dir, 'ocr.ps1')
       fs.writeFileSync(scriptPath, WIN_OCR_SCRIPT)
-      stdout = await execFileText('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, imgPath])
+      stdout = await execFileText('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, ...imgPaths])
     }
-    const lines = JSON.parse(stdout.trim() || '[]') as { t: string; c?: number; x: number; y: number; w: number; h: number }[]
-    return Array.isArray(lines) ? lines : null
+    const all = JSON.parse(stdout.trim() || '[]') as NativeOcrLine[][]
+    if (!Array.isArray(all) || all.length !== list.length) return null
+    return typeof input === 'string' ? all[0] : all
   } catch (err) {
     console.error('[ocr:native]', err)
     return null

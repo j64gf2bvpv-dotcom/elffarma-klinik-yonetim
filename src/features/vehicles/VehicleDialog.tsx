@@ -32,28 +32,44 @@ import {
   type RegistrationFields,
 } from './registration'
 
-/** Formda ayrı input olarak gösterilen ruhsat alanları (plaka / model / yıl yukarıda zaten var). */
+/** Formda ayrı input olarak gösterilen ruhsat alanları — ruhsattaki sırayla (plaka / model / yıl yukarıda zaten var). */
 const REG_FIELD_KEYS = [
-  'owner_name',
-  'owner_tax_id',
-  'chassis_number',
-  'engine_number',
+  'issued_place',
   'first_registration_date',
+  'registration_sequence_no',
   'registration_date',
-  'inspection_valid_until',
+  'model_type',
   'vehicle_class',
   'vehicle_type',
   'color',
-  'fuel_type',
+  'engine_number',
+  'chassis_number',
+  'net_weight',
+  'max_laden_weight',
+  'train_weight',
+  'trailer_max_weight',
+  'seat_count',
+  'standing_capacity',
   'engine_capacity',
   'engine_power',
-  'seat_count',
+  'fuel_type',
+  'power_weight_ratio',
   'usage_purpose',
-  'document_serial',
+  'type_approval_no',
+  'owner_tax_id',
+  'owner_name',
   'owner_address',
+  'rights_holders',
+  'notary_sale_date',
+  'notary_sale_no',
+  'notary_name',
+  'other_info',
+  'document_serial',
+  'inspection_valid_until',
 ] as const
+const WIDE_KEYS = new Set<string>(['issued_place', 'owner_name', 'owner_address', 'rights_holders', 'other_info'])
 type RegKey = (typeof REG_FIELD_KEYS)[number]
-const DATE_KEYS = new Set<RegKey>(['first_registration_date', 'registration_date', 'inspection_valid_until'])
+const DATE_KEYS = new Set<RegKey>(['first_registration_date', 'registration_date', 'inspection_valid_until', 'notary_sale_date'])
 
 export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelations; trigger?: React.ReactNode }) {
   const [open, setOpen] = React.useState(false)
@@ -75,6 +91,8 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
   const [notes, setNotes] = React.useState('')
   // Ruhsat (2026-10-21)
   const [reg, setReg] = React.useState<Record<RegKey, string>>(() => emptyReg())
+  /** Ruhsattan okunurken tutarsız çıkan alanlar — sarı çerçeve, kullanıcı düzeltince kalkar */
+  const [uncertain, setUncertain] = React.useState<Set<string>>(() => new Set())
   const [regImagePath, setRegImagePath] = React.useState<string | null>(null)
   // Seçilen ama henüz yüklenmemiş fotoğraf — "Kaydet"e basınca yüklenir (iptalde depoda sahipsiz dosya kalmasın)
   const [regFile, setRegFile] = React.useState<File | null>(null)
@@ -102,6 +120,7 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
     setReg(r)
     setRegImagePath(vehicle?.registration_image_path ?? null)
     setRegFile(null)
+    setUncertain(new Set())
     setRegPreview(null)
     if (vehicle?.registration_image_path) {
       getRegistrationImageUrl(vehicle.registration_image_path).then(setRegPreview).catch(() => setRegPreview(null))
@@ -111,9 +130,13 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
   /** Fotoğraflardan ruhsat bilgilerini oku ve forma doldur. */
   async function runExtraction(dataUrls: string[]) {
     let found: RegistrationFields = {}
+    let unsure: string[] = []
     try {
       // Bilgisayarda yazı tanıma (OCR) — hiçbir yapay zekâ servisine gönderilmez (2026-10-21)
-      found = (await readRuhsatLocally(dataUrls, setReadStep)).fields
+      const read = await readRuhsatLocally(dataUrls, setReadStep)
+      found = read.fields
+      unsure = read.uncertain
+      setUncertain(new Set(unsure))
     } catch (err) {
       toast.error('Ruhsat okunamadı', {
         description: `${getErrorMessage(err)} — "Tekrar oku"ya basın ya da bilgileri elle girin; fotoğraf kayıtla birlikte saklanır.`,
@@ -132,7 +155,10 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
       return next
     })
     const count = Object.keys(found).length
-    if (count > 0) toast.success(`Ruhsattan ${count} bilgi okundu`, { description: 'Lütfen kontrol edip kaydedin.' })
+    if (count > 0)
+      toast.success(`Ruhsattan ${count} bilgi okundu`, {
+        description: unsure.length ? `${unsure.length} alan sarı ile işaretlendi — ruhsattan kontrol edin.` : 'Lütfen kontrol edip kaydedin.',
+      })
     else toast.warning('Ruhsatta okunabilir bilgi bulunamadı', { description: 'Daha net bir fotoğraf deneyin ya da elle girin.' })
     setLastDataUrls(null)
   }
@@ -296,16 +322,21 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
             )}
             <div className="grid grid-cols-2 gap-2">
               {REG_FIELD_KEYS.map((k) => (
-                <div key={k} className={k === 'owner_address' ? 'col-span-2 grid gap-1' : 'grid gap-1'}>
+                <div key={k} className={WIDE_KEYS.has(k) ? 'col-span-2 grid gap-1' : 'grid gap-1'}>
                   <Label htmlFor={`vehicle-${k}`} className="text-xs">
                     {REGISTRATION_LABELS[k]}
+                    {uncertain.has(k) && <span className="ml-1 font-medium text-amber-600">· kontrol edin</span>}
                   </Label>
                   <Input
                     id={`vehicle-${k}`}
                     type={DATE_KEYS.has(k) ? 'date' : k === 'seat_count' ? 'number' : 'text'}
                     value={reg[k]}
-                    onChange={(e) => setReg((prev) => ({ ...prev, [k]: e.target.value }))}
-                    className="h-8"
+                    onChange={(e) => {
+                      setReg((prev) => ({ ...prev, [k]: e.target.value }))
+                      if (uncertain.has(k)) setUncertain((prev) => new Set([...prev].filter((x) => x !== k)))
+                    }}
+                    className={uncertain.has(k) ? 'h-8 border-amber-500 ring-1 ring-amber-500/60' : 'h-8'}
+                    title={uncertain.has(k) ? 'Okuma kesin değil — ruhsattan kontrol edin' : undefined}
                   />
                 </div>
               ))}

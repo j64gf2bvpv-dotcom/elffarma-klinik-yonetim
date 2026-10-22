@@ -45,7 +45,7 @@ const ALIASES: Record<string, string> = {
   icel: 'Mersin',
 }
 
-const DISTRICTS: Record<string, string[]> = {
+export const DISTRICTS: Record<string, string[]> = {
   İstanbul: [
     'Kadıköy', 'Beşiktaş', 'Şişli', 'Bakırköy', 'Ataşehir', 'Üsküdar', 'Maltepe', 'Pendik', 'Ümraniye',
     'Beylikdüzü', 'Esenyurt', 'Avcılar', 'Bahçelievler', 'Başakşehir', 'Beyoğlu', 'Sarıyer', 'Beykoz',

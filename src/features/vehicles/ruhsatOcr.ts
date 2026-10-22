@@ -1,7 +1,9 @@
 import { createWorker, type Worker } from 'tesseract.js'
 
 import { CAR_MODELS } from '@/lib/carModels'
-import { trFold } from '@/lib/detectProvince'
+import { DISTRICTS, trFold } from '@/lib/detectProvince'
+import { turkeyProvinces } from '@/lib/turkeyProvinces'
+import { cropTemplateCells, locateTemplate, type PlacedText } from './ruhsatTemplate'
 import type { RegistrationFields } from './registration'
 
 /**
@@ -444,7 +446,7 @@ export function parseRuhsatLayout(segments: Segment[], fullText: string): Regist
   const engine = get(/\(P\.5\)|MOTOR\s*NO/, (v) => /^[A-Z0-9]{6,20}$/.test(v.replace(/\s+/g, '')))
   if (engine) f.engine_number = engine.replace(/\s+/g, '')
 
-  const tax = get(/\(Y\.1\)|K[İI]ML[İI]K|VERG[İI]/, (v) => /\d{10,11}/.test(v.replace(/\s+/g, '')))
+  const tax = get(/\(Y\.[14]\)|K[İI]ML[İI]K|VERG[İI]/, (v) => /\d{10,11}/.test(v.replace(/\s+/g, '')))
   if (tax) f.owner_tax_id = tax.replace(/\s+/g, '').match(/\d{10,11}/)![0]
 
   const surname = get(/\(C\.[1A]\.[1A]\)|SOYADI|ÜNVANI/, isText)
@@ -597,8 +599,18 @@ export function parseRuhsatText(raw: string): RegistrationFields {
   return Object.fromEntries(Object.entries(f).filter(([, v]) => v !== undefined && v !== '' && v !== null)) as RegistrationFields
 }
 
-/** Sayfaları renkli, büyütülmüş JPEG olarak kırp (işletim sistemi OCR'ı için). */
-function colorCrops(img: HTMLImageElement, width = 2000): string[] {
+interface PageCrop {
+  dataUrl: string
+  box: Box
+  scale: number
+}
+
+/**
+ * Sayfaları renkli JPEG olarak kırp (işletim sistemi OCR'ı için). `blur` sayfa
+ * genişliğine oranla bulanıklık — ruhsattaki nokta vuruşlu yazıcı yazısında
+ * noktalar birleşince harfler çok daha doğru okunuyor.
+ */
+function colorCrops(img: HTMLImageElement, width: number, blur = 0): PageCrop[] {
   return findDocumentBoxes(img).map((box) => {
     const cw = box.x1 - box.x0
     const ch = box.y1 - box.y0
@@ -607,32 +619,24 @@ function colorCrops(img: HTMLImageElement, width = 2000): string[] {
     c.width = Math.round(cw * scale)
     c.height = Math.round(ch * scale)
     const ctx = c.getContext('2d')!
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(0, 0, c.width, c.height)
     ctx.imageSmoothingQuality = 'high'
+    if (blur > 0) ctx.filter = `blur(${(blur * c.width).toFixed(2)}px)`
     ctx.drawImage(img, box.x0, box.y0, cw, ch, 0, 0, c.width, c.height)
-    return c.toDataURL('image/jpeg', 0.92)
+    return { dataUrl: c.toDataURL('image/jpeg', 0.92), box, scale }
   })
 }
 
-/**
- * İşletim sisteminin yazı tanıması (macOS Vision / Windows OCR) — Tesseract'tan
- * çok daha isabetli (nokta vuruşlu yazıcı fontu, plastik kılıf yansıması).
- * Electron dışında ya da desteklenmeyen sistemde null döner.
- */
-async function recognizeNative(dataUrl: string, dropRightEdge = false): Promise<OcrPage | null> {
-  const ocr = window.electronAPI?.nativeOcr
-  if (!ocr) return null
-  const img = await loadImage(dataUrl)
-  const W = img.naturalWidth
-  const H = img.naturalHeight
-  const lines = await ocr(dataUrl).catch(() => null)
-  if (!lines || lines.length === 0) return null
-  // Kutular 0-1 oranında, orijin sol-alt → piksel, orijin sol-üst
+type NativeLine = { t: string; c?: number; x: number; y: number; w: number; h: number }
+
+/** Sistem OCR satırları → Segment'ler (piksel, sol-üst orijin), aynı yükseklikteki kutular aynı satır numarasında. */
+function linesToPage(lines: NativeLine[], W: number, H: number, dropRightEdge: boolean): OcrPage {
   const raw = lines
     // Sol sayfa kırpılırken sağ sayfanın kenarından kesik yazılar giriyor ("(C.1.1) S") — sağ kenara değenler atılır
     .filter((l) => l.t.trim() && !(dropRightEdge && l.x + l.w > 0.98))
-    .map((l) => ({ text: norm(l.t.trim()), x0: l.x * W, x1: (l.x + l.w) * W, y0: (1 - l.y - l.h) * H, y1: (1 - l.y) * H }))
+    .map((l) => ({ text: norm(l.t.trim()), raw: l.t.trim(), x0: l.x * W, x1: (l.x + l.w) * W, y0: (1 - l.y - l.h) * H, y1: (1 - l.y) * H }))
     .sort((a, b) => (a.y0 + a.y1) / 2 - (b.y0 + b.y1) / 2 || a.x0 - b.x0)
-  // Aynı yükseklikteki kutuları aynı satır numarasıyla grupla
   const segments: Segment[] = []
   let line = -1
   let lineMid = -Infinity
@@ -671,6 +675,222 @@ function fixVinPrefix(r: Record<string, unknown>) {
   if (fix) r.chassis_number = fix + vin.slice(3)
 }
 
+/** T.C. kimlik no kontrol haneleri (10. ve 11. hane) — yanlış okunan rakamı yakalar. */
+function isValidTc(t: string): boolean {
+  if (!/^[1-9]\d{10}$/.test(t)) return false
+  const d = [...t].map(Number)
+  const odd = d[0] + d[2] + d[4] + d[6] + d[8]
+  const even = d[1] + d[3] + d[5] + d[7]
+  return (((odd * 7 - even) % 10) + 10) % 10 === d[9] && d.slice(0, 10).reduce((a, b) => a + b, 0) % 10 === d[10]
+}
+
+// ---------------------------------------------------------------------------
+// Türkçe harf düzeltme — sistem OCR'ı büyük "İ"yi çoğu zaman noktasız "I" okuyor
+// ("KAMIL", "HUSUSI"). Bilinen kelimeler sözlükten doğru yazımıyla değiştirilir.
+// ---------------------------------------------------------------------------
+const TR_WORDS = [
+  'OTOMOBİL', 'KAMYONET', 'MİNİBÜS', 'PANELVAN', 'ARAZİ', 'TAŞITI', 'MOTOSİKLET', 'ÇEKİCİ', 'KAMYON', 'OTOBÜS', 'TRAKTÖR', 'SEDAN', 'HATCHBACK', 'STATION', 'WAGON', 'KAPALI', 'KASA',
+  'BENZİNLİ', 'BENZİN', 'DİZEL', 'MOTORİN', 'ELEKTRİK', 'ELEKTRİKLİ', 'HİBRİT', 'YOLCU', 'NAKLİ', 'YÜK', 'HUSUSİ', 'TİCARİ', 'RESMİ', 'KİRALIK', 'ÖZEL', 'KİRA',
+  'BEYAZ', 'SİYAH', 'GRİ', 'FÜME', 'GÜMÜŞ', 'KIRMIZI', 'BORDO', 'MAVİ', 'LACİVERT', 'YEŞİL', 'SARI', 'TURUNCU', 'KAHVERENGİ', 'BEJ', 'MOR', 'ŞAMPANYA', 'BRONZ', 'ALTIN', 'METALİK', 'İNCİ',
+  'NOTERLİĞİ', 'NOTERİ', 'NOTER', 'EMNİYET', 'MÜDÜRLÜĞÜ', 'TESCİL', 'MAH', 'MAHALLESİ', 'SK', 'SOKAK', 'SOKAĞI', 'CAD', 'CADDESİ', 'BULVARI', 'BLV', 'APT', 'APARTMANI', 'DAİRE', 'KAT', 'SİTESİ', 'BLOK', 'KÖYÜ', 'MERKEZ',
+  'BANKASI', 'FİNANS', 'LEASING', 'LTD', 'ŞTİ', 'A.Ş', 'SANAYİ', 'TİCARET', 'LİMİTED', 'ŞİRKETİ', 'ANONİM', 'İNŞAAT', 'TURİZM', 'SAĞLIK', 'İLAÇ', 'KOZMETİK', 'MEDİKAL',
+  // yaygın adlar / soyadları
+  'KAMİL', 'YİĞİT', 'HANDAN', 'MEHMET', 'MUSTAFA', 'AHMET', 'ALİ', 'HÜSEYİN', 'HASAN', 'İBRAHİM', 'İSMAİL', 'ÖMER', 'OSMAN', 'MURAT', 'EMİNE', 'AYŞE', 'FATMA', 'HATİCE', 'ZEYNEP', 'ELİF', 'MERVE',
+  'ŞERİFE', 'SULTAN', 'ÖZGE', 'GÖKHAN', 'SİNAN', 'ERKAN', 'SERKAN', 'VOLKAN', 'İLKER', 'İLHAN', 'İSMET', 'NİHAT', 'SELİM', 'EMİR', 'EMRE', 'BÜŞRA', 'DİLEK', 'GÜLŞEN', 'NİLÜFER', 'SEVİL', 'İPEK', 'İREM',
+  'YILMAZ', 'KAYA', 'DEMİR', 'ŞAHİN', 'ÇELİK', 'YILDIZ', 'YILDIRIM', 'ÖZTÜRK', 'AYDIN', 'ÖZDEMİR', 'ARSLAN', 'DOĞAN', 'KILIÇ', 'ASLAN', 'ÇETİN', 'KARA', 'KOÇ', 'KURT', 'ÖZKAN', 'ŞİMŞEK', 'POLAT',
+  'ÖZCAN', 'KORKMAZ', 'ÇAKIR', 'ERDOĞAN', 'YAVUZ', 'GÜLER', 'AKTAŞ', 'ÜNAL', 'GÜNEŞ', 'TEKİN', 'BULUT', 'KESKİN', 'İPEKÇİ', 'ALTUN', 'TÜRK', 'ŞEN', 'ACAR', 'İNCE', 'GÜNDOĞDU', 'KOÇAK',
+]
+const TR_DICT = new Map<string, string>()
+for (const w of [...TR_WORDS, ...turkeyProvinces, ...Object.values(DISTRICTS).flat()]) TR_DICT.set(trFold(w), up(w))
+const TR_FOLDED = [...TR_DICT.keys()]
+
+/** Kelime kelime: sadece harf farkı Türkçe karakterse düzelt; `fuzzy` ise (yer adları) 1-2 harf hatayı da düzelt. */
+function restoreTurkish(text: string, fuzzy = false): string {
+  return text.replace(/[A-Za-zÇĞİÖŞÜçğıöşüİÂÎÛâîû]+/g, (w) => {
+    if (w.length < 2) return w
+    const k = trFold(w)
+    const exact = TR_DICT.get(k)
+    if (exact) return w === up(w) ? exact : w
+    if (fuzzy && w.length >= 5) {
+      const max = w.length >= 7 ? 2 : 1
+      let best: { f: string; d: number } | null = null
+      for (const f of TR_FOLDED) {
+        if (Math.abs(f.length - k.length) > max) continue
+        const d = editDistance(f, k)
+        if (d <= max && (!best || d < best.d)) best = { f, d }
+      }
+      if (best) return TR_DICT.get(best.f)!
+    }
+    return w
+  })
+}
+
+const cleanSpaces = (s: string) => s.replace(/\s+/g, ' ').trim()
+
+/** "NO21A/50" → "NO:21A/50"; kısaltmalardan sonra nokta ("MAH, DEVRAN SK," → "MAH. DEVRAN SK."). */
+function formatAddress(v: string): string {
+  return restoreTurkish(v)
+    .replace(/\b[HN]O\s*[:;.,]?\s*(?=\d)/g, 'NO:')
+    .replace(/\b(MAH|SK|SOK|CAD|BLV|BUL|APT|KAT|D)\s*[,.]\s*/g, '$1. ')
+    .replace(/\s*,\s*/g, ', ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Uzun metinlerde en çok oy alan yerine diğer okumalara en çok BENZEYEN aday (kesik "ANKARA" tam adresi yenemez). */
+const MEDOID_FIELDS = new Set(['owner_address', 'issued_place', 'usage_purpose', 'other_info', 'rights_holders', 'notary_name', 'vehicle_type'])
+function medoid(options: { value: string | number; score: number }[]): string | number | undefined {
+  if (options.length <= 1) return options[0]?.value
+  const keyOf = (v: string | number) => trFold(String(v)).replace(/[^a-z0-9]/g, '')
+  let best: { value: string | number; s: number } | undefined
+  for (const a of options) {
+    let s = 0
+    for (const b of options) {
+      const ka = keyOf(a.value)
+      const kb = keyOf(b.value)
+      s += b.score * (1 - editDistance(ka, kb) / Math.max(1, ka.length, kb.length))
+    }
+    if (!best || s > best.s) best = { value: a.value, s }
+  }
+  return best?.value
+}
+
+/** Şablon kutusundan okunan satırları alana göre doğrula / biçimlendir. Uymuyorsa undefined. */
+const MULTILINE = new Set(['vehicle_type', 'owner_address', 'rights_holders', 'notary_name', 'issued_place'])
+
+function normalizeCell(field: string, input: NativeLine[]): { value: string; conf: number } | undefined {
+  let lines = input.filter((l) => l.t.trim())
+  // Kutunun kenarına giren kesik etiket parçaları düşük güvenle okunur ("HWACE") — daha güvenli satır varsa atılır
+  // (kutunun üst %25'ine değen, altında başka satır olan, güveni düşük satır)
+  if (lines.length > 1 && !MULTILINE.has(field)) lines = lines.filter((l) => !((l.c ?? 1) < 0.5 && l.y + l.h > 0.75 && lines.some((o) => o !== l && o.y + o.h / 2 < l.y + l.h / 2)))
+  const value = normalizeCellText(field, lines)
+  if (value == null) return undefined
+  const conf = lines.reduce((a, l) => a + (l.c ?? 1), 0) / Math.max(1, lines.length)
+  // Bilinen Türkçe kelimelerden oluşan metin daha güvenilir
+  const words = String(value).match(/[A-ZÇĞİÖŞÜ]{3,}/g) ?? []
+  const known = words.length ? words.filter((w) => TR_DICT.has(trFold(w))).length / words.length : 0
+  return { value, conf: conf + known * 0.5 }
+}
+
+function normalizeCellText(field: string, lines: NativeLine[]): string | undefined {
+  const sorted = [...lines].sort((a, b) => b.y + b.h / 2 - (a.y + a.h / 2) || a.x - b.x)
+  const rawText = cleanSpaces(sorted.map((l) => l.t).join(' '))
+  if (!rawText) return undefined
+  const t = norm(rawText)
+  const compact = t.replace(/[\s.]+/g, '')
+  const num = (re: RegExp) => t.match(re)?.[1]
+  const textValue = (fuzzy = false) => {
+    const v = cleanSpaces(stripLabelWords(t.replace(/^[\s:;,.\-—*'"/|]+/, '')).replace(/^[\s:;,.\-—*'"/|]+|[\s:;,\-—*'"/|]+$/g, ''))
+    if (!/[A-ZÇĞİÖŞÜ]{2,}/.test(v) || isLabelText(v)) return undefined
+    return restoreTurkish(v, fuzzy)
+  }
+  switch (field) {
+    case 'plate_number': {
+      const m = /^((?:0[1-9]|[1-7]\d|8[01]))([A-ZÇĞİÖŞÜ]{1,3})([A-Z0-9]{2,5})$/.exec(compact.replace(/[^A-Z0-9ÇĞİÖŞÜ]/g, ''))
+      if (!m) return undefined
+      const DIGIT: Record<string, string> = { S: '5', B: '8', O: '0', I: '1', İ: '1', Z: '2', G: '6', D: '0', Q: '0', L: '1', T: '7' }
+      const tail = m[3].replace(/[A-ZİÇĞÖŞÜ]/g, (ch) => DIGIT[ch] ?? ch)
+      // Türk plakası: 1 harf + 4-5 rakam, 2 harf + 3-4 rakam, 3 harf + 2-3 rakam
+      const ok = (m[2].length === 1 && /^\d{4,5}$/.test(tail)) || (m[2].length === 2 && /^\d{3,4}$/.test(tail)) || (m[2].length === 3 && /^\d{2,3}$/.test(tail))
+      return ok ? `${m[1]} ${m[2]} ${tail}` : undefined
+    }
+    case 'first_registration_date':
+    case 'registration_date':
+    case 'notary_sale_date':
+      return toIso(t.match(DATE)?.[1] ?? null) ?? undefined
+    case 'registration_sequence_no': {
+      const d = compact.replace(/[OQ]/g, '0').replace(/[Iİl|]/g, '1')
+      return /^\d{10,22}$/.test(d) ? d : undefined
+    }
+    case 'year':
+      return num(/\b((?:19|20)\d{2})\b/)
+    case 'model_type':
+      return /^[A-Z0-9][A-Z0-9\-/]{1,15}$/.test(compact) && !isLabelText(t) ? compact : undefined
+    case 'vehicle_class': {
+      const m = /^([MNLO])([1-7İIL])?(G)?$/.exec(compact)
+      return m ? `${m[1]}${(m[2] ?? '').replace(/[İIL]/, '1')}${m[3] ?? ''}` : undefined
+    }
+    case 'vehicle_type': {
+      // "(D.5) CİNSİ OTOMOBİL (AA SEDAN)" — etiketi at, değeri olduğu gibi al
+      const v = cleanSpaces(t.replace(/^.*?C[İIE]N[S5][İI1]?\s*/, '').replace(/^\([^)]{1,6}\)\s*/, ''))
+      if (!/[A-ZÇĞİÖŞÜ]{3,}/.test(v)) return undefined
+      let out = v.replace(/\(\s*/g, '(').replace(/\s*\)/g, ')')
+      // kapanış parantezi "I" / "1" / "]" okunabiliyor: "(AA SEDANI" → "(AA SEDAN)"
+      if ((out.match(/\(/g)?.length ?? 0) > (out.match(/\)/g)?.length ?? 0)) out = out.replace(/[I1l\]|]?$/, ')')
+      return restoreTurkish(out)
+    }
+    case 'engine_number': {
+      const v = compact.replace(/[^A-Z0-9]/g, '')
+      return /^[A-Z0-9]{5,20}$/.test(v) && /\d/.test(v) && !isLabelText(t) ? v : undefined
+    }
+    case 'chassis_number': {
+      const v = fixVin(compact.replace(/[^A-Z0-9İ]/g, ''))
+      return /^[A-HJ-NPR-Z0-9]{17}$/.test(v) ? v : undefined
+    }
+    case 'net_weight':
+    case 'max_laden_weight':
+    case 'train_weight':
+    case 'trailer_max_weight':
+    case 'engine_capacity':
+      return num(/\b(\d{2,5})\b/)
+    case 'seat_count':
+    case 'standing_capacity':
+      return num(/\b(\d{1,3})\b/)
+    case 'power_weight_ratio':
+      // otomobillerde "---"; motosiklette ondalıklı oran (0.08)
+      return num(/\b(\d[.,]\d{1,3})\b/)?.replace(',', '.')
+    case 'engine_power': {
+      const v = num(/\b(\d{1,4}(?:[.,]\d{1,3})?)\b/)?.replace(',', '.')
+      return v && !/^[0.]+$/.test(v) ? v : undefined
+    }
+    case 'fuel_type': {
+      const v = textValue()
+      if (!v) return undefined
+      const k = trFold(v).replace(/[^a-z/]/g, '')
+      const hit = FUELS.map((f) => ({ f, d: editDistance(trFold(f), k) })).sort((a, b) => a.d - b.d)[0]
+      return hit && hit.d <= 2 ? hit.f : undefined
+    }
+    case 'type_approval_no': {
+      const v = rawText.replace(/\s+/g, '')
+      if (!/[*/]/.test(v) || !/\d{3,}/.test(v)) return undefined
+      // "e19*2018/858*00001*00" — baştaki "e" küçük yazılır
+      return v.replace(/^[Ee€é#]/, 'e').replace(/["“”]/g, '*')
+    }
+    case 'owner_tax_id': {
+      const d = compact.replace(/[OQ]/g, '0').replace(/[Iİl|]/g, '1').replace(/\D/g, '')
+      return /^\d{10,11}$/.test(d) ? d : undefined
+    }
+    case 'owner_surname':
+    case 'owner_first_name':
+    case 'brand':
+    case 'commercial_name':
+    case 'color':
+    case 'usage_purpose':
+    case 'rights_holders':
+    case 'notary_name':
+      return textValue()
+    case 'issued_place': {
+      const v = textValue(true)
+      return v?.replace(/\s*\/\s*/g, ' / ').replace(/[)\]}]+$/, '')
+    }
+    case 'owner_address': {
+      const v = textValue()
+      return v ? formatAddress(v) : undefined
+    }
+    case 'notary_sale_no':
+      return /\d/.test(t) && !isLabelText(t) ? cleanSpaces(stripLabelWords(t)) : undefined
+    case 'other_info':
+      // Diğer bilgiler olduğu gibi (küçük harfler korunur): "mua.geç.trh: 12-06-2026"
+      return /[a-zA-Z0-9]{2,}/.test(rawText) && !isLabelText(t) ? rawText : undefined
+    case 'document_serial': {
+      const SERIAL = /([A-ZÇĞİÖŞÜ]{1,3})\s*(?:N[O0º°]\.?|№|NE|N)?\s*(\d{5,8})/
+      const m = t.replace(/^.*SER[İI]\s*[:;]?\s*/, '').match(SERIAL)
+      return m ? `${m[1]} ${m[2]}` : undefined
+    }
+  }
+  return undefined
+}
+
 function mergeMissing(into: Record<string, unknown>, from: RegistrationFields) {
   for (const [k, v] of Object.entries(from)) if (into[k] == null || into[k] === '') into[k] = v
 }
@@ -682,130 +902,154 @@ function cleanFlat(fields: RegistrationFields): RegistrationFields {
   return flat as RegistrationFields
 }
 
-export async function readRuhsatLocally(dataUrls: string[], onProgress?: (msg: string) => void): Promise<{ fields: RegistrationFields; text: string }> {
+class Votes {
+  private m = new Map<string, Map<string, { value: string | number; score: number }>>()
+  add(field: string, value: string | number | undefined | null, weight: number) {
+    if (value == null || value === '') return
+    const byVal = this.m.get(field) ?? new Map()
+    const cur = byVal.get(String(value)) ?? { value, score: 0 }
+    cur.score += weight
+    byVal.set(String(value), cur)
+    this.m.set(field, byVal)
+  }
+  addAll(fields: RegistrationFields, weight: number) {
+    for (const [k, v] of Object.entries(fields)) this.add(k, v as string | number, weight)
+  }
+  options(field: string) {
+    return [...(this.m.get(field)?.values() ?? [])].sort((a, b) => b.score - a.score)
+  }
+  best(field: string, valid?: (v: string) => boolean) {
+    const opts = this.options(field)
+    return (valid ? opts.find((o) => valid(String(o.value))) : undefined)?.value ?? opts[0]?.value
+  }
+  fields() {
+    return [...this.m.keys()]
+  }
+}
+
+export async function readRuhsatLocally(
+  dataUrls: string[],
+  onProgress?: (msg: string) => void,
+): Promise<{ fields: RegistrationFields; text: string; uncertain: string[] }> {
   const result: Record<string, unknown> = {}
   const texts: string[] = []
+  const uncertain = new Set<string>()
+  const ocr = window.electronAPI?.nativeOcr
 
-  // 1) İşletim sisteminin yazı tanıması: kırpılmış sayfalar iki farklı boyutta + fotoğrafın tamamı.
-  //    Aynı karakter her okumada aynı çıkmayabiliyor (3/8, F/E) — her alan için en çok tekrarlanan değer seçilir.
-  if (window.electronAPI?.nativeOcr) {
-    const votes = new Map<string, Map<string, { value: unknown; score: number }>>()
-    const vote = (fields: RegistrationFields, weight: number) => {
-      for (const [k, v] of Object.entries(fields)) {
-        const key = String(v)
-        const m = votes.get(k) ?? new Map()
-        const cur = m.get(key) ?? { value: v, score: 0 }
-        cur.score += weight
-        m.set(key, cur)
-        votes.set(k, m)
-      }
-    }
+  // 1) İşletim sisteminin yazı tanıması (Mac: Apple Vision, Windows: Windows OCR)
+  if (ocr) {
+    const votes = new Votes()
+    const templateVotes = new Votes()
     for (let i = 0; i < dataUrls.length; i++) {
       onProgress?.(dataUrls.length > 1 ? `${i + 1}. fotoğraf okunuyor…` : 'Ruhsat okunuyor…')
       const img = await loadImage(dataUrls[i])
-      const passes: [string[], number][] = [
-        [colorCrops(img, 2000), 1.2],
-        [colorCrops(img, 2800), 1.1],
-        [[dataUrls[i]], 1],
+      // a) Sayfaların tamamı: net + iki farklı bulanıklık
+      const passes: [PageCrop[], number][] = [
+        [colorCrops(img, 2000, 0), 1],
+        [colorCrops(img, 2000, 0.0019), 1.2],
+        [colorCrops(img, 2000, 0.003), 1.1],
       ]
-      for (const [images, weight] of passes) {
+      const all = passes.flatMap(([crops]) => crops)
+      const lines = (await ocr(all.map((c) => c.dataUrl)).catch(() => null)) ?? []
+      const placed: PlacedText[] = []
+      let li = 0
+      for (const [crops, weight] of passes) {
         const pages: OcrPage[] = []
-        for (const [k, im] of images.entries()) {
-          const p = await recognizeNative(im, k < images.length - 1)
-          if (p) pages.push(p)
+        for (const [k, crop] of crops.entries()) {
+          const W = Math.round((crop.box.x1 - crop.box.x0) * crop.scale)
+          const H = Math.round((crop.box.y1 - crop.box.y0) * crop.scale)
+          const page = linesToPage(lines[li++] ?? [], W, H, k < crops.length - 1)
+          pages.push(page)
+          for (const s of page.segments) placed.push({ text: s.text, x0: crop.box.x0 + s.x0 / crop.scale, y0: crop.box.y0 + s.y0 / crop.scale, x1: crop.box.x0 + s.x1 / crop.scale, y1: crop.box.y0 + s.y1 / crop.scale })
         }
         const pass: Record<string, unknown> = {}
         for (const p of pages) mergeMissing(pass, parseRuhsatLayout(p.segments, p.text))
         for (const p of pages) mergeMissing(pass, cleanFlat(parseRuhsatText(p.text)))
-        vote(pass as RegistrationFields, weight)
+        votes.addAll(pass as RegistrationFields, weight)
         texts.push(...pages.map((p) => p.text))
       }
+
+      // b) Ruhsat şablonu: etiketlerden kutuların yeri bulunur, her kutu ayrı ayrı 3 bulanıklıkta okunur
+      const transforms = locateTemplate(placed)
+      if (transforms.L || transforms.R) {
+        onProgress?.('Ruhsat kutuları tek tek okunuyor…')
+        const cells = cropTemplateCells(img, transforms, [0.75, 1.25, 1.75])
+        // 3 parça halinde paralel (her biri ayrı süreç) — süre ~3'te 1'e iner
+        const chunks = [0, 1, 2].map((p) => cells.slice(Math.floor((p * cells.length) / 3), Math.floor(((p + 1) * cells.length) / 3)))
+        const cellLines = (await Promise.all(chunks.map((ch) => (ch.length ? ocr(ch.map((c) => c.dataUrl)).catch(() => null) : Promise.resolve([]))))).flatMap(
+          (r, p) => r ?? chunks[p].map(() => []),
+        )
+        cells.forEach((c, k) => {
+          const r = normalizeCell(c.field, cellLines[k] ?? [])
+          if (r) templateVotes.add(c.field, r.value, r.conf)
+        })
+      }
     }
-    for (const [k, m] of votes) {
-      const options = [...m.values()]
-      // Adres / isim: oylar eşitse daha uzun (kesilmemiş) olanı al
-      const longer = k === 'owner_address' || k === 'owner_name'
-      options.sort((a, b) => b.score - a.score || (longer ? String(b.value).length - String(a.value).length : 0))
-      result[k] = longer ? options.reduce((best, o) => (String(o.value).length > String(best.value).length + 5 ? o : best), options[0]).value : options[0].value
+
+    if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__ruhsatDebug = { templateVotes, votes }
+    // Kutu okuması (şablon) ağırlıklı; sayfa okumasının oyları da eklenir (yarım ağırlıkla)
+    const tc = (v: string) => v.length === 10 || isValidTc(v)
+    const combined = new Votes()
+    for (const f of new Set([...templateVotes.fields(), ...votes.fields()])) {
+      for (const o of templateVotes.options(f)) combined.add(f, o.value, o.score)
+      for (const o of votes.options(f)) combined.add(f, f === 'vehicle_type' ? undefined : f === 'owner_address' ? formatAddress(String(o.value)) : o.value, o.score * 0.5)
     }
+    for (const f of combined.fields()) {
+      if (['owner_surname', 'owner_first_name', 'brand', 'commercial_name', 'brand_model', 'owner_name'].includes(f)) continue
+      const v = MEDOID_FIELDS.has(f) ? medoid(combined.options(f)) : combined.best(f, f === 'owner_tax_id' ? tc : undefined)
+      if (v == null) continue
+      // Okumalar tutarsızsa (zayıf ya da yakın ikinci aday) formda "kontrol edin" diye işaretlenir
+      const [o1, o2] = combined.options(f)
+      if (MEDOID_FIELDS.has(f)) {
+        // benzerlik seçimi: seçilen metnin kendi desteği zayıfsa işaretle
+        if ((combined.options(f).find((o) => String(o.value) === String(v))?.score ?? 0) < 0.6) uncertain.add(f)
+      } else if (String(o1.value) !== String(v) || o1.score < 1 || (o2 && o2.score > o1.score * 0.6)) uncertain.add(f)
+      result[f] = f === 'year' || f === 'seat_count' ? Number(v) : typeof v === 'string' && ['owner_address', 'usage_purpose', 'color', 'issued_place'].includes(f) ? restoreTurkish(v) : v
+    }
+    // Cinsi: şablon okuması tam değeri verir ("OTOMOBİL (AA SEDAN)"); yoksa sayfa okumasındaki tür
+    if (result.vehicle_type == null) result.vehicle_type = votes.best('vehicle_type')
+    const first = templateVotes.best('owner_first_name')
+    const last = templateVotes.best('owner_surname')
+    // Ad ya da soyad kutusu okunamadıysa sayfa okumasındaki tam ad (içinde okunan kısım geçiyorsa)
+    // (sayfa okuması bazen sadece soyadını bulur: "YIĞIT" → ad kutusundaki "HANDAN" ile birleştirilir)
+    const pageOwner = votes.best('owner_name')
+    const pageWords = typeof pageOwner === 'string' ? restoreTurkish(pageOwner).split(' ').filter((w) => w && w !== first && w !== last) : []
+    result.owner_name = first && last ? `${first} ${last}` : [first, ...pageWords, last].filter(Boolean).join(' ') || undefined
+    if (!(first && last)) uncertain.add('owner_name')
+    const brand = templateVotes.best('brand')
+    const fromPages = votes.best('brand_model')
+    if (brand) {
+      // Ticari ad: listedeki bir modele uyan okuma tercih edilir ("YAI" yerine "TALIANT")
+      const options = templateVotes.options('commercial_name').map((o) => String(o.value))
+      const known = options.map((c) => findBrandModel(`${brand} ${c}`)).find((bm) => bm?.includes(' '))
+      const brandName = findBrandModel(String(brand))
+      result.brand_model =
+        known ??
+        (typeof fromPages === 'string' && fromPages.includes(' ') && brandName && fromPages.startsWith(brandName) ? fromPages : undefined) ??
+        [brandName ?? brand, options[0]].filter(Boolean).join(' ')
+    } else if (fromPages) result.brand_model = fromPages
     fixVinPrefix(result)
   }
 
-  // 2) Eksik kalan alanlar (ya da sistem OCR'ı yoksa hepsi) Tesseract ile
+  // 2) Eksik kalan temel alanlar (ya da sistem OCR'ı yoksa hepsi) Tesseract ile — bunlar her zaman "kontrol edin"
   const missing = REG_KEYS.some((k) => result[k] == null)
   if (missing) {
+    const before = new Set(Object.keys(result).filter((k) => result[k] != null))
     const pages = await recognizeRuhsat(dataUrls, onProgress)
     for (const p of pages) mergeMissing(result, parseRuhsatLayout(p.segments, norm(p.text)))
     const text = pages.map((p) => p.text).join('\n')
     mergeMissing(result, cleanFlat(parseRuhsatText(text)))
     texts.push(text)
+    for (const k of Object.keys(result)) if (!before.has(k) && result[k] != null) uncertain.add(k)
   }
-  return { fields: result as RegistrationFields, text: texts.join('\n') }
+  // Muayene tarihi ruhsatta "Diğer Bilgiler" içinde yazıyor ("mua.geç.trh: 12-06-2026")
+  if (result.inspection_valid_until == null && typeof result.other_info === 'string') {
+    const m = /MUA[^0-9]{0,15}(\d{1,2}[./-]\d{1,2}[./-]\d{4})/.exec(up(result.other_info))
+    if (m) result.inspection_valid_until = toIso(m[1])
+  }
+  for (const k of Object.keys(result)) if (result[k] == null) delete result[k]
+  return { fields: result as RegistrationFields, text: texts.join('\n'), uncertain: [...uncertain].filter((k) => result[k] != null) }
 }
 
 // Bunlardan biri eksikse Tesseract da çalıştırılır (sistem OCR'ı genelde hepsini bulur, Tesseract yavaş)
 const REG_KEYS = ['plate_number', 'brand_model', 'year', 'chassis_number', 'engine_number', 'owner_name', 'owner_tax_id', 'owner_address', 'inspection_valid_until', 'document_serial'] as const
-
-/** Geliştirme/deneme: tek görselde verilen sayfa bölütleme kipiyle düz metin. */
-export async function ocrTextWithPsm(dataUrl: string, psm: string): Promise<string> {
-  const worker = await getWorker()
-  await worker.setParameters({ tessedit_pageseg_mode: psm as never })
-  const { data } = await worker.recognize(dataUrl)
-  await worker.setParameters({ tessedit_pageseg_mode: '3' as never })
-  return data.text
-}
-
-/** Geliştirme/deneme: sayfaları farklı ön işlemelerle üret. */
-export async function preprocessVariants(dataUrl: string, mode: 'gray' | 'color' | 'bin', width = 1800): Promise<string[]> {
-  const img = await loadImage(dataUrl)
-  return findDocumentBoxes(img).map((box) => {
-    if (mode === 'bin') return binarize(img, box)
-    const cw = box.x1 - box.x0
-    const ch = box.y1 - box.y0
-    const scale = Math.min(3, width / cw)
-    const w = Math.round(cw * scale)
-    const h = Math.round(ch * scale)
-    const c = document.createElement('canvas')
-    c.width = w
-    c.height = h
-    const ctx = c.getContext('2d')!
-    ctx.imageSmoothingQuality = 'high'
-    ctx.drawImage(img, box.x0, box.y0, cw, ch, 0, 0, w, h)
-    if (mode === 'gray') {
-      const d = ctx.getImageData(0, 0, w, h)
-      const px = d.data
-      // gri + kontrast germe (%2 - %98 aralığı)
-      const hist = new Uint32Array(256)
-      const g = new Uint8ClampedArray(w * h)
-      for (let i = 0, j = 0; i < px.length; i += 4, j++) {
-        // mavi zemini bastırmak için kırmızı kanala ağırlık (mavi zemin kırmızıda açık görünür)
-        g[j] = Math.round(0.6 * px[i] + 0.3 * px[i + 1] + 0.1 * px[i + 2])
-        hist[g[j]]++
-      }
-      const total = w * h
-      let lo = 0
-      let hi = 255
-      for (let acc = 0, v = 0; v < 256; v++) {
-        acc += hist[v]
-        if (acc > total * 0.02) {
-          lo = v
-          break
-        }
-      }
-      for (let acc = 0, v = 255; v >= 0; v--) {
-        acc += hist[v]
-        if (acc > total * 0.02) {
-          hi = v
-          break
-        }
-      }
-      const range = Math.max(1, hi - lo)
-      for (let i = 0, j = 0; i < px.length; i += 4, j++) {
-        const v = Math.max(0, Math.min(255, ((g[j] - lo) / range) * 255))
-        px[i] = px[i + 1] = px[i + 2] = v
-      }
-      ctx.putImageData(d, 0, 0)
-    }
-    return c.toDataURL('image/png')
-  })
-}

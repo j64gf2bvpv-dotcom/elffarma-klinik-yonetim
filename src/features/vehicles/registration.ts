@@ -32,27 +32,57 @@ export interface RegistrationFields {
   usage_purpose?: string
   document_serial?: string
   inspection_valid_until?: string
+  issued_place?: string
+  registration_sequence_no?: string
+  model_type?: string
+  net_weight?: string
+  max_laden_weight?: string
+  train_weight?: string
+  trailer_max_weight?: string
+  standing_capacity?: string
+  power_weight_ratio?: string
+  type_approval_no?: string
+  rights_holders?: string
+  notary_sale_date?: string
+  notary_sale_no?: string
+  notary_name?: string
+  other_info?: string
 }
 
 export const REGISTRATION_LABELS: Record<keyof RegistrationFields, string> = {
+  issued_place: 'Verildiği İl / İlçe (Y.1)',
   plate_number: 'Plaka (A)',
-  brand_model: 'Marka / Ticari Adı (D.1, D.3)',
-  year: 'Model Yılı',
-  owner_name: 'Ruhsat Sahibi (C.1)',
-  owner_tax_id: 'T.C. Kimlik / Vergi No (Y.1)',
-  owner_address: 'Adres (C.1.3)',
-  chassis_number: 'Şase No (E)',
-  engine_number: 'Motor No (P.5)',
   first_registration_date: 'İlk Tescil Tarihi (B)',
+  registration_sequence_no: 'Tescil Sıra No (Y.2)',
   registration_date: 'Tescil Tarihi (I)',
+  brand_model: 'Markası / Ticari Adı (D.1, D.3)',
+  model_type: 'Tipi (D.2)',
+  year: 'Model Yılı (D.4)',
   vehicle_class: 'Araç Sınıfı (J)',
   vehicle_type: 'Cinsi (D.5)',
   color: 'Rengi (R)',
+  engine_number: 'Motor No (P.5)',
+  chassis_number: 'Şase No (E)',
+  net_weight: 'Net Ağırlığı kg (G.1)',
+  max_laden_weight: 'Azami Yüklü Ağırlığı kg (F.1)',
+  train_weight: 'Katar Ağırlığı kg (G)',
+  trailer_max_weight: 'Römork Azami Yüklü Ağırlığı kg (G.2)',
+  seat_count: 'Koltuk Sayısı, Sür. Dahil (S.1)',
+  standing_capacity: 'Ayakta Yolcu Sayısı (S.2)',
+  engine_capacity: 'Silindir Hacmi cm³ (P.1)',
+  engine_power: 'Motor Gücü kW (P.2)',
   fuel_type: 'Yakıt Cinsi (P.3)',
-  engine_capacity: 'Silindir Hacmi (P.1)',
-  engine_power: 'Motor Gücü (P.2)',
-  seat_count: 'Koltuk Sayısı (S.1)',
-  usage_purpose: 'Kullanım Amacı (Z.1)',
+  power_weight_ratio: 'Güç Ağırlık Oranı kW/kg (Q)',
+  usage_purpose: 'Kullanım Amacı (Y.3)',
+  type_approval_no: 'Tip Onay No (K)',
+  owner_tax_id: 'T.C. Kimlik No / Vergi No (Y.4)',
+  owner_name: 'Adı Soyadı / Ticari Ünvanı (C.1.2, C.1.1)',
+  owner_address: 'Adresi (C.1.3)',
+  rights_holders: 'Araç Üzerinde Hak ve Menfaati Bulunanlar (Z.1)',
+  notary_sale_date: 'Noter Satış Tarihi (Z.3.1)',
+  notary_sale_no: 'Noter Satış No (Z.3.2)',
+  notary_name: 'Noterin Adı (Z.3.3)',
+  other_info: 'Diğer Bilgiler (Z.2)',
   document_serial: 'Belge Seri No',
   inspection_valid_until: 'Muayene Geçerlilik Tarihi',
 }
