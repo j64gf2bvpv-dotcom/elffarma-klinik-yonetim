@@ -24,9 +24,11 @@ import { readRuhsatLocally } from './ruhsatOcr'
 import { modelYearOptions } from '@/lib/carModels'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getErrorMessage } from '@/lib/utils'
+import { IMAGE_ACCEPT, isImageFile } from '@/lib/ensureReadableImage'
 import {
   REGISTRATION_LABELS,
   fileToDataUrl,
+  ensureReadableImage,
   getRegistrationImageUrl,
   uploadRegistrationImage,
   type RegistrationFields,
@@ -175,10 +177,15 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
 
   /** Ruhsat fotoğrafı seçilince: yükle + yapay zekâ ile oku + forma doldur. */
   async function handleRegistrationFiles(files: FileList | null) {
-    const list = files ? Array.from(files).filter((f) => f.type.startsWith('image/')).slice(0, 2) : []
-    if (list.length === 0) return
+    const picked = files ? Array.from(files).filter(isImageFile).slice(0, 2) : []
+    if (picked.length === 0) return
     setReading(true)
     try {
+      // HEIC (iPhone) fotoğraflar JPEG'e çevrilir; açılamayan olursa diğeriyle devam edilir
+      const results = await Promise.allSettled(picked.map((f) => ensureReadableImage(f)))
+      const list = results.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))
+      for (const r of results) if (r.status === 'rejected') toast.error('Fotoğraf açılamadı', { description: getErrorMessage(r.reason) })
+      if (list.length === 0) return
       setRegPreview(URL.createObjectURL(list[0]))
       setRegFile(list[0])
       const dataUrls = await Promise.all(list.map((f) => fileToDataUrl(f, 3200)))
@@ -282,7 +289,7 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/*"
+                accept={IMAGE_ACCEPT}
                 multiple
                 className="hidden"
                 onChange={(e) => void handleRegistrationFiles(e.target.files)}

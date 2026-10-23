@@ -1,3 +1,5 @@
+import { ensureReadableImage } from './ensureReadableImage'
+
 /**
  * Herhangi bir çözünürlük/boyuttaki bir resmi, tarayıcının native görsel
  * çözücüsüyle okuyup en uzun kenarı `maxDimension`'ı aşmayacak şekilde
@@ -5,7 +7,9 @@
  * fotoğrafı gibi küçük önizleme görsellerinde büyük/orijinal dosyaları
  * olduğu gibi Storage'a yüklememek için kullanılır.
  */
-export async function resizeImageFile(file: File, maxDimension = 480, quality = 0.85): Promise<Blob> {
+export async function resizeImageFile(input: File, maxDimension = 480, quality = 0.85): Promise<Blob> {
+  // HEIC, TIFF, RAW vb. tarayıcının açamadığı biçimler önce JPEG'e çevrilir
+  const file = await ensureReadableImage(input)
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result as string)

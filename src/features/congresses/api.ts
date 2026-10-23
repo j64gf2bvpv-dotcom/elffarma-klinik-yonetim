@@ -11,6 +11,7 @@ import type {
   CongressStockItem,
   CongressStockItemStatus,
 } from '@/types/database'
+import { isImageFile } from '@/lib/ensureReadableImage'
 
 export interface CongressInput {
   name: string
@@ -90,9 +91,12 @@ export async function updateCongressImage(id: string, imageUrl: string | null): 
 export function extractImageFile(data: DataTransfer | null): File | null {
   if (!data) return null
   for (const item of Array.from(data.items ?? [])) {
-    if (item.kind === 'file' && item.type.startsWith('image/')) return item.getAsFile()
+    if (item.kind === 'file') {
+      const f = item.getAsFile()
+      if (f && isImageFile(f)) return f
+    }
   }
-  const file = Array.from(data.files ?? []).find((f) => f.type.startsWith('image/'))
+  const file = Array.from(data.files ?? []).find((f) => isImageFile(f))
   return file ?? null
 }
 

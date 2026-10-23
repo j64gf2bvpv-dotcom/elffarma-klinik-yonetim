@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.340] - 2026-10-23
+
+**Tüm görsel biçimleri destekleniyor:** iPhone fotoğrafları (HEIC/HEIF) ve TIFF, BMP, WEBP, AVIF, PSD, kamera RAW gibi programın açamadığı biçimler bilgisayarın kendi aracıyla (Mac: sips, Windows: görsel çözücüsü) otomatik JPEG'e çevriliyor — ruhsat, kongre, temsilci ve profil fotoğraflarında. İki ruhsat fotoğrafından biri açılamazsa diğeriyle devam ediliyor ("iki tane atınca açılmıyor" hatası). **Ruhsat fotoğrafı** artık tarayıcıda değil bilgisayarın resim programında açılıyor, simgesi ruhsat/kimlik kartı. **Araçlar: Ehliyet sütunu** (Plaka'dan sonra) — aracı kullanan personelin ehliyetinin ön ve arka yüzü; tıkla/sürükle ile eklenir, tıklayınca resim programında açılır. "Son Yakıt Kayıtları" bölümü kaldırıldı.
+
 ## [2.17.339] - 2026-10-23
 
 **Araçlar: düzenle / sil araç adının yanında:** Kalem (düzenle) ve çöp kutusu (sil) düğmeleri tablonun sonundan araç modelinin hemen yanına taşındı.

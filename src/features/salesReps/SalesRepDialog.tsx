@@ -18,6 +18,7 @@ import { useCreateSalesRep, useUpdateSalesRep } from './hooks'
 import { uploadSalesRepPhoto } from './api'
 import { placeholderColor } from '@/lib/placeholderColor'
 import type { SalesRep } from '@/types/database'
+import { IMAGE_ACCEPT } from '@/lib/ensureReadableImage'
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -92,7 +93,7 @@ export function SalesRepDialog({ rep, trigger }: { rep?: SalesRep; trigger?: Rea
             <input
               ref={photoInputRef}
               type="file"
-              accept="image/*"
+              accept={IMAGE_ACCEPT}
               className="hidden"
               onChange={handlePhotoSelected}
             />

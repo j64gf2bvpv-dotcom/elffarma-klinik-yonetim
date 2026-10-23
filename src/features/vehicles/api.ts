@@ -66,6 +66,8 @@ export interface VehicleInput {
   notary_sale_no?: string | null
   notary_name?: string | null
   other_info?: string | null
+  license_front_path?: string | null
+  license_back_path?: string | null
 }
 
 export async function createVehicle(input: VehicleInput): Promise<Vehicle> {

@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { extractImageFile } from './api'
 import { useSetCongressImage } from './hooks'
 import type { Congress } from '@/types/database'
+import { IMAGE_ACCEPT, isImageFile } from '@/lib/ensureReadableImage'
 
 /**
  * Kongre kartındaki küçük görsel — tıklayınca bilgisayardan görsel seçilir,
@@ -34,7 +35,7 @@ export function CongressImageDrop({ congress }: { congress: Congress }) {
 
   function upload(file: File | null | undefined) {
     if (!file) return
-    if (!file.type.startsWith('image/')) {
+    if (!isImageFile(file)) {
       toast.error('Lütfen bir görsel dosyası seçin')
       return
     }
@@ -89,7 +90,7 @@ export function CongressImageDrop({ congress }: { congress: Congress }) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept={IMAGE_ACCEPT}
         className="hidden"
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => {

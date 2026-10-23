@@ -376,6 +376,67 @@ ipcMain.handle('instagram:image', async (_event, imageUrl: string) => {
   }
 })
 
+// HEIC/HEIF (iPhone fotoğrafı) → JPEG (kullanıcı bildirimi, 2026-10-23: "ruhsat
+// fotoğrafında iki tane atınca açılmıyor, hata veriyor") — Chromium HEIC çözemiyor.
+// macOS'ta yerleşik `sips`, Windows'ta WPF görsel çözücüsü (HEIF uzantısı yüklüyse)
+// kullanılır. Girdi base64 dosya içeriği (en fazla 40 MB), çıktı JPEG data URL ya da null.
+const WIN_TO_JPEG_SCRIPT = `
+param([string]$src, [string]$dst)
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName PresentationCore
+$in = [System.IO.File]::OpenRead($src)
+$dec = [System.Windows.Media.Imaging.BitmapDecoder]::Create($in, [System.Windows.Media.Imaging.BitmapCreateOptions]::None, [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad)
+$enc = New-Object System.Windows.Media.Imaging.JpegBitmapEncoder
+$enc.QualityLevel = 90
+$enc.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($dec.Frames[0]))
+$out = [System.IO.File]::Create($dst)
+$enc.Save($out)
+$out.Close(); $in.Close()
+`
+
+ipcMain.handle('image:to-jpeg', async (_event, base64: string) => {
+  if (typeof base64 !== 'string' || base64.length > 40 * 1024 * 1024 * 1.4 || !/^[A-Za-z0-9+/=]+$/.test(base64)) return null
+  if (process.platform !== 'darwin' && process.platform !== 'win32') return null
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'elffarma-img-'))
+  const src = path.join(dir, 'in.heic')
+  const dst = path.join(dir, 'out.jpg')
+  try {
+    fs.writeFileSync(src, Buffer.from(base64, 'base64'))
+    if (process.platform === 'darwin') {
+      await execFileText('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '90', src, '--out', dst])
+    } else {
+      const script = path.join(dir, 'tojpeg.ps1')
+      fs.writeFileSync(script, WIN_TO_JPEG_SCRIPT)
+      await execFileText('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, src, dst])
+    }
+    if (!fs.existsSync(dst)) return null
+    return `data:image/jpeg;base64,${fs.readFileSync(dst).toString('base64')}`
+  } catch (err) {
+    console.error('[image:to-jpeg]', err)
+    return null
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+// Görseli bilgisayarın resim programında aç (kullanıcı isteği, 2026-10-23: "ruhsat
+// resmini webten açmasın, resim programıyla açsın") — geçici klasöre yazılıp
+// varsayılan programla (Mac: Önizleme, Windows: Fotoğraflar) açılır. Sadece
+// JPEG/PNG/WEBP içeriği kabul edilir; dosya adı temizlenir.
+ipcMain.handle('image:open', async (_event, base64: string, title: string) => {
+  if (typeof base64 !== 'string' || base64.length > 40 * 1024 * 1024 * 1.4 || !/^[A-Za-z0-9+/=]+$/.test(base64)) return false
+  const buf = Buffer.from(base64, 'base64')
+  const ext = buf[0] === 0xff && buf[1] === 0xd8 ? 'jpg' : buf[0] === 0x89 && buf[1] === 0x50 ? 'png' : buf.subarray(8, 12).toString() === 'WEBP' ? 'webp' : null
+  if (!ext) return false
+  const safe = (typeof title === 'string' ? title : 'Gorsel').replace(/[^\p{L}\p{N} ._-]+/gu, '').trim().slice(0, 80) || 'Gorsel'
+  const dir = path.join(os.tmpdir(), 'elffarma-gorseller')
+  fs.mkdirSync(dir, { recursive: true })
+  const file = path.join(dir, `${safe}.${ext}`)
+  fs.writeFileSync(file, buf)
+  const err = await shell.openPath(file)
+  return err === ''
+})
+
 // Ruhsat okuma için İŞLETİM SİSTEMİNİN yazı tanıması (kullanıcı isteği, 2026-10-21:
 // "şase, motor no vb. okumuyor, hepsini okusun") — macOS'ta Apple Vision
 // (Canlı Metin ile aynı motor, JXA üzerinden), Windows'ta Windows.Media.Ocr

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { resizeImageFile } from '@/lib/resizeImage'
+import { bytesToBase64 } from '@/lib/ensureReadableImage'
 
 /**
  * Araç ruhsatı (Araç Tescil Belgesi) — fotoğraf yükleme + yapay zekâ ile okuma
@@ -100,6 +101,21 @@ export async function getRegistrationImageUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from('documents').createSignedUrl(path, 60 * 10)
   if (error) throw error
   return data.signedUrl
+}
+
+export { ensureReadableImage } from '@/lib/ensureReadableImage'
+
+/** Ruhsat fotoğrafını bilgisayarın resim programında aç (tarayıcıda değil). */
+export async function openRegistrationImage(path: string, title: string): Promise<void> {
+  const { data, error } = await supabase.storage.from('documents').download(path)
+  if (error) throw error
+  const open = window.electronAPI?.openImageFile
+  if (!open) {
+    window.open(URL.createObjectURL(data), '_blank')
+    return
+  }
+  const ok = await open(bytesToBase64(new Uint8Array(await data.arrayBuffer())), title)
+  if (!ok) throw new Error('Resim programı açılamadı')
 }
 
 export async function fileToDataUrl(file: File, maxDimension = 1800): Promise<string> {

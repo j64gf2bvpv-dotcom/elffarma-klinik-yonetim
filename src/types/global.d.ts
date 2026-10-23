@@ -30,6 +30,10 @@ declare global {
       /** Instagram yeni paylaşım bildirimi — programın içinde ayrı oturumla giriş + son paylaşımlar */
       instagramLogin?: () => Promise<boolean>
       instagramStatus?: () => Promise<{ loggedIn: boolean }>
+      /** Görseli bilgisayarın resim programında açar (geçici dosya) */
+      openImageFile?: (base64: string, title: string) => Promise<boolean>
+      /** HEIC/HEIF gibi tarayıcının açamadığı görseli JPEG data URL'e çevirir (macOS sips / Windows WIC) */
+      imageToJpeg?: (base64: string) => Promise<string | null>
       /** Instagram sayfasının eski paylaşımları (en fazla 5 sayfa) — galeri görselleriyle */
       instagramUserFeed?: (username: string, maxPages?: number) => Promise<{ posts?: { shortcode: string; takenAt: number; caption: string; images: string[]; isVideo: boolean }[]; error?: string }>
       /** Instagram CDN görselini data URL olarak getirir */

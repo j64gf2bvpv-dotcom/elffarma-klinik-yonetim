@@ -48,6 +48,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   instagramUserFeed: (username: string, maxPages?: number): Promise<{ posts?: { shortcode: string; takenAt: number; caption: string; images: string[]; isVideo: boolean }[]; error?: string }> =>
     ipcRenderer.invoke('instagram:user-feed', username, maxPages),
   instagramImage: (url: string): Promise<string | null> => ipcRenderer.invoke('instagram:image', url),
+  imageToJpeg: (base64: string): Promise<string | null> => ipcRenderer.invoke('image:to-jpeg', base64),
+  openImageFile: (base64: string, title: string): Promise<boolean> => ipcRenderer.invoke('image:open', base64, title),
   notify: (title: string, body: string): Promise<void> =>
     ipcRenderer.invoke('app:notify', title, body),
   onDeepLinkRecovery: (callback: (payload: RecoveryPayload) => void) => {

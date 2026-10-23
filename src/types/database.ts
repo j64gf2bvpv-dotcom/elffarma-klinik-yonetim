@@ -815,6 +815,9 @@ export interface Vehicle {
   notary_sale_no: string | null
   notary_name: string | null
   other_info: string | null
+  /** Aracı kullanan personelin ehliyeti — ön/arka yüz (documents bucket yolu) */
+  license_front_path: string | null
+  license_back_path: string | null
   notes: string | null
   created_by: string | null
   created_at: string

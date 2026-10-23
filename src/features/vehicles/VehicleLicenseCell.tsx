@@ -1,0 +1,139 @@
+import * as React from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ImagePlus, Loader2, Pencil } from 'lucide-react'
+import { toast } from 'sonner'
+
+import { IMAGE_ACCEPT, isImageFile } from '@/lib/ensureReadableImage'
+import { resizeImageFile } from '@/lib/resizeImage'
+import { supabase } from '@/lib/supabaseClient'
+import { cn, getErrorMessage } from '@/lib/utils'
+import { updateVehicle } from './api'
+import { openRegistrationImage } from './registration'
+import type { Vehicle } from '@/types/database'
+
+/**
+ * Araç tablosunda Plaka'dan sonraki "Ehliyet" hücresi — aracı kullanan personelin
+ * ehliyetinin ön / arka yüzü (kullanıcı istekleri, 2026-10-23: "personellerin ehliyet
+ * resimlerini ekleyebilelim, ön arka yüz şeklinde", "ehliyet kısmı plakalardan sonra
+ * olsun, o kısma eklensin"). Boş kutu: tıkla / sürükle-bırak → fotoğraf eklenir.
+ * Dolu kutu: tıkla → bilgisayarın resim programında açılır; kalem / sürükle-bırak →
+ * değiştirilir. Tüm görsel biçimleri (HEIC dahil) kabul edilir; gizli depoda tutulur.
+ */
+type Side = 'license_front_path' | 'license_back_path'
+const LABEL: Record<Side, string> = { license_front_path: 'Ön', license_back_path: 'Arka' }
+
+function Slot({ vehicle, side }: { vehicle: Vehicle; side: Side }) {
+  const path = vehicle[side]
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [dragOver, setDragOver] = React.useState(false)
+  const queryClient = useQueryClient()
+  const { data: url } = useQuery({
+    queryKey: ['vehicle_license_image', path],
+    enabled: !!path,
+    staleTime: 8 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.storage.from('documents').createSignedUrl(path!, 60 * 10)
+      if (error) throw error
+      return data.signedUrl
+    },
+  })
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      const blob = await resizeImageFile(file, 1800, 0.88)
+      const newPath = `personnel/ehliyet/${crypto.randomUUID()}.jpg`
+      const { error } = await supabase.storage.from('documents').upload(newPath, blob, { contentType: 'image/jpeg', upsert: false })
+      if (error) throw error
+      await updateVehicle(vehicle.id, { [side]: newPath })
+      if (path) await supabase.storage.from('documents').remove([path])
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] })
+      toast.success(`Ehliyet ${LABEL[side].toLocaleLowerCase('tr-TR')} yüzü kaydedildi`)
+    },
+    onError: (err) => toast.error('Ehliyet fotoğrafı yüklenemedi', { description: getErrorMessage(err) }),
+  })
+
+  function pick(file: File | null | undefined) {
+    if (!file) return
+    if (!isImageFile(file)) {
+      toast.error('Lütfen bir görsel dosyası seçin')
+      return
+    }
+    upload.mutate(file)
+  }
+
+  const who = vehicle.driver_name || vehicle.plate_number || vehicle.brand_model
+  return (
+    <div
+      className={cn(
+        'group relative h-9 w-14 shrink-0 overflow-hidden rounded-md border bg-muted/40 text-muted-foreground transition-colors hover:border-primary/60',
+        dragOver && 'ring-2 ring-primary',
+      )}
+      onClick={(e) => e.stopPropagation()}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setDragOver(true)
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setDragOver(false)
+        pick(e.dataTransfer.files?.[0])
+      }}
+    >
+      <button
+        type="button"
+        className="flex size-full items-center justify-center"
+        title={path ? `Ehliyet ${LABEL[side].toLocaleLowerCase('tr-TR')} yüz — resim programında aç` : `Ehliyet ${LABEL[side].toLocaleLowerCase('tr-TR')} yüzü ekle (tıkla ya da sürükle-bırak)`}
+        onClick={() => {
+          if (path) openRegistrationImage(path, `Ehliyet ${who} ${LABEL[side]}`).catch(() => toast.error('Fotoğraf açılamadı'))
+          else inputRef.current?.click()
+        }}
+      >
+        {upload.isPending ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : path && url ? (
+          <img src={url} alt={`Ehliyet ${LABEL[side]}`} className="size-full object-cover" />
+        ) : path ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <span className="flex items-center gap-0.5 text-[10px] font-medium">
+            <ImagePlus className="size-3" /> {LABEL[side]}
+          </span>
+        )}
+      </button>
+      {path && !upload.isPending && (
+        <>
+          <span className="pointer-events-none absolute bottom-0 left-0 rounded-tr bg-background/85 px-1 text-[9px] font-medium text-foreground">{LABEL[side]}</span>
+          <button
+            type="button"
+            title="Değiştir"
+            className="absolute top-0 right-0 hidden rounded-bl bg-background/90 p-0.5 text-foreground group-hover:block"
+            onClick={() => inputRef.current?.click()}
+          >
+            <Pencil className="size-2.5" />
+          </button>
+        </>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept={IMAGE_ACCEPT}
+        className="hidden"
+        onChange={(e) => {
+          pick(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
+    </div>
+  )
+}
+
+export function VehicleLicenseCell({ vehicle }: { vehicle: Vehicle }) {
+  return (
+    <div className="flex gap-1.5">
+      <Slot vehicle={vehicle} side="license_front_path" />
+      <Slot vehicle={vehicle} side="license_back_path" />
+    </div>
+  )
+}

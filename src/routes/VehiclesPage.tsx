@@ -1,9 +1,10 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Pencil, Trash2, CheckCircle2, XCircle, Fuel, FileImage } from 'lucide-react'
+import { Pencil, Trash2, CheckCircle2, XCircle, IdCard } from 'lucide-react'
 import { toast } from 'sonner'
-import { getRegistrationImageUrl } from '@/features/vehicles/registration'
+import { openRegistrationImage } from '@/features/vehicles/registration'
+import { VehicleLicenseCell } from '@/features/vehicles/VehicleLicenseCell'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ExportMenu } from '@/components/ExportMenu'
 import { VehicleDialog } from '@/features/vehicles/VehicleDialog'
 import { FuelLogDialog } from '@/features/vehicles/FuelLogDialog'
-import { useVehicles, useDeleteVehicle, useAllVehicleFuelLogs, useDeleteVehicleFuelLog } from '@/features/vehicles/hooks'
+import { useVehicles, useDeleteVehicle } from '@/features/vehicles/hooks'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import { vehicleUserName } from '@/features/vehicles/api'
 
@@ -24,25 +25,14 @@ function currency(n: number | null) {
 
 export function VehiclesPage() {
   const [selectedVehicleId, setSelectedVehicleId] = React.useState<string | null>(null)
-  const [selectedLogId, setSelectedLogId] = React.useState<string | null>(null)
   const { data: vehicles = [], isLoading } = useVehicles()
   const deleteMutation = useDeleteVehicle()
-  const { data: fuelLogs = [] } = useAllVehicleFuelLogs()
-  const deleteFuelMutation = useDeleteVehicleFuelLog()
-
-  const vehicleById = React.useMemo(() => new Map(vehicles.map((v) => [v.id, v])), [vehicles])
-  const recentFuelLogs = fuelLogs.slice(0, 15)
   const { confirm, dialog } = useConfirmDialog()
 
   async function handleDeleteVehicle(v: (typeof vehicles)[number]) {
     if (!(await confirm(`${v.brand_model}${v.plate_number ? ` (${v.plate_number})` : ''} silinsin mi? Bu araca ait yakıt kayıtları da silinecek.`)))
       return
     deleteMutation.mutate(v.id)
-  }
-
-  async function handleDeleteFuelLog(logId: string) {
-    if (!(await confirm('Bu yakıt kaydı silinsin mi?'))) return
-    deleteFuelMutation.mutate(logId)
   }
 
   return (
@@ -88,6 +78,7 @@ export function VehiclesPage() {
                 {/* Düzenle / Sil araç adının hemen yanında (kullanıcı isteği, 2026-10-23) */}
                 <TableHead className="w-0" aria-label="Düzenle / Sil" />
                 <TableHead>Plaka</TableHead>
+                <TableHead>Ehliyet</TableHead>
                 <TableHead>Kullanıcı</TableHead>
                 <TableHead>Firma</TableHead>
                 <TableHead>Aylık Kira</TableHead>
@@ -100,14 +91,14 @@ export function VehiclesPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={11} className="text-muted-foreground py-8 text-center">
                     Yükleniyor...
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && vehicles.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={11} className="text-muted-foreground py-8 text-center">
                     Henüz araç kaydı yok
                   </TableCell>
                 </TableRow>
@@ -142,6 +133,9 @@ export function VehiclesPage() {
                     </div>
                   </TableCell>
                   <TableCell>{v.plate_number ?? '—'}</TableCell>
+                  <TableCell>
+                    <VehicleLicenseCell vehicle={v} />
+                  </TableCell>
                   <TableCell>{vehicleUserName(v) ?? '—'}</TableCell>
                   <TableCell>{v.vendor_company ?? '—'}</TableCell>
                   <TableCell>{currency(v.monthly_rental_price)}</TableCell>
@@ -168,17 +162,17 @@ export function VehiclesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Ruhsat fotoğrafını aç"
+                          title="Ruhsatı aç (resim programında)"
                           onClick={async (e) => {
                             e.stopPropagation()
                             try {
-                              window.open(await getRegistrationImageUrl(v.registration_image_path!), '_blank')
+                              await openRegistrationImage(v.registration_image_path!, `Ruhsat ${v.plate_number ?? v.brand_model}`)
                             } catch {
                               toast.error('Ruhsat fotoğrafı açılamadı')
                             }
                           }}
                         >
-                          <FileImage className="size-3.5" />
+                          <IdCard className="size-4" />
                         </Button>
                       )}
                       <FuelLogDialog vehicleId={v.id} vehicleName={v.brand_model} />
@@ -191,55 +185,6 @@ export function VehiclesPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 flex items-center gap-2 text-base font-semibold">
-        <Fuel className="size-4 text-primary" /> Son Yakıt Kayıtları
-      </div>
-      <Card className="mt-2">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tarih</TableHead>
-                <TableHead>Araç</TableHead>
-                <TableHead>Plaka</TableHead>
-                <TableHead>Kullanıcı</TableHead>
-                <TableHead>Tutar</TableHead>
-                <TableHead>Not</TableHead>
-                <TableHead className="text-right">İşlemler</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentFuelLogs.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
-                    Henüz yakıt kaydı yok
-                  </TableCell>
-                </TableRow>
-              )}
-              {recentFuelLogs.map((log) => {
-                const vehicle = vehicleById.get(log.vehicle_id)
-                return (
-                  <TableRow key={log.id} onClick={() => setSelectedLogId(log.id)} selected={log.id === selectedLogId}>
-                    <TableCell>
-                      {format(new Date(log.fill_date + 'T00:00:00'), 'd MMMM yyyy', { locale: trLocale })}
-                    </TableCell>
-                    <TableCell>{vehicle?.brand_model ?? '—'}</TableCell>
-                    <TableCell>{vehicle?.plate_number ?? '—'}</TableCell>
-                    <TableCell>{vehicleUserName(vehicle) ?? '—'}</TableCell>
-                    <TableCell>{currency(log.amount)}</TableCell>
-                    <TableCell className="text-muted-foreground">{log.note ?? '—'}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" title="Sil" onClick={() => handleDeleteFuelLog(log.id)}>
-                        <Trash2 className="size-3.5 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
       {dialog}
     </div>
   )

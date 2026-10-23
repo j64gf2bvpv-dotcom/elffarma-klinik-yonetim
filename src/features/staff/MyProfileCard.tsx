@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth'
 import { useStaffList, useUpdateMyProfile, useUploadStaffAvatar } from './hooks'
 import { StaffBusinessCard } from './StaffBusinessCard'
 import { AvatarCropDialog } from './AvatarCropDialog'
+import { IMAGE_ACCEPT } from '@/lib/ensureReadableImage'
 
 interface ProfileForm {
   phone: string
@@ -119,7 +120,7 @@ export function MyProfileCard() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept={IMAGE_ACCEPT}
               className="hidden"
               onChange={handleAvatarChange}
             />

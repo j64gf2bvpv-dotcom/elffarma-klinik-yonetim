@@ -26,6 +26,7 @@ import { formatDateRange } from '@/lib/dateRange'
 import { useAIService } from '@/features/ai/useAIService'
 import { readCongressWebsite, summarizeCongress, uploadSquareCongressImage } from './websiteAssets'
 import type { Congress } from '@/types/database'
+import { IMAGE_ACCEPT } from '@/lib/ensureReadableImage'
 
 const schema = z.object({
   name: z.string().min(2, 'Kongre adı gerekli'),
@@ -466,7 +467,7 @@ export function CongressForm({ congress }: { congress?: Congress }) {
                     <input
                       ref={imageInputRef}
                       type="file"
-                      accept="image/*"
+                      accept={IMAGE_ACCEPT}
                       className="hidden"
                       onChange={handleImageSelected}
                     />
