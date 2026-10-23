@@ -105,7 +105,7 @@ const money = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', curr
 
 /** Popup'ı bir kez açan / tekrar açtıran ortak durum (AppShell'deki popup ↔ ana ekrandaki şerit). */
 const OPEN_EVENT = 'bill-due-popup:open'
-const SESSION_KEY = 'bill-due-popup-shown'
+const SHOWN_KEY = 'bill-due-popup-shown-cycles'
 
 function CycleRow({ cycle: c, onPaid, paying }: { cycle: BillCycle; onPaid: () => void; paying: boolean }) {
   const days = daysUntil(c.nextDue)
@@ -164,18 +164,29 @@ export function BillDuePopup() {
     markPaid.mutate({ id: created.id, isPaid: true, reminderId: created.reminder_id })
   }
 
-  // Açılışta bir kez (oturum başına)
+  // Her fatura dönemi için YALNIZCA BİR KEZ (kullanıcı isteği, 2026-10-23: "bildirim
+  // popup ekrana bir kez gelsin, her açtığımda gelmesin") — gösterilen dönemler
+  // (abonelik + o ayki son ödeme günü) hatırlanır; aynı fatura için bir daha
+  // açılmaz, yeni bir dönem yaklaşınca yine bir kez açılır. Ana ekrandaki
+  // şeritten istenince tekrar açılabilir.
   React.useEffect(() => {
     if (due.length === 0) return
-    let shown = false
+    const ids = due.map((c) => `${c.key}@${c.nextDue}`)
+    let seen: string[] = []
     try {
-      shown = !!sessionStorage.getItem(SESSION_KEY)
-      sessionStorage.setItem(SESSION_KEY, '1')
+      seen = JSON.parse(localStorage.getItem(SHOWN_KEY) ?? '[]')
+    } catch {
+      /* bozuk kayıt — sıfırdan */
+    }
+    if (ids.every((id) => seen.includes(id))) return
+    try {
+      // geçmiş dönemleri biriktirme: son 50 kayıt yeter
+      localStorage.setItem(SHOWN_KEY, JSON.stringify([...new Set([...seen, ...ids])].slice(-50)))
     } catch {
       /* depolama yoksa yine göster */
     }
-    if (!shown) setOpen(true)
-  }, [due.length])
+    setOpen(true)
+  }, [due])
 
   // Ana ekrandaki şeritten tekrar açma
   React.useEffect(() => {

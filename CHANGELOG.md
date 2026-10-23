@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.337] - 2026-10-23
+
+**Satış Temsilcisi Raporu: tek satırda hızlı doktor girişi:** Her günün yanında doğrudan doktor yazma kutusu var — yazarken Cari Kart'taki doktorlar öneriliyor, Enter ile ekleniyor, virgülle birden fazla doktor aynı anda girilebiliyor (cari kartla eşleşen isim karta bağlanıyor, telefonu alınıyor). Ayrı "Doktor Ekle" penceresi kaldırıldı; ayrıntılar eklenen doktorun kalem ikonundan girilir. **Kongreler:** küçük resme tıklayınca büyük önizleme açılıyor (görsel, tarih, yer, açıklama, web sitesi, görseli değiştir, detaylar). **Fatura bildirimi** artık her açılışta değil, her fatura dönemi için bir kez çıkıyor (ana ekrandaki şeritten tekrar açılabilir). Instagram'dan eski paylaşımları ve görselleri getirme altyapısı eklendi.
+
 ## [2.17.336] - 2026-10-23
 
 **Program incelemesi düzeltmeleri:** Yapay zekâ düğmesi sağ-alt köşeye sabitlendi (pencere boyutu değişince ekranın ortasında kalıp tablo/kartların üstünü kapatıyordu; köşeye yakın bırakılınca köşeye oturur). Faturalarda son ödeme günü geçmiş ödenmemiş fatura artık kırmızı "Gecikti · X gün" gösteriyor ("Bekliyor" yazıyordu). Ekip Performansı'nda cirosu/aktivitesi sıfır temsilci "Güçlü" görünmüyor; yapay zekâ önerileri sayfa her açıldığında kendiliğinden çağrılmıyor (kota harcıyordu), "Öneri Al" düğmesiyle geliyor. Son kullanma tarihine yıl iki haneli yazılınca 0028 gibi kaydedilmesi engellendi (20xx'e çevriliyor). Ana panelde özet kartları tek satıra sığıyor (5. kart tek başına alta düşmüyor), kart başlıkları ile "Tümünü gör" aynı satırda.

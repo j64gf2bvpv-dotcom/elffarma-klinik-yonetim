@@ -30,6 +30,10 @@ declare global {
       /** Instagram yeni paylaşım bildirimi — programın içinde ayrı oturumla giriş + son paylaşımlar */
       instagramLogin?: () => Promise<boolean>
       instagramStatus?: () => Promise<{ loggedIn: boolean }>
+      /** Instagram sayfasının eski paylaşımları (en fazla 5 sayfa) — galeri görselleriyle */
+      instagramUserFeed?: (username: string, maxPages?: number) => Promise<{ posts?: { shortcode: string; takenAt: number; caption: string; images: string[]; isVideo: boolean }[]; error?: string }>
+      /** Instagram CDN görselini data URL olarak getirir */
+      instagramImage?: (url: string) => Promise<string | null>
       instagramRecentPosts?: (username: string) => Promise<{
         posts?: { id: string; shortcode: string; takenAt: number; isVideo: boolean; caption: string; thumbnail: string }[]
         error?: string

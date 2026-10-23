@@ -45,6 +45,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   instagramStatus: (): Promise<{ loggedIn: boolean }> => ipcRenderer.invoke('instagram:status'),
   instagramRecentPosts: (username: string): Promise<InstagramPostsResult> => ipcRenderer.invoke('instagram:recent-posts', username),
+  instagramUserFeed: (username: string, maxPages?: number): Promise<{ posts?: { shortcode: string; takenAt: number; caption: string; images: string[]; isVideo: boolean }[]; error?: string }> =>
+    ipcRenderer.invoke('instagram:user-feed', username, maxPages),
+  instagramImage: (url: string): Promise<string | null> => ipcRenderer.invoke('instagram:image', url),
   notify: (title: string, body: string): Promise<void> =>
     ipcRenderer.invoke('app:notify', title, body),
   onDeepLinkRecovery: (callback: (payload: RecoveryPayload) => void) => {

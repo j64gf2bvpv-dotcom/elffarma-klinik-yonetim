@@ -20,20 +20,25 @@ import {
   Wallet,
   Package,
   Users,
+  Plus,
+  Loader2,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DoctorVisitDialog } from '@/features/doctorVisits/DoctorVisitDialog'
-import { useVisitsInRange } from '@/features/doctorVisits/hooks'
+import { useCreateVisit, useVisitsInRange } from '@/features/doctorVisits/hooks'
+import { useCustomers } from '@/features/customers/hooks'
+import { Input } from '@/components/ui/input'
 import { SalesRepDialog } from '@/features/salesReps/SalesRepDialog'
 import { useDeleteSalesRep, useSalesReps } from '@/features/salesReps/hooks'
 import { usePayments } from '@/features/payments/hooks'
-import type { DoctorVisit, SalesRep } from '@/types/database'
+import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
 import { ExportMenu } from '@/components/ExportMenu'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
@@ -54,6 +59,78 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
+const DOCTOR_NAMES_LIST_ID = 'rep-report-doctor-names'
+
+/**
+ * Günün satırında doğrudan doktor ekleme (kullanıcı isteği, 2026-10-23: "günlerin
+ * hepsi yazsa, sadece yanlarına doktorları girsek — gün gün tıklayıp girmek daha
+ * zor"). Yazarken Cari Kart'taki doktorlar önerilir; Enter ile kaydedilir,
+ * virgülle birden fazla doktor aynı anda girilebilir. Cari kartla birebir eşleşen
+ * isim karta bağlanır (telefonu da alınır). Ayrıntılı giriş için "Doktor Ekle"
+ * penceresi aynen duruyor.
+ */
+function QuickVisitInput({ visitDate, salesRepId, customers }: { visitDate: string; salesRepId: string; customers: Customer[] }) {
+  const [value, setValue] = React.useState('')
+  const [saving, setSaving] = React.useState(false)
+  const createMutation = useCreateVisit()
+
+  async function save() {
+    const names = value
+      .split(/[,;\n]/)
+      .map((n) => n.trim())
+      .filter((n) => n.length >= 2)
+    if (names.length === 0 || saving) return
+    setSaving(true)
+    try {
+      for (const name of names) {
+        const key = name.toLocaleLowerCase('tr-TR')
+        const customer = customers.find((c) => c.full_name.trim().toLocaleLowerCase('tr-TR') === key)
+        await createMutation.mutateAsync({
+          visit_date: visitDate,
+          sales_rep_id: salesRepId,
+          doctor_name: customer?.full_name ?? name,
+          customer_id: customer?.id ?? null,
+          phone: customer?.phone || null,
+        })
+      }
+      setValue('')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        value={value}
+        list={DOCTOR_NAMES_LIST_ID}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            void save()
+          }
+        }}
+        placeholder="Doktor adı"
+        title="Doktor adı yazıp Enter'a basın — virgülle birden fazla doktor girilebilir"
+        className="h-8 text-sm"
+        disabled={saving}
+      />
+      <Button
+        type="button"
+        size="icon"
+        variant="secondary"
+        className="size-8 shrink-0"
+        title="Ekle"
+        onClick={() => void save()}
+        disabled={saving || value.trim().length < 2}
+      >
+        {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+      </Button>
+    </div>
+  )
+}
+
 interface RepPerformance {
   weekRevenue: number
   monthRevenue: number
@@ -65,11 +142,13 @@ function RepWeekSection({
   days,
   visits,
   performance,
+  customers,
 }: {
   rep: SalesRep
   days: Date[]
   visits: DoctorVisit[]
   performance: RepPerformance
+  customers: Customer[]
 }) {
   const deleteRepMutation = useDeleteSalesRep()
   const { confirm, dialog } = useConfirmDialog()
@@ -149,17 +228,22 @@ function RepWeekSection({
           const isToday = key === dateKey(new Date())
           return (
             <div key={key} className="rounded-lg border p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-medium capitalize">
-                  {format(day, 'EEEE, d MMMM', { locale: trLocale })}
-                  {isToday && <span className="ml-2 text-xs font-normal text-primary">(bugün)</span>}
+              {/* Tek satır: gün + doktor yazma kutusu (ayrı "Doktor Ekle" penceresi kaldırıldı;
+                  telefon/not gibi ayrıntılar eklenen doktorun kalem ikonundan girilir) */}
+              <div className="flex items-center gap-2">
+                <p
+                  className={cn('w-[5.5rem] shrink-0 text-sm font-medium capitalize leading-tight', isToday && 'text-primary')}
+                  title={format(day, 'EEEE, d MMMM', { locale: trLocale }) + (isToday ? ' (bugün)' : '')}
+                >
+                  {format(day, 'EEE d MMM', { locale: trLocale })}
+                  {isToday && <span className="block text-[10px] font-normal">bugün</span>}
                 </p>
-                <DoctorVisitDialog visitDate={key} salesRepId={rep.id} />
+                <div className="min-w-0 flex-1">
+                  <QuickVisitInput visitDate={key} salesRepId={rep.id} customers={customers} />
+                </div>
               </div>
-              {dayVisits.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Bu gün için doktor eklenmedi.</p>
-              ) : (
-                <div className="grid gap-2">
+              {dayVisits.length > 0 && (
+                <div className="mt-2 grid gap-2">
                   {dayVisits.map((visit) => (
                     <div key={visit.id} className="rounded-md bg-muted/50 px-3 py-2 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -222,6 +306,8 @@ export function DoctorVisitsPage() {
   const { data: monthPayments = [] } = usePayments({ from: monthStart.toISOString() })
 
   const activeReps = salesReps.filter((r) => r.is_active)
+  // Hızlı ekleme kutusundaki öneriler için Cari Kart doktorları
+  const { data: customers = [] } = useCustomers('')
 
   const performanceByRep = React.useMemo(() => {
     const map = new Map<string, RepPerformance>()
@@ -251,6 +337,11 @@ export function DoctorVisitsPage() {
 
   return (
     <div>
+      <datalist id={DOCTOR_NAMES_LIST_ID}>
+        {customers.map((c) => (
+          <option key={c.id} value={c.full_name} />
+        ))}
+      </datalist>
       <PageHeader
         title="Haftalık Satış Temsilcisi Raporu"
         description="Her satış temsilcisinin isminin altında kendi haftalık doktor listesi"
@@ -292,7 +383,7 @@ export function DoctorVisitsPage() {
 
       <div ref={reportRef} className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {activeReps.map((rep) => (
-          <RepWeekSection
+          <RepWeekSection customers={customers}
             key={rep.id}
             rep={rep}
             days={days}

@@ -299,6 +299,83 @@ ipcMain.handle('instagram:recent-posts', async (_event, username: string) => {
   }
 })
 
+// Instagram sayfasının daha eski paylaşımları (kullanıcı isteği, 2026-10-23:
+// "Adana Masterclass / Ali Şahan Kliniği detaylarını ve resimlerini @elffarma
+// Instagram sayfasından çek") — kongre/etkinlik kartına açıklama ve görsel
+// almak için. Programın kendi Instagram oturumu (persist:instagram) kullanılır;
+// en fazla 5 sayfa (~165 paylaşım) geriye gider. Galeri paylaşımlarının tüm
+// görselleri döner.
+ipcMain.handle('instagram:user-feed', async (_event, username: string, maxPages = 3) => {
+  if (typeof username !== 'string' || !IG_USERNAME.test(username)) return { error: 'invalid' }
+  const pages = Math.min(5, Math.max(1, Number(maxPages) || 1))
+  const ses = session.fromPartition(IG_PARTITION)
+  const loggedIn = (await ses.cookies.get({ domain: 'instagram.com', name: 'sessionid' })).length > 0
+  if (!loggedIn) return { error: 'login' }
+  type Cand = { url: string; width: number }
+  type Item = {
+    code?: string
+    taken_at?: number
+    caption?: { text?: string } | null
+    media_type?: number
+    image_versions2?: { candidates?: Cand[] }
+    carousel_media?: { image_versions2?: { candidates?: Cand[] } }[]
+    user?: { pk?: string | number }
+  }
+  const best = (c?: Cand[]) => (c ?? []).slice().sort((a, b) => b.width - a.width)[0]?.url
+  const posts: { shortcode: string; takenAt: number; caption: string; images: string[]; isVideo: boolean }[] = []
+  let url = `https://www.instagram.com/api/v1/feed/user/${username}/username/?count=33`
+  let userId: string | null = null
+  try {
+    const csrf = (await ses.cookies.get({ domain: 'instagram.com', name: 'csrftoken' }))[0]?.value ?? ''
+    const headers = {
+      'x-ig-app-id': '936619743392459',
+      'x-requested-with': 'XMLHttpRequest',
+      'x-csrftoken': csrf,
+      Accept: '*/*',
+      Referer: `https://www.instagram.com/${username}/`,
+    }
+    for (let i = 0; i < pages && url; i++) {
+      const res = await ses.fetch(url, { headers })
+      if (res.status === 401 || res.status === 403) return { error: 'login', posts }
+      if (!res.ok) return { error: `http-${res.status}`, posts }
+      const text = await res.text()
+      // Instagram geçici engelde / oturum düşünce JSON yerine sayfa döndürüyor
+      if (!text.trimStart().startsWith('{')) return { error: 'blocked', posts }
+      const data = JSON.parse(text) as { items?: Item[]; more_available?: boolean; next_max_id?: string; user?: { pk?: string | number } }
+      for (const it of data.items ?? []) {
+        userId ??= it.user?.pk != null ? String(it.user.pk) : null
+        const images = it.carousel_media?.length
+          ? it.carousel_media.map((m) => best(m.image_versions2?.candidates)).filter((u): u is string => !!u)
+          : [best(it.image_versions2?.candidates)].filter((u): u is string => !!u)
+        posts.push({ shortcode: String(it.code ?? ''), takenAt: Number(it.taken_at ?? 0) * 1000, caption: it.caption?.text ?? '', images, isVideo: it.media_type === 2 })
+      }
+      userId ??= data.user?.pk != null ? String(data.user.pk) : null
+      url = data.more_available && data.next_max_id && userId ? `https://www.instagram.com/api/v1/feed/user/${userId}/?count=33&max_id=${encodeURIComponent(data.next_max_id)}` : ''
+    }
+    return { posts }
+  } catch (err) {
+    return { error: `network: ${String(err).slice(0, 200)}`, posts }
+  }
+})
+
+// Instagram görselini data URL olarak getir (CDN tarayıcıdan CORS ile okunamıyor) —
+// sadece Instagram/Facebook CDN adresleri, en fazla 8 MB.
+ipcMain.handle('instagram:image', async (_event, imageUrl: string) => {
+  try {
+    const u = new URL(imageUrl)
+    if (u.protocol !== 'https:' || !/(^|\.)(cdninstagram\.com|fbcdn\.net)$/.test(u.hostname)) return null
+    const res = await session.fromPartition(IG_PARTITION).fetch(u.toString())
+    if (!res.ok) return null
+    const type = res.headers.get('content-type') ?? 'image/jpeg'
+    if (!type.startsWith('image/')) return null
+    const buf = Buffer.from(await res.arrayBuffer())
+    if (buf.length > 8 * 1024 * 1024) return null
+    return `data:${type.split(';')[0]};base64,${buf.toString('base64')}`
+  } catch {
+    return null
+  }
+})
+
 // Ruhsat okuma için İŞLETİM SİSTEMİNİN yazı tanıması (kullanıcı isteği, 2026-10-21:
 // "şase, motor no vb. okumuyor, hepsini okusun") — macOS'ta Apple Vision
 // (Canlı Metin ile aynı motor, JXA üzerinden), Windows'ta Windows.Media.Ocr
