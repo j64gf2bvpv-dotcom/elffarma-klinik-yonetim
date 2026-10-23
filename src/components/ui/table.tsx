@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils'
  * transform/filter/contain'ler dahil) containing-block etkisine girmiyor,
  * `position: fixed` gerçekten viewport'a göre sabitleniyor.
  */
+const BAR_HEIGHT = 14
+
 function FloatingScrollbar({
   containerRef,
   contentRef,
@@ -27,7 +29,7 @@ function FloatingScrollbar({
   contentRef: React.RefObject<HTMLTableElement | null>
 }) {
   const floatingRef = React.useRef<HTMLDivElement>(null)
-  const [rect, setRect] = React.useState<{ left: number; width: number } | null>(null)
+  const [rect, setRect] = React.useState<{ left: number; width: number; top: number } | null>(null)
   const [contentWidth, setContentWidth] = React.useState(0)
   const syncingRef = React.useRef(false)
 
@@ -40,7 +42,13 @@ function FloatingScrollbar({
       const overflows = container!.scrollWidth > container!.clientWidth + 1
       const show = overflows && box.top < window.innerHeight && box.bottom > 0
       setContentWidth(container!.scrollWidth)
-      setRect(show ? { left: Math.max(box.left, 0), width: box.width } : null)
+      // Tablonun altı ekrandaysa çubuk tablonun HEMEN ALTINDA durur (kullanıcı isteği,
+      // 2026-10-23: "kaydırma çubuğu tablonun tam altında olsun, en altta değil");
+      // tablo ekrandan uzunsa ekranın alt kenarında bekler, tablonun sonuna gelince ona oturur.
+      // Kaydırma gerektiğinde tablonun altında çubuk kadar boşluk bırakılır, çubuk oraya oturur
+      container!.style.paddingBottom = overflows ? `${BAR_HEIGHT}px` : ''
+      const top = Math.min(box.bottom - (overflows ? BAR_HEIGHT : 0), window.innerHeight - BAR_HEIGHT)
+      setRect(show ? { left: Math.max(box.left, 0), width: box.width, top } : null)
     }
 
     update()
@@ -92,8 +100,8 @@ function FloatingScrollbar({
       ref={floatingRef}
       data-testid="floating-scrollbar"
       onScroll={onFloatingScroll}
-      style={{ position: 'fixed', left: rect.left, width: rect.width, bottom: 0 }}
-      className="bg-card border-primary/50 z-40 h-4 overflow-x-auto overflow-y-hidden border-t-2 shadow-[0_-4px_12px_rgba(0,0,0,0.12)]"
+      style={{ position: 'fixed', left: rect.left, width: rect.width, top: rect.top, height: BAR_HEIGHT }}
+      className="bg-card border-primary/50 z-40 overflow-x-auto overflow-y-hidden rounded-b-md border-t shadow-[0_2px_6px_rgba(0,0,0,0.08)]"
     >
       <div style={{ width: contentWidth, height: 1 }} />
     </div>,

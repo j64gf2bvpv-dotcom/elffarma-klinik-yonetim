@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.338] - 2026-10-23
+
+**Tablo kaydırma çubuğu tablonun hemen altında:** Yatay kaydırma çubuğu artık ekranın en altında değil, tablonun hemen altında duruyor (tablo ekrandan uzunsa ekranın alt kenarında bekliyor, tablonun sonuna gelince ona oturuyor); tüm satırlar birlikte kayıyor.
+
 ## [2.17.337] - 2026-10-23
 
 **Satış Temsilcisi Raporu: tek satırda hızlı doktor girişi:** Her günün yanında doğrudan doktor yazma kutusu var — yazarken Cari Kart'taki doktorlar öneriliyor, Enter ile ekleniyor, virgülle birden fazla doktor aynı anda girilebiliyor (cari kartla eşleşen isim karta bağlanıyor, telefonu alınıyor). Ayrı "Doktor Ekle" penceresi kaldırıldı; ayrıntılar eklenen doktorun kalem ikonundan girilir. **Kongreler:** küçük resme tıklayınca büyük önizleme açılıyor (görsel, tarih, yer, açıklama, web sitesi, görseli değiştir, detaylar). **Fatura bildirimi** artık her açılışta değil, her fatura dönemi için bir kez çıkıyor (ana ekrandaki şeritten tekrar açılabilir). Instagram'dan eski paylaşımları ve görselleri getirme altyapısı eklendi.
