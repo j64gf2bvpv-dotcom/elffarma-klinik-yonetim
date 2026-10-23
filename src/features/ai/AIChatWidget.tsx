@@ -168,6 +168,22 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max))
 }
 
+const BUTTON_ANCHOR_KEY = 'ai_button_anchor'
+/** Kenara 120 px'ten yakın bırakılan düğme o kenara yaslanır. */
+function snapAnchor(a: { right: number; bottom: number }): { right: number; bottom: number } {
+  return { right: a.right < 120 ? BUTTON_MARGIN : a.right, bottom: a.bottom < 160 ? BUTTON_MARGIN : a.bottom }
+}
+
+function loadAnchor(): { right: number; bottom: number } | null {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(BUTTON_ANCHOR_KEY) ?? 'null')
+    if (typeof parsed?.right === 'number' && typeof parsed?.bottom === 'number') return parsed
+  } catch {
+    // bozuk kayıt varsa yok say
+  }
+  return null
+}
+
 function loadPosition(key: string): { left: number; top: number } | null {
   try {
     const raw = localStorage.getItem(key)
@@ -269,19 +285,18 @@ export function AIChatWidget() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Yüzen tetikleyici düğme varsayılan olarak sağ-alt köşede durur;
-  // kullanıcı sürükleyince konum hatırlanır (localStorage).
-  const defaultButtonPosition = React.useMemo<{ left: number; top: number }>(
-    () => ({
-      left: clamp(viewport.width - BUTTON_SIZE - BUTTON_MARGIN, BUTTON_MARGIN, viewport.width - BUTTON_SIZE - BUTTON_MARGIN),
-      top: clamp(viewport.height - BUTTON_SIZE - BUTTON_MARGIN, BUTTON_MARGIN, viewport.height - BUTTON_SIZE - BUTTON_MARGIN),
-    }),
-    [viewport],
-  )
-
-  const [buttonOffset, setButtonOffset] = React.useState<{ left: number; top: number } | null>(() =>
-    loadPosition(BUTTON_POSITION_KEY),
-  )
+  // Yüzen tetikleyici düğme varsayılan olarak sağ-alt köşede durur; kullanıcı
+  // sürükleyince konum SAĞ-ALT köşeye uzaklık olarak hatırlanır (localStorage) —
+  // böylece pencere büyütülünce/küçültülünce düğme ekranın ortasında kalıp
+  // içeriğin üstüne binmez. Köşeye yakın bırakılırsa köşeye oturur.
+  const [buttonAnchor, setButtonAnchor] = React.useState<{ right: number; bottom: number }>(() => {
+    const saved = loadAnchor()
+    if (saved) return saved
+    // eski kayıt (sol/üst) → sağ/alt uzaklığa çevir
+    const old = loadPosition(BUTTON_POSITION_KEY)
+    if (old) return snapAnchor({ right: window.innerWidth - BUTTON_SIZE - old.left, bottom: window.innerHeight - BUTTON_SIZE - old.top })
+    return { right: BUTTON_MARGIN, bottom: BUTTON_MARGIN }
+  })
   const buttonDragStateRef = React.useRef<{
     startX: number
     startY: number
@@ -292,21 +307,26 @@ export function AIChatWidget() {
   const [buttonDragging, setButtonDragging] = React.useState(false)
 
   React.useEffect(() => {
-    if (buttonOffset) localStorage.setItem(BUTTON_POSITION_KEY, JSON.stringify(buttonOffset))
-  }, [buttonOffset])
-
-  const buttonStyle = React.useMemo<React.CSSProperties>(() => {
-    const base = buttonOffset ?? defaultButtonPosition
-    return {
-      left: clamp(base.left, BUTTON_MARGIN, viewport.width - BUTTON_SIZE - BUTTON_MARGIN),
-      top: clamp(base.top, BUTTON_MARGIN, viewport.height - BUTTON_SIZE - BUTTON_MARGIN),
+    try {
+      localStorage.setItem(BUTTON_ANCHOR_KEY, JSON.stringify(buttonAnchor))
+      localStorage.removeItem(BUTTON_POSITION_KEY)
+    } catch {
+      // depolama kapalıysa konum sadece bu oturumda kalır
     }
-  }, [buttonOffset, defaultButtonPosition, viewport])
+  }, [buttonAnchor])
+
+  const buttonPos = React.useMemo<{ left: number; top: number }>(
+    () => ({
+      left: clamp(viewport.width - BUTTON_SIZE - buttonAnchor.right, BUTTON_MARGIN, viewport.width - BUTTON_SIZE - BUTTON_MARGIN),
+      top: clamp(viewport.height - BUTTON_SIZE - buttonAnchor.bottom, BUTTON_MARGIN, viewport.height - BUTTON_SIZE - BUTTON_MARGIN),
+    }),
+    [buttonAnchor, viewport],
+  )
+  const buttonStyle = React.useMemo<React.CSSProperties>(() => ({ left: buttonPos.left, top: buttonPos.top }), [buttonPos])
 
   function handleButtonPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
     e.currentTarget.setPointerCapture(e.pointerId)
-    const current = buttonOffset ?? defaultButtonPosition
-    buttonDragStateRef.current = { startX: e.clientX, startY: e.clientY, startLeft: current.left, startTop: current.top, moved: false }
+    buttonDragStateRef.current = { startX: e.clientX, startY: e.clientY, startLeft: buttonPos.left, startTop: buttonPos.top, moved: false }
   }
 
   function handleButtonPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
@@ -319,10 +339,9 @@ export function AIChatWidget() {
       setButtonDragging(true)
     }
     if (!drag.moved) return
-    setButtonOffset({
-      left: clamp(drag.startLeft + dx, BUTTON_MARGIN, window.innerWidth - BUTTON_SIZE - BUTTON_MARGIN),
-      top: clamp(drag.startTop + dy, BUTTON_MARGIN, window.innerHeight - BUTTON_SIZE - BUTTON_MARGIN),
-    })
+    const left = clamp(drag.startLeft + dx, BUTTON_MARGIN, window.innerWidth - BUTTON_SIZE - BUTTON_MARGIN)
+    const top = clamp(drag.startTop + dy, BUTTON_MARGIN, window.innerHeight - BUTTON_SIZE - BUTTON_MARGIN)
+    setButtonAnchor({ right: window.innerWidth - BUTTON_SIZE - left, bottom: window.innerHeight - BUTTON_SIZE - top })
   }
 
   function handleButtonPointerUp() {
@@ -330,13 +349,13 @@ export function AIChatWidget() {
     buttonDragStateRef.current = null
     setButtonDragging(false)
     if (!drag?.moved) setOpen((v) => !v)
+    else setButtonAnchor((a) => snapAnchor(a))
   }
 
   // Panel varsayılan olarak yüzen düğmenin hemen üstünde, sağa yaslı açılır.
   // Kullanıcı paneli kendi sürüklediğinde bu varsayılan yerine panelOffset
   // kullanılır ve konum hatırlanır.
   const defaultPanelPosition = React.useMemo<{ left: number; top: number }>(() => {
-    const buttonPos = buttonOffset ?? defaultButtonPosition
     const left = clamp(
       buttonPos.left + BUTTON_SIZE - PANEL_WIDTH,
       PANEL_MARGIN,
@@ -344,7 +363,7 @@ export function AIChatWidget() {
     )
     const top = clamp(buttonPos.top - PANEL_HEIGHT - 12, PANEL_MARGIN, viewport.height - PANEL_HEIGHT - PANEL_MARGIN)
     return { left, top }
-  }, [viewport, buttonOffset, defaultButtonPosition])
+  }, [viewport, buttonPos])
 
   const [panelOffset, setPanelOffset] = React.useState<{ left: number; top: number } | null>(() =>
     loadPosition(PANEL_POSITION_KEY),

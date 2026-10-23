@@ -62,6 +62,7 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import type { ProductPriceField } from '@/features/stock/api'
 import { exportPriceListPdf, type PriceListKind } from '@/features/stock/exportPriceListPdf'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { fixShortYear } from '@/lib/fixShortYear'
 
 const ALL_BRANDS = 'all'
 
@@ -415,7 +416,7 @@ function ExpiryCell({ product, status }: { product: Product; status: ReturnType<
 
   function commit() {
     setEditing(false)
-    const next = value || null
+    const next = fixShortYear(value || null)
     if (next === (product.expiry_date ?? null)) return
     mutation.mutate({ id: product.id, expiry_date: next })
   }

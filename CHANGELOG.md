@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.336] - 2026-10-23
+
+**Program incelemesi düzeltmeleri:** Yapay zekâ düğmesi sağ-alt köşeye sabitlendi (pencere boyutu değişince ekranın ortasında kalıp tablo/kartların üstünü kapatıyordu; köşeye yakın bırakılınca köşeye oturur). Faturalarda son ödeme günü geçmiş ödenmemiş fatura artık kırmızı "Gecikti · X gün" gösteriyor ("Bekliyor" yazıyordu). Ekip Performansı'nda cirosu/aktivitesi sıfır temsilci "Güçlü" görünmüyor; yapay zekâ önerileri sayfa her açıldığında kendiliğinden çağrılmıyor (kota harcıyordu), "Öneri Al" düğmesiyle geliyor. Son kullanma tarihine yıl iki haneli yazılınca 0028 gibi kaydedilmesi engellendi (20xx'e çevriliyor). Ana panelde özet kartları tek satıra sığıyor (5. kart tek başına alta düşmüyor), kart başlıkları ile "Tümünü gör" aynı satırda.
+
 ## [2.17.335] - 2026-10-22
 
 **Ruhsat: tüm kutular, ruhsatta yazdığı gibi:** Araç formuna ruhsattaki eksik alanlar eklendi (Verildiği İl/İlçe, Tescil Sıra No, Tipi, Net / Azami Yüklü / Katar / Römork ağırlıkları, Ayakta Yolcu, Güç Ağırlık Oranı, Tip Onay No, Hak ve Menfaati Bulunanlar, Noter satış bilgileri, Diğer Bilgiler); alanlar ruhsattaki sırayla. Okuma baştan güçlendirildi: ruhsatın sabit kutu düzeni şablon olarak tanımlandı, basılı etiketlerden fotoğrafın konumu hesaplanıp her kutu ayrı kesilerek okunuyor; nokta vuruşlu yazı için bulanıklaştırılmış birkaç okuma oylanıyor. T.C. kimlik no kontrol haneleriyle, plaka Türk plaka biçimiyle, şase no üretici koduyla doğrulanıyor; Türkçe harfler (İ, Ö, Ü, Ş, Ğ) sözlükle düzeltiliyor ("İSTANBUL / ÜSKÜDAR 37 NOTERLİĞİ", "YOLCU NAKLİ - HUSUSİ"). Okuması kesin olmayan alanlar formda sarı çerçeve ve "kontrol edin" ile işaretleniyor.

@@ -27,6 +27,7 @@ import { ProductCombobox } from './ProductCombobox'
 import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { useCreateProductLot, useProductLots, useRecordStockMovement, useUpdateStockMovement } from './hooks'
 import type { MovementType, Product, StockUnitKind } from '@/types/database'
+import { fixShortYear } from '@/lib/fixShortYear'
 
 const NO_LOT = '__none__'
 const NEW_LOT = '__new__'
@@ -179,7 +180,7 @@ export function StockMovementDialog({
       const created = await createLotMutation.mutateAsync({
         product_id: activeProduct.id,
         lot_no: newLot.lot_no || null,
-        expiry_date: newLot.expiry_date || null,
+        expiry_date: fixShortYear(newLot.expiry_date || null),
         warehouse: newLot.warehouse || null,
         shelf: newLot.shelf || null,
       })

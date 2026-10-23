@@ -23,6 +23,7 @@ import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { useCreateSampleRequest } from './hooks'
 import type { Product } from '@/types/database'
+import { fixShortYear } from '@/lib/fixShortYear'
 
 const NO_SALES_REP = '__none__'
 
@@ -103,7 +104,7 @@ export function SampleRequestForm({ defaultCustomerId, trigger }: SampleRequestF
       items: values.items.map((i) => ({
         product_id: i.product_id,
         lot_no: i.lot_no || null,
-        expiry_date: i.expiry_date || null,
+        expiry_date: fixShortYear(i.expiry_date || null),
         quantity: i.quantity,
         unit_price: i.unit_price,
       })),

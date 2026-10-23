@@ -20,6 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useCreateProduct, useProductCatalogs, useUpdateProduct } from './hooks'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import type { Product } from '@/types/database'
+import { fixShortYear } from '@/lib/fixShortYear'
 
 const NO_BRAND = '__none__'
 
@@ -92,7 +93,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
       unit_price_uninvoiced: values.unit_price_uninvoiced ?? null,
       package_size: values.package_size?.trim() || null,
       campaign: values.campaign || null,
-      expiry_date: values.expiry_date || null,
+      expiry_date: fixShortYear(values.expiry_date || null),
       barcode: values.barcode || null,
       brand_line: values.brand_line && values.brand_line !== NO_BRAND ? values.brand_line : null,
       image_url: values.image_url || null,

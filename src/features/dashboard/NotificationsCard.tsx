@@ -32,8 +32,8 @@ function NotificationThumb({ item }: { item: NotificationItem }) {
 export function NotificationsCard({ items }: { items: NotificationItem[] }) {
   return (
     <Card>
-      <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-        <CardTitle className="flex items-center gap-2 text-base">
+      <CardHeader className="flex-row items-center justify-between gap-2">
+        <CardTitle className="flex min-w-0 items-center gap-2 overflow-hidden text-base whitespace-nowrap">
           <Bell className="size-4 text-primary" /> Bildirimler
         </CardTitle>
         <Button variant="ghost" size="sm" asChild>

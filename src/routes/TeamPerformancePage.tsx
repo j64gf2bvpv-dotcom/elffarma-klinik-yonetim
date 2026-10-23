@@ -88,8 +88,10 @@ export function TeamPerformancePage() {
     const medActivity = median(raw.map((r) => r.activity))
     const medRevenue = median(raw.map((r) => r.revenue))
     return raw.map((r) => {
-      const highActivity = r.activity >= medActivity
-      const highRevenue = r.revenue >= medRevenue
+      // Sıfır aktivite / sıfır ciro hiçbir zaman "yüksek" sayılmaz — herkes 0 iken
+      // medyan da 0 olup herkes "Güçlü" görünüyordu.
+      const highActivity = r.activity > 0 && r.activity >= medActivity
+      const highRevenue = r.revenue > 0 && r.revenue >= medRevenue
       const quadrant: PerformanceQuadrant =
         highActivity && highRevenue ? 'guclu' : highActivity && !highRevenue ? 'potansiyel' : !highActivity && highRevenue ? 'verimli' : 'zayif'
       return { ...r, quadrant }
@@ -184,6 +186,8 @@ export function TeamPerformancePage() {
     },
     staleTime: 15 * 60 * 1000,
     retry: false,
+    // Sayfa her açıldığında yapay zekâ çağrısı yapılmasın (kota harcıyordu) — sadece düğmeyle
+    enabled: false,
     // Bu kart kendi "Yapay zeka sağlayıcısına ulaşılamadı" mesajını zaten
     // gösteriyor — genel queryClient toast'ı ham sağlayıcı hatasını (ör.
     // Gemini'nin JSON gövdesini) tekrar göstermesin diye kapatılıyor.
@@ -279,8 +283,9 @@ export function TeamPerformancePage() {
           <CardTitle className="flex items-center gap-2 text-base">
             <Sparkles className="size-4 text-primary" /> Yapay Zeka Önerileri
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={() => refetchInsight()} disabled={insightLoading}>
+          <Button variant="outline" size="sm" onClick={() => refetchInsight()} disabled={insightLoading}>
             {insightLoading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+            {insightText ? 'Yenile' : 'Öneri Al'}
           </Button>
         </CardHeader>
         <CardContent>
@@ -290,6 +295,8 @@ export function TeamPerformancePage() {
             </p>
           ) : insightLoading ? (
             <p className="text-sm text-muted-foreground">Analiz ediliyor...</p>
+          ) : !insightText ? (
+            <p className="text-sm text-muted-foreground">Ekip verisine göre öneri almak için "Öneri Al"a basın.</p>
           ) : (
             <div className="grid gap-1.5 text-sm">
               {(insightText ?? '')

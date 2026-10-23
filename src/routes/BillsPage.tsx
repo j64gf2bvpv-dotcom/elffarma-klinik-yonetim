@@ -561,14 +561,17 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
                 <TableCell className="font-medium">{currency(Number(b.amount))}</TableCell>
                 <TableCell>
                   <Badge
-                    variant={b.is_paid ? 'success' : 'outline'}
+                    variant={b.is_paid ? 'success' : isOverdue(b.due_date) ? 'destructive' : 'outline'}
                     className="cursor-pointer"
+                    title={b.is_paid ? 'Ödenmedi olarak işaretlemek için tıklayın' : 'Ödendi olarak işaretlemek için tıklayın'}
                     onClick={() => paidMutation.mutate({ id: b.id, isPaid: !b.is_paid, reminderId: b.reminder_id })}
                   >
                     {b.is_paid ? (
                       <>
                         <CheckCircle2 className="size-3" /> Ödendi
                       </>
+                    ) : isOverdue(b.due_date) ? (
+                      `Gecikti · ${differenceInCalendarDays(new Date(), new Date(b.due_date))} gün`
                     ) : (
                       'Bekliyor'
                     )}
@@ -593,6 +596,11 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
       {dialog}
     </div>
   )
+}
+
+/** Son ödeme günü geçmiş mi (bugün son gün sayılır, gecikme değil). */
+function isOverdue(due: string): boolean {
+  return differenceInCalendarDays(new Date(), new Date(due)) > 0
 }
 
 export function BillsPage() {
@@ -648,7 +656,7 @@ export function BillsPage() {
                 { header: 'Abone No', value: (b) => b.subscriber_number ?? '' },
                 { header: 'Son Ödeme Tarihi', value: (b) => b.due_date },
                 { header: 'Tutar', value: (b) => Number(b.amount) },
-                { header: 'Durum', value: (b) => (b.is_paid ? 'Ödendi' : 'Bekliyor') },
+                { header: 'Durum', value: (b) => (b.is_paid ? 'Ödendi' : isOverdue(b.due_date) ? 'Gecikti' : 'Bekliyor') },
               ]}
             />
             <TemplatesManagerDialog />
