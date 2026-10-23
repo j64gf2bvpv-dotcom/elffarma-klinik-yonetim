@@ -85,6 +85,8 @@ export function VehiclesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Araç</TableHead>
+                {/* Düzenle / Sil araç adının hemen yanında (kullanıcı isteği, 2026-10-23) */}
+                <TableHead className="w-0" aria-label="Düzenle / Sil" />
                 <TableHead>Plaka</TableHead>
                 <TableHead>Kullanıcı</TableHead>
                 <TableHead>Firma</TableHead>
@@ -98,14 +100,14 @@ export function VehiclesPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
                     Yükleniyor...
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && vehicles.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
                     Henüz araç kaydı yok
                   </TableCell>
                 </TableRow>
@@ -115,6 +117,29 @@ export function VehiclesPage() {
                   <TableCell className="font-medium">
                     {v.brand_model}
                     {v.year ? ` (${v.year})` : ''}
+                  </TableCell>
+                  <TableCell className="px-1">
+                    <div className="flex gap-0.5">
+                      <VehicleDialog
+                        vehicle={v}
+                        trigger={
+                          <Button variant="ghost" size="icon" title="Düzenle">
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        }
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Sil"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteVehicle(v)
+                        }}
+                      >
+                        <Trash2 className="size-3.5 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell>{v.plate_number ?? '—'}</TableCell>
                   <TableCell>{vehicleUserName(v) ?? '—'}</TableCell>
@@ -157,17 +182,6 @@ export function VehiclesPage() {
                         </Button>
                       )}
                       <FuelLogDialog vehicleId={v.id} vehicleName={v.brand_model} />
-                      <VehicleDialog
-                        vehicle={v}
-                        trigger={
-                          <Button variant="ghost" size="icon" title="Düzenle">
-                            <Pencil className="size-3.5" />
-                          </Button>
-                        }
-                      />
-                      <Button variant="ghost" size="icon" title="Sil" onClick={() => handleDeleteVehicle(v)}>
-                        <Trash2 className="size-3.5 text-destructive" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

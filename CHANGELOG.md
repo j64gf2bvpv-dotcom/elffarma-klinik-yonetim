@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.339] - 2026-10-23
+
+**Araçlar: düzenle / sil araç adının yanında:** Kalem (düzenle) ve çöp kutusu (sil) düğmeleri tablonun sonundan araç modelinin hemen yanına taşındı.
+
 ## [2.17.338] - 2026-10-23
 
 **Tablo kaydırma çubuğu tablonun hemen altında:** Yatay kaydırma çubuğu artık ekranın en altında değil, tablonun hemen altında duruyor (tablo ekrandan uzunsa ekranın alt kenarında bekliyor, tablonun sonuna gelince ona oturuyor); tüm satırlar birlikte kayıyor.
