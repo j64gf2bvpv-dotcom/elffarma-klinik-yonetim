@@ -136,11 +136,6 @@ function CountItemRow({
   // katılmadığı için finalPaket/finalFlakon etkilenmez.
   const [paketValue, setPaketValue] = React.useState(item.counted_quantity?.toString() ?? '')
   const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
-  // Ürün notu — sayım tamamlandıktan sonra da yazılabilir (sadece not, stoğu etkilemez)
-  const [noteValue, setNoteValue] = React.useState(item.note ?? '')
-  React.useEffect(() => {
-    setNoteValue(item.note ?? '')
-  }, [item.note])
   // "Bugünkü Stok" henüz elle sayılmadıysa geçmiş sayımın (baseline) değil,
   // CANLI ürün stoğunun karşılığı olmalı — aksi halde gün içinde "Günün
   // Satış/İade Hareketleri"nden girilen bir satış/iade burada hiç
@@ -259,20 +254,7 @@ function CountItemRow({
         </span>
       </TableCell>
       <TableCell>
-        <Input
-          value={noteValue}
-          placeholder="Not ekle…"
-          className="h-8 text-sm"
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => setNoteValue(e.target.value)}
-          onBlur={() => {
-            const next = noteValue.trim() || null
-            if (next !== (item.note ?? null)) onSaveNote(item.id, next)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-          }}
-        />
+        <ItemNoteInput item={item} onSave={onSaveNote} />
       </TableCell>
       {!readOnly && (
         <TableCell>
@@ -443,6 +425,14 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
       </div>
       {open && (
         <div className="border-t">
+          <div className="border-b p-3">
+            <CountNotesField
+              key={count.id}
+              countId={count.id}
+              initial={count.notes ?? ''}
+              dateLabel={format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
+            />
+          </div>
           {isLoading && <p className="text-muted-foreground p-3 text-sm">Yükleniyor...</p>}
           {!isLoading && items.length === 0 && <p className="text-muted-foreground p-3 text-sm">Kalem yok</p>}
           {/* Açık bir geçmiş sayım, bugünkü sayım paneliyle AYNI şekilde elle
@@ -471,7 +461,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                         {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                       </span>
                     </TableHead>
-                    <TableHead>Not</TableHead>
+                    <TableHead>{format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })} Notu</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -536,7 +526,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                       {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                     </span>
                   </TableHead>
-                  <TableHead>Not</TableHead>
+                  <TableHead>{format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })} Notu</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -552,7 +542,9 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                         resolveCounted(i.expected_quantity_flakon, i.counted_quantity_flakon),
                       )}
                     </TableCell>
-                    <TableCell className="text-sm whitespace-normal text-muted-foreground">{i.note ?? '—'}</TableCell>
+                    <TableCell>
+                      <ItemNoteInput item={i} onSave={(id, note) => updateItemNoteMutation.mutate({ id, note })} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -565,21 +557,43 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
   )
 }
 
+/** Ürün satırı not kutusu — Enter / dışarı tıklayınca kaydeder; geçmiş (tamamlanmış) günlerde de yazılabilir. */
+function ItemNoteInput({ item, onSave }: { item: { id: string; note: string | null }; onSave: (id: string, note: string | null) => void }) {
+  const [value, setValue] = React.useState(item.note ?? '')
+  React.useEffect(() => setValue(item.note ?? ''), [item.note])
+  return (
+    <Input
+      value={value}
+      placeholder="Not ekle…"
+      className="h-8 text-sm"
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => {
+        const next = value.trim() || null
+        if (next !== (item.note ?? null)) onSave(item.id, next)
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+      }}
+    />
+  )
+}
+
 /** Günün sayımı için genel not (kullanıcı isteği, 2026-10-26: "günlük sayımda not kısmı da olsun"). */
-function CountNotesField({ countId, initial }: { countId: string; initial: string }) {
+function CountNotesField({ countId, initial, dateLabel }: { countId: string; initial: string; dateLabel: string }) {
   const [value, setValue] = React.useState(initial)
   const save = useUpdateCountNotes()
   React.useEffect(() => setValue(initial), [initial])
   return (
     <div className="grid w-full max-w-xl gap-1">
       <label htmlFor="count-notes" className="text-xs font-medium text-muted-foreground">
-        Sayım notu
+        {dateLabel} sayım notu
       </label>
       <Textarea
         id="count-notes"
         value={value}
         rows={2}
-        placeholder="Bu günün sayımıyla ilgili not (ör. eksik koli, depoya giden ürünler)…"
+        placeholder={`${dateLabel} günü sayımıyla ilgili not (ör. eksik koli, depoya giden ürünler)…`}
         onChange={(e) => setValue(e.target.value)}
         onBlur={() => {
           const next = value.trim() || null
@@ -795,6 +809,7 @@ export function DailyCountPanel() {
   // Nav okları yanındaki tarih ile Sayım tablosundaki yanıp sönen "Bugünkü
   // Stok" başlığı AYNI metni göstermeli (kullanıcı isteği, 2026-08-28) —
   // tek yerden üretilip ikisinde de kullanılıyor.
+  const activeDateShort = format(new Date(activeCount.count_date), 'dd.MM.yyyy', { locale: trLocale })
   const activeDateLabel =
     format(new Date(activeCount.count_date), 'dd.MM.yyyy', { locale: trLocale }) +
     (activeCount.count_date === todayDate() ? ' - GÜNCEL SAYIM' : '')
@@ -945,7 +960,7 @@ export function DailyCountPanel() {
 
       <Card>
         <CardHeader className="flex-row flex-wrap items-start justify-between gap-2 pb-6">
-          <CountNotesField key={activeCount.id} countId={activeCount.id} initial={activeCount.notes ?? ''} />
+          <CountNotesField key={activeCount.id} countId={activeCount.id} initial={activeCount.notes ?? ''} dateLabel={activeDateShort} />
           {!isCompleted && (
             <div className="w-64">
               <ProductCombobox
@@ -989,7 +1004,9 @@ export function DailyCountPanel() {
                       <TableHead className="w-48 animate-text-blink border-l font-bold text-destructive">
                         {activeDateLabel}
                       </TableHead>
-                      <TableHead className="w-56">Not</TableHead>
+                      <TableHead className="w-56" title={`${activeDateShort} sayımına ait ürün notları`}>
+                        {activeDateShort} Notu
+                      </TableHead>
                       {!isCompleted && <TableHead className="w-12"></TableHead>}
                     </TableRow>
                   </TableHeader>

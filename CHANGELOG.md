@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.345] - 2026-10-26
+
+**Günlük Sayım notları hangi güne ait, açıkça yazıyor:** Not sütunu başlığı ve genel not kutusu sayımın tarihini gösteriyor ("17.10.2026 Notu", "17.10.2026 sayım notu"). Önceki günlere de not eklenebiliyor: Geçmiş Sayımlar'da bir gün açılınca o günün sayım notu ve ürün notları düzenlenebiliyor (tamamlanmış günler dahil).
+
 ## [2.17.344] - 2026-10-26
 
 **Günlük Sayım: not alanları:** Sayım tablosunda her ürünün yanında "Not" sütunu (yazıp Enter / başka yere tıklayınca kaydolur; sayım tamamlandıktan sonra da yazılabilir) ve tablonun üstünde günün sayımı için genel "Sayım notu". Geçmiş sayımlarda notlar görünüyor.
