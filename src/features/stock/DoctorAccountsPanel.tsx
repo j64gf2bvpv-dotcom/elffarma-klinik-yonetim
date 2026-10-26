@@ -249,14 +249,38 @@ export function DoctorAccountsPanel() {
    * kaydı sil olmalı") — satış/iadeler (stok etkisi geri alınır), tahsilatlar, faturalar,
    * teslim bekleyen ürünler ve elle girilen değerler. Doktorun Cari Kart kaydı kalır.
    */
+  /** Bir doktorun bu paneldeki kayıtlarını siler (onay sormaz). */
+  async function deleteAccountRecords(a: DoctorAccount) {
+    for (const s of [...a.sales, ...a.returns]) await deleteSale(s.id)
+    for (const p of a.payments) await deletePayment(p.id)
+    for (const inv of a.invoices) await deleteInvoice(inv.id)
+    for (const p of a.pending) await deletePendingProduct(p.id)
+    await supabase.from('doctor_account_overrides').delete().eq('customer_id', a.customer.id)
+    setExtraIds((prev) => prev.filter((id) => id !== a.customer.id))
+  }
+
+  function refreshAll() {
+    void queryClient.invalidateQueries()
+  }
+
+  function describe(list: DoctorAccount[]): string[] {
+    const sum = (f: (a: DoctorAccount) => number) => list.reduce((t, a) => t + f(a), 0)
+    const salesN = sum((a) => a.sales.length + a.returns.length)
+    const payN = sum((a) => a.payments.length)
+    const invN = sum((a) => a.invoices.length)
+    const pendN = sum((a) => a.pending.length)
+    const manN = sum((a) => (a.manual.size ? 1 : 0))
+    return [
+      salesN ? `${salesN} satış/iade kaydı (stok geri eklenir)` : null,
+      payN ? `${payN} tahsilat` : null,
+      invN ? `${invN} fatura` : null,
+      pendN ? `${pendN} teslim bekleyen ürün` : null,
+      manN ? 'elle girilen değerler' : null,
+    ].filter((x): x is string => !!x)
+  }
+
   async function deleteAccount(a: DoctorAccount) {
-    const parts = [
-      a.sales.length + a.returns.length ? `${a.sales.length + a.returns.length} satış/iade kaydı (stok geri eklenir)` : null,
-      a.payments.length ? `${a.payments.length} tahsilat` : null,
-      a.invoices.length ? `${a.invoices.length} fatura` : null,
-      a.pending.length ? `${a.pending.length} teslim bekleyen ürün` : null,
-      a.manual.size ? 'elle girilen değerler' : null,
-    ].filter(Boolean)
+    const parts = describe([a])
     const ok = await confirm(
       `${a.customer.full_name} — tüm kayıt silinsin mi?\n\n` +
         (parts.length ? `Silinecek: ${parts.join(', ')}.\n` : '') +
@@ -266,20 +290,80 @@ export function DoctorAccountsPanel() {
     if (!ok) return
     setDeletingId(a.customer.id)
     try {
-      for (const s of [...a.sales, ...a.returns]) await deleteSale(s.id)
-      for (const p of a.payments) await deletePayment(p.id)
-      for (const inv of a.invoices) await deleteInvoice(inv.id)
-      for (const p of a.pending) await deletePendingProduct(p.id)
-      await supabase.from('doctor_account_overrides').delete().eq('customer_id', a.customer.id)
-      setExtraIds((prev) => prev.filter((id) => id !== a.customer.id))
+      await deleteAccountRecords(a)
       toast.success(`${a.customer.full_name} kaydı silindi`)
     } catch (err) {
       toast.error('Silme tamamlanamadı', { description: getErrorMessage(err) })
     } finally {
       setDeletingId(null)
-      for (const key of ['sales', 'payments', 'invoices', 'customer_pending_products', 'pending_products', 'doctor_account_overrides', 'products', 'customers', 'reminders'])
-        void queryClient.invalidateQueries({ queryKey: [key] })
-      void queryClient.invalidateQueries()
+      refreshAll()
+    }
+  }
+
+  /** Silmeden önce silinecek kayıtların JSON yedeğini bilgisayara indirir. */
+  function downloadBackup(list: DoctorAccount[]) {
+    const data = list.map((a) => ({
+      doktor: a.customer.full_name,
+      customer_id: a.customer.id,
+      satislar_iadeler: [...a.sales, ...a.returns],
+      tahsilatlar: a.payments,
+      faturalar: a.invoices,
+      teslim_bekleyen: a.pending,
+      elle_girilen: [...a.manual],
+    }))
+    const blob = new Blob([JSON.stringify({ alindi: new Date().toISOString(), doktorlar: data }, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `doktor-hesaplari-yedek-${format(new Date(), 'yyyy-MM-dd-HHmm')}.json`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
+  }
+
+  const [bulkProgress, setBulkProgress] = React.useState<string | null>(null)
+
+  /**
+   * En üstteki "Tümünü Sil" (kullanıcı isteği, 2026-10-26: "en üstte tümünü sil de olsun") —
+   * listede görünen (arama/filtreye uyan) tüm doktorların kayıtlarını siler. İki onay
+   * alınır ve silmeden önce yedek dosyası indirilir.
+   */
+  async function deleteAllVisible() {
+    const list = visible.filter((a) => a.sales.length + a.returns.length + a.payments.length + a.invoices.length + a.pending.length > 0 || a.manual.size > 0)
+    if (list.length === 0) {
+      toast.info('Silinecek kayıt yok')
+      return
+    }
+    const filtered = list.length !== accounts.length || search.trim() !== '' || filter !== 'all'
+    const parts = describe(list)
+    const ok1 = await confirm(
+      `${list.length} doktorun${filtered ? ' (listede görünen)' : ''} tüm kaydı silinsin mi?\n\n` +
+        `Silinecek: ${parts.join(', ')}.\n` +
+        'Bu kayıtlar Satışlar, Tahsilatlar ve Cari Hesap bölümlerinden de kalkar. Doktorların Cari Kart bilgileri silinmez.\n\n' +
+        'Silmeden önce bu kayıtların yedek dosyası bilgisayarınıza (İndirilenler) kaydedilecek.',
+      { title: 'Tümünü sil', confirmLabel: 'Devam Et' },
+    )
+    if (!ok1) return
+    const ok2 = await confirm(`Son onay: ${list.length} doktorun kayıtları kalıcı olarak silinecek. Bu işlem geri alınamaz.`, {
+      title: 'Emin misiniz?',
+      confirmLabel: 'Evet, Tümünü Sil',
+    })
+    if (!ok2) return
+    downloadBackup(list)
+    let done = 0
+    try {
+      for (const a of list) {
+        setBulkProgress(`${done + 1}/${list.length} siliniyor…`)
+        await deleteAccountRecords(a)
+        done++
+      }
+      toast.success(`${done} doktorun kaydı silindi`, { description: 'Yedek dosyası İndirilenler klasörüne kaydedildi.' })
+    } catch (err) {
+      toast.error(`Silme yarıda kaldı (${done}/${list.length})`, { description: getErrorMessage(err) })
+    } finally {
+      setBulkProgress(null)
+      refreshAll()
     }
   }
 
@@ -340,6 +424,9 @@ export function DoctorAccountsPanel() {
           />
         </div>
         <div className="ml-auto">
+          <Button variant="outline" className="text-destructive hover:text-destructive" disabled={!!bulkProgress || visible.length === 0} onClick={() => void deleteAllVisible()}>
+            <Trash2 className="size-4" /> {bulkProgress ?? `Tümünü Sil${visible.length !== accounts.length ? ` (${visible.length})` : ''}`}
+          </Button>
           <ExportMenu<DoctorAccount>
             title="Doktor Hesapları"
             filename="doktor-hesaplari"

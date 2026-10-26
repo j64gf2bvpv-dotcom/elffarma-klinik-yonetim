@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.343] - 2026-10-26
+
+**Doktor Hesapları: en üstte "Tümünü Sil":** Listede görünen (arama/filtreye uyan) tüm doktorların panel kayıtlarını siler — satış/iadeler (stok geri eklenir), tahsilatlar, faturalar, teslim bekleyen ürünler, elle girilen değerler. İki onay alınır; silmeden önce silinecek kayıtların yedek dosyası (JSON) İndirilenler'e kaydedilir. Doktorların Cari Kart bilgileri silinmez.
+
 ## [2.17.342] - 2026-10-26
 
 **Doktor Hesapları: "Tüm kaydı sil":** Her doktor satırının sonunda çöp kutusu — doktorun bu paneldeki tüm kaydını (satış/iadeler — stok geri eklenir —, tahsilatlar, faturalar, teslim bekleyen ürünler, elle girilen değerler) onaydan sonra siler. Onay penceresi neyin silineceğini sayılarıyla gösteriyor; doktorun Cari Kart bilgisi silinmiyor.
