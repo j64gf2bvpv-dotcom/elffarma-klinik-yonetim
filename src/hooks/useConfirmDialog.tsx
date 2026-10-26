@@ -42,7 +42,7 @@ export function useConfirmDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{state?.title ?? 'Emin misiniz?'}</DialogTitle>
-          <DialogDescription>{state?.message}</DialogDescription>
+          <DialogDescription className="whitespace-pre-line">{state?.message}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => handle(false)}>

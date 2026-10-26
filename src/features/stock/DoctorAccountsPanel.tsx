@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 import { ChevronDown, ChevronRight, ExternalLink, PackageCheck, PackageOpen, Plus, Search, ShoppingCart, Trash2, Wallet, Receipt } from 'lucide-react'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,7 +30,13 @@ import { useCongresses } from '@/features/congresses/hooks'
 import { useDoctorAccountOverrides, useSaveDoctorAccountOverride, type OverrideField } from './doctorAccountOverrides'
 import { useInvoices } from '@/features/invoices/hooks'
 import { trFold } from '@/lib/detectProvince'
-import { cn } from '@/lib/utils'
+import { cn, getErrorMessage } from '@/lib/utils'
+import { useConfirmDialog } from '@/hooks/useConfirmDialog'
+import { deleteSale } from '@/features/sales/api'
+import { deletePayment } from '@/features/payments/api'
+import { deleteInvoice } from '@/features/invoices/api'
+import { deletePendingProduct } from '@/features/customers/api'
+import { supabase } from '@/lib/supabaseClient'
 import { tr } from '@/i18n/tr'
 import type { Customer, CustomerPendingProduct, Invoice, Payment, Product, Sale } from '@/types/database'
 
@@ -233,6 +240,49 @@ export function DoctorAccountsPanel() {
     [accounts],
   )
 
+  const queryClient = useQueryClient()
+  const { confirm, dialog: confirmDialog } = useConfirmDialog()
+  const [deletingId, setDeletingId] = React.useState<string | null>(null)
+
+  /**
+   * Doktorun bu paneldeki TÜM kaydını siler (kullanıcı isteği, 2026-10-26: "burada tüm
+   * kaydı sil olmalı") — satış/iadeler (stok etkisi geri alınır), tahsilatlar, faturalar,
+   * teslim bekleyen ürünler ve elle girilen değerler. Doktorun Cari Kart kaydı kalır.
+   */
+  async function deleteAccount(a: DoctorAccount) {
+    const parts = [
+      a.sales.length + a.returns.length ? `${a.sales.length + a.returns.length} satış/iade kaydı (stok geri eklenir)` : null,
+      a.payments.length ? `${a.payments.length} tahsilat` : null,
+      a.invoices.length ? `${a.invoices.length} fatura` : null,
+      a.pending.length ? `${a.pending.length} teslim bekleyen ürün` : null,
+      a.manual.size ? 'elle girilen değerler' : null,
+    ].filter(Boolean)
+    const ok = await confirm(
+      `${a.customer.full_name} — tüm kayıt silinsin mi?\n\n` +
+        (parts.length ? `Silinecek: ${parts.join(', ')}.\n` : '') +
+        'Bu kayıtlar Satışlar, Tahsilatlar ve Cari Hesap bölümlerinden de kalkar; geri alınamaz. Doktorun Cari Kart bilgisi silinmez.',
+      { title: 'Tüm kaydı sil', confirmLabel: 'Tümünü Sil' },
+    )
+    if (!ok) return
+    setDeletingId(a.customer.id)
+    try {
+      for (const s of [...a.sales, ...a.returns]) await deleteSale(s.id)
+      for (const p of a.payments) await deletePayment(p.id)
+      for (const inv of a.invoices) await deleteInvoice(inv.id)
+      for (const p of a.pending) await deletePendingProduct(p.id)
+      await supabase.from('doctor_account_overrides').delete().eq('customer_id', a.customer.id)
+      setExtraIds((prev) => prev.filter((id) => id !== a.customer.id))
+      toast.success(`${a.customer.full_name} kaydı silindi`)
+    } catch (err) {
+      toast.error('Silme tamamlanamadı', { description: getErrorMessage(err) })
+    } finally {
+      setDeletingId(null)
+      for (const key of ['sales', 'payments', 'invoices', 'customer_pending_products', 'pending_products', 'doctor_account_overrides', 'products', 'customers', 'reminders'])
+        void queryClient.invalidateQueries({ queryKey: [key] })
+      void queryClient.invalidateQueries()
+    }
+  }
+
   function toggle(id: string) {
     setOpen((prev) => {
       const next = new Set(prev)
@@ -323,12 +373,13 @@ export function DoctorAccountsPanel() {
                 <TableHead className="text-right">Ödenen</TableHead>
                 <TableHead className="text-right">Kalan Tahsilat</TableHead>
                 <TableHead className="text-center">Durum</TableHead>
+                <TableHead className="w-10" aria-label="Sil" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {visible.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
                     {accounts.length === 0 ? 'Henüz satış, tahsilat ya da teslim bekleyen ürün yok' : 'Eşleşen doktor yok'}
                   </TableCell>
                 </TableRow>
@@ -385,10 +436,24 @@ export function DoctorAccountsPanel() {
                       <TableCell className="text-center">
                         <StatusBadge account={a} />
                       </TableCell>
+                      <TableCell className="px-1 text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Tüm kaydı sil"
+                          disabled={deletingId === a.customer.id}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void deleteAccount(a)
+                          }}
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                     {isOpen && (
                       <TableRow className="bg-muted/20 hover:bg-muted/20">
-                        <TableCell colSpan={8} className="p-4 whitespace-normal">
+                        <TableCell colSpan={9} className="p-4 whitespace-normal">
                           <AccountDetail account={a} products={products} />
                         </TableCell>
                       </TableRow>
@@ -400,6 +465,7 @@ export function DoctorAccountsPanel() {
           </Table>
         </CardContent>
       </Card>
+      {confirmDialog}
     </div>
   )
 }
