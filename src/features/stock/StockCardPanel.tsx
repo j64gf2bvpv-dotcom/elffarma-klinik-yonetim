@@ -375,7 +375,7 @@ export function StockCardPanel() {
 
   const summaryLine =
     mode === 'single'
-      ? `${summary.inQty} giriş · ${summary.outQty} çıkış · Güncel Stok: ${summary.currentStock} Paket · ${summary.doctorCount} doktor`
+      ? `${summary.inQty} giriş · ${summary.outQty} çıkış · Güncel Stok: ${summary.currentStock} Tam Paket · ${summary.doctorCount} doktor`
       : `${summary.productCount} ürün · ${summary.inQty} giriş · ${summary.outQty} çıkış · Toplam Güncel Stok: ${summary.currentStock} · ${summary.doctorCount} doktor`
 
   async function handleImport(rawRows: Record<string, unknown>[]) {
@@ -437,7 +437,7 @@ export function StockCardPanel() {
                 <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                   <IdCard className="size-3.5" />
                   Kod: {product.sku ?? '—'} {product.barcode ? `· Barkod: ${product.barcode}` : ''} · Stokta:{' '}
-                  {(liveProduct?.current_quantity ?? 0) > 0 ? `${liveProduct?.current_quantity} Paket` : '—'}
+                  {(liveProduct?.current_quantity ?? 0) > 0 ? `${liveProduct?.current_quantity} Tam Paket` : '—'}
                 </span>
               )}
             </>
@@ -534,8 +534,8 @@ export function StockCardPanel() {
                   { header: 'Tür', value: (r) => tr.movementType[r.kind] },
                   { header: 'Fiyat', value: (r) => (r.unitPrice != null ? r.unitPrice : '') },
                   { header: 'Sebep / Not', value: (r) => [r.reason, r.note].filter((x, i, a) => x && a.indexOf(x) === i).join(' — ') },
-                  { header: 'Giriş', value: (r) => (r.inQty ? `${r.inQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Paket'}` : '') },
-                  { header: 'Çıkış', value: (r) => (r.outQty ? `${r.outQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Paket'}` : '') },
+                  { header: 'Giriş', value: (r) => (r.inQty ? `${r.inQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Tam Paket'}` : '') },
+                  { header: 'Çıkış', value: (r) => (r.outQty ? `${r.outQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Tam Paket'}` : '') },
                   {
                     header: 'Güncel Stok',
                     value: (r) =>
@@ -544,7 +544,7 @@ export function StockCardPanel() {
                           ? `${r.flakonBalance} Flakon`
                           : '—'
                         : r.balance > 0
-                          ? `${r.balance} Paket`
+                          ? `${r.balance} Tam Paket`
                           : '—',
                   },
                 ]}
@@ -598,7 +598,7 @@ export function StockCardPanel() {
                       <TableCell className="text-success tabular-nums">
                         <InlineQtyCell
                           value={row.inQty}
-                          unitLabel={row.unitKind === 'flakon' ? 'Flakon' : 'Paket'}
+                          unitLabel={row.unitKind === 'flakon' ? 'Flakon' : 'Tam Paket'}
                           onCommit={(next) => handleInlineQtyChange(row, 'in', next)}
                           onClear={() => handleDeleteMovement(row)}
                         />
@@ -606,7 +606,7 @@ export function StockCardPanel() {
                       <TableCell className="text-destructive tabular-nums">
                         <InlineQtyCell
                           value={row.outQty}
-                          unitLabel={row.unitKind === 'flakon' ? 'Flakon' : 'Paket'}
+                          unitLabel={row.unitKind === 'flakon' ? 'Flakon' : 'Tam Paket'}
                           onCommit={(next) => handleInlineQtyChange(row, 'out', next)}
                           onClear={() => handleDeleteMovement(row)}
                         />
@@ -617,7 +617,7 @@ export function StockCardPanel() {
                             ? `${row.flakonBalance} Flakon`
                             : '—'
                           : row.balance > 0
-                            ? `${row.balance} Paket`
+                            ? `${row.balance} Tam Paket`
                             : '—'}
                       </TableCell>
                       <TableCell>

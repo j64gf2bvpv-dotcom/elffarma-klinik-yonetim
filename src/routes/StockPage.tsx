@@ -244,7 +244,7 @@ function QuantityCell({ product }: { product: Product }) {
       className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent"
     >
       <Badge variant={isCritical ? 'destructive' : 'secondary'} className={cn(isCritical && 'animate-alert-glow-red')}>
-        {product.current_quantity > 0 ? `${product.current_quantity} Paket` : '—'}
+        {product.current_quantity > 0 ? `${product.current_quantity} Tam Paket` : '—'}
       </Badge>
     </button>
   )
@@ -749,7 +749,11 @@ function ProductsTable({
               <TableHead className="border-l">Ürün</TableHead>
               <TableHead className="border-l text-center">Boyut</TableHead>
               <TableHead className="border-l text-center">Kategori</TableHead>
-              <TableHead className="border-l text-center">Paket</TableHead>
+              <TableHead className="border-l text-center leading-tight whitespace-normal">
+                Tam Paket
+                <br />
+                (Kutu)
+              </TableHead>
               <TableHead className="border-l text-center">Flakon</TableHead>
               <TableHead className="border-l text-center">Güncel Stok Durumu</TableHead>
               <TableHead className="border-l text-center">Satış Fiyatı</TableHead>
@@ -860,13 +864,13 @@ function ProductsTable({
                     <div className="flex items-center justify-center gap-2 text-sm">
                       <span
                         className={cn(
-                          'w-14 shrink-0 text-right',
+                          'w-24 shrink-0 text-right',
                           isCritical &&
                             product.current_quantity > 0 &&
                             'font-medium text-destructive animate-alert-glow-red',
                         )}
                       >
-                        {product.current_quantity > 0 ? `${product.current_quantity} paket` : '—'}
+                        {product.current_quantity > 0 ? `${product.current_quantity} tam paket` : '—'}
                       </span>
                       <span className="border-border h-4 border-l" />
                       <span className="w-14 shrink-0 text-left">

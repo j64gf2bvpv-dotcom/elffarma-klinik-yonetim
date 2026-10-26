@@ -203,7 +203,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
               name="flakon_per_package"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Paket İçinde Kaç Flakon Var (opsiyonel)</FormLabel>
+                  <FormLabel>Tam Paket (Kutu) İçinde Kaç Flakon Var (opsiyonel)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"

@@ -773,7 +773,7 @@ function AddSaleForm({ customerId, products }: { customerId: string; products: P
     if (!Number.isFinite(quantity) || quantity <= 0 || Math.round(quantity) !== quantity) return toast.error('Adet geçerli bir sayı olmalı')
     if (!Number.isFinite(unit) || unit < 0) return toast.error('Fiyat geçerli bir sayı olmalı')
     if (match && fromStock && match.current_quantity < quantity) {
-      return toast.error(`Stokta ${match.current_quantity} paket var`, { description: '"Stoktan düş" işaretini kaldırarak stok değişmeden kaydedebilirsiniz.' })
+      return toast.error(`Stokta ${match.current_quantity} tam paket var`, { description: '"Stoktan düş" işaretini kaldırarak stok değişmeden kaydedebilirsiniz.' })
     }
     await createSale.mutateAsync({
       type: 'sale',
@@ -811,7 +811,7 @@ function AddSaleForm({ customerId, products }: { customerId: string; products: P
         {match ? (
           <label className="flex cursor-pointer items-center gap-1.5 text-xs">
             <Checkbox checked={fromStock} onCheckedChange={(v) => setFromStock(v === true)} />
-            Stoktan düş (stokta {match.current_quantity} paket)
+            Stoktan düş (stokta {match.current_quantity} tam paket)
           </label>
         ) : (
           <span className="text-xs text-muted-foreground">{name.trim() ? 'Stokta olmayan ürün — stok değişmez' : ''}</span>

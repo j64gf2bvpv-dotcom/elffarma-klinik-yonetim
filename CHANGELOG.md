@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.346] - 2026-10-26
+
+**"Paket" yerine "Tam Paket (Kutu)":** Stok, Günlük Sayım, Stok Kartı ve stok giriş/çıkış penceresinde sütun başlıkları "Tam Paket (Kutu)", miktarlar "4 Tam Paket" olarak yazıyor; Flakon aynen kaldı. Uzun başlık iki satıra bölünüyor, Güncel Stok Durumu sütunu genişletildi (yazılar çakışmıyor). Stok hesapları değişmedi.
+
 ## [2.17.345] - 2026-10-26
 
 **Günlük Sayım notları hangi güne ait, açıkça yazıyor:** Not sütunu başlığı ve genel not kutusu sayımın tarihini gösteriyor ("17.10.2026 Notu", "17.10.2026 sayım notu"). Önceki günlere de not eklenebiliyor: Geçmiş Sayımlar'da bir gün açılınca o günün sayım notu ve ürün notları düzenlenebiliyor (tamamlanmış günler dahil).

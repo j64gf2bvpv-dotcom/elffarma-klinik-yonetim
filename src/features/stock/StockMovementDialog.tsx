@@ -169,7 +169,7 @@ export function StockMovementDialog({
       }
       if (values.quantity > available) {
         toast.error('Yetersiz stok', {
-          description: `${activeProduct.name} için stokta ${available} ${values.unit_kind === 'flakon' ? 'Flakon' : 'Paket'} var, ${values.quantity} ${values.unit_kind === 'flakon' ? 'Flakon' : 'Paket'} çıkış girilemez.`,
+          description: `${activeProduct.name} için stokta ${available} ${values.unit_kind === 'flakon' ? 'Flakon' : 'Tam Paket'} var, ${values.quantity} ${values.unit_kind === 'flakon' ? 'Flakon' : 'Tam Paket'} çıkış girilemez.`,
         })
         return
       }
@@ -254,7 +254,7 @@ export function StockMovementDialog({
           <p className="text-sm text-muted-foreground -mt-2">
             Mevcut stok:{' '}
             <span className="font-medium text-foreground">
-              {activeProduct.current_quantity > 0 ? `${activeProduct.current_quantity} Paket` : '—'}
+              {activeProduct.current_quantity > 0 ? `${activeProduct.current_quantity} Tam Paket` : '—'}
             </span>
             {hasFlakonTracking && (
               <>
@@ -349,7 +349,7 @@ export function StockMovementDialog({
                                 : 'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent'
                             }
                           >
-                            {unit === 'paket' ? 'Paket' : 'Flakon'}
+                            {unit === 'paket' ? 'Tam Paket (Kutu)' : 'Flakon'}
                           </button>
                         ))}
                       </div>
@@ -397,7 +397,7 @@ export function StockMovementDialog({
                       <SelectItem value={NO_LOT}>Lot takibi yok</SelectItem>
                       {lots.map((lot) => (
                         <SelectItem key={`lot-${lot.id}`} value={lot.id}>
-                          {lot.lot_no ?? 'Lot'} {lot.expiry_date ? `— SKT: ${format(new Date(lot.expiry_date), 'd MMM yyyy', { locale: trLocale })}` : ''} ({lot.quantity} Paket)
+                          {lot.lot_no ?? 'Lot'} {lot.expiry_date ? `— SKT: ${format(new Date(lot.expiry_date), 'd MMM yyyy', { locale: trLocale })}` : ''} ({lot.quantity} Tam Paket)
                         </SelectItem>
                       ))}
                       <SelectItem value={NEW_LOT}>

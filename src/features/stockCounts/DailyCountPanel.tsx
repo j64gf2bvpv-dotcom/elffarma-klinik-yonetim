@@ -68,7 +68,7 @@ const COUNT_TABLE_GRID =
 function baselineLabel(paket: number, flakon: number): string {
   if (paket <= 0 && flakon <= 0) return '—'
   if (paket <= 0) return `${flakon} Flakon`
-  return flakon > 0 ? `${paket} Paket, ${flakon} Flakon` : `${paket} Paket`
+  return flakon > 0 ? `${paket} Tam Paket, ${flakon} Flakon` : `${paket} Tam Paket`
 }
 
 /** Son Stok: paket ve flakon ikisi de 0 ise "—"; sadece biri 0 olan tarafta o taraf
@@ -78,7 +78,7 @@ function baselineLabel(paket: number, flakon: number): string {
 function finalStockLabel(paket: number, flakon: number): string {
   if (paket <= 0 && flakon <= 0) return '—'
   if (paket <= 0) return `${flakon} Flakon`
-  return flakon > 0 ? `${paket} Paket - ${flakon} Flakon` : `${paket} Paket`
+  return flakon > 0 ? `${paket} Tam Paket - ${flakon} Flakon` : `${paket} Tam Paket`
 }
 
 /** Bugün girilen tam sayım varsa onu, yoksa (henüz sayılmadı) tabanı (önceki
@@ -196,7 +196,7 @@ function CountItemRow({
       </TableCell>
       <TableCell className="border-l">
         {readOnly ? (
-          <span>{item.counted_quantity != null ? `${item.counted_quantity} Paket` : '—'}</span>
+          <span>{item.counted_quantity != null ? `${item.counted_quantity} Tam Paket` : '—'}</span>
         ) : (
           <Input
             id={`count-paket-${item.id}`}
@@ -454,7 +454,11 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                         'Sistemdeki Miktar'
                       )}
                     </TableHead>
-                    <TableHead className="border-l">Paket</TableHead>
+                    <TableHead className="border-l leading-tight whitespace-normal">
+                      Tam Paket
+                      <br />
+                      (Kutu)
+                    </TableHead>
                     <TableHead>Flakon</TableHead>
                     <TableHead className="border-l text-xs font-bold text-foreground">
                       <span className="bg-primary text-primary-foreground rounded-md -ml-2 px-2 py-1">
@@ -999,7 +1003,11 @@ export function DailyCountPanel() {
                           ? `${format(new Date(previousCompletedCount.count_date), 'dd.MM.yyyy', { locale: trLocale })} - SON SAYIM`
                           : 'Sistemdeki Miktar'}
                       </TableHead>
-                      <TableHead className="w-28 border-l">Paket</TableHead>
+                      <TableHead className="w-28 border-l leading-tight whitespace-normal">
+                        Tam Paket
+                        <br />
+                        (Kutu)
+                      </TableHead>
                       <TableHead className="w-28">Flakon</TableHead>
                       <TableHead className="w-48 animate-text-blink border-l font-bold text-destructive">
                         {activeDateLabel}

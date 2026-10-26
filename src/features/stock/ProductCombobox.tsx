@@ -72,7 +72,7 @@ export function ProductCombobox({ value, onChange, placeholder, onSelectComplete
                           })
                         : 'Fiyat yok'}
                       {' · '}
-                      Stok: {product.current_quantity > 0 ? `${product.current_quantity} Paket` : '—'}
+                      Stok: {product.current_quantity > 0 ? `${product.current_quantity} Tam Paket` : '—'}
                     </p>
                   </div>
                 </CommandItem>
