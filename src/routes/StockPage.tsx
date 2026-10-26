@@ -571,7 +571,7 @@ function PackageSizeCell({ product }: { product: Product }) {
         e.stopPropagation()
         setEditing(true)
       }}
-      title="Boyutu düzenlemek için tıklayın"
+      title="Ambalaj içeriğini düzenlemek için tıklayın"
       className="-mx-1 rounded-md px-1 py-0.5 text-xs text-muted-foreground hover:bg-accent"
     >
       {product.package_size || '—'}
@@ -802,7 +802,7 @@ function ProductsTable({
                 />
               </TableHead>
               <TableHead className="border-l">Ürün</TableHead>
-              <TableHead className="border-l text-center">Boyut</TableHead>
+              <TableHead className="border-l text-center leading-tight whitespace-normal">Ambalaj İçeriği</TableHead>
               <TableHead className="border-l text-center">Kategori</TableHead>
               <TableHead className="border-l text-center leading-tight whitespace-normal">
                 Tam Paket

@@ -257,7 +257,7 @@ export function ProductForm({ product, trigger }: { product?: Product; trigger?:
               name="package_size"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Boyut / İçerik (opsiyonel)</FormLabel>
+                  <FormLabel>Ambalaj İçeriği (opsiyonel)</FormLabel>
                   <FormControl>
                     <Input placeholder="Örn. 6 X 6 ML, 1 X 5 ML, 200 MG X 1 FLAKON" {...field} />
                   </FormControl>

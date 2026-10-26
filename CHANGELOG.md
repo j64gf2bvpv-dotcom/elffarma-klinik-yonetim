@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.348] - 2026-10-26
+
+**Stok: "Boyut" yerine "Ambalaj İçeriği":** Ürün tablosundaki sütun başlığı ve ürün formundaki alan adı "Ambalaj İçeriği" oldu.
+
 ## [2.17.347] - 2026-10-26
 
 **Küçük Kutu: ayrı sayılan üçüncü stok birimi:** Tam Paket (Kutu) ve Flakon'un yanında "Küçük Kutu" — her ürünün ayrı küçük kutu stoğu var. Stok tablosunda kendi sütunu (tıklayıp düzenlenir) ve Güncel Stok Durumu'nda; Günlük Sayım'da Tam Paket ile Flakon arasında sayım sütunu (Enter ile Tam Paket → Küçük Kutu → Flakon); sayım tamamlanınca / geri alınınca küçük kutu stoğu da güncelleniyor. Stok giriş/çıkış penceresinde "Küçük Kutu" birimi, yetersiz stok kontrolü; Stok Kartı'nda ayrı bakiye; "Tüm Ürünleri Sıfırla" küçük kutuyu da sıfırlıyor. Veritabanı: products.small_box_quantity, sayım kalemlerinde beklenen/sayılan küçük kutu, stok hareketi birimi 'kucuk_kutu'.
