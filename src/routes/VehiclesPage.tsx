@@ -18,6 +18,11 @@ import { useVehicles, useDeleteVehicle } from '@/features/vehicles/hooks'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import { vehicleUserName } from '@/features/vehicles/api'
 
+/** "2026-06-12" → "12.06.2026" (dışa aktarım için) */
+function trDate(d: string | null): string {
+  return d ? format(new Date(`${d}T00:00:00`), 'dd.MM.yyyy') : ''
+}
+
 function currency(n: number | null) {
   if (n == null) return '—'
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
@@ -53,15 +58,11 @@ export function VehiclesPage() {
                 { header: 'Kullanıcı', value: (v) => vehicleUserName(v) ?? '' },
                 { header: 'Firma', value: (v) => v.vendor_company ?? '' },
                 { header: 'Aylık Kira', value: (v) => v.monthly_rental_price ?? '' },
-                { header: 'Bakım Tarihi', value: (v) => v.maintenance_date ?? '' },
+                { header: 'Bakım Tarihi', value: (v) => trDate(v.maintenance_date) },
                 { header: 'UTTS', value: (v) => (v.has_utts ? 'Var' : 'Yok') },
-                { header: 'Muayene Geçerlilik', value: (v) => v.inspection_valid_until ?? '' },
-                { header: 'Ruhsat Sahibi', value: (v) => v.owner_name ?? '' },
-                { header: 'Şase No', value: (v) => v.chassis_number ?? '' },
-                { header: 'Motor No', value: (v) => v.engine_number ?? '' },
-                { header: 'İlk Tescil', value: (v) => v.first_registration_date ?? '' },
+                // Ruhsat sahibi, şase/motor no, ilk tescil ve yakıt dışa aktarımdan çıkarıldı (kullanıcı isteği, 2026-10-26)
+                { header: 'Muayene Tarihi', value: (v) => trDate(v.inspection_valid_until) },
                 { header: 'Renk', value: (v) => v.color ?? '' },
-                { header: 'Yakıt', value: (v) => v.fuel_type ?? '' },
               ]}
             />
             <VehicleDialog />

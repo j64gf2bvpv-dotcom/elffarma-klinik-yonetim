@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.350] - 2026-10-26
+
+**Araçlar dışa aktarım:** Ruhsat sahibi, şase no, motor no, ilk tescil ve yakıt sütunları çıkarıldı; muayene tarihi "Muayene Tarihi" başlığıyla gün.ay.yıl biçiminde (bakım tarihi de) — PNG, Excel, Word, PDF hepsinde.
+
 ## [2.17.349] - 2026-10-26
 
 **Stok tablosu: Tam Paket yazıları taşmıyor:** "38 Tam Paket" gibi rozetler sütundan taşıyordu — Tam Paket (Kutu) ve Küçük Kutu sütunları genişletildi.
