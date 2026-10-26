@@ -15,6 +15,8 @@ import {
   updateCountDate,
   updateCountItem,
   updateCountItemFlakon,
+  updateCountItemNote,
+  updateCountNotes,
 } from './api'
 import { getErrorMessage } from '@/lib/utils'
 import type { Product, StockCount } from '@/types/database'
@@ -68,6 +70,29 @@ export function useUpdateCountItemFlakon(stockCountId: string) {
       queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
     },
     onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateCountItemNote(stockCountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note: string | null }) => updateCountItemNote(id, note),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
+    },
+    onError: (error: Error) => toast.error('Not kaydedilemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateCountNotes() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes: string | null }) => updateCountNotes(id, notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_counts'] })
+      toast.success('Sayım notu kaydedildi')
+    },
+    onError: (error: Error) => toast.error('Not kaydedilemedi', { description: error.message }),
   })
 }
 

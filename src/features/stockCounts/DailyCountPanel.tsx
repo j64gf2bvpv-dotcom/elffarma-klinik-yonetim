@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ImportMenu } from '@/components/ImportMenu'
 import { SaleForm } from '@/features/sales/SaleForm'
@@ -43,6 +44,8 @@ import {
   useUpdateCountDate,
   useUpdateCountItem,
   useUpdateCountItemFlakon,
+  useUpdateCountItemNote,
+  useUpdateCountNotes,
 } from './hooks'
 import { exportDailySummaryImage } from './exportSummaryImage'
 import { todayDate, type StockCountItemWithProduct } from './api'
@@ -104,6 +107,7 @@ function CountItemRow({
   onSelect,
   onSavePaket,
   onSaveFlakon,
+  onSaveNote,
   onDelete,
   nextItemId,
 }: {
@@ -114,6 +118,7 @@ function CountItemRow({
   onSelect: (id: string) => void
   onSavePaket: (id: string, value: number | null) => void
   onSaveFlakon: (id: string, value: number | null) => void
+  onSaveNote: (id: string, note: string | null) => void
   onDelete: (item: StockCountItemWithProduct) => void
   /** Enter'la aşağı satıra geçebilmek için (kullanıcı isteği, 2026-08-22) —
    * Paket→Flakon→bir sonraki satırın Paket'i, StockMovementDialog'daki aynı
@@ -131,6 +136,11 @@ function CountItemRow({
   // katılmadığı için finalPaket/finalFlakon etkilenmez.
   const [paketValue, setPaketValue] = React.useState(item.counted_quantity?.toString() ?? '')
   const [flakonValue, setFlakonValue] = React.useState(item.counted_quantity_flakon?.toString() ?? '')
+  // Ürün notu — sayım tamamlandıktan sonra da yazılabilir (sadece not, stoğu etkilemez)
+  const [noteValue, setNoteValue] = React.useState(item.note ?? '')
+  React.useEffect(() => {
+    setNoteValue(item.note ?? '')
+  }, [item.note])
   // "Bugünkü Stok" henüz elle sayılmadıysa geçmiş sayımın (baseline) değil,
   // CANLI ürün stoğunun karşılığı olmalı — aksi halde gün içinde "Günün
   // Satış/İade Hareketleri"nden girilen bir satış/iade burada hiç
@@ -248,6 +258,22 @@ function CountItemRow({
             ))}
         </span>
       </TableCell>
+      <TableCell>
+        <Input
+          value={noteValue}
+          placeholder="Not ekle…"
+          className="h-8 text-sm"
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => setNoteValue(e.target.value)}
+          onBlur={() => {
+            const next = noteValue.trim() || null
+            if (next !== (item.note ?? null)) onSaveNote(item.id, next)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+          }}
+        />
+      </TableCell>
       {!readOnly && (
         <TableCell>
           <Button
@@ -289,6 +315,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
   const undoMutation = useUndoCompleteCount()
   const updateItemMutation = useUpdateCountItem(count.id)
   const updateItemFlakonMutation = useUpdateCountItemFlakon(count.id)
+  const updateItemNoteMutation = useUpdateCountItemNote(count.id)
   const addItemMutation = useAddCountItem(count.id)
   const deleteItemMutation = useDeleteCountItem(count.id)
   const deleteCountMutation = useDeleteStockCount()
@@ -444,6 +471,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                         {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                       </span>
                     </TableHead>
+                    <TableHead>Not</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -458,6 +486,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                       onSelect={setSelectedItemId}
                       onSavePaket={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
                       onSaveFlakon={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
+                      onSaveNote={(id, note) => updateItemNoteMutation.mutate({ id, note })}
                       onDelete={handleDeleteItem}
                       nextItemId={items[index + 1]?.id}
                     />
@@ -507,6 +536,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                       {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
                     </span>
                   </TableHead>
+                  <TableHead>Not</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -522,6 +552,7 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
                         resolveCounted(i.expected_quantity_flakon, i.counted_quantity_flakon),
                       )}
                     </TableCell>
+                    <TableCell className="text-sm whitespace-normal text-muted-foreground">{i.note ?? '—'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -530,6 +561,32 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
         </div>
       )}
       {dialog}
+    </div>
+  )
+}
+
+/** Günün sayımı için genel not (kullanıcı isteği, 2026-10-26: "günlük sayımda not kısmı da olsun"). */
+function CountNotesField({ countId, initial }: { countId: string; initial: string }) {
+  const [value, setValue] = React.useState(initial)
+  const save = useUpdateCountNotes()
+  React.useEffect(() => setValue(initial), [initial])
+  return (
+    <div className="grid w-full max-w-xl gap-1">
+      <label htmlFor="count-notes" className="text-xs font-medium text-muted-foreground">
+        Sayım notu
+      </label>
+      <Textarea
+        id="count-notes"
+        value={value}
+        rows={2}
+        placeholder="Bu günün sayımıyla ilgili not (ör. eksik koli, depoya giden ürünler)…"
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => {
+          const next = value.trim() || null
+          if (next !== (initial.trim() || null)) save.mutate({ id: countId, notes: next })
+        }}
+        className="min-h-14 resize-y text-sm"
+      />
     </div>
   )
 }
@@ -582,6 +639,7 @@ export function DailyCountPanel() {
   const { data: items = [] } = useCountItems(activeCount?.id)
   const updateItemMutation = useUpdateCountItem(activeCount?.id ?? '')
   const updateItemFlakonMutation = useUpdateCountItemFlakon(activeCount?.id ?? '')
+  const updateItemNoteMutation = useUpdateCountItemNote(activeCount?.id ?? '')
   const addItemMutation = useAddCountItem(activeCount?.id ?? '')
   const deleteItemMutation = useDeleteCountItem(activeCount?.id ?? '')
 
@@ -886,8 +944,8 @@ export function DailyCountPanel() {
       </Card>
 
       <Card>
-        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 pb-6">
-          <div />
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-2 pb-6">
+          <CountNotesField key={activeCount.id} countId={activeCount.id} initial={activeCount.notes ?? ''} />
           {!isCompleted && (
             <div className="w-64">
               <ProductCombobox
@@ -931,6 +989,7 @@ export function DailyCountPanel() {
                       <TableHead className="w-48 animate-text-blink border-l font-bold text-destructive">
                         {activeDateLabel}
                       </TableHead>
+                      <TableHead className="w-56">Not</TableHead>
                       {!isCompleted && <TableHead className="w-12"></TableHead>}
                     </TableRow>
                   </TableHeader>
@@ -945,6 +1004,7 @@ export function DailyCountPanel() {
                         onSelect={setSelectedItemId}
                         onSavePaket={(id, value) => updateItemMutation.mutate({ id, counted_quantity: value })}
                         onSaveFlakon={(id, value) => updateItemFlakonMutation.mutate({ id, counted_quantity_flakon: value })}
+                        onSaveNote={(id, note) => updateItemNoteMutation.mutate({ id, note })}
                         onDelete={handleDeleteItem}
                         nextItemId={groupItems[index + 1]?.id}
                       />

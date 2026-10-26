@@ -185,6 +185,16 @@ export async function updateCountItemFlakon(id: string, counted_quantity_flakon:
  * yoksa (ilk sayım / yeni eklenen ürün) canlı products stoğuna düşülüyor —
  * başka anlamlı bir taban yok.
  */
+/** Ürün satırı notu (kullanıcı isteği, 2026-10-26: "günlük sayımda not kısmı da olsun"). */
+export async function updateCountItemNote(id: string, note: string | null): Promise<void> {
+  await offlineUpdate('stock_count_items', id, { note }, 'Sayım kalemi notu')
+}
+
+/** Günün sayımı için genel not. */
+export async function updateCountNotes(stockCountId: string, notes: string | null): Promise<void> {
+  await offlineUpdate('stock_counts', stockCountId, { notes }, 'Sayım notu')
+}
+
 export async function completeCount(stockCountId: string): Promise<void> {
   const items = await fetchCountItems(stockCountId)
 

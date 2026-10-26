@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.344] - 2026-10-26
+
+**Günlük Sayım: not alanları:** Sayım tablosunda her ürünün yanında "Not" sütunu (yazıp Enter / başka yere tıklayınca kaydolur; sayım tamamlandıktan sonra da yazılabilir) ve tablonun üstünde günün sayımı için genel "Sayım notu". Geçmiş sayımlarda notlar görünüyor.
+
 ## [2.17.343] - 2026-10-26
 
 **Doktor Hesapları: en üstte "Tümünü Sil":** Listede görünen (arama/filtreye uyan) tüm doktorların panel kayıtlarını siler — satış/iadeler (stok geri eklenir), tahsilatlar, faturalar, teslim bekleyen ürünler, elle girilen değerler. İki onay alınır; silmeden önce silinecek kayıtların yedek dosyası (JSON) İndirilenler'e kaydedilir. Doktorların Cari Kart bilgileri silinmez.
