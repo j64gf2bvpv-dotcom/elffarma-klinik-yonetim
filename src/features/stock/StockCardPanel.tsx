@@ -42,6 +42,8 @@ import {
 import type { MovementType, Product } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import { getErrorMessage } from '@/lib/utils'
+import { UNIT_LABEL } from '@/lib/stockUnits'
+import type { StockUnitKind } from '@/types/database'
 
 type ReportMode = 'single' | 'all'
 
@@ -281,6 +283,12 @@ function DeleteAllMovementsBulkDialog({ productIds }: { productIds: string[] }) 
  * Excel'den içe aktarılan geçmiş satış/numune kayıtları (bkz. importStockCard.ts)
  * bilinçli olarak gerçek stoğu değiştirmediği için bu deftere yansımaz.
  */
+/** Satırın kendi birimindeki güncel bakiye ("4 Tam Paket", "2 Küçük Kutu", "1 Flakon"). */
+function ledgerBalanceLabel(r: { unitKind: StockUnitKind; balance: number; flakonBalance: number; smallBoxBalance: number }): string {
+  const n = r.unitKind === 'flakon' ? r.flakonBalance : r.unitKind === 'kucuk_kutu' ? r.smallBoxBalance : r.balance
+  return n > 0 ? `${n} ${UNIT_LABEL[r.unitKind]}` : '—'
+}
+
 export function StockCardPanel() {
   const [mode, setMode] = React.useState<ReportMode>('single')
   const [productId, setProductId] = React.useState<string | undefined>(undefined)
@@ -304,11 +312,14 @@ export function StockCardPanel() {
   // yerde (canlı stok gösterimi, yetersiz-stok kontrolü) bunun yerine bu
   // canlı sürüm kullanılmalı (QA'da bulundu, 2026-08-24).
   const liveProduct = product ? (productById.get(product.id) ?? product) : null
-  const resetAffectedCount = allProducts.filter((p) => p.current_quantity > 0 || p.flakon_quantity > 0).length
+  const resetAffectedCount = allProducts.filter((p) => p.current_quantity > 0 || p.flakon_quantity > 0 || (p.small_box_quantity ?? 0) > 0).length
   const productQuantities = React.useMemo(
     () =>
       new Map(
-        allProducts.map((p) => [p.id, { current_quantity: p.current_quantity, flakon_quantity: p.flakon_quantity }]),
+        allProducts.map((p) => [
+          p.id,
+          { current_quantity: p.current_quantity, flakon_quantity: p.flakon_quantity, small_box_quantity: p.small_box_quantity ?? 0 },
+        ]),
       ),
     [allProducts],
   )
@@ -534,18 +545,12 @@ export function StockCardPanel() {
                   { header: 'Tür', value: (r) => tr.movementType[r.kind] },
                   { header: 'Fiyat', value: (r) => (r.unitPrice != null ? r.unitPrice : '') },
                   { header: 'Sebep / Not', value: (r) => [r.reason, r.note].filter((x, i, a) => x && a.indexOf(x) === i).join(' — ') },
-                  { header: 'Giriş', value: (r) => (r.inQty ? `${r.inQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Tam Paket'}` : '') },
-                  { header: 'Çıkış', value: (r) => (r.outQty ? `${r.outQty} ${r.unitKind === 'flakon' ? 'Flakon' : 'Tam Paket'}` : '') },
+                  { header: 'Giriş', value: (r) => (r.inQty ? `${r.inQty} ${UNIT_LABEL[r.unitKind]}` : '') },
+                  { header: 'Çıkış', value: (r) => (r.outQty ? `${r.outQty} ${UNIT_LABEL[r.unitKind]}` : '') },
                   {
                     header: 'Güncel Stok',
                     value: (r) =>
-                      r.unitKind === 'flakon'
-                        ? r.flakonBalance > 0
-                          ? `${r.flakonBalance} Flakon`
-                          : '—'
-                        : r.balance > 0
-                          ? `${r.balance} Tam Paket`
-                          : '—',
+                      ledgerBalanceLabel(r),
                   },
                 ]}
               />
@@ -598,7 +603,7 @@ export function StockCardPanel() {
                       <TableCell className="text-success tabular-nums">
                         <InlineQtyCell
                           value={row.inQty}
-                          unitLabel={row.unitKind === 'flakon' ? 'Flakon' : 'Tam Paket'}
+                          unitLabel={UNIT_LABEL[row.unitKind]}
                           onCommit={(next) => handleInlineQtyChange(row, 'in', next)}
                           onClear={() => handleDeleteMovement(row)}
                         />
@@ -606,19 +611,13 @@ export function StockCardPanel() {
                       <TableCell className="text-destructive tabular-nums">
                         <InlineQtyCell
                           value={row.outQty}
-                          unitLabel={row.unitKind === 'flakon' ? 'Flakon' : 'Tam Paket'}
+                          unitLabel={UNIT_LABEL[row.unitKind]}
                           onCommit={(next) => handleInlineQtyChange(row, 'out', next)}
                           onClear={() => handleDeleteMovement(row)}
                         />
                       </TableCell>
                       <TableCell className="font-medium tabular-nums">
-                        {row.unitKind === 'flakon'
-                          ? row.flakonBalance > 0
-                            ? `${row.flakonBalance} Flakon`
-                            : '—'
-                          : row.balance > 0
-                            ? `${row.balance} Tam Paket`
-                            : '—'}
+                        {ledgerBalanceLabel(row)}
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">

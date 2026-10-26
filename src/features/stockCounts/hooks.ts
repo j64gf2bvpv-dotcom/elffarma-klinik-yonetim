@@ -16,6 +16,7 @@ import {
   updateCountItem,
   updateCountItemFlakon,
   updateCountItemNote,
+  updateCountItemSmallBox,
   updateCountNotes,
 } from './api'
 import { getErrorMessage } from '@/lib/utils'
@@ -66,6 +67,18 @@ export function useUpdateCountItemFlakon(stockCountId: string) {
   return useMutation({
     mutationFn: ({ id, counted_quantity_flakon }: { id: string; counted_quantity_flakon: number | null }) =>
       updateCountItemFlakon(id, counted_quantity_flakon),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
+    },
+    onError: (error: Error) => toast.error('Kaydedilemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateCountItemSmallBox(stockCountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, counted_quantity_small_box }: { id: string; counted_quantity_small_box: number | null }) =>
+      updateCountItemSmallBox(id, counted_quantity_small_box),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock_count_items', stockCountId] })
     },

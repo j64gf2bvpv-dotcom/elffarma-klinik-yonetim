@@ -21,6 +21,8 @@ export interface StockCardRow {
   outQty: number
   balance: number
   flakonBalance: number
+  /** Küçük kutu bakiyesi — paket ve flakondan ayrı sayaç (2026-10-26) */
+  smallBoxBalance: number
 }
 
 const INCREASES_STOCK: ReadonlySet<MovementType> = new Set(['in', 'return', 'adjustment'])
@@ -49,7 +51,7 @@ const INCREASES_STOCK: ReadonlySet<MovementType> = new Set(['in', 'return', 'adj
  */
 export function buildStockLedger(
   movements: StockMovementWithProduct[],
-  productQuantities: Map<string, { current_quantity: number; flakon_quantity: number }>,
+  productQuantities: Map<string, { current_quantity: number; flakon_quantity: number; small_box_quantity?: number }>,
   productId?: string,
 ): StockCardRow[] {
   const byProduct = new Map<string, StockMovementWithProduct[]>()
@@ -65,6 +67,8 @@ export function buildStockLedger(
     const sorted = [...list].sort((a, b) => a.created_at.localeCompare(b.created_at))
     let balance = 0
     let flakonBalance = 0
+    let smallBoxBalance = 0
+    let lastSmallBoxRow: StockCardRow | null = null
     const productRows: StockCardRow[] = []
     let lastPaketRow: StockCardRow | null = null
     let lastFlakonRow: StockCardRow | null = null
@@ -85,8 +89,10 @@ export function buildStockLedger(
       // değil), geçmişte bir kırpma yaşanmış bir üründe bu defter kalıcı
       // olarak products.current_quantity'den sapar (negatif de gösterebilir).
       const isFlakon = m.unit_kind === 'flakon'
+      const isSmallBox = m.unit_kind === 'kucuk_kutu'
       const isIn = INCREASES_STOCK.has(m.movement_type)
       if (isFlakon) flakonBalance = Math.max(0, flakonBalance + (isIn ? m.quantity : -m.quantity))
+      else if (isSmallBox) smallBoxBalance = Math.max(0, smallBoxBalance + (isIn ? m.quantity : -m.quantity))
       else balance = Math.max(0, balance + (isIn ? m.quantity : -m.quantity))
       const row: StockCardRow = {
         id: m.id,
@@ -107,9 +113,11 @@ export function buildStockLedger(
         outQty: !isIn ? m.quantity : 0,
         balance,
         flakonBalance,
+        smallBoxBalance,
       }
       productRows.push(row)
       if (isFlakon) lastFlakonRow = row
+      else if (isSmallBox) lastSmallBoxRow = row
       else lastPaketRow = row
     }
 
@@ -117,6 +125,7 @@ export function buildStockLedger(
     if (real) {
       if (lastPaketRow) lastPaketRow.balance = real.current_quantity
       if (lastFlakonRow) lastFlakonRow.flakonBalance = real.flakon_quantity
+      if (lastSmallBoxRow && real.small_box_quantity != null) lastSmallBoxRow.smallBoxBalance = real.small_box_quantity
     }
     rows.push(...productRows)
   }

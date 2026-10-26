@@ -4,7 +4,7 @@ import { recordStockMovement } from '@/features/stock/api'
 import type { Product, StockCount, StockCountItem } from '@/types/database'
 
 export type StockCountItemWithProduct = StockCountItem & {
-  products: Pick<Product, 'name' | 'unit' | 'brand_line' | 'current_quantity' | 'flakon_quantity' | 'sort_order'>
+  products: Pick<Product, 'name' | 'unit' | 'brand_line' | 'current_quantity' | 'flakon_quantity' | 'small_box_quantity' | 'sort_order'>
 }
 
 /** Stok Yönetimi sayfasıyla AYNI sıralama (sort_order artan, null'lar sonda,
@@ -81,7 +81,7 @@ export async function fetchPastCounts(): Promise<StockCount[]> {
 export async function fetchCountItems(stockCountId: string): Promise<StockCountItemWithProduct[]> {
   const { data, error } = await supabase
     .from('stock_count_items')
-    .select('*, products(name, unit, brand_line, current_quantity, flakon_quantity, sort_order)')
+    .select('*, products(name, unit, brand_line, current_quantity, flakon_quantity, small_box_quantity, sort_order)')
     .eq('stock_count_id', stockCountId)
     .order('created_at', { ascending: true })
   if (error) throw error
@@ -100,7 +100,7 @@ async function createCountForDate(countDate: string, createdBy: string | null | 
   // offline'da anlamlı bir "o anki stok" listesi oluşturulamaz.
   const { data: products, error: productsError } = await supabase
     .from('products')
-    .select('id, current_quantity, flakon_quantity')
+    .select('id, current_quantity, flakon_quantity, small_box_quantity')
     .eq('is_active', true)
   if (productsError) throw productsError
 
@@ -110,6 +110,7 @@ async function createCountForDate(countDate: string, createdBy: string | null | 
       product_id: p.id,
       expected_quantity: p.current_quantity,
       expected_quantity_flakon: p.flakon_quantity,
+      expected_quantity_small_box: p.small_box_quantity ?? 0,
     }))
     const { error: itemsError } = await supabase.from('stock_count_items').insert(items)
     if (itemsError) throw itemsError
@@ -145,7 +146,10 @@ export async function startTodayCount(): Promise<StockCount> {
 /** Sayım başladıktan sonra unutulan/yanlışlıkla dahil edilmiş (ör. örnek/demo
  * ürünler) bir kalemi tek tek eklemek/çıkarmak için — `startTodayCount` tüm
  * aktif ürünleri toplu ekliyor ama sayım açıkken liste elle de düzenlenebilsin. */
-export async function addCountItem(stockCountId: string, product: Pick<Product, 'id' | 'current_quantity' | 'flakon_quantity'>): Promise<void> {
+export async function addCountItem(
+  stockCountId: string,
+  product: Pick<Product, 'id' | 'current_quantity' | 'flakon_quantity'> & { small_box_quantity?: number },
+): Promise<void> {
   await offlineInsert(
     'stock_count_items',
     {
@@ -153,6 +157,7 @@ export async function addCountItem(stockCountId: string, product: Pick<Product, 
       product_id: product.id,
       expected_quantity: product.current_quantity,
       expected_quantity_flakon: product.flakon_quantity,
+      expected_quantity_small_box: product.small_box_quantity ?? 0,
     },
     'Sayıma ürün ekleme',
   )
@@ -185,6 +190,10 @@ export async function updateCountItemFlakon(id: string, counted_quantity_flakon:
  * yoksa (ilk sayım / yeni eklenen ürün) canlı products stoğuna düşülüyor —
  * başka anlamlı bir taban yok.
  */
+export async function updateCountItemSmallBox(id: string, counted_quantity_small_box: number | null): Promise<void> {
+  await offlineUpdate('stock_count_items', id, { counted_quantity_small_box }, 'Sayım kalemi güncelleme (küçük kutu)')
+}
+
 /** Ürün satırı notu (kullanıcı isteği, 2026-10-26: "günlük sayımda not kısmı da olsun"). */
 export async function updateCountItemNote(id: string, note: string | null): Promise<void> {
   await offlineUpdate('stock_count_items', id, { note }, 'Sayım kalemi notu')
@@ -215,7 +224,7 @@ export async function completeCount(stockCountId: string): Promise<void> {
   if (previousCountsError) throw previousCountsError
   const previousCountId = previousCounts?.[0]?.id ?? null
 
-  const baselineByProduct = new Map<string, { paket: number; flakon: number }>()
+  const baselineByProduct = new Map<string, { paket: number; flakon: number; kutu: number }>()
   if (previousCountId) {
     const previousItems = await fetchCountItems(previousCountId)
     for (const item of previousItems) {
@@ -226,6 +235,7 @@ export async function completeCount(stockCountId: string): Promise<void> {
       baselineByProduct.set(item.product_id, {
         paket: item.counted_quantity ?? item.expected_quantity,
         flakon: item.counted_quantity_flakon ?? item.expected_quantity_flakon,
+        kutu: item.counted_quantity_small_box ?? item.expected_quantity_small_box ?? 0,
       })
     }
   }
@@ -244,6 +254,7 @@ export async function completeCount(stockCountId: string): Promise<void> {
     const displayBaseline = baselineByProduct.get(item.product_id) ?? {
       paket: item.products.current_quantity,
       flakon: item.products.flakon_quantity,
+      kutu: item.products.small_box_quantity ?? 0,
     }
 
     if (item.counted_quantity != null) {
@@ -270,6 +281,20 @@ export async function completeCount(stockCountId: string): Promise<void> {
           reason: 'Günlük sayım',
           note: `Önceki sayım: ${displayBaseline.flakon}, Bugünkü sayım: ${item.counted_quantity_flakon}`,
           unit_kind: 'flakon',
+        })
+      }
+    }
+
+    if (item.counted_quantity_small_box != null) {
+      const deltaKutu = item.counted_quantity_small_box - (item.products.small_box_quantity ?? 0)
+      if (deltaKutu !== 0) {
+        await recordStockMovement({
+          product_id: item.product_id,
+          movement_type: deltaKutu > 0 ? 'in' : 'out',
+          quantity: Math.abs(deltaKutu),
+          reason: 'Günlük sayım',
+          note: `Önceki sayım: ${displayBaseline.kutu}, Bugünkü sayım: ${item.counted_quantity_small_box}`,
+          unit_kind: 'kucuk_kutu',
         })
       }
     }
@@ -336,13 +361,14 @@ export async function undoCompleteCount(stockCountId: string): Promise<void> {
   if (previousCountsError) throw previousCountsError
   const previousCountId = previousCounts?.[0]?.id ?? null
 
-  const baselineByProduct = new Map<string, { paket: number; flakon: number }>()
+  const baselineByProduct = new Map<string, { paket: number; flakon: number; kutu: number }>()
   if (previousCountId) {
     const previousItems = await fetchCountItems(previousCountId)
     for (const item of previousItems) {
       baselineByProduct.set(item.product_id, {
         paket: item.counted_quantity ?? item.expected_quantity,
         flakon: item.counted_quantity_flakon ?? item.expected_quantity_flakon,
+        kutu: item.counted_quantity_small_box ?? item.expected_quantity_small_box ?? 0,
       })
     }
   }
@@ -351,6 +377,7 @@ export async function undoCompleteCount(stockCountId: string): Promise<void> {
     const baseline = baselineByProduct.get(item.product_id) ?? {
       paket: item.products.current_quantity,
       flakon: item.products.flakon_quantity,
+      kutu: item.products.small_box_quantity ?? 0,
     }
 
     if (item.counted_quantity != null) {
@@ -377,6 +404,20 @@ export async function undoCompleteCount(stockCountId: string): Promise<void> {
           reason: 'Günlük sayım geri alma',
           note: `Sayım geri alındı — stok ${baseline.flakon} değerine döndürüldü`,
           unit_kind: 'flakon',
+        })
+      }
+    }
+
+    if (item.counted_quantity_small_box != null) {
+      const deltaKutu = baseline.kutu - (item.products.small_box_quantity ?? 0)
+      if (deltaKutu !== 0) {
+        await recordStockMovement({
+          product_id: item.product_id,
+          movement_type: deltaKutu > 0 ? 'in' : 'out',
+          quantity: Math.abs(deltaKutu),
+          reason: 'Günlük sayım geri alma',
+          note: `Sayım geri alındı — stok ${baseline.kutu} değerine döndürüldü`,
+          unit_kind: 'kucuk_kutu',
         })
       }
     }

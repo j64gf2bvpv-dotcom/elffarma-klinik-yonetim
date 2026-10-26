@@ -28,6 +28,7 @@ import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { useCreateProductLot, useProductLots, useRecordStockMovement, useUpdateStockMovement } from './hooks'
 import type { MovementType, Product, StockUnitKind } from '@/types/database'
 import { fixShortYear } from '@/lib/fixShortYear'
+import { STOCK_UNITS, UNIT_LABEL, UNIT_TITLE, unitQuantity } from '@/lib/stockUnits'
 
 const NO_LOT = '__none__'
 const NEW_LOT = '__new__'
@@ -40,7 +41,7 @@ const DECREASING_TYPES: ReadonlySet<MovementType> = new Set(['out', 'disposal', 
 const schema = z.object({
   movement_type: z.enum(['in', 'out', 'adjustment', 'return', 'disposal', 'sample']),
   quantity: z.coerce.number().int().positive('Miktar 0’dan büyük olmalı'),
-  unit_kind: z.enum(['paket', 'flakon']),
+  unit_kind: z.enum(['paket', 'flakon', 'kucuk_kutu']),
   unit_price: z.coerce.number().min(0).optional(),
   reason: z.string().optional(),
   note: z.string().optional(),
@@ -163,13 +164,13 @@ export function StockMovementDialog({
     // kaydın KENDİ eski miktarı zaten stoktan düşülmüş sayıldığından, o kadarı
     // mevcut stoğa geri eklenip müsaitlik öyle hesaplanıyor.
     if (DECREASING_TYPES.has(values.movement_type)) {
-      let available = values.unit_kind === 'flakon' ? activeProduct.flakon_quantity : activeProduct.current_quantity
+      let available = unitQuantity(activeProduct, values.unit_kind)
       if (movement && movement.unit_kind === values.unit_kind && DECREASING_TYPES.has(movement.movement_type)) {
         available += movement.quantity
       }
       if (values.quantity > available) {
         toast.error('Yetersiz stok', {
-          description: `${activeProduct.name} için stokta ${available} ${values.unit_kind === 'flakon' ? 'Flakon' : 'Tam Paket'} var, ${values.quantity} ${values.unit_kind === 'flakon' ? 'Flakon' : 'Tam Paket'} çıkış girilemez.`,
+          description: `${activeProduct.name} için stokta ${available} ${UNIT_LABEL[values.unit_kind]} var, ${values.quantity} ${UNIT_LABEL[values.unit_kind]} çıkış girilemez.`,
         })
         return
       }
@@ -262,6 +263,10 @@ export function StockMovementDialog({
                 <span className="font-medium text-foreground">
                   {activeProduct.flakon_quantity > 0 ? `${activeProduct.flakon_quantity} flakon` : '—'}
                 </span>
+                {' · '}
+                <span className="font-medium text-foreground">
+                  {(activeProduct.small_box_quantity ?? 0) > 0 ? `${activeProduct.small_box_quantity} küçük kutu` : '— küçük kutu'}
+                </span>
               </>
             )}
           </p>
@@ -338,7 +343,7 @@ export function StockMovementDialog({
                     <FormItem>
                       <FormLabel>Birim</FormLabel>
                       <div className="flex gap-1 rounded-lg border p-1">
-                        {(['paket', 'flakon'] as const).map((unit) => (
+                        {STOCK_UNITS.map((unit) => (
                           <button
                             key={unit}
                             type="button"
@@ -349,7 +354,7 @@ export function StockMovementDialog({
                                 : 'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent'
                             }
                           >
-                            {unit === 'paket' ? 'Tam Paket (Kutu)' : 'Flakon'}
+                            {UNIT_TITLE[unit]}
                           </button>
                         ))}
                       </div>

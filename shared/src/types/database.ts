@@ -88,7 +88,7 @@ export interface Customer {
   updated_at: string
 }
 
-export type StockUnitKind = 'paket' | 'flakon'
+export type StockUnitKind = 'paket' | 'flakon' | 'kucuk_kutu'
 
 export interface Product {
   id: string
@@ -102,6 +102,8 @@ export interface Product {
   flakon_per_package: number | null
   /** Bağımsız ikinci stok sayacı (flakon) — current_quantity (paket) ile aynı yönetişim: sadece RPC üzerinden değişir. */
   flakon_quantity: number
+  /** Küçük kutu stoğu — Tam Paket ve Flakon'dan ayrı sayılır (2026-10-26) */
+  small_box_quantity: number
   unit_cost: number | null
   unit_price: number | null
   /** Faturasız satış fiyatı (2026-10-02) */
@@ -257,6 +259,8 @@ export interface StockCountItem {
   counted_quantity: number | null
   expected_quantity_flakon: number
   counted_quantity_flakon: number | null
+  expected_quantity_small_box: number
+  counted_quantity_small_box: number | null
   note: string | null
   created_at: string
 }

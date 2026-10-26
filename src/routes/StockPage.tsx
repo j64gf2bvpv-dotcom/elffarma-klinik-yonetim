@@ -310,6 +310,61 @@ function FlakonQuantityCell({ product }: { product: Product }) {
   )
 }
 
+/** Küçük Kutu adedi — Flakon hücresinin aynısı, kendi ayrı stoğu (unit_kind 'kucuk_kutu'). */
+function SmallBoxQuantityCell({ product }: { product: Product }) {
+  const current = product.small_box_quantity ?? 0
+  const [editing, setEditing] = React.useState(false)
+  const [value, setValue] = React.useState(String(current))
+  const mutation = useRecordStockMovement()
+
+  React.useEffect(() => {
+    if (!editing) setValue(String(current))
+  }, [current, editing])
+
+  async function commit() {
+    const next = Number(value)
+    setEditing(false)
+    if (!Number.isFinite(next) || next < 0 || Math.round(next) !== next) {
+      setValue(String(current))
+      return
+    }
+    const diff = next - current
+    if (diff === 0) return
+    await mutation.mutateAsync({
+      product_id: product.id,
+      movement_type: diff > 0 ? 'adjustment' : 'out',
+      quantity: Math.abs(diff),
+      reason: 'Hızlı küçük kutu düzenleme',
+      unit_kind: 'kucuk_kutu',
+    })
+  }
+
+  if (editing) {
+    return (
+      <InlineNumberEditor
+        value={value}
+        onChange={setValue}
+        onCommit={commit}
+        onCancel={() => {
+          setValue(String(current))
+          setEditing(false)
+        }}
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      title="Küçük kutu adedini düzenlemek için tıklayın"
+      className="-mx-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent"
+    >
+      <Badge variant="secondary">{current > 0 ? `${current} küçük kutu` : '—'}</Badge>
+    </button>
+  )
+}
+
 /** Kampanya metnine tıklayınca yerinde düzenlenebilir hale gelir — sadece campaign alanını günceller. */
 function CampaignCell({ product }: { product: Product }) {
   const [editing, setEditing] = React.useState(false)
@@ -683,7 +738,7 @@ function CategoryCell({ product }: { product: Product }) {
  * dar-ama-uzun bir "çubuk". Gerçek 1400/1024/800/600/400px pencere
  * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
  */
-const PRODUCT_COL_WIDTHS = [44, 68, 40, 180, 140, 160, 96, 90, 176, 110, 134, 192, 120, 340]
+const PRODUCT_COL_WIDTHS = [44, 68, 40, 180, 140, 160, 96, 96, 90, 290, 110, 134, 192, 120, 340]
 const PRODUCT_TABLE_WIDTH = PRODUCT_COL_WIDTHS.reduce((a, b) => a + b, 0)
 
 function ProductsTable({
@@ -753,6 +808,11 @@ function ProductsTable({
                 Tam Paket
                 <br />
                 (Kutu)
+              </TableHead>
+              <TableHead className="border-l text-center leading-tight whitespace-normal">
+                Küçük
+                <br />
+                Kutu
               </TableHead>
               <TableHead className="border-l text-center">Flakon</TableHead>
               <TableHead className="border-l text-center">Güncel Stok Durumu</TableHead>
@@ -840,6 +900,9 @@ function ProductsTable({
                     <QuantityCell product={product} />
                   </TableCell>
                   <TableCell className="border-l text-center">
+                    <SmallBoxQuantityCell product={product} />
+                  </TableCell>
+                  <TableCell className="border-l text-center">
                     <FlakonQuantityCell product={product} />
                   </TableCell>
                   <TableCell className="border-l text-center">
@@ -873,7 +936,11 @@ function ProductsTable({
                         {product.current_quantity > 0 ? `${product.current_quantity} tam paket` : '—'}
                       </span>
                       <span className="border-border h-4 border-l" />
-                      <span className="w-14 shrink-0 text-left">
+                      <span className="w-24 shrink-0 text-center">
+                        {(product.small_box_quantity ?? 0) > 0 ? `${product.small_box_quantity} küçük kutu` : '—'}
+                      </span>
+                      <span className="border-border h-4 border-l" />
+                      <span className="w-16 shrink-0 text-left">
                         {product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}
                       </span>
                     </div>
