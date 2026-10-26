@@ -738,7 +738,7 @@ function CategoryCell({ product }: { product: Product }) {
  * dar-ama-uzun bir "çubuk". Gerçek 1400/1024/800/600/400px pencere
  * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
  */
-const PRODUCT_COL_WIDTHS = [44, 68, 40, 180, 140, 160, 96, 96, 90, 290, 110, 134, 192, 120, 340]
+const PRODUCT_COL_WIDTHS = [44, 68, 40, 180, 140, 160, 128, 120, 96, 290, 110, 134, 192, 120, 340]
 const PRODUCT_TABLE_WIDTH = PRODUCT_COL_WIDTHS.reduce((a, b) => a + b, 0)
 
 function ProductsTable({

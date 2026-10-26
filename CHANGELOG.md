@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.349] - 2026-10-26
+
+**Stok tablosu: Tam Paket yazıları taşmıyor:** "38 Tam Paket" gibi rozetler sütundan taşıyordu — Tam Paket (Kutu) ve Küçük Kutu sütunları genişletildi.
+
 ## [2.17.348] - 2026-10-26
 
 **Stok: "Boyut" yerine "Ambalaj İçeriği":** Ürün tablosundaki sütun başlığı ve ürün formundaki alan adı "Ambalaj İçeriği" oldu.
