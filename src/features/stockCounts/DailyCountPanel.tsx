@@ -102,6 +102,25 @@ function stepFromHint(e: React.KeyboardEvent<HTMLInputElement>, value: string, h
   return true
 }
 
+/**
+ * Aynısı fareyle: kutu boşken sağdaki küçük ok düğmelerine tıklanırsa önce ipucu
+ * rakamı kutuya yazılır, tarayıcı da onu bir artırır/azaltır (kullanıcı
+ * bildirimi, 2026-10-27: "oka tıklayıp yükseltip azaltırken sıfırlamasın").
+ * Sadece ok düğmelerinin olduğu sağ kenar (son ~22 px) yakalanır; kutunun içine
+ * tıklamak kutuyu doldurmaz.
+ */
+function fillHintOnSpinner(e: React.MouseEvent<HTMLInputElement>, value: string, hint: number, set: (v: string) => void) {
+  if (value !== '') return
+  const el = e.currentTarget
+  const x = e.clientX - el.getBoundingClientRect().left
+  if (x < el.clientWidth - 22) return
+  // Tarayıcının kendi adımına bırakmadan biz uygularız: üst yarı = artır, alt yarı = azalt
+  e.preventDefault()
+  const up = e.clientY - el.getBoundingClientRect().top < el.clientHeight / 2
+  set(String(Math.max(0, hint + (up ? 1 : -1))))
+  el.focus()
+}
+
 function resolveCounted(baseline: number, counted: number | null): number {
   return counted ?? baseline
 }
@@ -247,6 +266,7 @@ function CountItemRow({
             placeholder={String(item.products.current_quantity)}
             value={paketValue}
             onChange={(e) => setPaketValue(e.target.value)}
+            onMouseDown={(e) => fillHintOnSpinner(e, paketValue, item.products.current_quantity, setPaketValue)}
             onBlur={handleBlurPaket}
             onKeyDown={(e) => {
               if (stepFromHint(e, paketValue, item.products.current_quantity, setPaketValue)) return
@@ -270,6 +290,7 @@ function CountItemRow({
             placeholder={String(item.products.small_box_quantity ?? 0)}
             value={kutuValue}
             onChange={(e) => setKutuValue(e.target.value)}
+            onMouseDown={(e) => fillHintOnSpinner(e, kutuValue, item.products.small_box_quantity ?? 0, setKutuValue)}
             onBlur={handleBlurKutu}
             onKeyDown={(e) => {
               if (stepFromHint(e, kutuValue, item.products.small_box_quantity ?? 0, setKutuValue)) return
@@ -293,6 +314,7 @@ function CountItemRow({
             placeholder={String(item.products.flakon_quantity)}
             value={flakonValue}
             onChange={(e) => setFlakonValue(e.target.value)}
+            onMouseDown={(e) => fillHintOnSpinner(e, flakonValue, item.products.flakon_quantity, setFlakonValue)}
             onBlur={handleBlurFlakon}
             onKeyDown={(e) => {
               if (stepFromHint(e, flakonValue, item.products.flakon_quantity, setFlakonValue)) return

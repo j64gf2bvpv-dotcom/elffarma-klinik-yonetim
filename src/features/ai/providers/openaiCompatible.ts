@@ -36,6 +36,10 @@ function classifyHttpError(status: number, providerLabel: string, bodyMessage: s
   if (status === 429) {
     return new AIServiceError(`${providerLabel}: istek limiti aşıldı, biraz sonra tekrar deneyin`, 'rate_limit')
   }
+  if (status >= 500) {
+    // Google tarafında geçici yoğunluk ("high demand", 503) — kota DEĞİL; yedek modele geçilir
+    return new AIServiceError(`${providerLabel} şu an çok yoğun (${status}), biraz sonra tekrar deneyin`, 'overloaded')
+  }
   return new AIServiceError(`${providerLabel} hatası (${status}): ${bodyMessage}`, 'unknown')
 }
 

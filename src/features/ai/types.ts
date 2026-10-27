@@ -75,7 +75,7 @@ export interface AISettings {
   model: string
 }
 
-export type AIServiceErrorKind = 'connection' | 'auth' | 'model_not_found' | 'rate_limit' | 'invalid_response' | 'unknown'
+export type AIServiceErrorKind = 'connection' | 'auth' | 'model_not_found' | 'rate_limit' | 'overloaded' | 'invalid_response' | 'unknown'
 
 export class AIServiceError extends Error {
   readonly kind: AIServiceErrorKind

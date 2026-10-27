@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.352] - 2026-10-27
+
+**Yapay zekâ cevap vermiyor sorunu:** Sorun kota değildi — Google'ın ana modeli (gemini-flash) "aşırı yoğunluk" (503) veriyordu. Artık her soru (sohbet penceresi dahil) ana model yoğun / limit dolu / bulunamadı ise otomatik olarak yedek modelle (flash-lite) tekrar soruluyor; hata mesajları "kota" yerine gerçek durumu söylüyor. Yapay zekâ yalnızca soru sorulunca / düğmeye basılınca çağrılıyor (açılışta yalnızca ücretsiz bağlantı kontrolü). **Günlük Sayım:** boş kutuda sağdaki ok düğmelerine fareyle tıklayınca da mevcut adetten artırıp azaltıyor (sıfırlamıyor).
+
 ## [2.17.351] - 2026-10-27
 
 **Günlük Sayım: ok tuşları sıfırlamıyor:** Tam Paket / Küçük Kutu / Flakon sayım kutusu boşken (gri ipucu = mevcut adet) yukarı/aşağı ok tuşu 0'dan başlıyordu; artık mevcut adetten bir artırıp azaltıyor (ör. 14 → 15 / 13).
