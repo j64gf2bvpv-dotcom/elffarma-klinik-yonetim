@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.351] - 2026-10-27
+
+**Günlük Sayım: ok tuşları sıfırlamıyor:** Tam Paket / Küçük Kutu / Flakon sayım kutusu boşken (gri ipucu = mevcut adet) yukarı/aşağı ok tuşu 0'dan başlıyordu; artık mevcut adetten bir artırıp azaltıyor (ör. 14 → 15 / 13).
+
 ## [2.17.350] - 2026-10-26
 
 **Araçlar dışa aktarım:** Ruhsat sahibi, şase no, motor no, ilk tescil ve yakıt sütunları çıkarıldı; muayene tarihi "Muayene Tarihi" başlığıyla gün.ay.yıl biçiminde (bakım tarihi de) — PNG, Excel, Word, PDF hepsinde.

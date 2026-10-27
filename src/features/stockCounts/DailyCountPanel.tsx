@@ -89,6 +89,19 @@ function finalStockLabel(paket: number, flakon: number, kutu = 0): string {
 /** Bugün girilen tam sayım varsa onu, yoksa (henüz sayılmadı) tabanı (önceki
  * sayım / ilk sayımsa canlı stok) döndürür — "adetler aynıysa dünkü sayımla
  * eklemeden yaz" kuralı (kullanıcı isteği, 2026-08-22). */
+/**
+ * Sayım kutusu boşken (gri ipucu = mevcut adet) yukarı/aşağı ok tuşu tarayıcıda
+ * 0'dan başlıyordu (kullanıcı bildirimi, 2026-10-27: "14 varken oka basınca
+ * sıfırlıyor") — boşsa ipucu rakamından bir artırıp/azaltır. Kutu doluysa
+ * tarayıcının kendi davranışı (değeri ±1) aynen çalışır.
+ */
+function stepFromHint(e: React.KeyboardEvent<HTMLInputElement>, value: string, hint: number, set: (v: string) => void): boolean {
+  if ((e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || value !== '') return false
+  e.preventDefault()
+  set(String(Math.max(0, hint + (e.key === 'ArrowUp' ? 1 : -1))))
+  return true
+}
+
 function resolveCounted(baseline: number, counted: number | null): number {
   return counted ?? baseline
 }
@@ -236,6 +249,7 @@ function CountItemRow({
             onChange={(e) => setPaketValue(e.target.value)}
             onBlur={handleBlurPaket}
             onKeyDown={(e) => {
+              if (stepFromHint(e, paketValue, item.products.current_quantity, setPaketValue)) return
               if (e.key === 'Enter') {
                 e.preventDefault()
                 document.getElementById(`count-kutu-${item.id}`)?.focus()
@@ -258,6 +272,7 @@ function CountItemRow({
             onChange={(e) => setKutuValue(e.target.value)}
             onBlur={handleBlurKutu}
             onKeyDown={(e) => {
+              if (stepFromHint(e, kutuValue, item.products.small_box_quantity ?? 0, setKutuValue)) return
               if (e.key === 'Enter') {
                 e.preventDefault()
                 document.getElementById(`count-flakon-${item.id}`)?.focus()
@@ -280,6 +295,7 @@ function CountItemRow({
             onChange={(e) => setFlakonValue(e.target.value)}
             onBlur={handleBlurFlakon}
             onKeyDown={(e) => {
+              if (stepFromHint(e, flakonValue, item.products.flakon_quantity, setFlakonValue)) return
               if (e.key === 'Enter') {
                 e.preventDefault()
                 if (nextItemId) document.getElementById(`count-paket-${nextItemId}`)?.focus()
