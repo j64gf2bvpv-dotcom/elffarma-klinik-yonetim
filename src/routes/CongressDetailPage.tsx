@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+import { bytesToBase64 } from '@/lib/ensureReadableImage'
 import { CongressForm } from '@/features/congresses/CongressForm'
 import { ParticipantDialog } from '@/features/congresses/ParticipantDialog'
 import { ParticipantProductDialog } from '@/features/congresses/ParticipantProductDialog'
@@ -148,6 +149,27 @@ export function CongressDetailPage() {
               )}
             </span>
             {congress.summary && <span className="max-w-3xl text-sm">{congress.summary}</span>}
+            {congress.participation_image_url && (
+              <button
+                type="button"
+                className="mt-1 inline-flex w-fit items-center gap-2 rounded-md border bg-card p-1 pr-2 text-xs text-foreground hover:border-primary/60"
+                title="Katılım bilgileri görselini büyük aç"
+                onClick={async () => {
+                  // Bilgisayarın resim programında aç; olmazsa tarayıcıda
+                  try {
+                    const blob = await (await fetch(congress.participation_image_url!)).blob()
+                    const buf = new Uint8Array(await blob.arrayBuffer())
+                    const ok = await window.electronAPI?.openImageFile?.(bytesToBase64(buf), `Katılım bilgileri ${congress.name}`)
+                    if (!ok) window.open(congress.participation_image_url!, '_blank')
+                  } catch {
+                    window.open(congress.participation_image_url!, '_blank')
+                  }
+                }}
+              >
+                <img src={congress.participation_image_url} alt="Katılım bilgileri" className="h-12 w-16 rounded object-cover" />
+                Katılım bilgileri görseli — büyütmek için tıklayın
+              </button>
+            )}
           </span>
         }
         actions={

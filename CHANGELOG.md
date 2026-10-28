@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.354] - 2026-10-28
+
+**Kongreler: katılım bilgileri görseli:** Kongre formunda fiyat / konaklama / kayıt koşulları afişi yüklenebiliyor (tıkla, sürükle-bırak, yapıştır; tüm görsel biçimleri). Görseldeki yazılar bilgisayarın kendi yazı tanımasıyla okunuyor (ücretsiz, internete gitmez) ve bulunan bilgiler — tarih, şehir, otel/kongre merkezi, tek/iki kişilik fiyat (TL), pansiyon, transfer, kontenjan, erken kayıt/döviz fiyatı — işaretlenerek forma aktarılıyor; metnin tamamı nota eklenebiliyor. İsteğe bağlı "Yapay zekâ ile ayrıntılı oku" (1 istek). Görsel kongre detay sayfasında görünüyor, tıklayınca resim programında büyük açılıyor.
+
 ## [2.17.353] - 2026-10-28
 
 **Kongreler: arama kutusu:** Kongreler sayfasının üstünde arama — ad, şehir, mekân ya da açıklamada geçen kelimeyle süzüyor (ör. "ekam"). 20 kart arasında kongreler gözden kaçıyordu.

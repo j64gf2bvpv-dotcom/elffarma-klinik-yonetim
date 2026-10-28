@@ -37,6 +37,7 @@ export interface CongressInput {
   video_urls?: string[]
   website_url?: string | null
   summary?: string | null
+  participation_image_url?: string | null
 }
 
 /**

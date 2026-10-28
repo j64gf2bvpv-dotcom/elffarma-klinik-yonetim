@@ -27,6 +27,7 @@ import { useAIService } from '@/features/ai/useAIService'
 import { readCongressWebsite, summarizeCongress, uploadSquareCongressImage } from './websiteAssets'
 import type { Congress } from '@/types/database'
 import { IMAGE_ACCEPT } from '@/lib/ensureReadableImage'
+import { ParticipationImageImport } from './ParticipationImageImport'
 
 const schema = z.object({
   name: z.string().min(2, 'Kongre adı gerekli'),
@@ -52,6 +53,7 @@ const schema = z.object({
   video_urls: z.string().optional(),
   website_url: z.string().optional(),
   summary: z.string().optional(),
+  participation_image_url: z.string().optional(),
 })
 
 type FormInput = z.input<typeof schema>
@@ -82,6 +84,7 @@ function defaults(congress: Congress | undefined): FormInput {
     video_urls: congress?.video_urls?.join('\n') ?? '',
     website_url: congress?.website_url ?? '',
     summary: congress?.summary ?? '',
+    participation_image_url: congress?.participation_image_url ?? '',
   }
 }
 
@@ -148,6 +151,7 @@ export function CongressForm({ congress }: { congress?: Congress }) {
         : [],
       website_url: normalizeUrl(values.website_url) || null,
       summary: values.summary?.trim() || null,
+      participation_image_url: values.participation_image_url || null,
     }
     if (congress) {
       await updateMutation.mutateAsync({ id: congress.id, input })
@@ -192,6 +196,7 @@ export function CongressForm({ congress }: { congress?: Congress }) {
               )}
             />
             <WebsiteImport form={form} />
+            <ParticipationImageImport form={form} />
             <FormField
               control={form.control}
               name="summary"
