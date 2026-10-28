@@ -78,36 +78,22 @@ export function AgendaPage() {
 
   const dotsByDay = React.useMemo(() => buildAgendaDotsByDay(events), [events])
 
-  // Sadece ince bir etkinlik çubuğu değil, önemli her tarihin (hatırlatma,
-  // ödeme vadesi, kongre/workshop) denk geldiği takvim kutucuğunun TAMAMI
-  // türüne göre renkle boyansın diye FullCalendar'ın "background" etkinlik
-  // özelliği kullanılıyor. Çok günlü kongrelerde FullCalendar'da end tarihi
-  // HARİÇ olduğu için son günün de boyanması adına end tarihine 1 gün
-  // ekleniyor; tek günlük etkinliklerde sadece o günün kendisi boyanıyor.
-  const backgroundEvents = React.useMemo<EventInput[]>(
-    () =>
-      events.map((e) => ({
-        id: `${e.id}-bg`,
-        start: e.start,
-        end: e.end ? addDays(new Date(e.end), 1).toISOString().slice(0, 10) : undefined,
-        display: 'background' as const,
-        backgroundColor: agendaTypeMeta[e.type].color,
-      })),
-    [events],
-  )
-
+  // Günleri tamamen boyayan "arka plan" blokları kaldırıldı (kullanıcı isteği, 2026-10-28:
+  // "etkinlikler tüm sayfayı kaplıyor, daha sade premium bir şey yap") — etkinlikler artık
+  // soluk zeminli, solunda ince renk şeridi olan tek satırlık etiketler.
   const calendarEvents = React.useMemo<EventInput[]>(
     () => [
       ...events.map((e) => ({
         id: e.id,
         title: e.title,
         start: e.start,
-        end: e.end,
+        // FullCalendar'da bitiş günü hariç — son gün de etikette görünsün
+        end: e.end ? addDays(new Date(e.end), 1).toISOString().slice(0, 10) : undefined,
+        allDay: true,
         extendedProps: { type: e.type, linkId: e.linkId, urgent: isAgendaEventUrgent(e.start), tooltip: buildAgendaTooltip(e) },
       })),
-      ...backgroundEvents,
     ],
-    [events, backgroundEvents],
+    [events],
   )
 
   function handleEventClick(arg: EventClickArg) {
@@ -130,8 +116,7 @@ export function AgendaPage() {
   }
 
   function eventClassNames(arg: { event: { extendedProps: Record<string, unknown> } }) {
-    if (arg.event.extendedProps.urgent) return ['animate-alert-glow-red']
-    return []
+    return arg.event.extendedProps.urgent ? ['agenda-event', 'agenda-event-urgent'] : ['agenda-event']
   }
 
   // Fare üzerine geldiğinde (tıklamadan, sayfa değiştirmeden) etkinliğin tür/
@@ -145,9 +130,7 @@ export function AgendaPage() {
     if (tooltip) arg.el.title = tooltip
     if (type) {
       const color = agendaTypeMeta[type].color
-      arg.el.style.backgroundColor = `color-mix(in oklab, ${color} 15%, transparent)`
-      arg.el.style.borderLeft = `2.5px solid ${color}`
-      arg.el.style.color = 'var(--color-foreground)'
+      arg.el.style.setProperty('--agenda-color', color)
     }
   }
 
@@ -157,9 +140,9 @@ export function AgendaPage() {
     const meta = agendaTypeMeta[type]
     const Icon = meta.icon
     return (
-      <span className="flex items-center gap-1 truncate px-0.5 py-px">
-        <Icon className="size-2.5 shrink-0" style={{ color: meta.color }} strokeWidth={2.75} />
-        <span className="truncate text-[11.5px] font-semibold">{arg.event.title}</span>
+      <span className="flex min-w-0 items-center gap-1.5">
+        <Icon className="size-3 shrink-0" style={{ color: meta.color }} strokeWidth={2.25} />
+        <span className="truncate">{arg.event.title}</span>
       </span>
     )
   }
@@ -316,7 +299,7 @@ export function AgendaPage() {
               customButtons={{ today: { text: 'Bugün', click: goToday } }}
               headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }}
               buttonText={{ month: 'Ay', week: 'Hafta', day: 'Gün' }}
-              dayMaxEvents={3}
+              dayMaxEvents={2}
               moreLinkText={(n) => `+${n} daha`}
             />
           </CardContent>

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.358] - 2026-10-28
+
+**Ajanda: sade takvim:** Etkinlikler artık günleri tamamen boyamıyor — soluk zeminli, solunda ince renk şeridi olan tek satırlık etiketler; çok günlü kongreler ince tek bant (son gün dahil); bir günde en fazla 2 etkinlik, fazlası "+N daha"; yanıp sönen parlama kaldırıldı.
+
 ## [2.17.357] - 2026-10-28
 
 **Faturalar: Durum sütunu kaldırıldı:** Faturalar listesinde ve dışa aktarımda Durum (Ödendi/Bekliyor) yok; "Hepsi ödendi" rozeti ve Tutarlar sekmesindeki renklendirme de kaldırıldı. Faturanın ödendi işareti ana ekrandaki fatura hatırlatma penceresinden veriliyor.
