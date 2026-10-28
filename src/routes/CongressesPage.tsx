@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { formatDateRange } from '@/lib/dateRange'
 import { Link } from 'react-router-dom'
-import { CalendarRange, ArrowRight, AlertTriangle, Trash2, Globe, Loader2, MapPin } from 'lucide-react'
+import { CalendarRange, ArrowRight, AlertTriangle, Trash2, Globe, Loader2, MapPin, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -9,6 +9,8 @@ import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { trFold } from '@/lib/detectProvince'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CongressForm } from '@/features/congresses/CongressForm'
 import { useCongresses, useDeleteCongress } from '@/features/congresses/hooks'
@@ -26,6 +28,14 @@ export function CongressesPage() {
   const aiService = useAIService()
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = React.useState<string | null>(null)
+  // Arama (kullanıcı bildirimi, 2026-10-28: "kongrelerde Ekam yok" — 20 kart
+  // arasında gözden kaçıyordu): ad, şehir, mekân, açıklamada geçen kelimeyle süzer
+  const [search, setSearch] = React.useState('')
+  const visibleCongresses = React.useMemo(() => {
+    const q = trFold(search.trim())
+    if (!q) return congresses
+    return congresses.filter((c) => trFold([c.name, c.city, c.venue, c.summary, c.notes].filter(Boolean).join(' ')).includes(q))
+  }, [congresses, search])
 
   async function handleDelete(e: React.MouseEvent, congress: Congress) {
     e.preventDefault()
@@ -103,14 +113,28 @@ export function CongressesPage() {
         }
       />
 
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={`Kongre ara (${congresses.length} kongre)…`}
+          className="pl-9"
+        />
+      </div>
+
       {isLoading && <p className="text-muted-foreground">Yükleniyor...</p>}
+
+      {!isLoading && congresses.length > 0 && visibleCongresses.length === 0 && (
+        <p className="text-muted-foreground">"{search}" ile eşleşen kongre yok.</p>
+      )}
 
       {!isLoading && congresses.length === 0 && (
         <p className="text-muted-foreground">Henüz kongre eklenmedi.</p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {congresses.map((congress) => (
+        {visibleCongresses.map((congress) => (
           <Link key={congress.id} to={`/kongreler/${congress.id}`}>
             <Card className="h-full transition-colors hover:border-primary/50">
               <CardContent className="pt-6">

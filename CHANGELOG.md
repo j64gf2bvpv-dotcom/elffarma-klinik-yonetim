@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.353] - 2026-10-28
+
+**Kongreler: arama kutusu:** Kongreler sayfasının üstünde arama — ad, şehir, mekân ya da açıklamada geçen kelimeyle süzüyor (ör. "ekam"). 20 kart arasında kongreler gözden kaçıyordu.
+
 ## [2.17.352] - 2026-10-27
 
 **Yapay zekâ cevap vermiyor sorunu:** Sorun kota değildi — Google'ın ana modeli (gemini-flash) "aşırı yoğunluk" (503) veriyordu. Artık her soru (sohbet penceresi dahil) ana model yoğun / limit dolu / bulunamadı ise otomatik olarak yedek modelle (flash-lite) tekrar soruluyor; hata mesajları "kota" yerine gerçek durumu söylüyor. Yapay zekâ yalnızca soru sorulunca / düğmeye basılınca çağrılıyor (açılışta yalnızca ücretsiz bağlantı kontrolü). **Günlük Sayım:** boş kutuda sağdaki ok düğmelerine fareyle tıklayınca da mevcut adetten artırıp azaltıyor (sıfırlamıyor).
