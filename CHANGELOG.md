@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.360] - 2026-10-28
+
+**Güncellemeler kendiliğinden kuruluyor:** İndirilen güncelleme artık programın kapatılıp açılmasını beklemiyor — bilgisayar 3 dakika boyunca kullanılmadığında program kendini güncelleyip yeniden açılıyor (kullanan kişinin yarım işi kaybolmasın diye boşta beklenir). Yeni sürüm kontrolü saatte bir yerine 15 dakikada bir.
+
 ## [2.17.359] - 2026-10-28
 
 **Ajanda: kompakt takvim, bildirim noktaları:** Ay görünümünde etkinlik adları yazmıyor — her günün tarihinin altında türüne göre renkli küçük bildirim noktaları (en fazla 4, fazlası "+N"); üzerine gelince o günün etkinlikleri (tür, ad, tarih) şık bir bilgi kutusunda listeleniyor, tek etkinlik varsa tıklayınca ilgili kayda gidiyor. Gün kutucukları küçültüldü. Hafta/gün görünümünde etkinlikler ince renkli çizgi + üzerine gelince bilgi kutusu.

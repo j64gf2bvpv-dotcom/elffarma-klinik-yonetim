@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, shell, Notification, ipcMain, session } from 'electron'
+import { app, BrowserWindow, Menu, shell, Notification, ipcMain, session, powerMonitor } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import path from 'node:path'
 import fs from 'node:fs'
@@ -145,6 +145,28 @@ function sendUpdaterEvent(event: UpdaterEvent) {
 // olduğu için hem başlangıç otomatik kontrolünde hem manuel IPC'de
 // `app.isPackaged` ile korunuyor; `npm run dev`'de update feed'i olmadığından
 // autoUpdater sessizce hata verir.
+/**
+ * Güncelleme indirilince kullanıcı hiçbir şeye basmadan kurulsun (kullanıcı isteği,
+ * 2026-10-28: "otomatik güncelleme yapmadan diğer PC'lerde de yüklensin") — ama biri
+ * o anda form doldururken program kapanıp veri kaybolmasın diye bilgisayar
+ * IDLE_INSTALL_SECONDS boyunca (klavye/fare) kullanılmadığında kurulur ve program
+ * kendiliğinden yeniden açılır. Kapatıp açarsa zaten açılışta kurulur (autoInstallOnAppQuit).
+ */
+const IDLE_INSTALL_SECONDS = 180
+let idleInstallTimer: NodeJS.Timeout | null = null
+function scheduleIdleInstall(version: string) {
+  if (idleInstallTimer) return
+  idleInstallTimer = setInterval(() => {
+    const idle = powerMonitor.getSystemIdleTime()
+    if (idle < IDLE_INSTALL_SECONDS) return
+    if (idleInstallTimer) clearInterval(idleInstallTimer)
+    idleInstallTimer = null
+    logUpdater(`Bilgisayar ${idle} sn boşta — v${version} kuruluyor, program yeniden açılacak`)
+    // isSilent: Windows kurulum penceresi gösterilmez; isForceRunAfter: kurulumdan sonra program açılır
+    autoUpdater.quitAndInstall(true, true)
+  }, 30 * 1000)
+}
+
 function setupAutoUpdater() {
   logUpdater(`Başlatıldı — mevcut sürüm: ${app.getVersion()}`)
   autoUpdater.on('checking-for-update', () => {
@@ -182,9 +204,10 @@ function setupAutoUpdater() {
     if (Notification.isSupported()) {
       new Notification({
         title: 'Güncelleme hazır',
-        body: `v${info.version} indirildi. Uygulamayı bir sonraki kapatıp açışınızda otomatik kurulacak.`,
+        body: `v${info.version} indirildi — bilgisayar birkaç dakika boşta kalınca program kendini güncelleyip yeniden açılacak.`,
       }).show()
     }
+    scheduleIdleInstall(info.version)
   })
   autoUpdater.on('error', (error) => {
     logUpdater(`HATA: ${error.message}\n${error.stack ?? ''}`)
@@ -658,7 +681,7 @@ if (!gotSingleInstanceLock) {
       // Bu bir ERP yazılımı — uygulama günlerce hiç kapatılmadan açık kalabilir.
       // Sadece başlangıçtaki tek seferlik kontrol yeterli değil, yoksa uygulama
       // zaten açıkken yayınlanan bir güncelleme hiç fark edilmez (kullanıcı
-      // raporu: "program açık, bildirim gelmedi"). Açık kaldığı sürece saatte
+      // raporu: "program açık, bildirim gelmedi"). Açık kaldığı sürece 15 dakikada
       // bir arka planda tekrar kontrol ediyoruz.
       setInterval(
         () => {
@@ -666,7 +689,8 @@ if (!gotSingleInstanceLock) {
             logUpdater(`Periyodik güncelleme kontrolü HATA: ${error.message}`)
           })
         },
-        60 * 60 * 1000,
+        // 15 dakikada bir — yayınlanan güncelleme diğer bilgisayarlara çabuk ulaşsın (2026-10-28)
+        15 * 60 * 1000,
       )
     }
     // Windows: uygulama elffarmapaket:// bağlantısıyla ilk kez açılıyorsa argv'de gelir.
