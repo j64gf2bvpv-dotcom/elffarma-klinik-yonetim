@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -534,7 +535,7 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
           ) : null}
           {group.unpaidCount > 0 ? (
             <Badge variant="outline" className="border-destructive/30 text-destructive">
-              {group.unpaidCount} borç · {currency(group.unpaidTotal)}
+              {group.unpaidCount} ödenmemiş
             </Badge>
           ) : (
             <Badge variant="success">
@@ -548,7 +549,6 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
           <TableHeader>
             <TableRow>
               <TableHead>Son Ödeme Tarihi</TableHead>
-              <TableHead>Tutar</TableHead>
               <TableHead>Durum</TableHead>
               <TableHead>Not</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
@@ -558,7 +558,6 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
             {group.bills.map((b) => (
               <TableRow key={b.id}>
                 <TableCell>{format(new Date(b.due_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
-                <TableCell className="font-medium">{currency(Number(b.amount))}</TableCell>
                 <TableCell>
                   <Badge
                     variant={b.is_paid ? 'success' : isOverdue(b.due_date) ? 'destructive' : 'outline'}
@@ -599,6 +598,117 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
 }
 
 /** Son ödeme günü geçmiş mi (bugün son gün sayılır, gecikme değil). */
+function AmountCard({ label, value, sub, tone }: { label: string; value: number; sub?: string; tone: 'destructive' | 'primary' | 'muted' }) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-3 pt-6">
+        <span
+          className={cn(
+            'flex size-11 shrink-0 items-center justify-center rounded-xl',
+            tone === 'destructive' ? 'bg-destructive/15 text-destructive' : tone === 'primary' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground',
+          )}
+        >
+          <Zap className="size-5" />
+        </span>
+        <div>
+          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">{label}</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(value)}</p>
+          {sub && <p className="text-muted-foreground text-xs">{sub}</p>}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * "Tutarlar" sekmesi: abonelik × ay tutar tablosu (son 12 ay ya da faturaların olduğu
+ * aylar). Ödenen yeşil, ödenmemiş kırmızı (gecikmişse koyu); satır, sütun ve genel toplam.
+ */
+function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
+  const months = React.useMemo(() => {
+    const keys = new Set<string>()
+    for (const g of groups) for (const b of g.bills) keys.add(b.due_date.slice(0, 7))
+    return [...keys].sort().slice(-12)
+  }, [groups])
+
+  if (groups.length === 0 || months.length === 0) {
+    return (
+      <Card>
+        <CardContent className="text-muted-foreground p-6">Henüz fatura tutarı yok.</CardContent>
+      </Card>
+    )
+  }
+
+  const cell = (g: SubscriptionGroup, month: string) => g.bills.filter((b) => b.due_date.slice(0, 7) === month)
+  const sumOf = (list: UtilityBill[]) => list.reduce((t, b) => t + Number(b.amount), 0)
+  const monthTotals = months.map((m) => sumOf(groups.flatMap((g) => cell(g, m))))
+  const grand = monthTotals.reduce((a, b) => a + b, 0)
+
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <Table className="[&_td]:border-b [&_td]:border-border [&_th]:border-b [&_th]:border-border">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Fatura</TableHead>
+              {months.map((m) => (
+                <TableHead key={m} className="text-right whitespace-nowrap">
+                  {format(new Date(`${m}-01T00:00:00`), 'MMM yyyy', { locale: trLocale })}
+                </TableHead>
+              ))}
+              <TableHead className="text-right">Toplam</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {groups.map((g) => {
+              const rowTotal = sumOf(g.bills.filter((b) => months.includes(b.due_date.slice(0, 7))))
+              return (
+                <TableRow key={g.key}>
+                  <TableCell className="whitespace-nowrap">
+                    <span className="font-medium">{UTILITY_BILL_CATEGORY_LABELS[g.category]}</span>
+                    {g.contractNumber && <span className="text-muted-foreground block text-xs">Sözleşme No: {g.contractNumber}</span>}
+                  </TableCell>
+                  {months.map((m) => {
+                    const list = cell(g, m)
+                    if (list.length === 0)
+                      return (
+                        <TableCell key={m} className="text-muted-foreground text-right">
+                          —
+                        </TableCell>
+                      )
+                    const unpaid = list.some((b) => !b.is_paid)
+                    const late = list.some((b) => !b.is_paid && isOverdue(b.due_date))
+                    return (
+                      <TableCell
+                        key={m}
+                        className={cn('text-right tabular-nums whitespace-nowrap', unpaid ? (late ? 'font-semibold text-destructive' : 'text-destructive') : 'text-success')}
+                        title={list.map((b) => `${format(new Date(b.due_date), 'd MMM', { locale: trLocale })}: ${b.is_paid ? 'ödendi' : late ? 'gecikti' : 'bekliyor'}`).join(' · ')}
+                      >
+                        {currency(sumOf(list))}
+                      </TableCell>
+                    )
+                  })}
+                  <TableCell className="text-right font-semibold tabular-nums whitespace-nowrap">{currency(rowTotal)}</TableCell>
+                </TableRow>
+              )
+            })}
+            <TableRow className="bg-muted/40 font-semibold">
+              <TableCell>Toplam</TableCell>
+              {monthTotals.map((t, i) => (
+                <TableCell key={months[i]} className="text-right tabular-nums whitespace-nowrap">
+                  {t ? currency(t) : '—'}
+                </TableCell>
+              ))}
+              <TableCell className="text-right tabular-nums whitespace-nowrap">{currency(grand)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+        <p className="text-muted-foreground px-4 py-2 text-xs">Yeşil: ödendi · Kırmızı: ödenmedi (kalın: son ödeme günü geçti). Tutarı değiştirmek için Faturalar sekmesinde kalem simgesini kullanın.</p>
+      </CardContent>
+    </Card>
+  )
+}
+
 function isOverdue(due: string): boolean {
   return differenceInCalendarDays(new Date(), new Date(due)) > 0
 }
@@ -610,10 +720,13 @@ export function BillsPage() {
 
   const filtered = categoryFilter === ALL_CATEGORIES ? bills : bills.filter((b) => b.category === categoryFilter)
 
-  const unpaidTotal = bills.filter((b) => !b.is_paid).reduce((sum, b) => sum + Number(b.amount), 0)
-  const unpaidCount = bills.filter((b) => !b.is_paid).length
-  const monthTotal = bills
+  const unpaidTotal = filtered.filter((b) => !b.is_paid).reduce((sum, b) => sum + Number(b.amount), 0)
+  const unpaidCount = filtered.filter((b) => !b.is_paid).length
+  const monthTotal = filtered
     .filter((b) => b.due_date.slice(0, 7) === todayDate().slice(0, 7))
+    .reduce((sum, b) => sum + Number(b.amount), 0)
+  const yearTotal = filtered
+    .filter((b) => b.due_date.slice(0, 4) === todayDate().slice(0, 4))
     .reduce((sum, b) => sum + Number(b.amount), 0)
 
   // Aynı sözleşme numarasına ait faturalar tek grup altında toplanıyor —
@@ -665,35 +778,17 @@ export function BillsPage() {
         }
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive">
-              <Zap className="size-5" />
-            </span>
-            <div>
-              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Ödenmemiş Toplam</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(unpaidTotal)}</p>
-              <p className="text-muted-foreground text-xs">{unpaidCount} fatura</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Zap className="size-5" />
-            </span>
-            <div>
-              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Bu Ay Vadesi Gelen</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(monthTotal)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <Label className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Kategori Filtresi</Label>
+      {/* Tutarlar ayrı sekmede (kullanıcı isteği, 2026-10-28: "faturalarda tutar kısmı ayrı bir menüde olsun") */}
+      <Tabs defaultValue="bills">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <TabsList>
+            <TabsTrigger value="bills">Faturalar</TabsTrigger>
+            <TabsTrigger value="amounts">Tutarlar</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-2">
+            <Label className="text-muted-foreground text-xs font-semibold tracking-wide whitespace-nowrap uppercase">Kategori</Label>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="mt-2 w-full">
+              <SelectTrigger className="w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -705,19 +800,30 @@ export function BillsPage() {
                 ))}
               </SelectContent>
             </Select>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {isLoading && <p className="text-muted-foreground p-6">Yükleniyor...</p>}
-          {!isLoading && groups.length === 0 && <p className="text-muted-foreground p-6">Henüz fatura kaydı yok.</p>}
-          {groups.map((g) => (
-            <SubscriptionGroupRow key={g.key} group={g} templates={allTemplates} />
-          ))}
-        </CardContent>
-      </Card>
+        <TabsContent value="bills">
+          <Card>
+            <CardContent className="p-0">
+              {isLoading && <p className="text-muted-foreground p-6">Yükleniyor...</p>}
+              {!isLoading && groups.length === 0 && <p className="text-muted-foreground p-6">Henüz fatura kaydı yok.</p>}
+              {groups.map((g) => (
+                <SubscriptionGroupRow key={g.key} group={g} templates={allTemplates} />
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="amounts">
+          <div className="mb-6 grid gap-4 sm:grid-cols-3">
+            <AmountCard label="Ödenmemiş Toplam" value={unpaidTotal} sub={`${unpaidCount} fatura`} tone="destructive" />
+            <AmountCard label="Bu Ay Vadesi Gelen" value={monthTotal} tone="primary" />
+            <AmountCard label={`${new Date().getFullYear()} Toplamı`} value={yearTotal} sub="bu yıl vadesi gelen tüm faturalar" tone="muted" />
+          </div>
+          <BillAmountsTable groups={groups} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

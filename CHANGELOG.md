@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.355] - 2026-10-28
+
+**Faturalar: tutarlar ayrı sekmede:** Faturalar sayfasında iki sekme — "Faturalar" (abonelikler, son ödeme günleri, durum, not; tutarsız) ve "Tutarlar" (Ödenmemiş Toplam / Bu Ay Vadesi Gelen / Yıl toplamı kartları ve abonelik × ay tutar tablosu: ödenen yeşil, ödenmemiş kırmızı, satır/sütun/genel toplam). Kategori filtresi iki sekmede de geçerli.
+
 ## [2.17.354] - 2026-10-28
 
 **Kongreler: katılım bilgileri görseli:** Kongre formunda fiyat / konaklama / kayıt koşulları afişi yüklenebiliyor (tıkla, sürükle-bırak, yapıştır; tüm görsel biçimleri). Görseldeki yazılar bilgisayarın kendi yazı tanımasıyla okunuyor (ücretsiz, internete gitmez) ve bulunan bilgiler — tarih, şehir, otel/kongre merkezi, tek/iki kişilik fiyat (TL), pansiyon, transfer, kontenjan, erken kayıt/döviz fiyatı — işaretlenerek forma aktarılıyor; metnin tamamı nota eklenebiliyor. İsteğe bağlı "Yapay zekâ ile ayrıntılı oku" (1 istek). Görsel kongre detay sayfasında görünüyor, tıklayınca resim programında büyük açılıyor.
