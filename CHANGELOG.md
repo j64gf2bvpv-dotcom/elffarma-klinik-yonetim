@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.359] - 2026-10-28
+
+**Ajanda: kompakt takvim, bildirim noktaları:** Ay görünümünde etkinlik adları yazmıyor — her günün tarihinin altında türüne göre renkli küçük bildirim noktaları (en fazla 4, fazlası "+N"); üzerine gelince o günün etkinlikleri (tür, ad, tarih) şık bir bilgi kutusunda listeleniyor, tek etkinlik varsa tıklayınca ilgili kayda gidiyor. Gün kutucukları küçültüldü. Hafta/gün görünümünde etkinlikler ince renkli çizgi + üzerine gelince bilgi kutusu.
+
 ## [2.17.358] - 2026-10-28
 
 **Ajanda: sade takvim:** Etkinlikler artık günleri tamamen boyamıyor — soluk zeminli, solunda ince renk şeridi olan tek satırlık etiketler; çok günlü kongreler ince tek bant (son gün dahil); bir günde en fazla 2 etkinlik, fazlası "+N daha"; yanıp sönen parlama kaldırıldı.

@@ -24,8 +24,14 @@ import {
   buildAgendaTooltip,
   isAgendaEventUrgent,
   useAgendaEvents,
+  type AgendaDayEntry,
   type AgendaEventType,
 } from '@/features/agenda/useAgendaEvents'
+
+/** Kongre başlıklarının sonundaki tarih tekrarını atar ("… · 9–11 Ekim 2026"). */
+function cleanTitle(t: string): string {
+  return t.replace(/\s+·\s+[^·]*\d{4}\s*$/, '')
+}
 
 export function AgendaPage() {
   const navigate = useNavigate()
@@ -96,9 +102,28 @@ export function AgendaPage() {
     [events],
   )
 
+  // Ay görünümünde etkinlikler gün başına küçük renkli bildirim noktaları (kullanıcı isteği,
+  // 2026-10-28: "kutucuklar daha küçük olsa, üzerinde tarihlerde bildirim işaretleri olsa");
+  // hafta / gün görünümünde etkinlikler normal şekilde.
+  const [viewType, setViewType] = React.useState('dayGridMonth')
+  const monthDotEvents = React.useMemo<EventInput[]>(
+    () => [...dotsByDay].map(([day, entries]) => ({ id: `dots-${day}`, start: day, allDay: true, extendedProps: { dotEntries: entries } })),
+    [dotsByDay],
+  )
+
   function handleEventClick(arg: EventClickArg) {
+    const dotEntries = arg.event.extendedProps.dotEntries as AgendaDayEntry[] | undefined
+    if (dotEntries) {
+      // Tek etkinlik varsa doğrudan ilgili kayda git; birden fazlaysa liste bilgi kutusunda
+      if (dotEntries.length !== 1) return
+      openEntry(dotEntries[0].type, dotEntries[0].linkId)
+      return
+    }
     const { type, linkId } = arg.event.extendedProps as { type?: AgendaEventType; linkId: string | null }
-    if (!type) return
+    if (type) openEntry(type, linkId)
+  }
+
+  function openEntry(type: AgendaEventType, linkId: string | null) {
     if (type === 'congress' && linkId) navigate(`/kongreler/${linkId}`)
     if (type === 'payment_due' && linkId) navigate(`/musteriler/${linkId}`)
     if (type === 'reminder' && linkId) {
@@ -116,6 +141,7 @@ export function AgendaPage() {
   }
 
   function eventClassNames(arg: { event: { extendedProps: Record<string, unknown> } }) {
+    if (arg.event.extendedProps.dotEntries) return ['agenda-dots']
     return arg.event.extendedProps.urgent ? ['agenda-event', 'agenda-event-urgent'] : ['agenda-event']
   }
 
@@ -125,9 +151,28 @@ export function AgendaPage() {
   // FullCalendar'ın varsayılan mavi arka planı (--fc-event-bg-color) hiç
   // ezilmediği için önceden tüm etkinlikler türden bağımsız aynı mavi kutuda
   // görünüyordu; artık her tür kendi rengiyle soluk bir zemin + sol şerit alıyor.
+  // Takvimde etkinlik adları yazmıyor; üzerine gelince şık bir bilgi kutusu açılır
+  // (kullanıcı isteği, 2026-10-28: "isimler yazmasın, üzerine gelince belirtsin, profesyonel olmalı")
+  const [hover, setHover] = React.useState<{ x: number; y: number; above: boolean; items: { type: AgendaEventType; title: string; dates?: string }[] } | null>(null)
+  function handleEventEnter(arg: { el: HTMLElement; event: { title: string; extendedProps: Record<string, unknown> } }) {
+    const r = arg.el.getBoundingClientRect()
+    const above = r.top > 200
+    const pos = { x: r.left + r.width / 2, y: above ? r.top - 8 : r.bottom + 8, above }
+    const dotEntries = arg.event.extendedProps.dotEntries as AgendaDayEntry[] | undefined
+    if (dotEntries) {
+      setHover({ ...pos, items: dotEntries.slice(0, 8).map((d) => ({ type: d.type, title: cleanTitle(d.title) })) })
+      return
+    }
+    const type = arg.event.extendedProps.type as AgendaEventType | undefined
+    if (!type) return
+    const tip = String(arg.event.extendedProps.tooltip ?? '')
+    setHover({ ...pos, items: [{ type, title: cleanTitle(arg.event.title), dates: tip.split('\n')[1] ?? '' }] })
+  }
+
   function handleEventDidMount(arg: EventMountArg) {
-    const { type, tooltip } = arg.event.extendedProps as { type?: AgendaEventType; tooltip?: string }
-    if (tooltip) arg.el.title = tooltip
+    const { type } = arg.event.extendedProps as { type?: AgendaEventType }
+    arg.el.removeAttribute('title')
+    if (arg.event.extendedProps.dotEntries) return
     if (type) {
       const color = agendaTypeMeta[type].color
       arg.el.style.setProperty('--agenda-color', color)
@@ -135,16 +180,19 @@ export function AgendaPage() {
   }
 
   function renderEventContent(arg: EventContentArg) {
-    const type = arg.event.extendedProps.type as AgendaEventType | undefined
-    if (!type) return null
-    const meta = agendaTypeMeta[type]
-    const Icon = meta.icon
-    return (
-      <span className="flex min-w-0 items-center gap-1.5">
-        <Icon className="size-3 shrink-0" style={{ color: meta.color }} strokeWidth={2.25} />
-        <span className="truncate">{arg.event.title}</span>
-      </span>
-    )
+    const dotEntries = arg.event.extendedProps.dotEntries as AgendaDayEntry[] | undefined
+    if (dotEntries) {
+      return (
+        <span className="flex items-center justify-center gap-1" aria-label={dotEntries.map((d) => d.title).join(', ')}>
+          {dotEntries.slice(0, 4).map((d, i) => (
+            <span key={i} className="size-1.5 rounded-full" style={{ background: d.color }} />
+          ))}
+          {dotEntries.length > 4 && <span className="text-muted-foreground text-[9px] leading-none font-semibold">+{dotEntries.length - 4}</span>}
+        </span>
+      )
+    }
+    // Hafta / gün görünümü: ince renkli çizgi — ad / tarih üzerine gelince bilgi kutusunda
+    return <span className="sr-only">{arg.event.title}</span>
   }
 
   function goToDate(date: Date) {
@@ -281,30 +329,53 @@ export function AgendaPage() {
           </Card>
         </aside>
 
-        <Card className="animate-agenda-rise min-w-0 flex-1" style={{ animationDelay: '100ms' }}>
+        <Card className="animate-agenda-rise min-w-0 flex-1 self-start" style={{ animationDelay: '100ms' }}>
           <CardContent className="pt-6">
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               locale={trLocale}
-              height="auto"
-              events={calendarEvents}
+              events={viewType === 'dayGridMonth' ? monthDotEvents : calendarEvents}
               eventClick={handleEventClick}
               dateClick={handleDateClick}
               eventContent={renderEventContent}
               eventClassNames={eventClassNames}
               eventDidMount={handleEventDidMount}
-              datesSet={(arg) => setMiniMonth(arg.view.currentStart)}
+              eventMouseEnter={handleEventEnter}
+              eventMouseLeave={() => setHover(null)}
+              datesSet={(arg) => {
+                setMiniMonth(arg.view.currentStart)
+                setViewType(arg.view.type)
+              }}
               customButtons={{ today: { text: 'Bugün', click: goToday } }}
               headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }}
               buttonText={{ month: 'Ay', week: 'Hafta', day: 'Gün' }}
-              dayMaxEvents={2}
+              dayMaxEvents={4}
+              // Kompakt ay görünümü — kutucuklar daha küçük (2026-10-28)
+              aspectRatio={2.4}
               moreLinkText={(n) => `+${n} daha`}
             />
           </CardContent>
         </Card>
       </div>
+      {hover && (
+        <div
+          className="pointer-events-none fixed z-50 grid w-max max-w-80 gap-2 rounded-lg border bg-popover px-3 py-2 text-popover-foreground shadow-lg"
+          style={{ left: hover.x, top: hover.y, transform: `translate(-50%, ${hover.above ? '-100%' : '0'})` }}
+        >
+          {hover.items.map((it, i) => (
+            <div key={i}>
+              <div className="flex items-center gap-1.5 text-[11px] font-medium" style={{ color: agendaTypeMeta[it.type].color }}>
+                {React.createElement(agendaTypeMeta[it.type].icon, { className: 'size-3' })}
+                {agendaTypeMeta[it.type].label}
+              </div>
+              <div className="mt-0.5 text-sm leading-snug font-semibold">{it.title}</div>
+              {it.dates && <div className="text-muted-foreground mt-0.5 text-xs">{it.dates}</div>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

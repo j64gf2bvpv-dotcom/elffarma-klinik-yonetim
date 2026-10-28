@@ -506,20 +506,54 @@
     transform 0.15s ease,
     box-shadow 0.15s ease;
 }
-/* Ajanda etiketi: soluk zemin + solda ince renk şeridi (2026-10-28, sade görünüm) */
-.fc .agenda-event {
-  background: color-mix(in oklab, var(--agenda-color, var(--color-primary)) 9%, var(--color-card)) !important;
-  border: 1px solid color-mix(in oklab, var(--agenda-color, var(--color-primary)) 18%, transparent) !important;
-  border-left: 3px solid var(--agenda-color, var(--color-primary)) !important;
-  color: var(--color-foreground) !important;
-  line-height: 1.35;
+/* Ay görünümü: gün başına renkli bildirim noktaları (2026-10-28) */
+.fc .fc-dayGridMonth-view .fc-daygrid-day-events {
+  min-height: 0 !important;
+  margin-bottom: 4px !important;
 }
-.fc .agenda-event .fc-event-main {
-  color: inherit !important;
+.fc .fc-dayGridMonth-view .fc-daygrid-day-top {
+  min-height: 1.6rem;
+}
+.fc .agenda-dots {
+  background: transparent !important;
+  border: none !important;
+  padding: 2px 0 0 !important;
+  margin: 0 !important;
+  cursor: pointer;
+  animation: none !important;
+}
+.fc .agenda-dots:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+.fc .agenda-dots:hover span.rounded-full {
+  transform: scale(1.35);
+}
+.fc .agenda-dots span.rounded-full {
+  transition: transform 0.15s ease;
+}
+/* Ajanda etkinliği: yazısız ince renkli çizgi — ad/tarih üzerine gelince bilgi kutusunda (2026-10-28) */
+.fc .agenda-event {
+  background: color-mix(in oklab, var(--agenda-color, var(--color-primary)) 70%, transparent) !important;
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+  height: 5px;
+  min-height: 5px;
+  margin: 3px 4px 0 !important;
+  font-size: 0 !important;
+  cursor: pointer;
+}
+.fc .agenda-event .fc-event-main,
+.fc .agenda-event .fc-event-main-frame {
+  height: 5px;
 }
 .fc .agenda-event-urgent {
-  background: color-mix(in oklab, var(--agenda-color, var(--color-primary)) 16%, var(--color-card)) !important;
-  font-weight: 600;
+  background: var(--agenda-color, var(--color-primary)) !important;
+}
+.fc .agenda-event:hover {
+  height: 7px;
+  transform: none !important;
 }
 .fc-event:hover {
   transform: translateY(-1px);
@@ -529,7 +563,7 @@
   margin-top: 2px;
 }
 .fc-daygrid-day-frame {
-  min-height: 6rem;
+  min-height: 3rem;
   transition: background-color 0.15s ease;
 }
 .fc-daygrid-day:hover .fc-daygrid-day-frame {
