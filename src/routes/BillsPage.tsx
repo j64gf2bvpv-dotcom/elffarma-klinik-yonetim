@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { differenceInCalendarDays, format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Plus, Trash2, Pencil, Zap, CheckCircle2, ChevronDown, Repeat, Pause, Play } from 'lucide-react'
+import { Plus, Trash2, Pencil, Zap, ChevronDown, Repeat, Pause, Play } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -32,7 +32,6 @@ import {
   useDeleteUtilityBill,
   useDeleteUtilityBillTemplate,
   useUpdateUtilityBill,
-  useUpdateUtilityBillPaid,
   useUpdateUtilityBillTemplate,
   useUpdateUtilityBillTemplateActive,
   useUtilityBillTemplates,
@@ -479,7 +478,6 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
   const day = template?.day_of_month ?? (latest ? Number(latest.due_date.slice(8, 10)) : null)
   const nextDue = day ? nextMonthlyDue(day) : null
   const deleteMutation = useDeleteUtilityBill()
-  const paidMutation = useUpdateUtilityBillPaid()
   const { confirm, dialog } = useConfirmDialog()
 
   async function handleDelete(bill: UtilityBill) {
@@ -533,12 +531,8 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
               <Repeat className="size-3" /> Kaydı her ay otomatik aç
             </span>
           ) : null}
-          {/* "Gecikti / ödenmemiş" göstergeleri kaldırıldı (kullanıcı isteği, 2026-10-28) */}
-          {group.unpaidCount === 0 && (
-            <Badge variant="success">
-              <CheckCircle2 className="size-3" /> Hepsi ödendi
-            </Badge>
-          )}
+          {/* Durum (ödendi / bekliyor / gecikti) göstergeleri kaldırıldı (kullanıcı istekleri, 2026-10-28) —
+              ödendi işareti ana ekrandaki fatura hatırlatma penceresinden verilir */}
         </span>
       </button>
       {open && (
@@ -546,7 +540,6 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
           <TableHeader>
             <TableRow>
               <TableHead>Son Ödeme Tarihi</TableHead>
-              <TableHead>Durum</TableHead>
               <TableHead>Not</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
             </TableRow>
@@ -555,22 +548,6 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
             {group.bills.map((b) => (
               <TableRow key={b.id}>
                 <TableCell>{format(new Date(b.due_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={b.is_paid ? 'success' : 'outline'}
-                    className="cursor-pointer"
-                    title={b.is_paid ? 'Ödenmedi olarak işaretlemek için tıklayın' : 'Ödendi olarak işaretlemek için tıklayın'}
-                    onClick={() => paidMutation.mutate({ id: b.id, isPaid: !b.is_paid, reminderId: b.reminder_id })}
-                  >
-                    {b.is_paid ? (
-                      <>
-                        <CheckCircle2 className="size-3" /> Ödendi
-                      </>
-                    ) : (
-                      'Bekliyor'
-                    )}
-                  </Badge>
-                </TableCell>
                 <TableCell className="text-muted-foreground max-w-40 truncate" title={b.note ?? undefined}>
                   {b.note ?? '—'}
                 </TableCell>
@@ -616,7 +593,7 @@ function AmountCard({ label, value, sub, tone }: { label: string; value: number;
 
 /**
  * "Tutarlar" sekmesi: abonelik × ay tutar tablosu (son 12 ay ya da faturaların olduğu
- * aylar). Ödenen yeşil, bekleyen nötr renkte; satır, sütun ve genel toplam.
+ * aylar); satır, sütun ve genel toplam.
  */
 function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
   const months = React.useMemo(() => {
@@ -670,12 +647,11 @@ function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
                           —
                         </TableCell>
                       )
-                    const unpaid = list.some((b) => !b.is_paid)
                     return (
                       <TableCell
                         key={m}
-                        className={cn('text-right tabular-nums whitespace-nowrap', unpaid ? 'text-foreground' : 'text-success')}
-                        title={list.map((b) => `${format(new Date(b.due_date), 'd MMM', { locale: trLocale })}: ${b.is_paid ? 'ödendi' : 'bekliyor'}`).join(' · ')}
+                        className="text-right tabular-nums whitespace-nowrap"
+                        title={list.map((b) => `Son ödeme: ${format(new Date(b.due_date), 'd MMMM yyyy', { locale: trLocale })}`).join(' · ')}
                       >
                         {currency(sumOf(list))}
                       </TableCell>
@@ -696,7 +672,7 @@ function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
             </TableRow>
           </TableBody>
         </Table>
-        <p className="text-muted-foreground px-4 py-2 text-xs">Yeşil: ödendi · Siyah: bekliyor. Tutarı değiştirmek için Faturalar sekmesinde kalem simgesini kullanın.</p>
+        <p className="text-muted-foreground px-4 py-2 text-xs">Tutarı değiştirmek için Faturalar sekmesinde kalem simgesini kullanın.</p>
       </CardContent>
     </Card>
   )
@@ -759,7 +735,6 @@ export function BillsPage() {
                 { header: 'Abone No', value: (b) => b.subscriber_number ?? '' },
                 { header: 'Son Ödeme Tarihi', value: (b) => b.due_date },
                 { header: 'Tutar', value: (b) => Number(b.amount) },
-                { header: 'Durum', value: (b) => (b.is_paid ? 'Ödendi' : 'Bekliyor') },
               ]}
             />
             <TemplatesManagerDialog />

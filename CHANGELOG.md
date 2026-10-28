@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.357] - 2026-10-28
+
+**Faturalar: Durum sütunu kaldırıldı:** Faturalar listesinde ve dışa aktarımda Durum (Ödendi/Bekliyor) yok; "Hepsi ödendi" rozeti ve Tutarlar sekmesindeki renklendirme de kaldırıldı. Faturanın ödendi işareti ana ekrandaki fatura hatırlatma penceresinden veriliyor.
+
 ## [2.17.356] - 2026-10-28
 
 **Faturalar: "Gecikti / ödenmemiş" göstergeleri kaldırıldı:** Ödenmemiş faturalar yalnızca "Bekliyor" olarak görünüyor; abonelik başlığındaki "X ödenmemiş" rozeti ve Tutarlar sekmesindeki kırmızı/gecikti renklendirmesi kaldırıldı (ödenen yeşil, bekleyen siyah).
