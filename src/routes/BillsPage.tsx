@@ -533,11 +533,8 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
               <Repeat className="size-3" /> Kaydı her ay otomatik aç
             </span>
           ) : null}
-          {group.unpaidCount > 0 ? (
-            <Badge variant="outline" className="border-destructive/30 text-destructive">
-              {group.unpaidCount} ödenmemiş
-            </Badge>
-          ) : (
+          {/* "Gecikti / ödenmemiş" göstergeleri kaldırıldı (kullanıcı isteği, 2026-10-28) */}
+          {group.unpaidCount === 0 && (
             <Badge variant="success">
               <CheckCircle2 className="size-3" /> Hepsi ödendi
             </Badge>
@@ -560,7 +557,7 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
                 <TableCell>{format(new Date(b.due_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
                 <TableCell>
                   <Badge
-                    variant={b.is_paid ? 'success' : isOverdue(b.due_date) ? 'destructive' : 'outline'}
+                    variant={b.is_paid ? 'success' : 'outline'}
                     className="cursor-pointer"
                     title={b.is_paid ? 'Ödenmedi olarak işaretlemek için tıklayın' : 'Ödendi olarak işaretlemek için tıklayın'}
                     onClick={() => paidMutation.mutate({ id: b.id, isPaid: !b.is_paid, reminderId: b.reminder_id })}
@@ -569,8 +566,6 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
                       <>
                         <CheckCircle2 className="size-3" /> Ödendi
                       </>
-                    ) : isOverdue(b.due_date) ? (
-                      `Gecikti · ${differenceInCalendarDays(new Date(), new Date(b.due_date))} gün`
                     ) : (
                       'Bekliyor'
                     )}
@@ -597,7 +592,6 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
   )
 }
 
-/** Son ödeme günü geçmiş mi (bugün son gün sayılır, gecikme değil). */
 function AmountCard({ label, value, sub, tone }: { label: string; value: number; sub?: string; tone: 'destructive' | 'primary' | 'muted' }) {
   return (
     <Card>
@@ -622,7 +616,7 @@ function AmountCard({ label, value, sub, tone }: { label: string; value: number;
 
 /**
  * "Tutarlar" sekmesi: abonelik × ay tutar tablosu (son 12 ay ya da faturaların olduğu
- * aylar). Ödenen yeşil, ödenmemiş kırmızı (gecikmişse koyu); satır, sütun ve genel toplam.
+ * aylar). Ödenen yeşil, bekleyen nötr renkte; satır, sütun ve genel toplam.
  */
 function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
   const months = React.useMemo(() => {
@@ -677,12 +671,11 @@ function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
                         </TableCell>
                       )
                     const unpaid = list.some((b) => !b.is_paid)
-                    const late = list.some((b) => !b.is_paid && isOverdue(b.due_date))
                     return (
                       <TableCell
                         key={m}
-                        className={cn('text-right tabular-nums whitespace-nowrap', unpaid ? (late ? 'font-semibold text-destructive' : 'text-destructive') : 'text-success')}
-                        title={list.map((b) => `${format(new Date(b.due_date), 'd MMM', { locale: trLocale })}: ${b.is_paid ? 'ödendi' : late ? 'gecikti' : 'bekliyor'}`).join(' · ')}
+                        className={cn('text-right tabular-nums whitespace-nowrap', unpaid ? 'text-foreground' : 'text-success')}
+                        title={list.map((b) => `${format(new Date(b.due_date), 'd MMM', { locale: trLocale })}: ${b.is_paid ? 'ödendi' : 'bekliyor'}`).join(' · ')}
                       >
                         {currency(sumOf(list))}
                       </TableCell>
@@ -703,15 +696,12 @@ function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
             </TableRow>
           </TableBody>
         </Table>
-        <p className="text-muted-foreground px-4 py-2 text-xs">Yeşil: ödendi · Kırmızı: ödenmedi (kalın: son ödeme günü geçti). Tutarı değiştirmek için Faturalar sekmesinde kalem simgesini kullanın.</p>
+        <p className="text-muted-foreground px-4 py-2 text-xs">Yeşil: ödendi · Siyah: bekliyor. Tutarı değiştirmek için Faturalar sekmesinde kalem simgesini kullanın.</p>
       </CardContent>
     </Card>
   )
 }
 
-function isOverdue(due: string): boolean {
-  return differenceInCalendarDays(new Date(), new Date(due)) > 0
-}
 
 export function BillsPage() {
   const { data: allTemplates = [] } = useUtilityBillTemplates()
@@ -769,7 +759,7 @@ export function BillsPage() {
                 { header: 'Abone No', value: (b) => b.subscriber_number ?? '' },
                 { header: 'Son Ödeme Tarihi', value: (b) => b.due_date },
                 { header: 'Tutar', value: (b) => Number(b.amount) },
-                { header: 'Durum', value: (b) => (b.is_paid ? 'Ödendi' : isOverdue(b.due_date) ? 'Gecikti' : 'Bekliyor') },
+                { header: 'Durum', value: (b) => (b.is_paid ? 'Ödendi' : 'Bekliyor') },
               ]}
             />
             <TemplatesManagerDialog />

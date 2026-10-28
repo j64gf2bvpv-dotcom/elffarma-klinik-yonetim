@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.356] - 2026-10-28
+
+**Faturalar: "Gecikti / ödenmemiş" göstergeleri kaldırıldı:** Ödenmemiş faturalar yalnızca "Bekliyor" olarak görünüyor; abonelik başlığındaki "X ödenmemiş" rozeti ve Tutarlar sekmesindeki kırmızı/gecikti renklendirmesi kaldırıldı (ödenen yeşil, bekleyen siyah).
+
 ## [2.17.355] - 2026-10-28
 
 **Faturalar: tutarlar ayrı sekmede:** Faturalar sayfasında iki sekme — "Faturalar" (abonelikler, son ödeme günleri, durum, not; tutarsız) ve "Tutarlar" (Ödenmemiş Toplam / Bu Ay Vadesi Gelen / Yıl toplamı kartları ve abonelik × ay tutar tablosu: ödenen yeşil, ödenmemiş kırmızı, satır/sütun/genel toplam). Kategori filtresi iki sekmede de geçerli.
