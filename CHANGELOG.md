@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.361] - 2026-11-10
+- Araçlar: "Ruhsat Tara" — ruhsat resmi dosyadan seçilir, sürüklenir, yapıştırılır ya da kamerayla çekilir; bilgiler okunup araç formuna dolar. Plaka kayıtlı bir araca aitse form içinden "Mevcut aracı güncelle" ile o araç güncellenir.
+
 ## [2.17.360] - 2026-10-28
 
 **Güncellemeler kendiliğinden kuruluyor:** İndirilen güncelleme artık programın kapatılıp açılmasını beklemiyor — bilgisayar 3 dakika boyunca kullanılmadığında program kendini güncelleyip yeniden açılıyor (kullanan kişinin yarım işi kaybolmasın diye boşta beklenir). Yeni sürüm kontrolü saatte bir yerine 15 dakikada bir.

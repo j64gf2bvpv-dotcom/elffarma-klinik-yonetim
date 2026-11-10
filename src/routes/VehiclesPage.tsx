@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
 import { VehicleDialog } from '@/features/vehicles/VehicleDialog'
+import { RuhsatScanDialog } from '@/features/vehicles/RuhsatScanDialog'
 import { FuelLogDialog } from '@/features/vehicles/FuelLogDialog'
 import { useVehicles, useDeleteVehicle } from '@/features/vehicles/hooks'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
@@ -33,6 +34,10 @@ export function VehiclesPage() {
   const { data: vehicles = [], isLoading } = useVehicles()
   const deleteMutation = useDeleteVehicle()
   const { confirm, dialog } = useConfirmDialog()
+  // "Ruhsat Tara" ile açılan form — okunan plaka kayıtlı bir araçla eşleşirse o araç güncellenebilir
+  const [scan, setScan] = React.useState<{ files: File[]; vehicle?: (typeof vehicles)[number] } | null>(null)
+
+  const plateKey = (p: string | null | undefined) => (p ?? '').replace(/\s+/g, '').toLocaleUpperCase('tr-TR')
 
   async function handleDeleteVehicle(v: (typeof vehicles)[number]) {
     if (!(await confirm(`${v.brand_model}${v.plate_number ? ` (${v.plate_number})` : ''} silinsin mi? Bu araca ait yakıt kayıtları da silinecek.`)))
@@ -65,10 +70,23 @@ export function VehiclesPage() {
                 { header: 'Renk', value: (v) => v.color ?? '' },
               ]}
             />
+            <RuhsatScanDialog onScan={(files) => setScan({ files })} />
             <VehicleDialog />
           </div>
         }
       />
+
+      {scan && (
+        <VehicleDialog
+          key={scan.vehicle?.id ?? 'new'}
+          open
+          onOpenChange={(o) => !o && setScan(null)}
+          vehicle={scan.vehicle}
+          initialFiles={scan.files}
+          findExisting={(plate) => vehicles.find((v) => v.plate_number && plateKey(v.plate_number) === plateKey(plate))}
+          onUseExisting={(v) => setScan({ files: scan.files, vehicle: v })}
+        />
+      )}
 
       <Card>
         <CardContent className="p-0">

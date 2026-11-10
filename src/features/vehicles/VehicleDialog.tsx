@@ -73,8 +73,34 @@ const WIDE_KEYS = new Set<string>(['issued_place', 'owner_name', 'owner_address'
 type RegKey = (typeof REG_FIELD_KEYS)[number]
 const DATE_KEYS = new Set<RegKey>(['first_registration_date', 'registration_date', 'inspection_valid_until', 'notary_sale_date'])
 
-export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelations; trigger?: React.ReactNode }) {
-  const [open, setOpen] = React.useState(false)
+export function VehicleDialog({
+  vehicle,
+  trigger,
+  open: openProp,
+  onOpenChange,
+  initialFiles,
+  findExisting,
+  onUseExisting,
+}: {
+  vehicle?: VehicleWithRelations
+  trigger?: React.ReactNode
+  /** Dışarıdan açılıyorsa (ör. "Ruhsat Tara") — verilmezse kendi düğmesiyle açılır */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Açılınca hemen okunacak ruhsat fotoğrafları */
+  initialFiles?: File[]
+  /** Ruhsattan okunan plaka kayıtlı bir araca aitse o aracı bulur */
+  findExisting?: (plate: string) => VehicleWithRelations | undefined
+  /** "Mevcut aracı güncelle" — formu o aracın düzenlemesine çevirir */
+  onUseExisting?: (vehicle: VehicleWithRelations) => void
+}) {
+  const [innerOpen, setInnerOpen] = React.useState(false)
+  const controlled = openProp !== undefined
+  const open = controlled ? openProp : innerOpen
+  const setOpen = (o: boolean) => {
+    if (!controlled) setInnerOpen(o)
+    onOpenChange?.(o)
+  }
   const { data: salesReps = [] } = useSalesReps()
   const createMutation = useCreateVehicle()
   const updateMutation = useUpdateVehicle()
@@ -104,6 +130,7 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
   const [lastDataUrls, setLastDataUrls] = React.useState<string[] | null>(null)
   const fileRef = React.useRef<HTMLInputElement>(null)
   const [readStep, setReadStep] = React.useState('')
+  const [existingMatch, setExistingMatch] = React.useState<VehicleWithRelations | null>(null)
 
   React.useEffect(() => {
     if (!open) return
@@ -123,11 +150,21 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
     setRegImagePath(vehicle?.registration_image_path ?? null)
     setRegFile(null)
     setUncertain(new Set())
+    setExistingMatch(null)
     setRegPreview(null)
     if (vehicle?.registration_image_path) {
       getRegistrationImageUrl(vehicle.registration_image_path).then(setRegPreview).catch(() => setRegPreview(null))
     }
   }, [open, vehicle])
+
+  // "Ruhsat Tara"dan gelen fotoğraflar: form sıfırlandıktan sonra bir kez okunur
+  const consumedFiles = React.useRef<File[] | null>(null)
+  React.useEffect(() => {
+    if (!open || !initialFiles?.length || consumedFiles.current === initialFiles) return
+    consumedFiles.current = initialFiles
+    void handleRegistrationFiles(initialFiles)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialFiles])
 
   /** Fotoğraflardan ruhsat bilgilerini oku ve forma doldur. */
   async function runExtraction(dataUrls: string[]) {
@@ -145,7 +182,10 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
       })
       return
     }
-    if (found.plate_number) setPlateNumber(found.plate_number)
+    if (found.plate_number) {
+      setPlateNumber(found.plate_number)
+      if (!vehicle) setExistingMatch(findExisting?.(found.plate_number) ?? null)
+    }
     if (found.brand_model) setBrandModel(found.brand_model)
     if (found.year) setYear(String(found.year))
     setReg((prev) => {
@@ -176,7 +216,7 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
   }
 
   /** Ruhsat fotoğrafı seçilince: yükle + yapay zekâ ile oku + forma doldur. */
-  async function handleRegistrationFiles(files: FileList | null) {
+  async function handleRegistrationFiles(files: FileList | File[] | null) {
     const picked = files ? Array.from(files).filter(isImageFile).slice(0, 2) : []
     if (picked.length === 0) return
     setReading(true)
@@ -236,18 +276,31 @@ export function VehicleDialog({ vehicle, trigger }: { vehicle?: VehicleWithRelat
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button>
-            <Plus /> Araç Ekle
-          </Button>
-        )}
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button>
+              <Plus /> Araç Ekle
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{vehicle ? 'Aracı Düzenle' : 'Yeni Araç'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
+          {existingMatch && onUseExisting && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+              <span>
+                <b>{existingMatch.plate_number}</b> plakalı araç zaten kayıtlı ({existingMatch.brand_model}). Yeni araç yerine onun
+                bilgilerini güncelleyebilirsiniz.
+              </span>
+              <Button type="button" size="sm" onClick={() => onUseExisting(existingMatch)}>
+                Mevcut aracı güncelle
+              </Button>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 grid gap-1.5">
               <Label htmlFor="vehicle-brand-model">Araç Modeli</Label>

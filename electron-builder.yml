@@ -43,6 +43,9 @@ mac:
   # paketi otomatik Apple'a gönderip onaylatıyor (afterSign adımı olarak, elle bir
   # afterSign hook'una gerek kalmadı — eski ad-hoc imza geçici çözümü kaldırıldı).
   hardenedRuntime: true
+  # "Ruhsat Tara" kamerayla çekim — macOS izin penceresinde görünen açıklama (2026-11-10)
+  extendInfo:
+    NSCameraUsageDescription: Araç ruhsatını taramak için kamera kullanılır.
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   notarize: true
