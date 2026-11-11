@@ -143,6 +143,8 @@ function BillFormDialog({ bill, defaults }: { bill?: UtilityBill; defaults?: Par
       // Bir abonelik başlığının içinden "+ Fatura": tür ve numaralar hazır gelir
       setForm({ ...emptyForm(), ...defaults })
       setAttachments([])
+      // Var olan başlığa eklenen fatura için ayrı bir "her ay" şablonu açılmasın
+      setRepeatMonthly(false)
     }
     setOpen(next)
   }
@@ -299,9 +301,10 @@ function BillFormDialog({ bill, defaults }: { bill?: UtilityBill; defaults?: Par
             onRead={(found) =>
               setForm((f) => ({
                 ...f,
-                subscriber_number: found.subscriber_number ?? f.subscriber_number,
-                contract_number: found.contract_number ?? f.contract_number,
-                subscriber_name: found.subscriber_name ?? f.subscriber_name,
+                // Başlıktan gelen / önceden yazılı numaralar korunur, sadece boşlar doldurulur
+                subscriber_number: f.subscriber_number || found.subscriber_number || '',
+                contract_number: f.contract_number || found.contract_number || '',
+                subscriber_name: f.subscriber_name || found.subscriber_name || '',
                 period: found.period ?? f.period,
                 bill_date: found.bill_date ?? f.bill_date,
                 // Tutar ve tarih sadece boşsa/yeni faturadaysa doldurulur
@@ -688,9 +691,7 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
             <TableRow>
               <TableHead>Fatura Tarihi</TableHead>
               <TableHead>Dönem</TableHead>
-              <TableHead>Sözleşme No</TableHead>
-              <TableHead>Abone No</TableHead>
-              <TableHead>Abone Adı</TableHead>
+              {/* Sözleşme no / abone no / ad başlıkta bir kez yazar, satırlarda tekrarlanmaz (kullanıcı isteği, 2026-11-11) */}
               <TableHead className="text-right">Tutar</TableHead>
               <TableHead>Not</TableHead>
               <TableHead>Fatura</TableHead>
@@ -700,7 +701,7 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
           <TableBody>
             {group.bills.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-4 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="py-4 text-center text-muted-foreground">
                   Bu abonelikte fatura yok — sağdaki "+ Fatura" ile ekleyin.
                 </TableCell>
               </TableRow>
@@ -709,11 +710,6 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
               <TableRow key={b.id}>
                 <TableCell className="whitespace-nowrap">{b.bill_date ? format(new Date(b.bill_date), 'd MMM yyyy', { locale: trLocale }) : '—'}</TableCell>
                 <TableCell className="whitespace-nowrap">{periodLabel(b.period)}</TableCell>
-                <TableCell className="tabular-nums">{b.contract_number ?? '—'}</TableCell>
-                <TableCell className="tabular-nums">{b.subscriber_number ?? '—'}</TableCell>
-                <TableCell className="max-w-56 truncate" title={b.subscriber_name ?? undefined}>
-                  {b.subscriber_name ?? '—'}
-                </TableCell>
                 <TableCell className="text-right font-medium whitespace-nowrap tabular-nums">{currency(Number(b.amount))}</TableCell>
                 <TableCell className="text-muted-foreground max-w-40 truncate" title={b.note ?? undefined}>
                   {b.note ?? '—'}

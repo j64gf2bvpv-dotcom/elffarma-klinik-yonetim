@@ -82,6 +82,9 @@ function valueAfter(lines: string[], label: RegExp, value: RegExp, accept: (v: s
     const candidates = [lines[i].slice(m.index + m[0].length)]
     if (heads.length > 1 && below.length === heads.length && col >= 0) candidates.push(below[col])
     else if (heads.length <= 1 || col === 0) candidates.push(lines[i + 1] ?? '')
+    // Eğik çekilmiş fotoğrafta sütunlar kayar (ASKİ Mart: "66704  SÖZLEŞME NO  2026-03" /
+    // "SEVKIYE TULUMEN  100004019102") — alt satırın parçalarından uygun olanı dene
+    else candidates.push(...below)
     for (const candidate of candidates) {
       // Aynı satırdaki "kalan" başka bir başlıkla başlıyorsa (yan yana başlıklar) değer değildir
       const v = value.exec(candidate)
@@ -93,7 +96,11 @@ function valueAfter(lines: string[], label: RegExp, value: RegExp, accept: (v: s
 }
 
 function number(lines: string[], label: RegExp): string | undefined {
-  return valueAfter(lines, label, NUM, (v) => (/\d{4,}/.test(v) ? v.replace(/[.\-/]+$/, '') : undefined))
+  return valueAfter(lines, label, NUM, (v) => {
+    // Dönem (2026-03) ya da tarih numara sanılmasın
+    if (!/\d{4,}/.test(v) || /^\d{4}[-/.]\d{1,2}$|^\d{1,2}[-/.]\d{4}$|^\d{1,2}[./-]\d{1,2}[./-]\d{2,4}$/.test(v)) return undefined
+    return v.replace(/[.\-/]+$/, '')
+  })
 }
 
 const NAME_STOP = /\b(adres|adresi|tc|t\.c\.|vkn|vergi|kimlik|no|numaras[ıi]|tarih|tutar|abone\s*grubu|tarife|tesisat|sözleşme|sozlesme)\b/i
@@ -109,7 +116,8 @@ function cleanName(raw: string | undefined): string | undefined {
 }
 
 function parseAmount(s: string): number | undefined {
-  const m = /(\d{1,3}(?:[.\s]\d{3})*,\d{2}|\d+,\d{2}|\d{1,3}(?:,\d{3})*\.\d{2})/.exec(s)
+  // 1.234,56 | 1234,56 | 1,234.56 | 2013.85 (binlik ayırıcısız — ASKİ)
+  const m = /(?<![\d.,])(\d{1,3}(?:[.\s]\d{3})+,\d{2}|\d+,\d{2}|\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})(?![\d])/.exec(s)
   if (!m) return undefined
   const v = m[1].includes(',') && m[1].lastIndexOf(',') > m[1].lastIndexOf('.') ? m[1].replace(/[.\s]/g, '').replace(',', '.') : m[1].replace(/,/g, '')
   const n = Number(v)
@@ -142,7 +150,7 @@ export function parseBillText(text: string): BillReadResult {
   // Etiketsiz abone adı (ASKİ vb.): abone/sözleşme no değerlerinin hemen altındaki, sadece harflerden oluşan satır
   if (!out.subscriber_name) {
     const valueLine = lines.findIndex((l) => [out.subscriber_number, out.contract_number].some((n) => n && segments(l).includes(n)))
-    const next = valueLine >= 0 ? lines[valueLine + 1]?.trim() : undefined
+    const next = valueLine >= 0 ? segments(lines[valueLine + 1] ?? '')[0] : undefined
     if (next && /^[A-Za-zÇĞİÖŞÜçğıöşü.]{2,}(?:\s+[A-Za-zÇĞİÖŞÜçğıöşü.]{2,}){1,4}$/.test(next) && !/fatura|adres|t[üu]ketim|bor[çc]|tarih|d[öo]nem/i.test(next))
       out.subscriber_name = next
   }

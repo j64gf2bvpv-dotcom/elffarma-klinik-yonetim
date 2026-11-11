@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.368] - 2026-11-11
+- Faturalar: sözleşme no / abone no / ad sadece başlıkta; satırlarda Fatura Tarihi, Dönem, Tutar. Başlığın içinden eklenen faturada başlığın numaraları korunur, "her ay tekrarla" kapalı gelir.
+- Fatura okuma: eğik fotoğrafta kayan sütunlar ve binlik ayırıcısız tutarlar (2013.85) doğru okunur; dönem sözleşme no sanılmaz.
+
 ## [2.17.367] - 2026-11-11
 - Faturalar: başlıkların içindeki faturalar dönem / fatura tarihine göre eskiden yeniye sıralı; Tutarlar tablosu ve Excel çıktısı da aynı sırayla (dönemi olmayan faturada son ödeme ayı).
 
