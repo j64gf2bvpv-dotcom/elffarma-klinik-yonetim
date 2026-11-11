@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.364] - 2026-11-11
+- Yedekleme: Faturalar, tekrarlayan faturalar ve Giderler bölümleri (elektrik/su/internet/ofis/mutfak/ofis yemek) artık otomatik yedeğe dahil — silinen faturalar geri getirilirken yedekte olmadıkları fark edildi.
+
 ## [2.17.363] - 2026-11-11
 - Faturalar: fatura resmi ya da PDF'i eklenebilir; eklenince abone no, sözleşme no, abone adı (ve boşsa tutar/son ödeme tarihi) bilgisayarda okunup forma yazılır. Tabloda Sözleşme No, Abone No, Abone Adı ve Fatura sütunları; abone adı tekrarlayan faturalara ve Excel'e de eklendi.
 

@@ -34,6 +34,10 @@ export const BACKUP_TABLES = [
   'reminders',
   'tasks',
   'expenses',
+  // Faturalar ve gider bölümleri yedekte yoktu; silinen faturalar geri getirilirken fark edildi (2026-11-11)
+  'expense_entries',
+  'utility_bills',
+  'utility_bill_templates',
   'budget_targets',
   'congresses',
   'congress_participants',
