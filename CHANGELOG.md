@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.366] - 2026-11-11
+- Faturalar: resmi daha önce eklenmiş faturada da "Faturadan oku" — kayıtlı resimden fatura tarihi, dönem ve numaralar yeniden çekilir.
+
 ## [2.17.365] - 2026-11-11
 - Faturalar: Elektrik/Su/Doğalgaz/İnternet başlıkları kalıcı, silinemez (yalnızca içindeki faturalar silinir); her başlıkta "+ Fatura". Tabloda Fatura Tarihi (faturanın üzerindeki), Dönem ve Tutar; son ödeme tarihi tablodan ve çıktıdan kaldırıldı (hatırlatma için formda kalır).
 - Fatura okuma: yan yana başlıklı faturalarda (ASKİ) abone/sözleşme no doğru sütundan, etiketsiz abone adı, fatura tarihi, dönem ve toplam bedel okunur.

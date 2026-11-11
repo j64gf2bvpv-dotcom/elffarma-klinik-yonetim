@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { IMAGE_ACCEPT, ensureReadableImage, isImageFile } from '@/lib/ensureReadableImage'
-import { getDocumentUrl, isPdfFile, isPdfPath, openDocument } from '@/lib/documentAttachments'
+import { downloadDocument, getDocumentUrl, isPdfFile, isPdfPath, openDocument } from '@/lib/documentAttachments'
 import { getErrorMessage } from '@/lib/utils'
 import { parseBillText, readBillText, type BillReadResult } from './readBill'
 
@@ -81,15 +81,29 @@ export function BillImageField({
     void read(ok[0])
   }
 
-  const firstNew = value.find((a): a is Extract<BillAttachment, { kind: 'new' }> => a.kind === 'new')
+  const first = value.find((a) => a.kind === 'new') ?? value[0]
+
+  /** Yeni seçilen ya da daha önce kaydedilmiş görüntüyü (indirip) yeniden oku */
+  async function readAttachment(a: BillAttachment) {
+    if (a.kind === 'new') return read(a.file)
+    setReading(true)
+    try {
+      const blob = await downloadDocument(a.path)
+      const pdf = isPdfPath(a.path)
+      await read(new File([blob], pdf ? 'fatura.pdf' : 'fatura.jpg', { type: pdf ? 'application/pdf' : 'image/jpeg' }))
+    } catch (err) {
+      toast.error('Fatura okunamadı', { description: getErrorMessage(err) })
+      setReading(false)
+    }
+  }
 
   return (
     <div className="grid gap-2">
       <div className="flex items-center justify-between gap-2">
         <Label>Fatura Resmi</Label>
-        {firstNew && !reading && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => void read(firstNew.file)}>
-            <ScanText /> Tekrar oku
+        {first && !reading && (
+          <Button type="button" variant="ghost" size="sm" onClick={() => void readAttachment(first)}>
+            <ScanText /> Faturadan oku
           </Button>
         )}
       </div>
