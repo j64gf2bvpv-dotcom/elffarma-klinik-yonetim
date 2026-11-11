@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
 import { createReminder, updateReminder, deleteReminder } from '@/features/reminders/api'
 import { removeDocuments, uploadDocumentAttachment } from '@/lib/documentAttachments'
-import type { UtilityBill, UtilityBillCategory, UtilityBillTemplate } from '@/types/database'
+import type { UtilityBill, UtilityBillCategory, UtilityBillTemplate, UtilitySubscription } from '@/types/database'
 
 export const UTILITY_BILL_CATEGORY_LABELS: Record<UtilityBillCategory, string> = {
   elektrik: 'Elektrik',
@@ -23,6 +23,8 @@ export interface UtilityBillInput {
   subscriber_number?: string | null
   subscriber_name?: string | null
   attachment_paths?: string[]
+  period?: string | null
+  bill_date?: string | null
   amount: number
   due_date: string
   note?: string | null
@@ -182,4 +184,11 @@ export async function syncTemplateSubscriber(
   fields: { contract_number: string | null; subscriber_number: string | null; subscriber_name: string | null },
 ): Promise<void> {
   await offlineUpdate('utility_bill_templates', templateId, fields, 'Tekrarlayan fatura abone bilgisi')
+}
+
+/** Kalıcı abonelik başlıkları — faturalar bunların altında listelenir; başlık silinemez (2026-11-11). */
+export async function fetchUtilitySubscriptions(): Promise<UtilitySubscription[]> {
+  const { data, error } = await supabase.from('utility_subscriptions').select('*').order('created_at', { ascending: true })
+  if (error) throw error
+  return data as UtilitySubscription[]
 }

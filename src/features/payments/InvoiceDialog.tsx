@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import { getInvoiceFileUrl } from './api'
 import { useSaveInvoice } from './hooks'
 import type { Payment } from '@/types/database'
+import { IMAGE_ACCEPT, ensureReadableImage, isImageFile } from '@/lib/ensureReadableImage'
 
 export function InvoiceDialog({ payment }: { payment: Payment }) {
   const [open, setOpen] = React.useState(false)
@@ -33,7 +34,9 @@ export function InvoiceDialog({ payment }: { payment: Payment }) {
   }, [open, payment.invoice_number])
 
   async function handleSave() {
-    await saveMutation.mutateAsync({ paymentId: payment.id, invoiceNumber: invoiceNumber || null, file })
+    // HEIC (iPhone) resimler JPEG'e çevrilip yüklenir (2026-11-11)
+    const upload = file && isImageFile(file) ? await ensureReadableImage(file) : file
+    await saveMutation.mutateAsync({ paymentId: payment.id, invoiceNumber: invoiceNumber || null, file: upload })
     setOpen(false)
   }
 
@@ -82,7 +85,7 @@ export function InvoiceDialog({ payment }: { payment: Payment }) {
             <Input
               id="invoice-file"
               type="file"
-              accept="application/pdf,image/*"
+              accept={`application/pdf,${IMAGE_ACCEPT}`}
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
           </div>

@@ -21,6 +21,7 @@ import {
   useClearAIMessages,
 } from './hooks'
 import { AIServiceError, type AIMessage, type AIContentPart } from './types'
+import { IMAGE_ACCEPT, ensureReadableImage, isImageFile } from '@/lib/ensureReadableImage'
 
 let aiIconGradientId = 0
 
@@ -445,7 +446,7 @@ export function AIChatWidget() {
     setListening(true)
   }
 
-  function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
     e.target.value = ''
     const next: PendingAttachment[] = []
@@ -454,8 +455,13 @@ export function AIChatWidget() {
         toast.error(`${file.name} çok büyük — en fazla 8MB olabilir`)
         continue
       }
-      if (file.type.startsWith('image/')) {
-        next.push({ file, kind: 'image' })
+      if (isImageFile(file)) {
+        // HEIC (iPhone) resimler JPEG'e çevrilir (2026-11-11)
+        try {
+          next.push({ file: await ensureReadableImage(file), kind: 'image' })
+        } catch (err) {
+          toast.error(`${file.name} açılamadı`, { description: err instanceof Error ? err.message : String(err) })
+        }
       } else if (/\.(xlsx|xls|csv|txt|pdf|docx)$/i.test(file.name)) {
         next.push({ file, kind: 'document' })
       } else {
@@ -775,7 +781,7 @@ export function AIChatWidget() {
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*,.xlsx,.xls,.csv,.txt,.pdf,.docx"
+              accept={`${IMAGE_ACCEPT},.xlsx,.xls,.csv,.txt,.pdf,.docx`}
               className="hidden"
               onChange={handleFilesSelected}
             />

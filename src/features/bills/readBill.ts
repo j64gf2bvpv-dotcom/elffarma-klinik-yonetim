@@ -17,6 +17,10 @@ export interface BillReadResult {
   subscriber_name?: string
   amount?: number
   due_date?: string
+  /** Fatura dönemi YYYY-MM */
+  period?: string
+  /** Faturanın üzerindeki fatura tarihi YYYY-MM-DD */
+  bill_date?: string
 }
 
 /** PDF'in metin katmanını satır satır okur; taranmış (metinsiz) PDF'te ilk sayfayı resim olarak OCR'lar. */
@@ -61,15 +65,25 @@ export async function readBillText(file: File): Promise<string> {
 const NUM = /^[:：.\-\s]*([A-Z0-9][A-Z0-9\-/]{3,24})/i
 const TEXT = /^[:：.\-\s]*(.+)/
 
+const segments = (line: string) => line.split(/\s{2,}/).map((x) => x.trim()).filter(Boolean)
+
 /**
- * Etiketten sonraki değer: önce aynı satırda etiketin hemen sağı, geçerli değilse
- * bir sonraki satırın başı (faturalarda değer çoğu zaman etiketin altında durur).
+ * Etiketten sonraki değer: önce aynı satırda etiketin hemen sağı, geçerli değilse alt satır.
+ * Başlıklar yan yana bir satırdaysa (ASKİ: "ABONE NO  SÖZLEŞME NO  DÖNEM" / altında
+ * "66704  100004019102  2026-06") alt satırda AYNI SIRADAKİ değer alınır — ilk değer değil.
  */
 function valueAfter(lines: string[], label: RegExp, value: RegExp, accept: (v: string) => string | undefined): string | undefined {
   for (let i = 0; i < lines.length; i++) {
     const m = label.exec(lines[i])
     if (!m) continue
-    for (const candidate of [lines[i].slice(m.index + m[0].length), lines[i + 1] ?? '']) {
+    const heads = segments(lines[i])
+    const col = heads.findIndex((h) => label.test(h))
+    const below = segments(lines[i + 1] ?? '')
+    const candidates = [lines[i].slice(m.index + m[0].length)]
+    if (heads.length > 1 && below.length === heads.length && col >= 0) candidates.push(below[col])
+    else if (heads.length <= 1 || col === 0) candidates.push(lines[i + 1] ?? '')
+    for (const candidate of candidates) {
+      // Aynı satırdaki "kalan" başka bir başlıkla başlıyorsa (yan yana başlıklar) değer değildir
       const v = value.exec(candidate)
       const ok = v && accept(v[1].trim())
       if (ok) return ok
@@ -125,12 +139,52 @@ export function parseBillText(text: string): BillReadResult {
     cleanName(valueAfter(lines, /\bunvan[ıi]?\b/i, TEXT, cleanName)) ??
     cleanName(valueAfter(lines, /\bsay[ıi]n\b/i, TEXT, cleanName))
 
-  for (const l of lines) {
-    if (out.amount == null && /(ödenecek|odenecek|fatura)\s*(toplam\s*)?tutar|toplam\s*tutar|genel\s*toplam/i.test(l)) out.amount = parseAmount(l.replace(/^.*?tutar[ıi]?/i, ''))
-    if (!out.due_date && /son\s*[öo]deme/i.test(l)) {
-      const d = /(\d{1,2})[./-](\d{1,2})[./-](\d{4})/.exec(l)
-      if (d) out.due_date = `${d[3]}-${d[2].padStart(2, '0')}-${d[1].padStart(2, '0')}`
+  // Etiketsiz abone adı (ASKİ vb.): abone/sözleşme no değerlerinin hemen altındaki, sadece harflerden oluşan satır
+  if (!out.subscriber_name) {
+    const valueLine = lines.findIndex((l) => [out.subscriber_number, out.contract_number].some((n) => n && segments(l).includes(n)))
+    const next = valueLine >= 0 ? lines[valueLine + 1]?.trim() : undefined
+    if (next && /^[A-Za-zÇĞİÖŞÜçğıöşü.]{2,}(?:\s+[A-Za-zÇĞİÖŞÜçğıöşü.]{2,}){1,4}$/.test(next) && !/fatura|adres|t[üu]ketim|bor[çc]|tarih|d[öo]nem/i.test(next))
+      out.subscriber_name = next
+  }
+
+  const AMOUNT_LABEL = /[öo]denecek|toplam\s*(?:fatura\s*)?(?:tutar|bedel)|fatura\s*(?:toplam\s*)?(?:tutar|bedel)|genel\s*toplam/i
+  out.amount =
+    Number(valueAfter(lines, AMOUNT_LABEL, /^[:：\s]*(.+)/, (v) => (parseAmount(v) ? String(parseAmount(v)) : undefined))) || undefined
+
+  const toIso = (d: RegExpExecArray) => `${d[3]}-${d[2].padStart(2, '0')}-${d[1].padStart(2, '0')}`
+  const DATE = /(\d{1,2})[./-](\d{1,2})[./-](\d{4})/g
+  for (const re of [/son\s*[öo]deme/i, /[öo]deme\s*tar[ıiİI]h/i]) {
+    if (out.due_date) break
+    const line = lines.find((l) => re.test(l) && DATE.test(l))
+    DATE.lastIndex = 0
+    if (line) {
+      // "ÖDEME TARİHLERİ: 12.06.2026 - 18.06.2026" → son gün
+      const all = [...line.matchAll(DATE)]
+      out.due_date = toIso(all[all.length - 1] as RegExpExecArray)
     }
   }
+  // Fatura tarihi (faturanın üzerindeki tarih) — "FATURA TARİHİ: 05.06.2026"
+  for (const re of [/fatura\s*tar[ıiİI]h/i, /d[üu]zenlen(?:me|di[ğg]i)\s*tar[ıiİI]h/i, /tebli[ğg]\s*tar[ıiİI]h/i]) {
+    if (out.bill_date) break
+    const v = valueAfter(lines, re, /([0-3]?\d[./-][01]?\d[./-]\d{4})/, (x) => x)
+    const d = v && /(\d{1,2})[./-](\d{1,2})[./-](\d{4})/.exec(v)
+    if (d) out.bill_date = toIso(d)
+  }
+
+  // Dönem — "DÖNEM 2026-06", "Fatura Dönemi: Haziran 2026", "Dönem: 06/2026" ("Dönem Borcu" değil)
+  const MONTHS = ['ocak', 'şubat', 'mart', 'nisan', 'mayıs', 'haziran', 'temmuz', 'ağustos', 'eylül', 'ekim', 'kasım', 'aralık']
+  const toPeriod = (v: string): string | undefined => {
+    let m = /(20\d{2})\s*[-/.]\s*(\d{1,2})\b/.exec(v)
+    if (m && +m[2] >= 1 && +m[2] <= 12) return `${m[1]}-${m[2].padStart(2, '0')}`
+    m = /\b(\d{1,2})\s*[-/.]\s*(20\d{2})/.exec(v)
+    if (m && +m[1] >= 1 && +m[1] <= 12) return `${m[2]}-${m[1].padStart(2, '0')}`
+    const low = v.toLocaleLowerCase('tr-TR')
+    const mi = MONTHS.findIndex((name) => low.includes(name))
+    const y = /(20\d{2})/.exec(v)
+    return mi >= 0 && y ? `${y[1]}-${String(mi + 1).padStart(2, '0')}` : undefined
+  }
+  out.period = valueAfter(lines, /d[öoÖO]nem[ıiİI]?\b(?!\s*bor)/i, /^[:：\s]*(.+)/, toPeriod)
+  if (!out.period && out.bill_date) out.period = out.bill_date.slice(0, 7)
+
   return Object.fromEntries(Object.entries(out).filter(([, v]) => v != null && v !== '')) as BillReadResult
 }

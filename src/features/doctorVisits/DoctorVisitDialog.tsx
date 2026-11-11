@@ -26,6 +26,7 @@ import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { useCreateVisit, useDeleteVisit, useUpdateVisit } from './hooks'
 import { SignaturePad } from './SignaturePad'
 import type { DoctorVisit } from '@/types/database'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 const schema = z.object({
   doctor_name: z.string().min(2, 'Doktor adı gerekli'),
@@ -189,6 +190,7 @@ export function DoctorVisitDialog({
 
   async function handleDelete() {
     if (!visit) return
+    if (!(await confirmAction('Bu ziyaret kaydı silinsin mi?'))) return
     await deleteMutation.mutateAsync(visit.id)
     setOpen(false)
   }

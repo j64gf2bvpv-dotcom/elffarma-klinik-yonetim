@@ -7,6 +7,7 @@ import App from './App.tsx'
 import { AuthProvider } from './lib/auth'
 import { queryClient } from './lib/queryClient'
 import { Toaster } from '@/components/ui/sonner'
+import { GlobalConfirmHost } from '@/hooks/useConfirmDialog'
 
 // Sorgu önbelleğini diske yazar — internet olmadan uygulama yeniden açılsa
 // bile en son yüklenen veriler (doktorlar, stok, tahsilatlar vb.) ekranda görünür.
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <App />
         <Toaster />
+        <GlobalConfirmHost />
       </AuthProvider>
     </PersistQueryClientProvider>
   </StrictMode>,

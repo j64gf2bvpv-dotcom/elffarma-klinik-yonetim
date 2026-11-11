@@ -17,6 +17,7 @@ import { setConsumableState } from '@/features/congresses/api'
 import { DEFAULT_CONGRESS_CONSUMABLES } from '@/features/congresses/consumablesTemplate'
 import { exportMaterialsImage, type MaterialMark } from './exportMaterialsImage'
 import type { CongressConsumable } from '@/types/database'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 /**
  * Kongre/workshopa götürülen STOK DIŞI malzemeler — üç grup: sarf, tanıtım
@@ -221,7 +222,9 @@ function MaterialList({
               />
               <button
                 type="button"
-                onClick={() => deleteMutation.mutate(item.id)}
+                onClick={async () => {
+  if (await confirmAction('Bu malzeme kaydı silinsin mi?')) deleteMutation.mutate(item.id)
+}}
                 className="text-muted-foreground shrink-0 hover:text-destructive"
                 title="Sil"
               >

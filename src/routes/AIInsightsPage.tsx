@@ -32,6 +32,7 @@ import { useSales } from '@/features/sales/hooks'
 import { useSampleRequests } from '@/features/samples/hooks'
 import { exportTextReportToWord } from '@/lib/exportData'
 import type { ImportSummary } from '@/lib/importData'
+import { IMAGE_ACCEPT } from '@/lib/ensureReadableImage'
 
 type ReportPeriod = 'gunluk' | 'haftalik' | 'aylik'
 
@@ -534,7 +535,7 @@ export function AIInsightsPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,.xlsx,.xls,.csv,.pdf,.docx,.txt"
+              accept={`${IMAGE_ACCEPT},.xlsx,.xls,.csv,.pdf,.docx,.txt`}
               className="hidden"
               onChange={handleFileUpload}
             />

@@ -22,6 +22,7 @@ import {
   useTestGoogleDriveConnection,
 } from './hooks'
 import type { GoogleServiceAccount } from './googleDrive'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -214,7 +215,9 @@ export function BackupSettingsCard() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => deleteBackup.mutate(b.path)}
+                    onClick={async () => {
+  if (await confirmAction('Bu yedek dosyası kalıcı olarak silinsin mi?')) deleteBackup.mutate(b.path)
+}}
                     disabled={deleteBackup.isPending}
                     title="Sil"
                   >

@@ -10,6 +10,8 @@ import { getErrorMessage } from '@/lib/utils'
 import { getAttachmentUrl } from './api'
 import { useAttachments, useDeleteAttachment, useUploadAttachment } from './hooks'
 import type { AttachmentOwnerType } from '@/types/database'
+import { confirmAction } from '@/hooks/useConfirmDialog'
+import { ensureReadableImage, isImageFile } from '@/lib/ensureReadableImage'
 
 interface AttachmentsPanelProps {
   ownerType: AttachmentOwnerType
@@ -28,10 +30,16 @@ export function AttachmentsPanel({ ownerType, ownerId }: AttachmentsPanelProps) 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [downloadingId, setDownloadingId] = React.useState<string | null>(null)
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) uploadMutation.mutate(file)
     e.target.value = ''
+    if (!file) return
+    // HEIC (iPhone) resimler JPEG'e çevrilip yüklenir — her bilgisayarda açılabilsin (2026-11-11)
+    try {
+      uploadMutation.mutate(isImageFile(file) ? await ensureReadableImage(file) : file)
+    } catch (err) {
+      toast.error(`${file.name} açılamadı`, { description: err instanceof Error ? err.message : String(err) })
+    }
   }
 
   async function handleDownload(id: string, path: string) {
@@ -89,7 +97,9 @@ export function AttachmentsPanel({ ownerType, ownerId }: AttachmentsPanelProps) 
                   {downloadingId === att.id ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
                 </Button>
                 {canManage && (
-                  <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(att)}>
+                  <Button variant="ghost" size="icon" onClick={async () => {
+  if (await confirmAction('Bu ek dosya silinsin mi?')) deleteMutation.mutate(att)
+}}>
                     <Trash2 className="size-3.5 text-destructive" />
                   </Button>
                 )}

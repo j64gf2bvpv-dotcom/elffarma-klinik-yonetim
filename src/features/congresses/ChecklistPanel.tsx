@@ -15,6 +15,7 @@ import {
   useSetChecklistItemDone,
 } from './hooks'
 import { DEFAULT_CONGRESS_CHECKLIST_ITEMS } from './checklistTemplate'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 /**
  * Kongre/workshop'a özel hazırlık kontrol listesi. Liste boşsa "Standart
@@ -111,7 +112,9 @@ export function ChecklistPanel({ congressId }: { congressId: string }) {
                 </span>
                 <button
                   type="button"
-                  onClick={() => deleteMutation.mutate(item.id)}
+                  onClick={async () => {
+  if (await confirmAction('Bu kontrol listesi maddesi silinsin mi?')) deleteMutation.mutate(item.id)
+}}
                   className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                   title="Sil"
                 >

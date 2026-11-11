@@ -22,6 +22,7 @@ import { EXPENSE_ENTRY_SECTIONS } from '@/features/expenseEntries/api'
 import { useExpenseEntries } from '@/features/expenseEntries/hooks'
 import { ExpenseEntriesPanel } from '@/features/expenseEntries/ExpenseEntriesPanel'
 import { entryExportColumns } from '@/features/expenseEntries/columns'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -198,7 +199,9 @@ export function ExpensesPage() {
                       {expense.description ?? '—'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(expense.id)}>
+                      <Button variant="ghost" size="icon" onClick={async () => {
+  if (await confirmAction('Bu gider kaydı silinsin mi?')) deleteMutation.mutate(expense.id)
+}}>
                         <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </TableCell>

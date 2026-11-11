@@ -17,6 +17,7 @@ import { useDismissedAlerts } from '@/features/alerts/useDismissedAlerts'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 import { cn } from '@/lib/utils'
 import type { Reminder } from '@/types/database'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -53,7 +54,9 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
         {format(new Date(reminder.due_date), 'd MMM yyyy', { locale: trLocale })}
       </Badge>
       <ReminderForm reminder={reminder} />
-      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(reminder.id)}>
+      <Button variant="ghost" size="icon" onClick={async () => {
+  if (await confirmAction('Bu hatırlatma silinsin mi?')) deleteMutation.mutate(reminder.id)
+}}>
         <Trash2 className="size-4 text-destructive" />
       </Button>
     </div>

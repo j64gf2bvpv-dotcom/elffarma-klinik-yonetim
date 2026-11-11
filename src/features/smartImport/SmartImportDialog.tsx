@@ -16,6 +16,7 @@ import { useAIService } from '@/features/ai/useAIService'
 import { extractFileContent } from './extractFileContent'
 import { extractRowsWithAI } from './aiExtractRows'
 import type { ImportSummary } from '@/lib/importData'
+import { IMAGE_ACCEPT } from '@/lib/ensureReadableImage'
 
 interface SmartImportDialogProps {
   /** Diyalog başlığı, ör. "Doktorları Akıllı İçe Aktar". */
@@ -119,7 +120,7 @@ export function SmartImportDialog({ title, targetLabel, fieldHeaders, fieldHints
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*,.xlsx,.xls,.csv,.pdf,.docx,.txt"
+          accept={`${IMAGE_ACCEPT},.xlsx,.xls,.csv,.pdf,.docx,.txt`}
           className="hidden"
           onChange={handleFileChange}
         />

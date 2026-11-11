@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { IMAGE_ACCEPT, isImageFile } from '@/lib/ensureReadableImage'
+import { IMAGE_ACCEPT, ensureReadableImage, isImageFile } from '@/lib/ensureReadableImage'
 import { getDocumentUrl, isPdfFile, isPdfPath, openDocument } from '@/lib/documentAttachments'
 import { getErrorMessage } from '@/lib/utils'
 import { parseBillText, readBillText, type BillReadResult } from './readBill'
@@ -63,10 +63,19 @@ export function BillImageField({
     }
   }
 
-  function addFiles(files: Iterable<File>) {
+  async function addFiles(files: Iterable<File>) {
     const list = Array.from(files)
-    const ok = list.filter((f) => isImageFile(f) || isPdfFile(f))
-    if (ok.length < list.length) toast.warning('Sadece resim ve PDF dosyaları eklenebilir')
+    const picked = list.filter((f) => isImageFile(f) || isPdfFile(f))
+    if (picked.length < list.length) toast.warning('Sadece resim ve PDF dosyaları eklenebilir')
+    // HEIC (iPhone) vb. önizlemede görünsün diye JPEG'e çevrilir (2026-11-11)
+    const ok: File[] = []
+    for (const f of picked) {
+      try {
+        ok.push(isPdfFile(f) ? f : await ensureReadableImage(f))
+      } catch (err) {
+        toast.error(`${f.name} açılamadı`, { description: getErrorMessage(err) })
+      }
+    }
     if (ok.length === 0) return
     onChange([...value, ...ok.map((file): BillAttachment => ({ kind: 'new', file, url: isPdfFile(file) ? null : URL.createObjectURL(file) }))])
     void read(ok[0])
@@ -91,7 +100,7 @@ export function BillImageField({
         accept={`${IMAGE_ACCEPT},application/pdf,.pdf`}
         className="hidden"
         onChange={(e) => {
-          if (e.target.files) addFiles(e.target.files)
+          if (e.target.files) void addFiles(e.target.files)
           e.target.value = ''
         }}
       />
@@ -145,7 +154,7 @@ export function BillImageField({
         onDrop={(e) => {
           e.preventDefault()
           setDragging(false)
-          addFiles(e.dataTransfer.files)
+          void addFiles(e.dataTransfer.files)
         }}
         className={`flex items-center justify-center gap-2 rounded-md border border-dashed py-3 text-sm text-muted-foreground hover:bg-accent ${
           dragging ? 'border-primary bg-primary/5' : ''

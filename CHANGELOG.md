@@ -3,6 +3,12 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.365] - 2026-11-11
+- Faturalar: Elektrik/Su/Doğalgaz/İnternet başlıkları kalıcı, silinemez (yalnızca içindeki faturalar silinir); her başlıkta "+ Fatura". Tabloda Fatura Tarihi (faturanın üzerindeki), Dönem ve Tutar; son ödeme tarihi tablodan ve çıktıdan kaldırıldı (hatırlatma için formda kalır).
+- Fatura okuma: yan yana başlıklı faturalarda (ASKİ) abone/sözleşme no doğru sütundan, etiketsiz abone adı, fatura tarihi, dönem ve toplam bedel okunur.
+- Silme onayı: onay sormadan silen tüm düğmelere "Emin misiniz?" eklendi (giderler, tahsilat, taksit planı, hatırlatma, görev, CRM, kongre listeleri, ekler, yedekler, prim, şablonlar, ziyaret, katılımcı, demo veri).
+- iPhone (HEIC) resimleri her yerde: tahsilat faturası, ekler, akıllı içe aktarma, yapay zekâ ekleri; fatura/gider/ruhsat önizlemeleri.
+
 ## [2.17.364] - 2026-11-11
 - Yedekleme: Faturalar, tekrarlayan faturalar ve Giderler bölümleri (elektrik/su/internet/ofis/mutfak/ofis yemek) artık otomatik yedeğe dahil — silinen faturalar geri getirilirken yedekte olmadıkları fark edildi.
 

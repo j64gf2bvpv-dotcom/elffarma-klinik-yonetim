@@ -37,6 +37,7 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { ImportMenu } from '@/components/ImportMenu'
 import { SmartImportDialog } from '@/features/smartImport/SmartImportDialog'
 import type { ImportSummary } from '@/lib/importData'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -317,7 +318,9 @@ export function PaymentsPage() {
                         {plan.description ? ` — ${plan.description}` : ''}
                       </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => deletePlanMutation.mutate(plan.id)}>
+                    <Button variant="ghost" size="icon" onClick={async () => {
+  if (await confirmAction('Bu taksit planı silinsin mi?')) deletePlanMutation.mutate(plan.id)
+}}>
                       <Trash2 className="size-3.5 text-destructive" />
                     </Button>
                   </div>
@@ -401,7 +404,9 @@ export function PaymentsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => deleteMutation.mutate(payment.id)}
+                      onClick={async () => {
+  if (await confirmAction('Bu tahsilat kaydı silinsin mi?')) deleteMutation.mutate(payment.id)
+}}
                     >
                       <Trash2 className="size-4 text-destructive" />
                     </Button>

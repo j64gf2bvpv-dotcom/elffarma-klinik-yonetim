@@ -60,6 +60,7 @@ import { useAuth } from '@/lib/auth'
 import { tr } from '@/i18n/tr'
 import type { Staff, WhatsAppTemplate } from '@/types/database'
 import { cn } from '@/lib/utils'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 function initials(name: string) {
   return name
@@ -426,7 +427,9 @@ function TemplateRow({ template, readOnly }: { template: WhatsAppTemplate; readO
             size="sm"
             variant="outline"
             className="text-destructive hover:text-destructive"
-            onClick={() => deleteMutation.mutate(template.id)}
+            onClick={async () => {
+  if (await confirmAction('Bu WhatsApp şablonu silinsin mi?')) deleteMutation.mutate(template.id)
+}}
           >
             <Trash2 className="size-3.5" />
           </Button>
@@ -575,6 +578,7 @@ export function SettingsPage() {
   // Kullanıcı isteğiyle (2026-08-22) native confirm() sorusu kaldırıldı —
   // "Örnek Verileri Sil" doğrudan siliyor, ayrı bir onay sorulmuyor.
   async function handleClearDemoData() {
+    if (!(await confirmAction('Örnek (demo) veriler silinsin mi?'))) return
     setClearing(true)
     try {
       const result = await clearDemoData()

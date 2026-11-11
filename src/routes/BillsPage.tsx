@@ -42,12 +42,19 @@ import {
   useUtilityBillTemplates,
   useMakeBillRecurring,
   useUtilityBills,
+  useUtilitySubscriptions,
 } from '@/features/bills/hooks'
 import type { UtilityBill, UtilityBillCategory, UtilityBillTemplate } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
+}
+
+/** "2026-06" → "Haziran 2026" */
+function periodLabel(period: string | null): string {
+  if (!period || !/^\d{4}-\d{2}$/.test(period)) return period || '—'
+  return format(new Date(`${period}-01T00:00:00`), 'LLLL yyyy', { locale: trLocale }).replace(/^./, (c) => c.toLocaleUpperCase('tr-TR'))
 }
 
 const CATEGORY_ORDER: UtilityBillCategory[] = ['elektrik', 'dogalgaz', 'su', 'internet', 'telefon', 'diger']
@@ -60,6 +67,10 @@ interface BillFormState {
   subscriber_name: string
   amount: number
   due_date: string
+  /** Fatura dönemi YYYY-MM */
+  period: string
+  /** Faturanın üzerindeki tarih */
+  bill_date: string
   note: string
 }
 
@@ -70,10 +81,10 @@ function todayDate() {
 }
 
 function emptyForm(): BillFormState {
-  return { category: 'elektrik', contract_number: '', subscriber_number: '', subscriber_name: '', amount: 0, due_date: todayDate(), note: '' }
+  return { category: 'elektrik', contract_number: '', subscriber_number: '', subscriber_name: '', amount: 0, due_date: todayDate(), period: '', bill_date: '', note: '' }
 }
 
-function BillFormDialog({ bill }: { bill?: UtilityBill }) {
+function BillFormDialog({ bill, defaults }: { bill?: UtilityBill; defaults?: Partial<BillFormState> }) {
   const isEdit = !!bill
   const [open, setOpen] = React.useState(false)
   const [form, setForm] = React.useState<BillFormState>(
@@ -85,6 +96,8 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
           subscriber_name: bill.subscriber_name ?? '',
           amount: Number(bill.amount),
           due_date: bill.due_date,
+          period: bill.period ?? '',
+          bill_date: bill.bill_date ?? '',
           note: bill.note ?? '',
         }
       : emptyForm(),
@@ -111,9 +124,15 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
         subscriber_name: bill.subscriber_name ?? '',
         amount: Number(bill.amount),
         due_date: bill.due_date,
+        period: bill.period ?? '',
+        bill_date: bill.bill_date ?? '',
         note: bill.note ?? '',
       })
       setAttachments(bill.attachment_paths.map((path) => ({ kind: 'saved', path })))
+    } else if (next && defaults) {
+      // Bir abonelik başlığının içinden "+ Fatura": tür ve numaralar hazır gelir
+      setForm({ ...emptyForm(), ...defaults })
+      setAttachments([])
     }
     setOpen(next)
   }
@@ -137,6 +156,8 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
       subscriber_number: form.subscriber_number.trim() || null,
       subscriber_name: form.subscriber_name.trim() || null,
       attachment_paths,
+      period: form.period || null,
+      bill_date: form.bill_date || null,
       amount: form.amount,
       due_date: form.due_date,
       note: form.note.trim() || null,
@@ -181,6 +202,10 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
         {isEdit ? (
           <Button variant="ghost" size="icon" title="Düzenle">
             <Pencil className="size-4" />
+          </Button>
+        ) : defaults ? (
+          <Button variant="outline" size="sm" title="Bu aboneliğe fatura ekle">
+            <Plus className="size-3.5" /> Fatura
           </Button>
         ) : (
           <Button>
@@ -238,12 +263,20 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
               <CurrencyInput value={form.amount} onChange={(v) => setForm((f) => ({ ...f, amount: v ?? 0 }))} />
             </div>
             <div className="grid gap-1.5">
-              <Label>Son Ödeme Tarihi</Label>
+              <Label>Son Ödeme Tarihi (hatırlatma için)</Label>
               <Input
                 type="date"
                 value={form.due_date}
                 onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
               />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Fatura Tarihi</Label>
+              <Input type="date" value={form.bill_date} onChange={(e) => setForm((f) => ({ ...f, bill_date: e.target.value }))} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Dönem</Label>
+              <Input type="month" value={form.period} onChange={(e) => setForm((f) => ({ ...f, period: e.target.value }))} />
             </div>
           </div>
           <div className="grid gap-1.5">
@@ -259,6 +292,8 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
                 subscriber_number: found.subscriber_number ?? f.subscriber_number,
                 contract_number: found.contract_number ?? f.contract_number,
                 subscriber_name: found.subscriber_name ?? f.subscriber_name,
+                period: found.period ?? f.period,
+                bill_date: found.bill_date ?? f.bill_date,
                 // Tutar ve tarih sadece boşsa/yeni faturadaysa doldurulur
                 amount: f.amount > 0 ? f.amount : (found.amount ?? f.amount),
                 due_date: !isEdit && found.due_date ? found.due_date : f.due_date,
@@ -576,10 +611,12 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
 
   return (
     <div className="border-b last:border-0">
+      {/* Başlık kalıcıdır, silinemez (2026-11-11) — sadece içindeki faturalar silinir */}
+      <div className="flex items-center hover:bg-accent/40">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-accent/40"
+        className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 px-4 py-3 text-left"
       >
         <span className="flex items-center gap-2">
           <ChevronDown className={cn('size-4 text-muted-foreground transition-transform', open && 'rotate-180')} />
@@ -624,28 +661,50 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
               ödendi işareti ana ekrandaki fatura hatırlatma penceresinden verilir */}
         </span>
       </button>
+        <div className="shrink-0 pr-3">
+          <BillFormDialog
+            defaults={{
+              category: group.category,
+              contract_number: group.contractNumber ?? '',
+              subscriber_number: group.subscriberNumber ?? '',
+              subscriber_name: group.subscriberName ?? '',
+            }}
+          />
+        </div>
+      </div>
       {open && (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Son Ödeme Tarihi</TableHead>
+              <TableHead>Fatura Tarihi</TableHead>
+              <TableHead>Dönem</TableHead>
               <TableHead>Sözleşme No</TableHead>
               <TableHead>Abone No</TableHead>
               <TableHead>Abone Adı</TableHead>
+              <TableHead className="text-right">Tutar</TableHead>
               <TableHead>Not</TableHead>
               <TableHead>Fatura</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
+            {group.bills.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={9} className="py-4 text-center text-muted-foreground">
+                  Bu abonelikte fatura yok — sağdaki "+ Fatura" ile ekleyin.
+                </TableCell>
+              </TableRow>
+            )}
             {group.bills.map((b) => (
               <TableRow key={b.id}>
-                <TableCell className="whitespace-nowrap">{format(new Date(b.due_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
+                <TableCell className="whitespace-nowrap">{b.bill_date ? format(new Date(b.bill_date), 'd MMM yyyy', { locale: trLocale }) : '—'}</TableCell>
+                <TableCell className="whitespace-nowrap">{periodLabel(b.period)}</TableCell>
                 <TableCell className="tabular-nums">{b.contract_number ?? '—'}</TableCell>
                 <TableCell className="tabular-nums">{b.subscriber_number ?? '—'}</TableCell>
                 <TableCell className="max-w-56 truncate" title={b.subscriber_name ?? undefined}>
                   {b.subscriber_name ?? '—'}
                 </TableCell>
+                <TableCell className="text-right font-medium whitespace-nowrap tabular-nums">{currency(Number(b.amount))}</TableCell>
                 <TableCell className="text-muted-foreground max-w-40 truncate" title={b.note ?? undefined}>
                   {b.note ?? '—'}
                 </TableCell>
@@ -804,6 +863,7 @@ function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
 export function BillsPage() {
   const { data: allTemplates = [] } = useUtilityBillTemplates()
   const { data: bills = [], isLoading } = useUtilityBills()
+  const { data: subscriptions = [] } = useUtilitySubscriptions()
   const [categoryFilter, setCategoryFilter] = React.useState<string>(ALL_CATEGORIES)
 
   const filtered = categoryFilter === ALL_CATEGORIES ? bills : bills.filter((b) => b.category === categoryFilter)
@@ -817,13 +877,28 @@ export function BillsPage() {
     .filter((b) => b.due_date.slice(0, 4) === todayDate().slice(0, 4))
     .reduce((sum, b) => sum + Number(b.amount), 0)
 
-  // Aynı sözleşme numarasına ait faturalar tek grup altında toplanıyor —
-  // sözleşme numarası olmayanlar birbirine karışmasın diye HER BİRİ kendi
-  // (tek elemanlı) grubunda kalıyor.
+  // Gruplar kalıcı abonelik başlıklarından gelir (2026-11-11) — içindeki son fatura silinse
+  // de başlık kalır. Faturalar türü + sözleşme numarasıyla başlığına bağlanır; başlığı
+  // henüz olmayan faturalar eskisi gibi sözleşme numarasına göre gruplanır.
   const groups = React.useMemo<SubscriptionGroup[]>(() => {
+    const norm = (c: string | null | undefined) => (c ?? '').trim()
     const map = new Map<string, SubscriptionGroup>()
+    for (const sub of subscriptions) {
+      if (categoryFilter !== ALL_CATEGORIES && sub.category !== categoryFilter) continue
+      map.set(`s:${sub.category}:${norm(sub.contract_number)}`, {
+        key: `s:${sub.id}`,
+        contractNumber: norm(sub.contract_number) || null,
+        subscriberNumber: sub.subscriber_number,
+        subscriberName: sub.subscriber_name,
+        category: sub.category,
+        bills: [],
+        unpaidTotal: 0,
+        unpaidCount: 0,
+      })
+    }
     for (const b of filtered) {
-      const key = b.contract_number?.trim() ? `c:${b.contract_number.trim()}` : `b:${b.id}`
+      const subKey = `s:${b.category}:${norm(b.contract_number)}`
+      const key = map.has(subKey) ? subKey : norm(b.contract_number) ? `c:${norm(b.contract_number)}` : `b:${b.id}`
       let group = map.get(key)
       if (!group) {
         group = { key, contractNumber: b.contract_number, subscriberNumber: null, subscriberName: null, category: b.category, bills: [], unpaidTotal: 0, unpaidCount: 0 }
@@ -838,12 +913,17 @@ export function BillsPage() {
     return Array.from(map.values())
       .map((g) => {
         const bills = g.bills.sort((a, b) => a.due_date.localeCompare(b.due_date))
-        // Başlıkta en son faturadaki abone no / adı
+        // Başlıkta en son faturadaki abone no / adı (yoksa başlıkta kayıtlı olan)
         const latestWith = (k: 'subscriber_number' | 'subscriber_name') => [...bills].reverse().find((b) => b[k])?.[k] ?? null
-        return { ...g, bills, subscriberNumber: latestWith('subscriber_number'), subscriberName: latestWith('subscriber_name') }
+        return {
+          ...g,
+          bills,
+          subscriberNumber: latestWith('subscriber_number') ?? g.subscriberNumber,
+          subscriberName: latestWith('subscriber_name') ?? g.subscriberName,
+        }
       })
-      .sort((a, b) => b.unpaidTotal - a.unpaidTotal)
-  }, [filtered])
+      .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category))
+  }, [filtered, subscriptions, categoryFilter])
 
   return (
     <div>
@@ -858,10 +938,12 @@ export function BillsPage() {
               rows={bills}
               columns={[
                 { header: 'Kategori', value: (b) => UTILITY_BILL_CATEGORY_LABELS[b.category] },
+                // Son ödeme tarihi yerine faturanın üzerindeki tarih + dönem (kullanıcı isteği, 2026-11-11)
+                { header: 'Fatura Tarihi', value: (b) => (b.bill_date ? format(new Date(b.bill_date), 'dd.MM.yyyy') : '') },
+                { header: 'Dönem', value: (b) => (b.period ? periodLabel(b.period) : '') },
                 { header: 'Sözleşme No', value: (b) => b.contract_number ?? '' },
                 { header: 'Abone No', value: (b) => b.subscriber_number ?? '' },
                 { header: 'Abone Adı', value: (b) => b.subscriber_name ?? '' },
-                { header: 'Son Ödeme Tarihi', value: (b) => b.due_date },
                 { header: 'Tutar', value: (b) => Number(b.amount) },
               ]}
             />

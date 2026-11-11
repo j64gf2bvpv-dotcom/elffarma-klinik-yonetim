@@ -24,6 +24,7 @@ import { useProducts } from '@/features/stock/hooks'
 import { useCustomers } from '@/features/customers/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { localDateKey } from '@/lib/utils'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -126,7 +127,9 @@ export function PrimPage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <CommissionRuleForm rule={rule} trigger={<Button variant="ghost" size="icon"><Pencil className="size-3.5" /></Button>} />
-                        <Button variant="ghost" size="icon" onClick={() => deleteRuleMutation.mutate(rule.id)}>
+                        <Button variant="ghost" size="icon" onClick={async () => {
+  if (await confirmAction('Bu prim kuralı silinsin mi?')) deleteRuleMutation.mutate(rule.id)
+}}>
                           <Trash2 className="size-3.5 text-destructive" />
                         </Button>
                       </div>
@@ -234,9 +237,9 @@ export function PrimPage() {
                                     variant="ghost"
                                     size="icon"
                                     className="size-6"
-                                    onClick={(e) => {
+                                    onClick={async (e) => {
                                       e.stopPropagation()
-                                      deleteAdjustmentMutation.mutate(a.id)
+                                      if (await confirmAction('Bu prim düzeltmesi silinsin mi?')) deleteAdjustmentMutation.mutate(a.id)
                                     }}
                                   >
                                     {deleteAdjustmentMutation.isPending ? (

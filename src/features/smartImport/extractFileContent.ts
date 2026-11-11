@@ -2,6 +2,7 @@ import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url'
 import * as mammoth from 'mammoth'
 import { readExcelWorkbookSheets, type ExcelSheet } from '@/lib/importData'
+import { ensureReadableImage, isImageFile } from '@/lib/ensureReadableImage'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
@@ -82,8 +83,9 @@ async function extractDocxText(file: File): Promise<string> {
 export async function extractFileContent(file: File): Promise<ExtractedContent> {
   const name = file.name.toLowerCase()
 
-  if (file.type.startsWith('image/')) {
-    return { kind: 'image', dataUrls: [await fileToDataUrl(file)] }
+  // HEIC (iPhone) vb. tarayıcının açamadığı resimler önce JPEG'e çevrilir (2026-11-11)
+  if (isImageFile(file)) {
+    return { kind: 'image', dataUrls: [await fileToDataUrl(await ensureReadableImage(file))] }
   }
   if (/\.(xlsx|xls|csv)$/.test(name)) {
     const sheets = await readExcelWorkbookSheets(file)

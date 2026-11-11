@@ -7,6 +7,7 @@ import {
   deleteUtilityBillTemplate,
   fetchUtilityBillTemplates,
   fetchUtilityBills,
+  fetchUtilitySubscriptions,
   makeBillRecurring,
   updateUtilityBill,
   updateUtilityBillPaid,
@@ -23,6 +24,7 @@ export function useUtilityBills() {
 
 function invalidateBillsAndReminders(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ['utility_bills'] })
+  queryClient.invalidateQueries({ queryKey: ['utility_subscriptions'] })
   queryClient.invalidateQueries({ queryKey: ['reminders'] })
 }
 
@@ -85,6 +87,10 @@ export function useDeleteUtilityBill() {
 
 export function useUtilityBillTemplates() {
   return useQuery({ queryKey: ['utility_bill_templates'], queryFn: fetchUtilityBillTemplates })
+}
+
+export function useUtilitySubscriptions() {
+  return useQuery({ queryKey: ['utility_subscriptions'], queryFn: fetchUtilitySubscriptions })
 }
 
 export function useCreateUtilityBillTemplate() {

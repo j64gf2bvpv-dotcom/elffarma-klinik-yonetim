@@ -65,6 +65,7 @@ import { WhatsAppSendDialog } from '@/features/whatsapp/WhatsAppSendDialog'
 import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { cn } from '@/lib/utils'
 import { tr } from '@/i18n/tr'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -555,7 +556,9 @@ export function CustomerDetailPage() {
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{currency(Number(p.quantity) * Number(p.unit_price))}</span>
-                        <Button variant="ghost" size="icon" onClick={() => deletePendingMutation.mutate(p.id)}>
+                        <Button variant="ghost" size="icon" onClick={async () => {
+  if (await confirmAction('Bu bekleyen ürün kaydı silinsin mi?')) deletePendingMutation.mutate(p.id)
+}}>
                           <Trash2 className="size-3.5 text-destructive" />
                         </Button>
                       </div>

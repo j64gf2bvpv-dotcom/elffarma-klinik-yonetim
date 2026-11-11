@@ -16,6 +16,7 @@ import {
   useUpdateConsumable,
 } from './hooks'
 import { DEFAULT_CONGRESS_CONSUMABLES } from './consumablesTemplate'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 /**
  * Kongre/workshop için stok dışı, manuel eklenen sarf malzeme listesi
@@ -153,7 +154,9 @@ export function ConsumablesPanel({ congressId }: { congressId: string }) {
                 )}
                 <button
                   type="button"
-                  onClick={() => deleteMutation.mutate(item.id)}
+                  onClick={async () => {
+  if (await confirmAction('Bu sarf malzemesi kaydı silinsin mi?')) deleteMutation.mutate(item.id)
+}}
                   className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                   title="Sil"
                 >

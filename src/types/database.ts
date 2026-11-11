@@ -523,6 +523,10 @@ export interface UtilityBill {
   subscriber_name: string | null
   /** Fatura resimleri/PDF'leri, documents bucket'ında utility-bills/ altında (2026-11-11) */
   attachment_paths: string[]
+  /** Fatura dönemi YYYY-MM (2026-11-11) */
+  period: string | null
+  /** Faturanın üzerindeki fatura tarihi (2026-11-11) — tabloda son ödeme tarihi yerine görünür */
+  bill_date: string | null
   amount: number
   due_date: string
   is_paid: boolean
@@ -530,6 +534,18 @@ export interface UtilityBill {
   reminder_id: string | null
   template_id: string | null
   created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Faturalar'daki kalıcı abonelik başlığı (Elektrik, Su…) — silinemez (2026-11-11) */
+export interface UtilitySubscription {
+  id: string
+  category: UtilityBillCategory
+  /** Sözleşme numarası yoksa boş metin */
+  contract_number: string
+  subscriber_number: string | null
+  subscriber_name: string | null
   created_at: string
   updated_at: string
 }

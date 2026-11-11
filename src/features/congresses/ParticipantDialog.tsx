@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useCreateParticipant, useDeleteParticipant, useUpdateParticipant } from './hooks'
 import type { AttendanceStatus, CongressParticipant } from '@/types/database'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 const attendanceLabels: Record<AttendanceStatus, string> = {
   registered: 'Kayıtlı / Davetli',
@@ -77,6 +78,7 @@ export function ParticipantDialog({
 
   async function handleDelete() {
     if (!participant) return
+    if (!(await confirmAction('Bu katılımcı kongreden silinsin mi?'))) return
     await deleteMutation.mutateAsync({ id: participant.id, congressId })
     setOpen(false)
   }

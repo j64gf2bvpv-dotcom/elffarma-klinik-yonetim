@@ -62,3 +62,23 @@ export function useConfirmDialog() {
 
   return { confirm, dialog }
 }
+
+// Uygulama genelinde tek "Emin misiniz?" penceresi (2026-11-11, kullanıcı isteği: "silerken
+// sorsun emin misiniz diye") — bileşene hook + {dialog} eklemeden tek satırla onay almak için:
+// `if (await confirmAction('… silinsin mi?')) remove.mutate(id)`. Host AppShell'de bir kez durur.
+let globalConfirm: ((message: string, options?: ConfirmDialogOptions) => Promise<boolean>) | null = null
+
+export function confirmAction(message: string, options?: ConfirmDialogOptions): Promise<boolean> {
+  return globalConfirm ? globalConfirm(message, options) : Promise.resolve(window.confirm(message))
+}
+
+export function GlobalConfirmHost() {
+  const { confirm, dialog } = useConfirmDialog()
+  React.useEffect(() => {
+    globalConfirm = confirm
+    return () => {
+      if (globalConfirm === confirm) globalConfirm = null
+    }
+  }, [confirm])
+  return dialog
+}

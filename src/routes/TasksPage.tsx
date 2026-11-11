@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { tr } from '@/i18n/tr'
 import type { TaskStatus } from '@/types/database'
 import type { TaskWithRelations } from '@/features/tasks/api'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 const statuses: TaskStatus[] = ['bekliyor', 'devam_ediyor', 'tamamlandi', 'iptal']
 
@@ -41,7 +42,9 @@ function TaskCard({ task }: { task: TaskWithRelations }) {
         <p className="font-medium">{task.title}</p>
         <div className="flex shrink-0 items-center gap-1">
           <TaskForm task={task} />
-          <Button variant="ghost" size="icon" className="size-6" onClick={() => deleteMutation.mutate(task.id)}>
+          <Button variant="ghost" size="icon" className="size-6" onClick={async () => {
+  if (await confirmAction('Bu görev silinsin mi?')) deleteMutation.mutate(task.id)
+}}>
             <Trash2 className="size-3 text-destructive" />
           </Button>
         </div>

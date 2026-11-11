@@ -38,6 +38,7 @@ export const BACKUP_TABLES = [
   'expense_entries',
   'utility_bills',
   'utility_bill_templates',
+  'utility_subscriptions',
   'budget_targets',
   'congresses',
   'congress_participants',

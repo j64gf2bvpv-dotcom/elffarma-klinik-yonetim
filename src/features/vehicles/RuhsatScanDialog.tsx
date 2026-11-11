@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { IMAGE_ACCEPT, isImageFile } from '@/lib/ensureReadableImage'
+import { IMAGE_ACCEPT, ensureReadableImage, isImageFile } from '@/lib/ensureReadableImage'
 import { getErrorMessage } from '@/lib/utils'
 
 /** Ön + arka yüz */
@@ -31,11 +31,20 @@ export function RuhsatScanDialog({ onScan }: { onScan: (files: File[]) => void }
     setCamera('off')
   }, [])
 
-  const addFiles = React.useCallback((files: Iterable<File>) => {
-    const picked = Array.from(files).filter(isImageFile)
-    if (picked.length === 0) {
+  const addFiles = React.useCallback(async (files: Iterable<File>) => {
+    const images = Array.from(files).filter(isImageFile)
+    if (images.length === 0) {
       toast.warning('Resim dosyası seçilmedi', { description: 'Ruhsatın fotoğrafını ya da taranmış resmini seçin.' })
       return
+    }
+    // HEIC (iPhone) vb. önizlemede görünsün diye JPEG'e çevrilir (2026-11-11)
+    const picked: File[] = []
+    for (const f of images) {
+      try {
+        picked.push(await ensureReadableImage(f))
+      } catch (err) {
+        toast.error(`${f.name} açılamadı`, { description: getErrorMessage(err) })
+      }
     }
     setShots((prev) => {
       const next = [...prev, ...picked.map((file) => ({ file, url: URL.createObjectURL(file) }))]
@@ -64,7 +73,7 @@ export function RuhsatScanDialog({ onScan }: { onScan: (files: File[]) => void }
       const files = Array.from(e.clipboardData?.files ?? [])
       if (files.length) {
         e.preventDefault()
-        addFiles(files)
+        void addFiles(files)
       }
     }
     window.addEventListener('paste', onPaste)
@@ -111,7 +120,7 @@ export function RuhsatScanDialog({ onScan }: { onScan: (files: File[]) => void }
     canvas.toBlob(
       (blob) => {
         if (!blob) return
-        addFiles([new File([blob], `ruhsat-kamera-${Date.now()}.jpg`, { type: 'image/jpeg' })])
+        void addFiles([new File([blob], `ruhsat-kamera-${Date.now()}.jpg`, { type: 'image/jpeg' })])
         if (shots.length + 1 >= MAX_SHOTS) stopCamera()
       },
       'image/jpeg',
@@ -150,7 +159,7 @@ export function RuhsatScanDialog({ onScan }: { onScan: (files: File[]) => void }
           multiple
           className="hidden"
           onChange={(e) => {
-            if (e.target.files) addFiles(e.target.files)
+            if (e.target.files) void addFiles(e.target.files)
             e.target.value = ''
           }}
         />
@@ -187,7 +196,7 @@ export function RuhsatScanDialog({ onScan }: { onScan: (files: File[]) => void }
               onDrop={(e) => {
                 e.preventDefault()
                 setDragging(false)
-                addFiles(e.dataTransfer.files)
+                void addFiles(e.dataTransfer.files)
               }}
               className={`grid place-items-center gap-3 rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors ${
                 dragging ? 'border-primary bg-primary/5' : 'border-border'

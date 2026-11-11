@@ -41,7 +41,7 @@ import { cn, getErrorMessage } from '@/lib/utils'
 import type { ImportSummary } from '@/lib/importData'
 import { exportToExcelMultiSheet, type ExportColumn } from '@/lib/exportData'
 import type { SalesRep } from '@/types/database'
-import { useConfirmDialog } from '@/hooks/useConfirmDialog'
+import { useConfirmDialog, confirmAction } from '@/hooks/useConfirmDialog'
 import { useQueryClient } from '@tanstack/react-query'
 
 function currency(n: number) {
@@ -1037,7 +1037,9 @@ function InvoicesTab() {
                   <TableCell>{currency(Number(inv.amount))}</TableCell>
                   <TableCell className="text-muted-foreground">{inv.note ?? '—'}</TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(inv.id)}>
+                    <Button variant="ghost" size="icon" onClick={async () => {
+  if (await confirmAction('Bu fatura kaydı silinsin mi?')) deleteMutation.mutate(inv.id)
+}}>
                       <Trash2 className="size-4 text-destructive" />
                     </Button>
                   </TableCell>

@@ -13,6 +13,7 @@ import { CrmOpportunityForm } from '@/features/crm/CrmOpportunityForm'
 import { useCrmActivities, useCrmOpportunities, useDeleteCrmActivity, useDeleteCrmOpportunity } from '@/features/crm/hooks'
 import { tr } from '@/i18n/tr'
 import type { CrmOpportunityStage } from '@/types/database'
+import { confirmAction } from '@/hooks/useConfirmDialog'
 
 const stages: CrmOpportunityStage[] = ['yeni', 'teklif', 'muzakere', 'kazanildi', 'kaybedildi']
 
@@ -77,7 +78,9 @@ export function CrmPage() {
                           variant="ghost"
                           size="icon"
                           className="size-6"
-                          onClick={() => deleteOpportunityMutation.mutate(o.id)}
+                          onClick={async () => {
+  if (await confirmAction('Bu fırsat silinsin mi?')) deleteOpportunityMutation.mutate(o.id)
+}}
                         >
                           <Trash2 className="size-3 text-destructive" />
                         </Button>
@@ -121,7 +124,9 @@ export function CrmPage() {
                     {format(new Date(activity.occurred_at), 'd MMM yyyy HH:mm', { locale: trLocale })}
                   </p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => deleteActivityMutation.mutate(activity.id)}>
+                <Button variant="ghost" size="icon" onClick={async () => {
+  if (await confirmAction('Bu aktivite silinsin mi?')) deleteActivityMutation.mutate(activity.id)
+}}>
                   <Trash2 className="size-3.5 text-destructive" />
                 </Button>
               </div>
