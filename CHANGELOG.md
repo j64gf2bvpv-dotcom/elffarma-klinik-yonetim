@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.370] - 2026-11-11
+- Fatura okuma: tutar her zaman faturadaki TOPLAM BORÇ (eski borç dahil) ve her okumada forma yazılır.
+
 ## [2.17.369] - 2026-11-11
 - Faturalar: her abonelik başlığında (Elektrik, Su, Doğalgaz, İnternet) ayrı "Dışa Aktar" — o türün faturaları ayrı Excel/Word/PDF; üstteki genel dışa aktarma Kategori filtresine uyar.
 

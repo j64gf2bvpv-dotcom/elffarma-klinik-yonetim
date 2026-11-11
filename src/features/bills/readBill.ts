@@ -115,6 +115,13 @@ function cleanName(raw: string | undefined): string | undefined {
   return s
 }
 
+const AMOUNT_RE = /(?<![\d.,])(\d{1,3}(?:[.\s]\d{3})+,\d{2}|\d+,\d{2}|\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})(?![\d])/g
+
+/** Satırdaki bütün tutarlar */
+function allAmounts(s: string): number[] {
+  return [...s.matchAll(AMOUNT_RE)].map((m) => parseAmount(m[1])).filter((n): n is number => n != null)
+}
+
 function parseAmount(s: string): number | undefined {
   // 1.234,56 | 1234,56 | 1,234.56 | 2013.85 (binlik ayırıcısız — ASKİ)
   const m = /(?<![\d.,])(\d{1,3}(?:[.\s]\d{3})+,\d{2}|\d+,\d{2}|\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})(?![\d])/.exec(s)
@@ -155,8 +162,20 @@ export function parseBillText(text: string): BillReadResult {
       out.subscriber_name = next
   }
 
+  // Tutar her zaman TOPLAM BORÇ (kullanıcı isteği, 2026-11-11: "toplam borç tutarını al her zaman").
+  // ASKİ'de kutu rakamları kayık satırlarda durabilir ("1592.50  3606.35" / "2013.85") —
+  // toplam borç = eski borç + dönem borcu olduğundan başlığın altındaki en büyük rakam.
+  const debtLine = lines.findIndex((l) => /toplam\s*bor[çcÇC]/i.test(l))
+  if (debtLine >= 0) {
+    const rest = lines[debtLine].replace(/^.*?toplam\s*bor[çcÇC]u?\s*(?:\(tl\))?/i, '')
+    const same = allAmounts(rest)
+    const below = lines.slice(debtLine + 1, debtLine + 4).flatMap(allAmounts)
+    const pick = same.length ? same[0] : below.length ? Math.max(...below) : undefined
+    if (pick) out.amount = pick
+  }
+
   const AMOUNT_LABEL = /[öo]denecek|toplam\s*(?:fatura\s*)?(?:tutar|bedel)|fatura\s*(?:toplam\s*)?(?:tutar|bedel)|genel\s*toplam/i
-  out.amount =
+  out.amount ??=
     Number(valueAfter(lines, AMOUNT_LABEL, /^[:：\s]*(.+)/, (v) => (parseAmount(v) ? String(parseAmount(v)) : undefined))) || undefined
 
   const toIso = (d: RegExpExecArray) => `${d[3]}-${d[2].padStart(2, '0')}-${d[1].padStart(2, '0')}`

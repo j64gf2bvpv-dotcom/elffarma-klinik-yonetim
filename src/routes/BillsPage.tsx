@@ -320,8 +320,8 @@ function BillFormDialog({ bill, defaults }: { bill?: UtilityBill; defaults?: Par
                 subscriber_name: f.subscriber_name || found.subscriber_name || '',
                 period: found.period ?? f.period,
                 bill_date: found.bill_date ?? f.bill_date,
-                // Tutar ve tarih sadece boşsa/yeni faturadaysa doldurulur
-                amount: f.amount > 0 ? f.amount : (found.amount ?? f.amount),
+                // Tutar her zaman faturadaki toplam borç (kullanıcı isteği, 2026-11-11); son ödeme sadece yeni faturada
+                amount: found.amount ?? f.amount,
                 due_date: !isEdit && found.due_date ? found.due_date : f.due_date,
               }))
             }
