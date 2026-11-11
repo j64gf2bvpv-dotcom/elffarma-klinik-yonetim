@@ -519,6 +519,10 @@ export interface UtilityBill {
   contract_number: string | null
   /** Abone numarası (2026-10-14) */
   subscriber_number: string | null
+  /** Abone adı — faturadaki kişi/firma (2026-11-11) */
+  subscriber_name: string | null
+  /** Fatura resimleri/PDF'leri, documents bucket'ında utility-bills/ altında (2026-11-11) */
+  attachment_paths: string[]
   amount: number
   due_date: string
   is_paid: boolean
@@ -536,6 +540,8 @@ export interface UtilityBillTemplate {
   contract_number: string | null
   /** Abone numarası (2026-10-14) */
   subscriber_number: string | null
+  /** Abone adı — faturadaki kişi/firma (2026-11-11) */
+  subscriber_name: string | null
   amount: number
   day_of_month: number
   note: string | null

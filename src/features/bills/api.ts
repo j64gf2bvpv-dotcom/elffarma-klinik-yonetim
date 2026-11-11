@@ -3,6 +3,7 @@ import { tr as trLocale } from 'date-fns/locale/tr'
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
 import { createReminder, updateReminder, deleteReminder } from '@/features/reminders/api'
+import { removeDocuments, uploadDocumentAttachment } from '@/lib/documentAttachments'
 import type { UtilityBill, UtilityBillCategory, UtilityBillTemplate } from '@/types/database'
 
 export const UTILITY_BILL_CATEGORY_LABELS: Record<UtilityBillCategory, string> = {
@@ -20,6 +21,8 @@ export interface UtilityBillInput {
   template_id?: string | null
   contract_number?: string | null
   subscriber_number?: string | null
+  subscriber_name?: string | null
+  attachment_paths?: string[]
   amount: number
   due_date: string
   note?: string | null
@@ -44,6 +47,7 @@ function reminderNote(input: UtilityBillInput): string {
     `Son ödeme tarihi: ${format(new Date(input.due_date), 'd MMMM yyyy', { locale: trLocale })}`,
     input.contract_number ? `Sözleşme No: ${input.contract_number}` : null,
     input.subscriber_number ? `Abone No: ${input.subscriber_number}` : null,
+    input.subscriber_name ? `Abone: ${input.subscriber_name}` : null,
     `Tutar: ${input.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}`,
     input.note?.trim() || null,
   ]
@@ -90,17 +94,22 @@ export async function updateUtilityBillPaid(id: string, isPaid: boolean, reminde
   return offlineUpdate<UtilityBill>('utility_bills', id, { is_paid: isPaid }, 'Fatura ödeme durumu güncelleme')
 }
 
-export async function deleteUtilityBill(id: string, reminderId: string | null): Promise<void> {
+export async function deleteUtilityBill(id: string, reminderId: string | null, attachmentPaths: string[] = []): Promise<void> {
   if (reminderId) {
     await deleteReminder(reminderId)
   }
-  return offlineDelete('utility_bills', id, 'Fatura silme')
+  await offlineDelete('utility_bills', id, 'Fatura silme')
+  await removeDocuments(attachmentPaths)
 }
+
+/** Fatura resmi/PDF'i (2026-11-11) */
+export const uploadBillAttachment = (file: File) => uploadDocumentAttachment(file, 'utility-bills')
 
 export interface UtilityBillTemplateInput {
   category: UtilityBillCategory
   contract_number?: string | null
   subscriber_number?: string | null
+  subscriber_name?: string | null
   amount: number
   day_of_month: number
   note?: string | null
@@ -152,6 +161,7 @@ export async function makeBillRecurring(bill: UtilityBill): Promise<UtilityBillT
     category: bill.category,
     contract_number: bill.contract_number,
     subscriber_number: bill.subscriber_number,
+    subscriber_name: bill.subscriber_name,
     amount: Number(bill.amount),
     day_of_month: Number(bill.due_date.slice(8, 10)),
     note: bill.note,
@@ -161,4 +171,15 @@ export async function makeBillRecurring(bill: UtilityBill): Promise<UtilityBillT
     await offlineUpdate<UtilityBill>('utility_bills', bill.id, { template_id: template.id }, 'Faturayı tekrarlayan şablona bağlama')
   }
   return template
+}
+
+/**
+ * Faturadan okunan numaralar/ad, faturanın bağlı olduğu tekrarlayan şablona da yazılsın —
+ * sonraki aylarda otomatik açılan faturalar da bunları taşısın (2026-11-11).
+ */
+export async function syncTemplateSubscriber(
+  templateId: string,
+  fields: { contract_number: string | null; subscriber_number: string | null; subscriber_name: string | null },
+): Promise<void> {
+  await offlineUpdate('utility_bill_templates', templateId, fields, 'Tekrarlayan fatura abone bilgisi')
 }

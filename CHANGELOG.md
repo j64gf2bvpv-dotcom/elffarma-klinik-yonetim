@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.363] - 2026-11-11
+- Faturalar: fatura resmi ya da PDF'i eklenebilir; eklenince abone no, sözleşme no, abone adı (ve boşsa tutar/son ödeme tarihi) bilgisayarda okunup forma yazılır. Tabloda Sözleşme No, Abone No, Abone Adı ve Fatura sütunları; abone adı tekrarlayan faturalara ve Excel'e de eklendi.
+
 ## [2.17.362] - 2026-11-11
 - Giderler: Elektrik, Su, İnternet (Türksat), Ofis, Mutfak, Ofis Yemek sekmeleri — faturalılarda ödeme tarihi / abone no / sözleşme no / ödenen tutar, diğerlerinde tarih / tutar / açıklama ayrı sütunlarda; her bölüm ayrı Excel, "Tüm Bölümler Excel" her bölümü ayrı sayfada verir.
 - Fatura/fiş görüntüleri (resim veya PDF) eklenir, bilgisayarın görüntüleyicisinde açılır; seçilen tarih aralığındaki görüntüler tarih sırasıyla tek PDF olarak alınır. Abone/sözleşme numaraları Faturalar bölümünden otomatik gelir.

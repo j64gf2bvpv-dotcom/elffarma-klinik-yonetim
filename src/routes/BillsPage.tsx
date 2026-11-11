@@ -1,7 +1,9 @@
 import * as React from 'react'
 import { differenceInCalendarDays, format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Plus, Trash2, Pencil, Zap, ChevronDown, Repeat, Pause, Play } from 'lucide-react'
+import { Plus, Trash2, Pencil, Zap, ChevronDown, Repeat, Pause, Play, FileImage, FileText, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -25,7 +27,10 @@ import {
 } from '@/components/ui/dialog'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/utils'
-import { UTILITY_BILL_CATEGORY_LABELS } from '@/features/bills/api'
+import { UTILITY_BILL_CATEGORY_LABELS, syncTemplateSubscriber, uploadBillAttachment } from '@/features/bills/api'
+import { BillImageField, type BillAttachment } from '@/features/bills/BillImageField'
+import { isPdfPath, openDocument } from '@/lib/documentAttachments'
+import { getErrorMessage } from '@/lib/utils'
 import {
   useCreateUtilityBill,
   useCreateUtilityBillTemplate,
@@ -52,6 +57,7 @@ interface BillFormState {
   category: UtilityBillCategory
   contract_number: string
   subscriber_number: string
+  subscriber_name: string
   amount: number
   due_date: string
   note: string
@@ -64,7 +70,7 @@ function todayDate() {
 }
 
 function emptyForm(): BillFormState {
-  return { category: 'elektrik', contract_number: '', subscriber_number: '', amount: 0, due_date: todayDate(), note: '' }
+  return { category: 'elektrik', contract_number: '', subscriber_number: '', subscriber_name: '', amount: 0, due_date: todayDate(), note: '' }
 }
 
 function BillFormDialog({ bill }: { bill?: UtilityBill }) {
@@ -76,6 +82,7 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
           category: bill.category,
           contract_number: bill.contract_number ?? '',
           subscriber_number: bill.subscriber_number ?? '',
+          subscriber_name: bill.subscriber_name ?? '',
           amount: Number(bill.amount),
           due_date: bill.due_date,
           note: bill.note ?? '',
@@ -89,19 +96,62 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
   // faturada varsayılan açık: kaydedilince tekrarlayan şablon da oluşur, sunucu
   // her ay o güne faturayı ve 5 gün önceye hatırlatmayı kendisi açar.
   const [repeatMonthly, setRepeatMonthly] = React.useState(true)
+  // Fatura resmi/PDF'i (2026-11-11) — yeni seçilenler "Kaydet"te yüklenir
+  const [attachments, setAttachments] = React.useState<BillAttachment[]>(() => (bill?.attachment_paths ?? []).map((path) => ({ kind: 'saved', path })))
+  const [uploading, setUploading] = React.useState(false)
+  const queryClient = useQueryClient()
+
+  // Düzenlemede her açılışta faturanın güncel hâli (kaydettikten sonra tekrar açınca eski bilgiler kalmasın)
+  function handleOpenChange(next: boolean) {
+    if (next && bill) {
+      setForm({
+        category: bill.category,
+        contract_number: bill.contract_number ?? '',
+        subscriber_number: bill.subscriber_number ?? '',
+        subscriber_name: bill.subscriber_name ?? '',
+        amount: Number(bill.amount),
+        due_date: bill.due_date,
+        note: bill.note ?? '',
+      })
+      setAttachments(bill.attachment_paths.map((path) => ({ kind: 'saved', path })))
+    }
+    setOpen(next)
+  }
 
   async function handleSubmit() {
     if (!form.due_date || form.amount < 0) return
+    let attachment_paths: string[]
+    setUploading(true)
+    try {
+      attachment_paths = []
+      for (const a of attachments) attachment_paths.push(a.kind === 'saved' ? a.path : await uploadBillAttachment(a.file))
+    } catch (err) {
+      toast.error('Fatura resmi yüklenemedi', { description: getErrorMessage(err) })
+      return
+    } finally {
+      setUploading(false)
+    }
     const input = {
       category: form.category,
       contract_number: form.contract_number.trim() || null,
       subscriber_number: form.subscriber_number.trim() || null,
+      subscriber_name: form.subscriber_name.trim() || null,
+      attachment_paths,
       amount: form.amount,
       due_date: form.due_date,
       note: form.note.trim() || null,
     }
     if (isEdit) {
       await updateMutation.mutateAsync({ id: bill.id, input, reminderId: bill.reminder_id })
+      // Her ay otomatik açılan faturalar da yeni abone bilgilerini taşısın
+      if (bill.template_id) {
+        await syncTemplateSubscriber(bill.template_id, {
+          contract_number: input.contract_number,
+          subscriber_number: input.subscriber_number,
+          subscriber_name: input.subscriber_name,
+        }).catch(() => {})
+        void queryClient.invalidateQueries({ queryKey: ['utility_bill_templates'] })
+      }
     } else {
       let templateId: string | null = null
       if (repeatMonthly) {
@@ -109,6 +159,7 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
           category: input.category,
           contract_number: input.contract_number,
           subscriber_number: input.subscriber_number,
+          subscriber_name: input.subscriber_name,
           amount: input.amount,
           day_of_month: Number(input.due_date.slice(8, 10)),
           note: input.note,
@@ -117,14 +168,15 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
       }
       await createMutation.mutateAsync({ ...input, template_id: templateId })
       setForm(emptyForm())
+      setAttachments([])
     }
     setOpen(false)
   }
 
-  const submitting = createMutation.isPending || updateMutation.isPending || createTemplateMutation.isPending
+  const submitting = uploading || createMutation.isPending || updateMutation.isPending || createTemplateMutation.isPending
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {isEdit ? (
           <Button variant="ghost" size="icon" title="Düzenle">
@@ -136,7 +188,7 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[88vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Faturayı Düzenle' : 'Yeni Fatura'}</DialogTitle>
         </DialogHeader>
@@ -171,6 +223,14 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
                 onChange={(e) => setForm((f) => ({ ...f, subscriber_number: e.target.value }))}
               />
             </div>
+            <div className="col-span-2 grid gap-1.5">
+              <Label>Abone Adı (opsiyonel)</Label>
+              <Input
+                value={form.subscriber_name}
+                placeholder="Faturadaki kişi ya da firma adı"
+                onChange={(e) => setForm((f) => ({ ...f, subscriber_name: e.target.value }))}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
@@ -190,6 +250,21 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
             <Label>Not (opsiyonel)</Label>
             <Input value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
           </div>
+          <BillImageField
+            value={attachments}
+            onChange={setAttachments}
+            onRead={(found) =>
+              setForm((f) => ({
+                ...f,
+                subscriber_number: found.subscriber_number ?? f.subscriber_number,
+                contract_number: found.contract_number ?? f.contract_number,
+                subscriber_name: found.subscriber_name ?? f.subscriber_name,
+                // Tutar ve tarih sadece boşsa/yeni faturadaysa doldurulur
+                amount: f.amount > 0 ? f.amount : (found.amount ?? f.amount),
+                due_date: !isEdit && found.due_date ? found.due_date : f.due_date,
+              }))
+            }
+          />
           {!isEdit && (
             <label className="flex cursor-pointer items-start gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
               <Checkbox className="mt-0.5" checked={repeatMonthly} onCheckedChange={(v) => setRepeatMonthly(v === true)} />
@@ -209,7 +284,7 @@ function BillFormDialog({ bill }: { bill?: UtilityBill }) {
             Vazgeç
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={submitting}>
-            Kaydet
+            {submitting && <Loader2 className="animate-spin" />} Kaydet
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -221,13 +296,14 @@ interface TemplateFormState {
   category: UtilityBillCategory
   contract_number: string
   subscriber_number: string
+  subscriber_name: string
   amount: number
   day_of_month: number
   note: string
 }
 
 function emptyTemplateForm(): TemplateFormState {
-  return { category: 'elektrik', contract_number: '', subscriber_number: '', amount: 0, day_of_month: 1, note: '' }
+  return { category: 'elektrik', contract_number: '', subscriber_number: '', subscriber_name: '', amount: 0, day_of_month: 1, note: '' }
 }
 
 /**
@@ -246,6 +322,7 @@ function TemplateFormDialog({ template }: { template?: UtilityBillTemplate }) {
           category: template.category,
           contract_number: template.contract_number ?? '',
           subscriber_number: template.subscriber_number ?? '',
+          subscriber_name: template.subscriber_name ?? '',
           amount: Number(template.amount),
           day_of_month: template.day_of_month,
           note: template.note ?? '',
@@ -261,6 +338,7 @@ function TemplateFormDialog({ template }: { template?: UtilityBillTemplate }) {
       category: form.category,
       contract_number: form.contract_number.trim() || null,
       subscriber_number: form.subscriber_number.trim() || null,
+      subscriber_name: form.subscriber_name.trim() || null,
       amount: form.amount,
       day_of_month: form.day_of_month,
       note: form.note.trim() || null,
@@ -327,6 +405,14 @@ function TemplateFormDialog({ template }: { template?: UtilityBillTemplate }) {
                 onChange={(e) => setForm((f) => ({ ...f, subscriber_number: e.target.value }))}
               />
             </div>
+            <div className="col-span-2 grid gap-1.5">
+              <Label>Abone Adı (opsiyonel)</Label>
+              <Input
+                value={form.subscriber_name}
+                placeholder="Faturadaki kişi ya da firma adı"
+                onChange={(e) => setForm((f) => ({ ...f, subscriber_name: e.target.value }))}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
@@ -354,7 +440,7 @@ function TemplateFormDialog({ template }: { template?: UtilityBillTemplate }) {
             Vazgeç
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={submitting}>
-            Kaydet
+            {submitting && <Loader2 className="animate-spin" />} Kaydet
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -379,6 +465,7 @@ function TemplateRow({ template }: { template: UtilityBillTemplate }) {
           {UTILITY_BILL_CATEGORY_LABELS[template.category]}
           {template.contract_number ? ` — ${template.contract_number}` : ''}
           {template.subscriber_number ? ` · Abone No: ${template.subscriber_number}` : ''}
+          {template.subscriber_name ? ` · ${template.subscriber_name}` : ''}
           {!template.is_active && <span className="text-muted-foreground text-xs"> (duraklatıldı)</span>}
         </p>
         <p className="text-muted-foreground text-xs">
@@ -440,6 +527,7 @@ interface SubscriptionGroup {
   key: string
   contractNumber: string | null
   subscriberNumber: string | null
+  subscriberName: string | null
   category: UtilityBillCategory
   bills: UtilityBill[]
   unpaidTotal: number
@@ -470,8 +558,8 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
     (t) =>
       t.is_active &&
       t.category === group.category &&
-      (t.subscriber_number ?? '') === (group.subscriberNumber ?? '') &&
-      (t.contract_number ?? '') === (group.contractNumber ?? ''),
+      (t.contract_number ?? '') === (group.contractNumber ?? '') &&
+      (!t.subscriber_number || !group.subscriberNumber || t.subscriber_number === group.subscriberNumber),
   )
   const latest = [...group.bills].sort((a, b) => b.due_date.localeCompare(a.due_date))[0]
   // Faturalar her ay aynı günde ödenir (2026-10-21) — girilen tarihin ayı değil günü esas
@@ -483,7 +571,7 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
   async function handleDelete(bill: UtilityBill) {
     if (!(await confirm(`${UTILITY_BILL_CATEGORY_LABELS[bill.category]} faturası silinsin mi? Bağlı hatırlatma da silinir.`)))
       return
-    deleteMutation.mutate({ id: bill.id, reminderId: bill.reminder_id })
+    deleteMutation.mutate({ id: bill.id, reminderId: bill.reminder_id, attachmentPaths: bill.attachment_paths })
   }
 
   return (
@@ -499,6 +587,7 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
           <span className="text-muted-foreground text-sm">
             {group.contractNumber ? `Sözleşme No: ${group.contractNumber}` : 'Sözleşme numarası yok'}
             {group.subscriberNumber ? ` · Abone No: ${group.subscriberNumber}` : ''}
+            {group.subscriberName ? ` · ${group.subscriberName}` : ''}
           </span>
         </span>
         <span className="flex items-center gap-2">
@@ -540,16 +629,49 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
           <TableHeader>
             <TableRow>
               <TableHead>Son Ödeme Tarihi</TableHead>
+              <TableHead>Sözleşme No</TableHead>
+              <TableHead>Abone No</TableHead>
+              <TableHead>Abone Adı</TableHead>
               <TableHead>Not</TableHead>
+              <TableHead>Fatura</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {group.bills.map((b) => (
               <TableRow key={b.id}>
-                <TableCell>{format(new Date(b.due_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
+                <TableCell className="whitespace-nowrap">{format(new Date(b.due_date), 'd MMM yyyy', { locale: trLocale })}</TableCell>
+                <TableCell className="tabular-nums">{b.contract_number ?? '—'}</TableCell>
+                <TableCell className="tabular-nums">{b.subscriber_number ?? '—'}</TableCell>
+                <TableCell className="max-w-56 truncate" title={b.subscriber_name ?? undefined}>
+                  {b.subscriber_name ?? '—'}
+                </TableCell>
                 <TableCell className="text-muted-foreground max-w-40 truncate" title={b.note ?? undefined}>
                   {b.note ?? '—'}
+                </TableCell>
+                <TableCell>
+                  {b.attachment_paths.length === 0 ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : (
+                    <span className="flex gap-1">
+                      {b.attachment_paths.map((p, i) => (
+                        <Button
+                          key={p}
+                          variant="outline"
+                          size="icon"
+                          className="size-7"
+                          title={`Fatura ${i + 1} — açmak için tıklayın`}
+                          onClick={() =>
+                            void openDocument(p, `${UTILITY_BILL_CATEGORY_LABELS[b.category]} Faturasi ${b.due_date} ${i + 1}`).catch((err) =>
+                              toast.error('Fatura açılamadı', { description: getErrorMessage(err) }),
+                            )
+                          }
+                        >
+                          {isPdfPath(p) ? <FileText className="size-3.5" /> : <FileImage className="size-3.5" />}
+                        </Button>
+                      ))}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
@@ -704,7 +826,7 @@ export function BillsPage() {
       const key = b.contract_number?.trim() ? `c:${b.contract_number.trim()}` : `b:${b.id}`
       let group = map.get(key)
       if (!group) {
-        group = { key, contractNumber: b.contract_number, subscriberNumber: b.subscriber_number, category: b.category, bills: [], unpaidTotal: 0, unpaidCount: 0 }
+        group = { key, contractNumber: b.contract_number, subscriberNumber: null, subscriberName: null, category: b.category, bills: [], unpaidTotal: 0, unpaidCount: 0 }
         map.set(key, group)
       }
       group.bills.push(b)
@@ -714,7 +836,12 @@ export function BillsPage() {
       }
     }
     return Array.from(map.values())
-      .map((g) => ({ ...g, bills: g.bills.sort((a, b) => a.due_date.localeCompare(b.due_date)) }))
+      .map((g) => {
+        const bills = g.bills.sort((a, b) => a.due_date.localeCompare(b.due_date))
+        // Başlıkta en son faturadaki abone no / adı
+        const latestWith = (k: 'subscriber_number' | 'subscriber_name') => [...bills].reverse().find((b) => b[k])?.[k] ?? null
+        return { ...g, bills, subscriberNumber: latestWith('subscriber_number'), subscriberName: latestWith('subscriber_name') }
+      })
       .sort((a, b) => b.unpaidTotal - a.unpaidTotal)
   }, [filtered])
 
@@ -733,6 +860,7 @@ export function BillsPage() {
                 { header: 'Kategori', value: (b) => UTILITY_BILL_CATEGORY_LABELS[b.category] },
                 { header: 'Sözleşme No', value: (b) => b.contract_number ?? '' },
                 { header: 'Abone No', value: (b) => b.subscriber_number ?? '' },
+                { header: 'Abone Adı', value: (b) => b.subscriber_name ?? '' },
                 { header: 'Son Ödeme Tarihi', value: (b) => b.due_date },
                 { header: 'Tutar', value: (b) => Number(b.amount) },
               ]}

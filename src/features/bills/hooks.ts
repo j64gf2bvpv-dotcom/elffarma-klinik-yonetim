@@ -73,7 +73,8 @@ export function useUpdateUtilityBillPaid() {
 export function useDeleteUtilityBill() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reminderId }: { id: string; reminderId: string | null }) => deleteUtilityBill(id, reminderId),
+    mutationFn: ({ id, reminderId, attachmentPaths }: { id: string; reminderId: string | null; attachmentPaths?: string[] }) =>
+      deleteUtilityBill(id, reminderId, attachmentPaths),
     onSuccess: () => {
       invalidateBillsAndReminders(queryClient)
       toast.success('Fatura silindi')

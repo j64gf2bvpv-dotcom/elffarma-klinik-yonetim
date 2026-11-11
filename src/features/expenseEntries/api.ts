@@ -1,7 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete } from '@/lib/offlineMutation'
-import { resizeImageFile } from '@/lib/resizeImage'
-import { bytesToBase64 } from '@/lib/ensureReadableImage'
+import { downloadDocument, getDocumentUrl, isPdfPath, openDocument, removeDocuments, uploadDocumentAttachment } from '@/lib/documentAttachments'
 import type { ExpenseEntry, ExpenseEntryCategory } from '@/types/database'
 
 export interface ExpenseEntrySection {
@@ -62,48 +61,15 @@ export async function updateExpenseEntry(id: string, input: ExpenseEntryInput): 
 
 export async function deleteExpenseEntry(entry: ExpenseEntry): Promise<void> {
   await offlineDelete('expense_entries', entry.id, `${SECTION_BY_KEY[entry.category].label} gideri silme`)
-  if (entry.attachment_paths.length) await supabase.storage.from('documents').remove(entry.attachment_paths)
+  await removeDocuments(entry.attachment_paths)
 }
 
 /** Fatura/fiş görüntüsünü yükler — resimler okunur boyutta JPEG'e, PDF'ler olduğu gibi. */
-export async function uploadExpenseAttachment(file: File): Promise<string> {
-  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
-  const body: Blob = isPdf ? file : await resizeImageFile(file, 2200, 0.85)
-  const path = `expense-entries/${crypto.randomUUID()}.${isPdf ? 'pdf' : 'jpg'}`
-  const { error } = await supabase.storage
-    .from('documents')
-    .upload(path, body, { contentType: isPdf ? 'application/pdf' : 'image/jpeg', upsert: false })
-  if (error) throw error
-  return path
-}
-
-export function isPdfPath(path: string) {
-  return /\.pdf$/i.test(path)
-}
-
-export async function downloadExpenseAttachment(path: string): Promise<Blob> {
-  const { data, error } = await supabase.storage.from('documents').download(path)
-  if (error) throw error
-  return data
-}
-
-export async function getExpenseAttachmentUrl(path: string): Promise<string> {
-  const { data, error } = await supabase.storage.from('documents').createSignedUrl(path, 60 * 10)
-  if (error) throw error
-  return data.signedUrl
-}
-
-/** Görüntüyü bilgisayarın kendi programında aç (resim → resim programı, PDF → PDF görüntüleyici). */
-export async function openExpenseAttachment(path: string, title: string): Promise<void> {
-  const blob = await downloadExpenseAttachment(path)
-  const open = window.electronAPI?.openImageFile
-  if (!open) {
-    window.open(URL.createObjectURL(blob), '_blank')
-    return
-  }
-  const ok = await open(bytesToBase64(new Uint8Array(await blob.arrayBuffer())), title)
-  if (!ok) throw new Error('Dosya açılamadı')
-}
+export const uploadExpenseAttachment = (file: File) => uploadDocumentAttachment(file, 'expense-entries')
+export const downloadExpenseAttachment = downloadDocument
+export const getExpenseAttachmentUrl = getDocumentUrl
+export const openExpenseAttachment = openDocument
+export { isPdfPath }
 
 export interface KnownBillNumber {
   subscriber_number: string | null
