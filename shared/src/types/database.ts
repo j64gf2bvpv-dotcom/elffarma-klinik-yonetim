@@ -633,6 +633,24 @@ export interface Expense {
   created_at: string
 }
 
+/** Giderler bölümleri (2026-11-11) — faturalı (abone/sözleşme no'lu) ve fişli giderler */
+export type ExpenseEntryCategory = 'elektrik' | 'su' | 'internet' | 'ofis' | 'mutfak' | 'ofis_yemek'
+
+export interface ExpenseEntry {
+  id: string
+  category: ExpenseEntryCategory
+  entry_date: string
+  amount: number
+  subscriber_number: string | null
+  contract_number: string | null
+  description: string | null
+  /** documents bucket'ında fatura/fiş görüntüleri (resim .jpg ya da .pdf) */
+  attachment_paths: string[]
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface BudgetTarget {
   id: string
   year: number

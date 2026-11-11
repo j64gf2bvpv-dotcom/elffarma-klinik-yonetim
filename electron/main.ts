@@ -449,7 +449,8 @@ ipcMain.handle('image:to-jpeg', async (_event, base64: string) => {
 ipcMain.handle('image:open', async (_event, base64: string, title: string) => {
   if (typeof base64 !== 'string' || base64.length > 40 * 1024 * 1024 * 1.4 || !/^[A-Za-z0-9+/=]+$/.test(base64)) return false
   const buf = Buffer.from(base64, 'base64')
-  const ext = buf[0] === 0xff && buf[1] === 0xd8 ? 'jpg' : buf[0] === 0x89 && buf[1] === 0x50 ? 'png' : buf.subarray(8, 12).toString() === 'WEBP' ? 'webp' : null
+  // PDF: Giderler'deki fatura/fiş ekleri PDF olabilir (2026-11-11)
+  const ext = buf[0] === 0xff && buf[1] === 0xd8 ? 'jpg' : buf[0] === 0x89 && buf[1] === 0x50 ? 'png' : buf.subarray(8, 12).toString() === 'WEBP' ? 'webp' : buf.subarray(0, 5).toString() === '%PDF-' ? 'pdf' : null
   if (!ext) return false
   const safe = (typeof title === 'string' ? title : 'Gorsel').replace(/[^\p{L}\p{N} ._-]+/gu, '').trim().slice(0, 80) || 'Gorsel'
   const dir = path.join(os.tmpdir(), 'elffarma-gorseller')
