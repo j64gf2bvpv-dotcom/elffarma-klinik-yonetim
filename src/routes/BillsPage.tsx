@@ -57,6 +57,16 @@ function periodLabel(period: string | null): string {
   return format(new Date(`${period}-01T00:00:00`), 'LLLL yyyy', { locale: trLocale }).replace(/^./, (c) => c.toLocaleUpperCase('tr-TR'))
 }
 
+/** Faturanın ayı: dönem → fatura tarihi → son ödeme tarihi (sıralama ve Tutarlar tablosu için) */
+function billMonth(b: UtilityBill): string {
+  return b.period || (b.bill_date ?? b.due_date).slice(0, 7)
+}
+
+/** Sıralama anahtarı — aynı ay içinde fatura tarihine göre */
+function billSortKey(b: UtilityBill): string {
+  return `${billMonth(b)}|${b.bill_date ?? b.due_date}`
+}
+
 const CATEGORY_ORDER: UtilityBillCategory[] = ['elektrik', 'dogalgaz', 'su', 'internet', 'telefon', 'diger']
 const ALL_CATEGORIES = '__all__'
 
@@ -779,7 +789,7 @@ function AmountCard({ label, value, sub, tone }: { label: string; value: number;
 function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
   const months = React.useMemo(() => {
     const keys = new Set<string>()
-    for (const g of groups) for (const b of g.bills) keys.add(b.due_date.slice(0, 7))
+    for (const g of groups) for (const b of g.bills) keys.add(billMonth(b))
     return [...keys].sort().slice(-12)
   }, [groups])
 
@@ -791,7 +801,7 @@ function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
     )
   }
 
-  const cell = (g: SubscriptionGroup, month: string) => g.bills.filter((b) => b.due_date.slice(0, 7) === month)
+  const cell = (g: SubscriptionGroup, month: string) => g.bills.filter((b) => billMonth(b) === month)
   const sumOf = (list: UtilityBill[]) => list.reduce((t, b) => t + Number(b.amount), 0)
   const monthTotals = months.map((m) => sumOf(groups.flatMap((g) => cell(g, m))))
   const grand = monthTotals.reduce((a, b) => a + b, 0)
@@ -813,7 +823,7 @@ function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
           </TableHeader>
           <TableBody>
             {groups.map((g) => {
-              const rowTotal = sumOf(g.bills.filter((b) => months.includes(b.due_date.slice(0, 7))))
+              const rowTotal = sumOf(g.bills.filter((b) => months.includes(billMonth(b))))
               return (
                 <TableRow key={g.key}>
                   <TableCell className="whitespace-nowrap">
@@ -912,7 +922,8 @@ export function BillsPage() {
     }
     return Array.from(map.values())
       .map((g) => {
-        const bills = g.bills.sort((a, b) => a.due_date.localeCompare(b.due_date))
+        // Dönem / fatura tarihine göre eskiden yeniye (kullanıcı isteği, 2026-11-11: "faturaları sıraya göre yap")
+        const bills = g.bills.sort((a, b) => billSortKey(a).localeCompare(billSortKey(b)))
         // Başlıkta en son faturadaki abone no / adı (yoksa başlıkta kayıtlı olan)
         const latestWith = (k: 'subscriber_number' | 'subscriber_name') => [...bills].reverse().find((b) => b[k])?.[k] ?? null
         return {
@@ -935,7 +946,7 @@ export function BillsPage() {
             <ExportMenu<UtilityBill>
               title="Faturalar"
               filename="faturalar"
-              rows={bills}
+              rows={[...bills].sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category) || billSortKey(a).localeCompare(billSortKey(b)))}
               columns={[
                 { header: 'Kategori', value: (b) => UTILITY_BILL_CATEGORY_LABELS[b.category] },
                 // Son ödeme tarihi yerine faturanın üzerindeki tarih + dönem (kullanıcı isteği, 2026-11-11)
