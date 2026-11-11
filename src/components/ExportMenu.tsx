@@ -27,9 +27,11 @@ interface ExportMenuProps<T> {
   imageTarget?: React.RefObject<HTMLElement | null>
   /** Sayfaya özel ek biçimler (ör. Cari Kart'ta vCard) — PNG'nin altına eklenir. */
   extraItems?: React.ReactNode
+  /** Satır/başlık içindeki küçük düğme için 'sm' (ör. Faturalar'da her abonelik başlığı) */
+  triggerSize?: 'default' | 'sm'
 }
 
-export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = 'Dışa Aktar', imageTarget, extraItems }: ExportMenuProps<T>) {
+export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = 'Dışa Aktar', imageTarget, extraItems, triggerSize = 'default' }: ExportMenuProps<T>) {
   function handleExcel() {
     if (rows.length === 0) {
       toast.error('Dışa aktarılacak veri yok')
@@ -101,7 +103,7 @@ export function ExportMenu<T>({ title, filename, columns, rows, triggerLabel = '
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" size={triggerSize}>
           <Download /> {triggerLabel}
         </Button>
       </DropdownMenuTrigger>

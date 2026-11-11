@@ -26,6 +26,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { ExportMenu } from '@/components/ExportMenu'
+import type { ExportColumn } from '@/lib/exportData'
 import { cn } from '@/lib/utils'
 import { UTILITY_BILL_CATEGORY_LABELS, syncTemplateSubscriber, uploadBillAttachment } from '@/features/bills/api'
 import { BillImageField, type BillAttachment } from '@/features/bills/BillImageField'
@@ -66,6 +67,18 @@ function billMonth(b: UtilityBill): string {
 function billSortKey(b: UtilityBill): string {
   return `${billMonth(b)}|${b.bill_date ?? b.due_date}`
 }
+
+/** Faturalar Excel/Word/PDF sütunları — genel dışa aktarma ve her abonelik başlığındaki ayrı dışa aktarma */
+const BILL_EXPORT_COLUMNS: ExportColumn<UtilityBill>[] = [
+  { header: 'Kategori', value: (b) => UTILITY_BILL_CATEGORY_LABELS[b.category] },
+  // Son ödeme tarihi yerine faturanın üzerindeki tarih + dönem (kullanıcı isteği, 2026-11-11)
+  { header: 'Fatura Tarihi', value: (b) => (b.bill_date ? format(new Date(b.bill_date), 'dd.MM.yyyy') : '') },
+  { header: 'Dönem', value: (b) => (b.period ? periodLabel(b.period) : '') },
+  { header: 'Sözleşme No', value: (b) => b.contract_number ?? '' },
+  { header: 'Abone No', value: (b) => b.subscriber_number ?? '' },
+  { header: 'Abone Adı', value: (b) => b.subscriber_name ?? '' },
+  { header: 'Tutar', value: (b) => Number(b.amount) },
+]
 
 const CATEGORY_ORDER: UtilityBillCategory[] = ['elektrik', 'dogalgaz', 'su', 'internet', 'telefon', 'diger']
 const ALL_CATEGORIES = '__all__'
@@ -674,7 +687,15 @@ function SubscriptionGroupRow({ group, templates }: { group: SubscriptionGroup; 
               ödendi işareti ana ekrandaki fatura hatırlatma penceresinden verilir */}
         </span>
       </button>
-        <div className="shrink-0 pr-3">
+        <div className="flex shrink-0 items-center gap-2 pr-3">
+          {/* Her tür ayrı dışa aktarılabilsin (kullanıcı isteği, 2026-11-11) */}
+          <ExportMenu<UtilityBill>
+            title={`${UTILITY_BILL_CATEGORY_LABELS[group.category]} Faturaları${group.contractNumber ? ` — Sözleşme No: ${group.contractNumber}` : ''}${group.subscriberNumber ? ` · Abone No: ${group.subscriberNumber}` : ''}${group.subscriberName ? ` · ${group.subscriberName}` : ''}`}
+            filename={`${group.category}-faturalari${group.contractNumber ? `-${group.contractNumber}` : ''}`}
+            rows={group.bills}
+            columns={BILL_EXPORT_COLUMNS}
+            triggerSize="sm"
+          />
           <BillFormDialog
             defaults={{
               category: group.category,
@@ -942,17 +963,9 @@ export function BillsPage() {
             <ExportMenu<UtilityBill>
               title="Faturalar"
               filename="faturalar"
-              rows={[...bills].sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category) || billSortKey(a).localeCompare(billSortKey(b)))}
-              columns={[
-                { header: 'Kategori', value: (b) => UTILITY_BILL_CATEGORY_LABELS[b.category] },
-                // Son ödeme tarihi yerine faturanın üzerindeki tarih + dönem (kullanıcı isteği, 2026-11-11)
-                { header: 'Fatura Tarihi', value: (b) => (b.bill_date ? format(new Date(b.bill_date), 'dd.MM.yyyy') : '') },
-                { header: 'Dönem', value: (b) => (b.period ? periodLabel(b.period) : '') },
-                { header: 'Sözleşme No', value: (b) => b.contract_number ?? '' },
-                { header: 'Abone No', value: (b) => b.subscriber_number ?? '' },
-                { header: 'Abone Adı', value: (b) => b.subscriber_name ?? '' },
-                { header: 'Tutar', value: (b) => Number(b.amount) },
-              ]}
+              // Kategori filtresinde seçili tür varsa sadece o tür
+              rows={[...filtered].sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category) || billSortKey(a).localeCompare(billSortKey(b)))}
+              columns={BILL_EXPORT_COLUMNS}
             />
             <TemplatesManagerDialog />
             <BillFormDialog />
