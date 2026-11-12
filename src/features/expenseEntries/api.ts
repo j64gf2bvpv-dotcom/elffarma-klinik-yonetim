@@ -15,10 +15,24 @@ export interface ExpenseEntrySection {
 export const EXPENSE_ENTRY_SECTIONS: ExpenseEntrySection[] = [
   { key: 'elektrik', label: 'Elektrik', isBill: true, docLabel: 'Fatura' },
   { key: 'su', label: 'Su', isBill: true, docLabel: 'Fatura' },
+  { key: 'dogalgaz', label: 'Doğalgaz', isBill: true, docLabel: 'Fatura' },
   { key: 'internet', label: 'İnternet (Türksat)', isBill: true, docLabel: 'Fatura' },
+  { key: 'haberlesme', label: 'Haberleşme (Telefon)', isBill: true, docLabel: 'Fatura' },
   { key: 'ofis', label: 'Ofis', isBill: false, docLabel: 'Fiş' },
   { key: 'mutfak', label: 'Mutfak', isBill: false, docLabel: 'Fiş' },
   { key: 'ofis_yemek', label: 'Ofis Yemek', isBill: false, docLabel: 'Fiş' },
+  // Muhasebe gider tablosundaki başlıklar (2026-11-12)
+  { key: 'yemek_mutfak', label: 'Yemek ve Mutfak', isBill: false, docLabel: 'Fiş' },
+  { key: 'akaryakit', label: 'Akaryakıt', isBill: false, docLabel: 'Fiş' },
+  { key: 'kargo', label: 'Kargo ve Nakliye', isBill: false, docLabel: 'Fatura' },
+  { key: 'hizmet', label: 'Dışarıdan Sağlanan Hizmetler', isBill: false, docLabel: 'Fatura' },
+  { key: 'kira', label: 'Kira', isBill: false, docLabel: 'Fatura' },
+  { key: 'reklam', label: 'İlan ve Reklam', isBill: false, docLabel: 'Fatura' },
+  { key: 'konaklama', label: 'Konaklama', isBill: false, docLabel: 'Fatura' },
+  { key: 'arac_kiralama', label: 'Araç Kiralama', isBill: false, docLabel: 'Fatura' },
+  { key: 'arac_bakim', label: 'Araç Bakım Onarım', isBill: false, docLabel: 'Fatura' },
+  { key: 'danismanlik', label: 'Danışmanlık', isBill: false, docLabel: 'Fatura' },
+  { key: 'diger', label: 'Diğer Çeşitli', isBill: false, docLabel: 'Fatura' },
 ]
 
 export const SECTION_BY_KEY = Object.fromEntries(EXPENSE_ENTRY_SECTIONS.map((s) => [s.key, s])) as Record<

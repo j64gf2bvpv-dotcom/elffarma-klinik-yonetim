@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.373] - 2026-11-12
+- Giderler: muhasebe gider tablosundaki başlıklar ayrı bölüm olarak eklendi (Doğalgaz, Haberleşme, Akaryakıt, Kargo ve Nakliye, Dışarıdan Sağlanan Hizmetler, Kira, İlan ve Reklam, Konaklama, Yemek ve Mutfak, Araç Kiralama, Araç Bakım Onarım, Danışmanlık, Diğer Çeşitli); gdr.xlsx'teki 253 gider satırı aktarıldı.
+
 ## [2.17.372] - 2026-11-12
 - Yeni bölüm: Personel Özlük Dosyası (sadece yöneticiler) — kimlik, iletişim, iş bilgileri, fotoğraf; 16 standart özlük evrakı kontrol listesi (var/eksik/süresi dolmuş), her evraka resim/PDF (HEIC dahil), belge ve geçerlilik tarihi; çalışan/ayrılan listesi, arama, Excel çıktısı.
 

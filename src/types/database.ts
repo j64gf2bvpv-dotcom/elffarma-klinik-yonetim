@@ -725,7 +725,26 @@ export interface Expense {
 }
 
 /** Giderler bölümleri (2026-11-11) — faturalı (abone/sözleşme no'lu) ve fişli giderler */
-export type ExpenseEntryCategory = 'elektrik' | 'su' | 'internet' | 'ofis' | 'mutfak' | 'ofis_yemek'
+export type ExpenseEntryCategory =
+  | 'elektrik'
+  | 'su'
+  | 'dogalgaz'
+  | 'internet'
+  | 'haberlesme'
+  | 'ofis'
+  | 'mutfak'
+  | 'ofis_yemek'
+  | 'yemek_mutfak'
+  | 'akaryakit'
+  | 'kargo'
+  | 'hizmet'
+  | 'kira'
+  | 'reklam'
+  | 'konaklama'
+  | 'arac_kiralama'
+  | 'arac_bakim'
+  | 'danismanlik'
+  | 'diger'
 
 export interface ExpenseEntry {
   id: string

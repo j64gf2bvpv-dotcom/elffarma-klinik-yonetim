@@ -37,7 +37,7 @@ export function ExpensesPage() {
     to: to ? new Date(to + 'T23:59:59').toISOString() : undefined,
   })
   const deleteMutation = useDeleteExpense()
-  // Elektrik / Su / İnternet (Türksat) / Ofis / Mutfak / Ofis Yemek bölümleri (kullanıcı isteği, 2026-11-11)
+  // Fatura, ofis ve muhasebe gider bölümleri (kullanıcı isteği, 2026-11-11 / 2026-11-12)
   const [tab, setTab] = React.useState('genel')
   const { data: entries = [], isLoading: entriesLoading } = useExpenseEntries({ from: from || undefined, to: to || undefined })
   const entriesTotal = entries.reduce((sum, e) => sum + Number(e.amount), 0)
@@ -49,7 +49,7 @@ export function ExpensesPage() {
     }
     // Her bölüm Excel'de ayrı sayfa (eskiden yeniye)
     exportToExcelMultiSheet(
-      'fatura-ve-fis-giderleri',
+      'bolum-giderleri',
       EXPENSE_ENTRY_SECTIONS.map((section) => ({
         name: section.label.replace(/[()]/g, ''),
         columns: entryExportColumns(section),
@@ -68,10 +68,10 @@ export function ExpensesPage() {
     <div>
       <PageHeader
         title="Giderler"
-        description="Hizmet, fatura (elektrik, su, internet) ve ofis giderlerini kaydedin ve takip edin"
+        description="Fatura, ofis, akaryakıt, kargo, konaklama, kira ve diğer giderleri bölüm bölüm kaydedin ve takip edin"
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={exportAllSections} title="Elektrik, Su, İnternet, Ofis, Mutfak, Ofis Yemek — her biri ayrı sayfada">
+            <Button variant="outline" onClick={exportAllSections} title="Her bölüm ayrı sayfada">
               <FileSpreadsheet /> Tüm Bölümler Excel
             </Button>
             <ExportMenu<Expense>
@@ -130,7 +130,7 @@ export function ExpensesPage() {
               <Zap className="size-5" />
             </span>
             <div>
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Fatura ve Ofis</p>
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Bölüm Giderleri</p>
               <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(entriesTotal)}</p>
             </div>
           </CardContent>
