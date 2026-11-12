@@ -742,6 +742,52 @@ export interface ExpenseEntry {
   updated_at: string
 }
 
+/** Personel Özlük Dosyası (2026-11-12) — sadece yöneticiler görür */
+export interface Personnel {
+  id: string
+  full_name: string
+  tc_no: string | null
+  birth_date: string | null
+  birth_place: string | null
+  gender: string | null
+  marital_status: string | null
+  blood_type: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  position: string | null
+  department: string | null
+  start_date: string | null
+  end_date: string | null
+  sgk_no: string | null
+  iban: string | null
+  education: string | null
+  military_status: string | null
+  license_class: string | null
+  photo_path: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PersonnelDocument {
+  id: string
+  personnel_id: string
+  /** Standart evrak anahtarı (bkz. features/personnel/docTypes.ts) ya da 'diger' */
+  doc_type: string
+  title: string | null
+  document_date: string | null
+  valid_until: string | null
+  attachment_paths: string[]
+  note: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface BudgetTarget {
   id: string
   year: number

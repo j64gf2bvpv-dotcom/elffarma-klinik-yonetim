@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
+  IdCard,
   Gauge,
   UserRound,
   PackageSearch,
@@ -98,6 +99,7 @@ export type NavKey =
   | 'vehicles'
   | 'teamPerformance'
   | 'bills'
+  | 'personnel'
   | 'settings'
 
 export type IconVariant = 'outline' | 'bold' | '3d' | 'duotone' | 'thin'
@@ -137,6 +139,7 @@ export const iconSets: IconSet[] = [
       vehicles: Car,
       teamPerformance: Activity,
       bills: Zap,
+      personnel: IdCard,
       settings: SlidersHorizontal,
     },
   },
@@ -166,6 +169,7 @@ export const iconSets: IconSet[] = [
       vehicles: Car,
       teamPerformance: BarChart3,
       bills: Zap,
+      personnel: IdCard,
       settings: Settings2,
     },
   },
@@ -195,6 +199,7 @@ export const iconSets: IconSet[] = [
       vehicles: Car,
       teamPerformance: Radar,
       bills: Zap,
+      personnel: IdCard,
       settings: Settings,
     },
   },
@@ -224,6 +229,7 @@ export const iconSets: IconSet[] = [
       vehicles: Car,
       teamPerformance: TrendingUp,
       bills: Zap,
+      personnel: IdCard,
       settings: Cog,
     },
   },
@@ -253,6 +259,7 @@ export const iconSets: IconSet[] = [
       vehicles: Car,
       teamPerformance: LineChart,
       bills: Zap,
+      personnel: IdCard,
       settings: Settings,
     },
   },

@@ -20,6 +20,7 @@ export const tr = {
     vehicles: 'Araçlar',
     teamPerformance: 'Ekip Performansı',
     bills: 'Faturalar',
+    personnel: 'Personel Özlük',
     settings: 'Ayarlar',
   },
   movementType: {

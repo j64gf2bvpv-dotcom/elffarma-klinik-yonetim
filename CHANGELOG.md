@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.372] - 2026-11-12
+- Yeni bölüm: Personel Özlük Dosyası (sadece yöneticiler) — kimlik, iletişim, iş bilgileri, fotoğraf; 16 standart özlük evrakı kontrol listesi (var/eksik/süresi dolmuş), her evraka resim/PDF (HEIC dahil), belge ve geçerlilik tarihi; çalışan/ayrılan listesi, arama, Excel çıktısı.
+
 ## [2.17.371] - 2026-11-12
 - Ruhsat okuma: yeni "kutu etiketinden" okuma — her değer kendi kutusunun etiketine ((A) Plaka, (D.1) Markası, (E) Şase No…) konumundan bağlanır; ruhsat fotoğrafın köşesinde küçük, eğik (sol/sağ sayfa ayrı eğim) ya da plastik kılıf içinde olsa da okunur. Fotoğraf 3 biçimde (olduğu gibi, büyütülmüş+kontrast, renkli kontrast) okunup oylanır; etiket yazıları ve tanınmayan marka/model alınmaz, adresin ilk satırı ad kutusuna kaçmaz.
 

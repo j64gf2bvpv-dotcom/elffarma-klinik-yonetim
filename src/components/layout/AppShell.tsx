@@ -101,6 +101,7 @@ const navItems: { to: string; label: string; key: NavKey; end?: boolean }[] = [
   { to: '/araclar', label: tr.nav.vehicles, key: 'vehicles' },
   { to: '/ekip-performansi', label: tr.nav.teamPerformance, key: 'teamPerformance' },
   { to: '/faturalar', label: tr.nav.bills, key: 'bills' },
+  { to: '/personel', label: tr.nav.personnel, key: 'personnel' },
 ]
 
 const navItemsByKey = new Map(navItems.map((item) => [item.key, item]))
@@ -690,7 +691,8 @@ export function AppShell() {
   // soluk) gösterilir ki kapatılan bir öğe tekrar açılabilsin; normal menü
   // görünümü sadece kullanıcının kendi gizli listesine göre filtrelenir.
   const hiddenForMe = new Set(draftHidden ?? staff?.hidden_nav_items ?? [])
-  const visibleNavLayout = navLayout.filter((item) => !hiddenForMe.has(item.key))
+  // Personel Özlük sadece yöneticilere (T.C. no, IBAN gibi hassas bilgiler — 2026-11-12)
+  const visibleNavLayout = navLayout.filter((item) => !hiddenForMe.has(item.key) && (item.key !== 'personnel' || isAdmin))
 
   // Sadece menüden gizlemek yetmez — sekmeye doğrudan URL ile gidilirse de
   // engellensin diye, mevcut sayfanın eşleştiği nav öğesi kullanıcı için
