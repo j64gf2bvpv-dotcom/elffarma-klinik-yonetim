@@ -118,8 +118,8 @@ export async function openRegistrationImage(path: string, title: string): Promis
   if (!ok) throw new Error('Resim programı açılamadı')
 }
 
-export async function fileToDataUrl(file: File, maxDimension = 1800): Promise<string> {
-  const blob = await resizeImageFile(file, maxDimension, 0.85)
+export async function fileToDataUrl(file: File, maxDimension = 1800, quality = 0.85): Promise<string> {
+  const blob = await resizeImageFile(file, maxDimension, quality)
   return new Promise((resolve, reject) => {
     const fr = new FileReader()
     fr.onload = () => resolve(fr.result as string)

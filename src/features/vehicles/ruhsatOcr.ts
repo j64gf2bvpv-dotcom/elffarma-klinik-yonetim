@@ -1,4 +1,5 @@
 import { createWorker, type Worker } from 'tesseract.js'
+import { assignRuhsatCells, findDocumentSerial, isRuhsatLabelText } from './ruhsatLabels'
 
 import { CAR_MODELS } from '@/lib/carModels'
 import { DISTRICTS, trFold } from '@/lib/detectProvince'
@@ -891,6 +892,32 @@ function normalizeCellText(field: string, lines: NativeLine[]): string | undefin
   return undefined
 }
 
+/** Ruhsat fotoğrafını ölçekleyip (isteğe bağlı filtreyle) JPEG data URL'e çevirir */
+function renderVariant(img: HTMLImageElement, scale: number, filter: string): string {
+  const c = document.createElement('canvas')
+  c.width = Math.max(1, Math.round(img.naturalWidth * scale))
+  c.height = Math.max(1, Math.round(img.naturalHeight * scale))
+  const g = c.getContext('2d')!
+  g.filter = filter
+  g.imageSmoothingQuality = 'high'
+  g.drawImage(img, 0, 0, c.width, c.height)
+  return c.toDataURL('image/jpeg', 0.93)
+}
+
+/** Etiketten bulunan kutunun satırlarından alan değeri; birleşik metin geçersizse satırlar tek tek denenir */
+function geoValue(field: string, lines: NativeLine[]): string | undefined {
+  const sorted = [...lines].sort((a, b) => b.y + b.h / 2 - (a.y + a.h / 2) || a.x - b.x)
+  let v = normalizeCellText(field, sorted)
+  if (v == null && sorted.length > 1 && !MULTILINE.has(field) && field !== 'owner_surname')
+    for (const l of sorted) {
+      v = normalizeCellText(field, [l])
+      if (v != null) break
+    }
+  // Bilinen bir marka değilse marka alınmaz (parlamadan bozuk okunan "BAN TH ARLAIH" gibi)
+  if (v != null && field === 'brand' && !findBrandModel(String(v))) return undefined
+  return v ?? undefined
+}
+
 function mergeMissing(into: Record<string, unknown>, from: RegistrationFields) {
   for (const [k, v] of Object.entries(from)) if (into[k] == null || into[k] === '') into[k] = v
 }
@@ -940,6 +967,7 @@ export async function readRuhsatLocally(
   if (ocr) {
     const votes = new Votes()
     const templateVotes = new Votes()
+    const geoVotes = new Votes()
     for (let i = 0; i < dataUrls.length; i++) {
       onProgress?.(dataUrls.length > 1 ? `${i + 1}. fotoğraf okunuyor…` : 'Ruhsat okunuyor…')
       const img = await loadImage(dataUrls[i])
@@ -984,9 +1012,28 @@ export async function readRuhsatLocally(
           if (r) templateVotes.add(c.field, r.value, r.conf)
         })
       }
+
+      // c) Kutu etiketlerinden okuma (2026-11-12): her değer, kendi sütununda üstündeki en yakın
+      // etikete verilir — ruhsat fotoğrafın köşesinde küçük ya da eğik olsa da çalışır. Fotoğraf
+      // olduğu gibi + büyütülmüş/kontrastı artırılmış haliyle (plastik kılıf parlaması, solgun baskı)
+      onProgress?.('Ruhsat kutuları etiketlerden okunuyor…')
+      const side = Math.max(img.naturalWidth, img.naturalHeight)
+      const variants = [
+        renderVariant(img, Math.min(1, 3000 / side), 'none'),
+        renderVariant(img, Math.min(2, 4000 / side), 'grayscale(1) contrast(1.5)'),
+        renderVariant(img, Math.min(1.5, 3600 / side), 'contrast(1.3) saturate(0.6)'),
+      ]
+      const variantLines = (await ocr(variants).catch(() => null)) ?? []
+      for (const ls of variantLines) {
+        const cells = assignRuhsatCells(ls ?? [])
+        for (const [field, cellLines] of Object.entries(cells)) geoVotes.add(field, geoValue(field, cellLines), 1)
+        geoVotes.add('document_serial', findDocumentSerial(ls ?? []), 1)
+      }
     }
 
-    if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__ruhsatDebug = { templateVotes, votes }
+    // Etiketten okunan değerler en güçlü oy (iki biçimde aynı çıkarsa daha da)
+    for (const f of geoVotes.fields()) for (const o of geoVotes.options(f)) templateVotes.add(f, o.value, o.score * 2)
+    if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__ruhsatDebug = { templateVotes, votes, geoVotes }
     // Kutu okuması (şablon) ağırlıklı; sayfa okumasının oyları da eklenir (yarım ağırlıkla)
     const tc = (v: string) => v.length === 10 || isValidTc(v)
     const combined = new Votes()
@@ -1016,6 +1063,7 @@ export async function readRuhsatLocally(
     const pageWords = typeof pageOwner === 'string' ? restoreTurkish(pageOwner).split(' ').filter((w) => w && w !== first && w !== last) : []
     result.owner_name = first && last ? `${first} ${last}` : [first, ...pageWords, last].filter(Boolean).join(' ') || undefined
     if (!(first && last)) uncertain.add('owner_name')
+
     const brand = templateVotes.best('brand')
     const fromPages = votes.best('brand_model')
     if (brand) {
@@ -1028,6 +1076,39 @@ export async function readRuhsatLocally(
         (typeof fromPages === 'string' && fromPages.includes(' ') && brandName && fromPages.startsWith(brandName) ? fromPages : undefined) ??
         [brandName ?? brand, options[0]].filter(Boolean).join(' ')
     } else if (fromPages) result.brand_model = fromPages
+    // Etiketten okunan değer kesin sonuçtur (2026-11-12); eski yöntem sadece boş kalanları doldurur
+    for (const f of geoVotes.fields()) {
+      if (['owner_surname', 'owner_first_name', 'brand', 'commercial_name'].includes(f)) continue
+      const [o1, o2] = geoVotes.options(f)
+      const v = o1.value
+      result[f] = f === 'year' || f === 'seat_count' ? Number(v) : typeof v === 'string' && ['owner_address', 'usage_purpose', 'color', 'issued_place'].includes(f) ? restoreTurkish(v) : v
+      if (o1.score >= 2 && !o2) uncertain.delete(f)
+      else if (o2) uncertain.add(f)
+    }
+    // Etiketten okunan soyadı/ünvan varsa ad onunla kurulur — sayfa okumasının karışık kelimeleri eklenmez.
+    // Eğik fotoğrafta adresin ilk satırı "Adı" kutusuna düşebilir (MAH./CAD./NO: içerir) → adrese eklenir;
+    // sahip şirketse ad kutusu boştur.
+    // Ünvan: okumalardan en eksiksiz olanı (bir okumada ilk satır düşebiliyor: "SANAYİ VE TİCARET LİMİTED ŞİRKETİ")
+    const letters = (v: unknown) => (String(v).match(/[A-ZÇĞİÖŞÜ]/gi) ?? []).length
+    const geoLast = geoVotes.options('owner_surname').sort((a, b) => letters(b.value) - letters(a.value) || b.score - a.score)[0]?.value
+    let geoFirst = geoVotes.best('owner_first_name') as string | undefined
+    if (geoFirst && /\b(MAH|MH|CAD|CD|SOK|SK|BULV|BLV|APT|KAPI)\b|NO\s*:/i.test(up(geoFirst))) {
+      result.owner_address = formatAddress(restoreTurkish([geoFirst, result.owner_address].filter(Boolean).join(' ')))
+      geoFirst = undefined
+    }
+    if (geoLast) {
+      if (/LTD|L[İI]M[İI]TED|Ş[İI]RKET|\bA\.?\s?Ş\b|ANON[İI]M/i.test(up(String(geoLast)))) geoFirst = undefined
+      // sona karışan boş kutu etiketleri ("NOTER SATIŞ …") kesilir
+      result.owner_name = [geoFirst, geoLast].filter(Boolean).join(' ').replace(/\s+(?:AD\s+)?NOTER\b.*$/i, '').trim()
+      if (geoVotes.options('owner_surname')[0].score >= 2) uncertain.delete('owner_name')
+      else uncertain.add('owner_name')
+    }
+    // Sadece etiket yazısından oluşan değerler atılır ("SATIŞ NO", "NOTERİN ADI")
+    const TEXT_FIELDS = ['rights_holders', 'notary_sale_no', 'notary_name', 'other_info', 'owner_address', 'issued_place', 'usage_purpose', 'vehicle_type', 'color', 'owner_name']
+    for (const k of TEXT_FIELDS) if (typeof result[k] === 'string' && isRuhsatLabelText(result[k] as string)) delete result[k]
+    if (typeof result.rights_holders === 'string' && /MENFAAT|BULUNAN/i.test(up(result.rights_holders))) delete result.rights_holders
+    // Bilinen bir marka/modele uymayan model yazısı (parlamadan bozuk: "(BUS TICARLADI") alınmaz
+    if (typeof result.brand_model === 'string' && !findBrandModel(result.brand_model)) delete result.brand_model
     fixVinPrefix(result)
   }
 

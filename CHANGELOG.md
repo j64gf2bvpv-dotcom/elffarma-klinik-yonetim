@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.371] - 2026-11-12
+- Ruhsat okuma: yeni "kutu etiketinden" okuma — her değer kendi kutusunun etiketine ((A) Plaka, (D.1) Markası, (E) Şase No…) konumundan bağlanır; ruhsat fotoğrafın köşesinde küçük, eğik (sol/sağ sayfa ayrı eğim) ya da plastik kılıf içinde olsa da okunur. Fotoğraf 3 biçimde (olduğu gibi, büyütülmüş+kontrast, renkli kontrast) okunup oylanır; etiket yazıları ve tanınmayan marka/model alınmaz, adresin ilk satırı ad kutusuna kaçmaz.
+
 ## [2.17.370] - 2026-11-11
 - Fatura okuma: tutar her zaman faturadaki TOPLAM BORÇ (eski borç dahil) ve her okumada forma yazılır.
 
