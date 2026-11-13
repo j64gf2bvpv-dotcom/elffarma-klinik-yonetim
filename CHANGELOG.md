@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.386] - 2026-11-13
+- Temsilci raporu: ziyarette telefon yoksa Cari Kart'taki numara (telefon/cep/WhatsApp; kartta yoksa aynı isimli diğer kart) kayıt sırasında ziyarete yazılıyor; mevcut 5 ziyaret dolduruldu.
+
 ## [2.17.385] - 2026-11-13
 - Temsilci raporu okuyucusu: uzun kurum başlıkları ("Methair Saç Ekim Merkezi – Kadıköy / Mete Bey…"), sonu telefonlu ünvansız başlıklar ve "Medica Work:" gibi iki noktalı kurum başlıkları ayrı kayıt; cümleden çıkan kaydın ardındaki genel paragraflar eklenmiyor. Ziyarette telefon yoksa Cari Kart'taki numara gösteriliyor/dışa aktarılıyor.
 

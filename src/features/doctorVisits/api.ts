@@ -57,12 +57,23 @@ export async function fetchVisitDates(): Promise<string[]> {
   return (data as { visit_date: string }[]).map((r) => r.visit_date)
 }
 
-/** Cari Kart'a bağlı değilse doktoru Cari Kart'ta bulur ya da ekler (bkz. linkCustomer.ts); hata ziyaret kaydını engellemez */
+/**
+ * Cari Kart'a bağlı değilse doktoru Cari Kart'ta bulur ya da ekler (bkz. linkCustomer.ts); ziyarette telefon
+ * yoksa Cari Kart'taki numara ziyarete yazılır (kullanıcı isteği, 2026-11-13). Hata ziyaret kaydını engellemez.
+ */
 async function withCustomer(input: DoctorVisitInput): Promise<DoctorVisitInput> {
-  if (input.customer_id || !input.doctor_name.trim()) return input
+  if (!input.doctor_name.trim()) return input
   try {
-    const customerId = await ensureVisitCustomer(input.doctor_name, input.phone, input.sales_rep_id, input.visit_date)
-    return customerId ? { ...input, customer_id: customerId } : input
+    if (input.customer_id) {
+      if (input.phone?.trim()) return input
+      const { data } = await supabase.from('customers').select('phone, mobile_phone, whatsapp_phone').eq('id', input.customer_id).maybeSingle()
+      const c = data as { phone: string | null; mobile_phone: string | null; whatsapp_phone: string | null } | null
+      const phone = c?.phone?.trim() || c?.mobile_phone?.trim() || c?.whatsapp_phone?.trim()
+      return phone ? { ...input, phone } : input
+    }
+    const found = await ensureVisitCustomer(input.doctor_name, input.phone, input.sales_rep_id, input.visit_date)
+    if (!found) return input
+    return { ...input, customer_id: found.id, phone: input.phone?.trim() || found.phone || input.phone }
   } catch (err) {
     console.warn('[ziyaret] Cari Kart eşleştirilemedi', err)
     return input

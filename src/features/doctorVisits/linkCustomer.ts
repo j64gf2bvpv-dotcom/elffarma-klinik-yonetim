@@ -37,14 +37,15 @@ const surname = (key: string) => key.split(' ').filter(Boolean).pop() ?? ''
  * gözetmeden aynı isim; isim tutmazsa aynı telefon + aynı soyadı (ortak klinik hattı yanlış eşleşmesin).
  * Kartta telefon boşsa ziyaretteki telefon yazılır. Hiç yoksa Cari Kart düzeninde ("Dr. Ad SOYAD") yeni kart
  * açılır; kartta temsilci (sales_rep_id) ve "Ekleyen: Duygu — ziyaret raporu, 23.10.2026" notu durur
- * ("hangi personel tarafından eklendiğini bileyim"). Dönen id ziyaretin customer_id'si olur.
+ * ("hangi personel tarafından eklendiğini bileyim"). Dönen id ziyaretin customer_id'si, telefon (Cari Kart'taki)
+ * ziyarette numara yoksa ziyaretin telefonu olur.
  */
 export async function ensureVisitCustomer(
   doctorName: string,
   phone: string | null | undefined,
   salesRepId: string | null | undefined,
   visitDate: string,
-): Promise<string | null> {
+): Promise<{ id: string; phone: string | null } | null> {
   const key = nameKey(cleanVisitName(doctorName))
   if (!key) return null
   const list = await loadCari()
@@ -60,7 +61,9 @@ export async function ensureVisitCustomer(
       await updateCustomerFields(match.id, { phone: phone!.trim() })
       match.phone = phone!.trim()
     }
-    return match.id
+    // Kartın telefonu yoksa aynı isimli başka kartta (mükerrer kayıt) olabilir
+    const cariPhone = match.phone?.trim() || match.mobile_phone?.trim() || match.whatsapp_phone?.trim() || list.find((c) => c.phone?.trim() && nameKey(c.full_name) === key)?.phone?.trim() || null
+    return { id: match.id, phone: cariPhone }
   }
 
   const rep = await repName(salesRepId)
@@ -74,5 +77,5 @@ export async function ensureVisitCustomer(
     notes: `Ekleyen: ${rep ?? 'Temsilci'} — ziyaret raporu, ${visitDate.split('-').reverse().join('.')}`,
   })
   list.push({ id: created.id, full_name: created.full_name, phone: created.phone, mobile_phone: null, whatsapp_phone: null })
-  return created.id
+  return { id: created.id, phone: created.phone || null }
 }
