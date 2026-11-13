@@ -36,6 +36,7 @@ import { VisitImportDialog } from '@/features/doctorVisits/VisitImportDialog'
 import { useCreateVisit, useDeleteVisit, useVisitDates, useVisitsInRange } from '@/features/doctorVisits/hooks'
 import { useCustomers } from '@/features/customers/hooks'
 import { Input } from '@/components/ui/input'
+import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SalesRepDialog } from '@/features/salesReps/SalesRepDialog'
@@ -161,6 +162,8 @@ function RepWeekSection({
   const deleteVisitMutation = useDeleteVisit()
   const { confirm, dialog } = useConfirmDialog()
 
+  // Ziyarette telefon yoksa Cari Kart'taki numarası gösterilir (kullanıcı isteği, 2026-11-13)
+  const cariPhone = React.useMemo(() => new Map(customers.filter((c) => c.phone).map((c) => [c.id, c.phone])), [customers])
   const weekKeys = days.map(dateKey)
   const [pickedDate, setEntryDate] = React.useState('')
   // Seçilen gün bu haftada değilse (hafta değişti): bugün bu haftadaysa bugün, değilse haftanın ilk günü
@@ -296,9 +299,9 @@ function RepWeekSection({
                           <span className="flex items-center gap-1.5 font-medium">
                             <User className="size-3.5 text-muted-foreground" /> {visit.doctor_name}
                           </span>
-                          {visit.phone && (
-                            <span className="flex items-center gap-1.5 text-muted-foreground">
-                              <Phone className="size-3.5" /> {visit.phone}
+                          {(visit.phone || cariPhone.get(visit.customer_id ?? '')) && (
+                            <span className="flex items-center gap-1.5 text-muted-foreground" title={visit.phone ? undefined : "Cari Kart'taki numara"}>
+                              <Phone className="size-3.5" /> {visit.phone || formatTrPhoneForDisplay(cariPhone.get(visit.customer_id ?? '') ?? '')}
                             </span>
                           )}
                           {visit.email && (
@@ -408,6 +411,7 @@ export function DoctorVisitsPage() {
   }, [activeReps, weekPayments, monthPayments])
 
   const repNameById = React.useMemo(() => new Map(salesReps.map((r) => [r.id, r.name])), [salesReps])
+  const customerPhoneById = React.useMemo(() => new Map(customers.filter((c) => c.phone).map((c) => [c.id, c.phone])), [customers])
   const exportRows = React.useMemo(
     () =>
       visits
@@ -470,7 +474,7 @@ export function DoctorVisitsPage() {
                 { header: 'Tarih', value: (v) => format(new Date(v.visit_date), 'd MMM yyyy', { locale: trLocale }) },
                 { header: 'Temsilci', value: (v) => v.repName },
                 { header: 'Doktor', value: (v) => v.doctor_name },
-                { header: 'Telefon', value: (v) => v.phone ?? '' },
+                { header: 'Telefon', value: (v) => v.phone || formatTrPhoneForDisplay(customerPhoneById.get(v.customer_id ?? '') ?? '') },
                 { header: 'E-posta', value: (v) => v.email ?? '' },
                 { header: 'Sosyal Medya', value: (v) => v.social_media ?? '' },
               ]}

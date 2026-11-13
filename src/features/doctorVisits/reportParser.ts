@@ -32,7 +32,7 @@ const SKIP_SECTION_RE = /^(genel değerlendirme|genel durum|değerlendirme|gün�
 // Selamlaşma / yazışma satırları başlık sayılmaz
 const CHAT_RE = /merhaba|selam|kolay gelsin|iyi akşamlar|iyi günler|teşekkür|rica ederim|günaydın/i
 // Rapor başlıkları: altındaki paragraflarda geçen doktorlar kayıttır
-const REPORT_SECTION_RE = /(rapor|ziyaret edilen|ziyaret gerçekleştirilen|görüşme notları|saha|hekimler|kurumlar|sipariş bilgi)/i
+const REPORT_SECTION_RE = /(rapor|ziyaret edilen|ziyaret gerçekleştirilen|görüşme notları|saha|hekimler|kurumlar|sipariş bilgi|diğer çalışma|^not$|^notlar$)/i
 // Bir kaydın içindeki bilgi satırları
 const FIELD_RE = /^(ürün|miktar|toplam tutar|tutar|telefon|tel|gsm|cep|e-?posta|mail|vergi( dairesi| kimlik no| no)?|fatura|teslimat|adres|sipariş|iban)\b[^:]{0,25}:/i
 const NOT_A_VISIT_RE = /toplantı|zoom|meeting|webinar/i
@@ -40,7 +40,8 @@ const NOT_A_VISIT_RE = /toplantı|zoom|meeting|webinar/i
 /** Başlıktaki ek bilgi ("Plastik Cerrahi", "Murat Bey / Merkez Sahibi") paragraftan " · " ile ayrılır */
 const headNote = (rest: string) => (rest && !/[.!?]$/.test(rest) ? `${rest} ·` : rest)
 const fold = (s: string) => s.toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ').trim()
-const wordCount = (s: string) => s.split(/\s+/).filter(Boolean).length
+// Yalnız harf içeren kelimeler sayılır ('–', '/' gibi ayraçlar başlığı uzun göstermesin)
+const wordCount = (s: string) => s.split(/\s+/).filter((w) => /\p{L}/u.test(w)).length
 
 /** "Dr Ümran kale" → "Dr. Ümran kale"; sondaki isim olmayan kelimeler ve iyelik ekleri atılır */
 function tidyName(raw: string): string {
@@ -69,7 +70,8 @@ export function cleanVisitName(raw: string): string {
   return text.split(SEP_RE)[0].replace(/[\s,;/]+$/, '').trim()
 }
 
-type Rec = { names: string[]; phone: string; notes: string; bullet?: boolean }
+// fromSentence: kayıt bir cümleden çıkarıldı ("Gün içerisinde Dr. X ile…") — sonraki adsız paragraflar genel yazıdır
+type Rec = { names: string[]; phone: string; notes: string; bullet?: boolean; fromSentence?: boolean }
 
 function capitalRatio(s: string): number {
   const words = s.split(/\s+/).filter((w) => /\p{L}/u.test(w))
@@ -144,7 +146,8 @@ export function parseReportLines(lines: string[]): WordDoctorRow[] {
         continue
       }
       // 2) Bölüm başlığı (özet/plan → atla; rapor → içindeki doktorlar kayıt)
-      if (!titled && words <= 8 && !ended && (SKIP_SECTION_RE.test(noDate) || (REPORT_SECTION_RE.test(noDate) && !bullet) || (/:$/.test(line) && !bullet) || (line === line.toLocaleUpperCase('tr-TR') && /\p{L}{3}/u.test(line) && words <= 5))) {
+      const sectionText = noDate.replace(/:$/, '').trim()
+      if (!titled && words <= 8 && !ended && (SKIP_SECTION_RE.test(sectionText) || (REPORT_SECTION_RE.test(sectionText) && !bullet) || (line === line.toLocaleUpperCase('tr-TR') && /\p{L}{3}/u.test(line) && words <= 5))) {
         close()
         section = SKIP_SECTION_RE.test(noDate) ? 'skip' : 'report'
         continue
@@ -175,25 +178,29 @@ export function parseReportLines(lines: string[]): WordDoctorRow[] {
         } else {
           // Cümle: "Dr. Hasan Asker ziyaret edildi. …" → ad cümleden, cümle açıklama
           const names = findDoctorNames(line).slice(0, 1)
-          if (names.length) start(names, phone, line)
-          else append(line, false)
+          if (names.length) {
+            start(names, phone, line)
+            if (cur) (cur as Rec).fromSentence = true
+          } else append(line, false)
         }
         continue
       }
 
       // 4) Ünvansız başlık: klinik/kurum ya da kişi ("Snap Clinic – Murat Bey", "Medica Work:", "No On Clinic")
-      const lastWord = line.split(/\s+/).pop() ?? ''
+      // Telefon başlık kontrolüne katılmaz ("30. Sevde Alacacı Sağlık Hizmetleri — 0505 950 37 88")
+      const bare = (phoneMatch && phone ? line.replace(phoneMatch[0], '') : line).replace(/[\s:—–-]+$/, '').trim()
+      const lastWord = bare.split(/\s+/).pop() ?? ''
       if (
         atBoundary &&
-        !/[.!?,]$/.test(line) &&
-        words <= 10 &&
-        capitalRatio(line) >= 0.6 &&
+        !/[.!?,]$/.test(bare) &&
+        wordCount(bare) <= 14 &&
+        capitalRatio(bare) >= 0.6 &&
         new RegExp(`^[${UP}]`).test(lastWord) &&
-        !/\d{5,}/.test(line) &&
-        !CHAT_RE.test(line) &&
-        !/^(ziyaret|görüşme|ayrıca|daha|bugün|sabah|gün)\b/i.test(line)
+        !/\d{5,}/.test(bare) &&
+        !CHAT_RE.test(bare) &&
+        !/^(ziyaret|görüşme|ayrıca|daha|bugün|sabah|gün)\b/i.test(bare)
       ) {
-        const [head, ...restParts] = line.split(SEP_RE)
+        const [head, ...restParts] = bare.split(SEP_RE)
         start([head.replace(/[\s,;/]+$/, '').trim()], phone, headNote(restParts.join(': ').trim()), bullet)
         continue
       }
@@ -209,9 +216,13 @@ export function parseReportLines(lines: string[]): WordDoctorRow[] {
       const paragraphDoctor = (prevBlank || !cur) && findDoctorNames(firstSentence)[0]
       if (paragraphDoctor) {
         start([paragraphDoctor], phone, line)
+        if (cur) (cur as Rec).fromSentence = true
       } else {
         const c = cur as Rec | null
-        if (c) {
+        if (c?.fromSentence && prevBlank) {
+          // Cümleden çıkan kaydın ardından gelen adsız paragraf genel yazıdır (hava durumu, ekip toplantısı…)
+          close()
+        } else if (c) {
           if (phone && !c.phone) c.phone = phone
           append(line, prevBlank)
         }
