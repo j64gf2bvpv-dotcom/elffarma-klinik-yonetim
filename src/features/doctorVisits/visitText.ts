@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 
-import { parseDoctorLines, type WordDoctorRow } from '@/features/customers/parseDoctorWord'
+import type { WordDoctorRow } from '@/features/customers/parseDoctorWord'
+import { parseReportLines } from './reportParser'
 
 export type ImageVisitRow = WordDoctorRow & { date: string | null }
 
@@ -88,11 +89,13 @@ function fixTurkishOcr(line: string): string {
     .replace(/ihtıyaç/g, 'ihtiyaç')
 }
 
-function cleanOcrLine(line: string): string {
+/** Boş satır '' olarak kalır (paragraf ayrımı); saat ve süs/karalama okumaları null (atılır) */
+function cleanOcrLine(line: string): string | null {
+  if (!line.trim()) return ''
   const l = fixTurkishOcr(line).replace(/(^|\s\|\s*)\d{1,2}[:.]\d{2}\s*(✓+)?$/, '').trim()
   const letters = (l.match(/[a-zçğıöşü]/gi) ?? []).length
   const digits = (l.match(/\d/g) ?? []).length
-  return letters < 2 && digits < 7 ? '' : l
+  return letters < 2 && digits < 7 ? null : l
 }
 
 /**
@@ -102,16 +105,16 @@ function cleanOcrLine(line: string): string {
  * Toplantısı") — listede ünvanlı doktorlar varken — doktor sayılmaz.
  */
 export function parseVisitLines(rawLines: string[], days: Date[], repName = ''): ImageVisitRow[] {
-  const lines = rawLines.map(cleanOcrLine).filter(Boolean)
+  const lines = rawLines.map(cleanOcrLine).filter((l): l is string => l !== null)
   const out: ImageVisitRow[] = []
   let current: string | null = null
   let segment: string[] = []
   const flush = () => {
-    out.push(...parseDoctorLines(segment).map((r) => ({ ...r, date: current })))
+    out.push(...parseReportLines(segment).map((r) => ({ ...r, date: current })))
     segment = []
   }
   for (const line of lines) {
-    const found = findDate(line, days)
+    const found = line ? findDate(line, days) : null
     if (!found) {
       segment.push(line)
       continue
@@ -140,13 +143,12 @@ export function parseVisitLines(rawLines: string[], days: Date[], repName = ''):
   }
   flush()
 
+  // Mesajı gönderen temsilcinin adı (resimde en üstte) ve tablo başlığı gibi satırlar kayıt değildir
   const repKey = fold(repName.split(/\s+/)[0] ?? '')
-  const hasTitled = out.some((r) => TITLE_RE.test(r.name))
   return out.filter((r) => {
-    // Adsız/telefonsuz yalnız açıklama: tablo başlığı gibi kısa satırlar atılır, uzun not kalır (önizlemede ad girilir)
-    if (!r.name && !r.phone) return r.notes.split(/\s+/).length > 5
+    if (!r.name) return false
     if (repKey && fold(r.name).split(/\s+/)[0] === repKey && !r.phone) return false
-    if (hasTitled && !r.phone && !TITLE_RE.test(r.name)) return false
+    if (/^(tarih|doktor|telefon|isim|ad soyad)\b/i.test(r.name) && !r.phone) return false
     return true
   })
 }

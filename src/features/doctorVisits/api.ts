@@ -79,6 +79,16 @@ export async function updateVisit(id: string, input: DoctorVisitInput): Promise<
   return offlineUpdate<DoctorVisit>('doctor_visits', id, { ...body }, `Doktor ziyareti güncelleme: ${input.doctor_name}`)
 }
 
+/** Toplu silme (kullanıcı isteği, 2026-11-13: "tüm kayıtları sil"): tarih aralığı verilmezse bütün ziyaretler. Cari Kart kartlarına dokunmaz. */
+export async function deleteVisitsInRange(from?: string, to?: string): Promise<number> {
+  let query = supabase.from('doctor_visits').delete({ count: 'exact' }).not('id', 'is', null)
+  if (from) query = query.gte('visit_date', from)
+  if (to) query = query.lte('visit_date', to)
+  const { error, count } = await query
+  if (error) throw error
+  return count ?? 0
+}
+
 export async function deleteVisit(id: string): Promise<void> {
   return offlineDelete('doctor_visits', id, 'Doktor ziyareti silme')
 }

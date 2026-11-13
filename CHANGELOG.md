@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.383] - 2026-11-13
+- Temsilci raporu: sohbet/resim okuyucu yeniden yazıldı (reportParser) — her başlık (doktor ya da klinik) ayrı kayıt, ad yalnız isim (ek bilgi/telefon/sipariş açıklamaya), "Dr. A & Dr. B" ayrı kayıt, paragraf içindeki doktor kaydı, özet/plan bölümleri atlanıyor. Cari Kart'a yalnız isimle (kurumlar olduğu gibi) ekleniyor. Duygu'nun sohbeti yedeklenip temiz yeniden aktarıldı (116 kayıt). "Kayıtları Sil" menüsü: bu hafta / bütün kayıtlar.
+
 ## [2.17.382] - 2026-11-13
 - Temsilci raporuna eklenen doktorlar Cari Kart'la eşleştiriliyor (isim, yoksa telefon+soyadı); kartta yoksa ad/telefonla Cari Kart'a ekleniyor, boş telefon dolduruluyor. Yeni kartta ekleyen temsilci (sales_rep_id + not) tutuluyor, Cari Kart listesinde "Ekleyen: …" görünüyor. Mevcut 13 bağlantısız ziyaret eşleştirildi (10 yeni kart).
 

@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { cleanDoctorName } from '@/lib/cleanDoctorName'
 import { createCustomer, updateCustomerFields } from '@/features/customers/api'
 import { nameKey, phoneKey } from '@/features/customers/dedupe'
+import { cleanVisitName } from './reportParser'
 
 type CariRow = { id: string; full_name: string; phone: string | null; mobile_phone: string | null; whatsapp_phone: string | null }
 
@@ -21,6 +22,13 @@ async function repName(id: string | null | undefined): Promise<string | null> {
   return (data as { name: string } | null)?.name ?? null
 }
 
+// Kurum adları ("Snap Clinic", "Kardelen Tıp Merkezi") olduğu gibi; kişi adları "Dr. Ad SOYAD" düzeninde
+const ORG_RE = /klinik|clinic|merkez|sağlık|hizmet|medikal|medical|estetik|aesthetic|poliklinik|hastane|work|este\b|güzellik|ltd|a\.ş/i
+export function cariName(doctorName: string): string {
+  const name = cleanVisitName(doctorName)
+  return ORG_RE.test(name) ? name : cleanDoctorName(name).name || name
+}
+
 const surname = (key: string) => key.split(' ').filter(Boolean).pop() ?? ''
 
 /**
@@ -37,7 +45,7 @@ export async function ensureVisitCustomer(
   salesRepId: string | null | undefined,
   visitDate: string,
 ): Promise<string | null> {
-  const key = nameKey(doctorName)
+  const key = nameKey(cleanVisitName(doctorName))
   if (!key) return null
   const list = await loadCari()
   const pk = phoneKey(phone)
@@ -57,7 +65,7 @@ export async function ensureVisitCustomer(
 
   const rep = await repName(salesRepId)
   const created = await createCustomer({
-    full_name: cleanDoctorName(doctorName).name || doctorName.trim(),
+    full_name: cariName(doctorName),
     phone: phone?.trim() ?? '',
     tags: ['ziyaret'],
     is_invoiced: false,

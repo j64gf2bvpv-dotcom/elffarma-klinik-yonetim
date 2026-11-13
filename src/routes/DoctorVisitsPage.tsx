@@ -36,16 +36,17 @@ import { VisitImportDialog } from '@/features/doctorVisits/VisitImportDialog'
 import { useCreateVisit, useDeleteVisit, useVisitDates, useVisitsInRange } from '@/features/doctorVisits/hooks'
 import { useCustomers } from '@/features/customers/hooks'
 import { Input } from '@/components/ui/input'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SalesRepDialog } from '@/features/salesReps/SalesRepDialog'
 import { useSalesReps } from '@/features/salesReps/hooks'
-import { deleteVisit } from '@/features/doctorVisits/api'
+import { deleteVisit, deleteVisitsInRange } from '@/features/doctorVisits/api'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { usePayments } from '@/features/payments/hooks'
 import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
 import { ExportMenu } from '@/components/ExportMenu'
-import { useConfirmDialog } from '@/hooks/useConfirmDialog'
+import { confirmAction, useConfirmDialog } from '@/hooks/useConfirmDialog'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -358,6 +359,24 @@ export function DoctorVisitsPage() {
     return [...counts.entries()].sort((a, b) => b[0].localeCompare(a[0]))
   }, [visitDates])
   // Günü gelmemiş tarihlere gidilmez (kullanıcı isteği, 2026-11-13)
+  // Rapordaki kayıtları toplu silme — Cari Kart'a eklenmiş doktorlar silinmez
+  const queryClient = useQueryClient()
+  const [clearingAll, setClearingAll] = React.useState(false)
+  async function clearAll(scope: 'week' | 'all') {
+    const label = scope === 'week' ? `${format(weekStart, 'd MMM', { locale: trLocale })} – ${format(weekEnd, 'd MMM yyyy', { locale: trLocale })} haftasının bütün kayıtları (${visits.length} doktor)` : 'raporun BÜTÜN haftalarındaki tüm kayıtlar'
+    if (!(await confirmAction(`${label} silinsin mi? Bu işlem geri alınamaz. (Cari Kart'taki doktor kartları silinmez.)`))) return
+    setClearingAll(true)
+    try {
+      const n = scope === 'week' ? await deleteVisitsInRange(dateKey(weekStart), dateKey(weekEnd)) : await deleteVisitsInRange()
+      toast.success(`${n} kayıt silindi`)
+    } catch (err) {
+      toast.error('Silinemedi', { description: err instanceof Error ? err.message : String(err) })
+    } finally {
+      setClearingAll(false)
+      void queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
+      void queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+    }
+  }
   const goToDate = (value: string) => value && value <= dateKey(new Date()) && setWeekStart(startOfWeek(new Date(`${value}T00:00:00`), { weekStartsOn: 1 }))
   const isCurrentWeek = dateKey(weekStart) >= thisWeekKey
 
@@ -456,6 +475,21 @@ export function DoctorVisitsPage() {
                 { header: 'Sosyal Medya', value: (v) => v.social_media ?? '' },
               ]}
             />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={clearingAll}>
+                  <Trash2 className="text-destructive" /> Kayıtları Sil
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled={!visits.length} onSelect={() => void clearAll('week')}>
+                  Bu haftanın tüm kayıtlarını sil ({visits.length})
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onSelect={() => void clearAll('all')}>
+                  Bütün kayıtları sil (tüm haftalar)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <SalesRepDialog />
           </div>
         }

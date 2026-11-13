@@ -2,8 +2,6 @@ import { addDays, startOfWeek } from 'date-fns'
 
 import { parseVisitLines, type ImageVisitRow } from './visitText'
 
-const TITLE_RE = /^(prof|doç|doc|op|uzm|dr)\b/i
-
 interface ChatMessage {
   date: string
   sender: string
@@ -44,8 +42,8 @@ function splitMessages(text: string): ChatMessage[] {
  * WhatsApp "Sohbeti Dışa Aktar" dosyasından (.txt ya da .zip içindeki _chat.txt) ziyaret edilen doktorları
  * tarih tarih çıkarır (kullanıcı isteği, 2026-11-13: "gereksiz konuşmaları almasın, sadece doktor bilgileri").
  * Sohbette temsilcinin mesajları varsa yalnız onlar okunur; her mesaj kendi tarihine yazılır (mesajın içinde
- * gün başlığı varsa o geçerli). Sadece ünvanlı ("Dr.", "Prof." …) ya da telefonlu kayıtlar alınır —
- * selamlaşma, toplantı, medya satırları gibi konuşmalar atılır.
+ * gün başlığı varsa o geçerli). Doktor/kurum başlıkları ve doktor adıyla başlayan paragraflar kayıt olur
+ * (bkz. reportParser.ts) — selamlaşma, soru-cevap, toplantı, medya satırları gibi konuşmalar atılır.
  */
 export function parseWhatsAppChat(text: string, repName: string): ImageVisitRow[] {
   const messages = splitMessages(text)
@@ -61,10 +59,7 @@ export function parseWhatsAppChat(text: string, repName: string): ImageVisitRow[
     if (!lines.join('').trim()) continue
     const weekStart = startOfWeek(new Date(`${msg.date}T00:00:00`), { weekStartsOn: 1 })
     const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
-    for (const row of parseVisitLines(lines, days, repName)) {
-      if (!TITLE_RE.test(row.name) && !row.phone) continue
-      out.push({ ...row, date: row.date ?? msg.date })
-    }
+    for (const row of parseVisitLines(lines, days, repName)) out.push({ ...row, date: row.date ?? msg.date })
   }
   // Aynı gün aynı doktor iki mesajda geçtiyse açıklamalar birleştirilir
   const merged = new Map<string, ImageVisitRow>()
