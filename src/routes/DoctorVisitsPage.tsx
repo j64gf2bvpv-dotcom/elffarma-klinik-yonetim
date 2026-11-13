@@ -160,6 +160,11 @@ function RepWeekSection({
   const deleteVisitMutation = useDeleteVisit()
   const { confirm, dialog } = useConfirmDialog()
 
+  const weekKeys = days.map(dateKey)
+  const [pickedDate, setEntryDate] = React.useState('')
+  // Seçilen gün bu haftada değilse (hafta değişti): bugün bu haftadaysa bugün, değilse haftanın ilk günü
+  const entryDate = weekKeys.includes(pickedDate) ? pickedDate : weekKeys.includes(dateKey(new Date())) ? dateKey(new Date()) : weekKeys[0]
+
   const visitsByDay = React.useMemo(() => {
     const map = new Map<string, DoctorVisit[]>()
     for (const day of days) map.set(dateKey(day), [])
@@ -251,26 +256,36 @@ function RepWeekSection({
           )}
         </div>
         <Separator className="mb-1" />
-        {days.map((day) => {
+        {/* Gün satırları hazır gösterilmez (kullanıcı isteği, 2026-11-13: "günleri ben gireyim tek tek,
+            sen gösterme"): günü seçip doktoru yazınca o gün listede belirir. */}
+        <div className="flex items-center gap-2 rounded-lg border border-dashed p-2">
+          <Input
+            type="date"
+            className="w-[9.5rem] shrink-0"
+            title="Gün seçin"
+            min={dateKey(days[0])}
+            max={dateKey(days[days.length - 1])}
+            value={entryDate}
+            onChange={(e) => e.target.value && setEntryDate(e.target.value)}
+          />
+          <div className="min-w-0 flex-1">
+            <QuickVisitInput visitDate={entryDate} salesRepId={rep.id} customers={customers} />
+          </div>
+        </div>
+        {visits.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">Bu hafta henüz doktor girilmedi.</p>}
+        {days.filter((day) => (visitsByDay.get(dateKey(day))?.length ?? 0) > 0).map((day) => {
           const key = dateKey(day)
           const dayVisits = visitsByDay.get(key) ?? []
           const isToday = key === dateKey(new Date())
           return (
             <div key={key} className="rounded-lg border p-3">
-              {/* Tek satır: gün + doktor yazma kutusu (ayrı "Doktor Ekle" penceresi kaldırıldı;
-                  telefon/not gibi ayrıntılar eklenen doktorun kalem ikonundan girilir) */}
-              <div className="flex items-center gap-2">
-                <p
-                  className={cn('w-[5.5rem] shrink-0 text-sm font-medium capitalize leading-tight', isToday && 'text-primary')}
-                  title={format(day, 'EEEE, d MMMM', { locale: trLocale }) + (isToday ? ' (bugün)' : '')}
-                >
-                  {format(day, 'EEE d MMM', { locale: trLocale })}
-                  {isToday && <span className="block text-[10px] font-normal">bugün</span>}
-                </p>
-                <div className="min-w-0 flex-1">
-                  <QuickVisitInput visitDate={key} salesRepId={rep.id} customers={customers} />
-                </div>
-              </div>
+              <p
+                className={cn('text-sm font-medium capitalize', isToday && 'text-primary')}
+                title={format(day, 'EEEE, d MMMM', { locale: trLocale }) + (isToday ? ' (bugün)' : '')}
+              >
+                {format(day, 'EEEE d MMMM', { locale: trLocale })}
+                {isToday && <span className="ml-1.5 text-xs font-normal">bugün</span>}
+              </p>
               {dayVisits.length > 0 && (
                 <div className="mt-2 grid gap-2">
                   {dayVisits.map((visit) => (

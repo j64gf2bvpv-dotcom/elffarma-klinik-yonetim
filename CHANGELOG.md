@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.380] - 2026-11-13
+- Temsilci raporu: resimden okuma WhatsApp mesajlarını ("23 Eki Cum" tarihi, madde işaretli doktorlar, paragraf açıklamalar, "Not:" bloğundaki doktor) ayrı ayrı okuyor; gönderen adı, saatler ve doktor olmayan maddeler ayıklanıyor, İ/Ü okuma hataları düzeltiliyor. Gün satırları hazır gösterilmiyor: günü seçip doktor yazılıyor, yalnız girilen günler listeleniyor.
+
 ## [2.17.379] - 2026-11-13
 - Temsilci raporu: Kayıtlı Raporlar kutusundaki yazı artık kutunun dışına taşmıyor.
 

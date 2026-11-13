@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -113,7 +114,7 @@ export function VisitImportDialog({
           .filter((r) => r.doctor_name || r.phone)
       } else if (isImageFile(file)) {
         // Resim: yazı tanımayla okunur; gün başlığı/tarih varsa o gün, yoksa seçili gün
-        parsed = (await readVisitImage(file, days)).map((r) => ({
+        parsed = (await readVisitImage(file, days, rep.name)).map((r) => ({
           doctor_name: r.name,
           phone: r.phone,
           notes: r.notes,
@@ -263,7 +264,7 @@ export function VisitImportDialog({
                     <TableHead className="w-8">#</TableHead>
                     <TableHead>Doktor Adı</TableHead>
                     <TableHead className="w-40">Telefon</TableHead>
-                    <TableHead>Açıklama</TableHead>
+                    <TableHead className="w-[40%]">Açıklama</TableHead>
                     <TableHead className="w-40">Tarih</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
@@ -286,7 +287,7 @@ export function VisitImportDialog({
                           <Input value={r.phone} onChange={(e) => update(r.key, { phone: e.target.value })} />
                         </TableCell>
                         <TableCell>
-                          <Input value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} />
+                          <Textarea rows={3} className="min-h-0 text-sm" value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} />
                         </TableCell>
                         <TableCell>
                           <Input type="date" value={r.visit_date} onChange={(e) => e.target.value && update(r.key, { visit_date: e.target.value })} />

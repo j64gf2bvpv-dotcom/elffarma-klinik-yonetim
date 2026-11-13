@@ -16,8 +16,10 @@ const NOTES_LABEL_RE = /^(a[çc][ıi]klama|not(lar)?|bilgi)\s*[:：]\s*/i
 const SEP = /^[\s\-–—:|/,;•·]+|[\s\-–—:|/,;•·]+$/g
 
 const clean = (s: string) => s.replace(/\s+/g, ' ').replace(SEP, '').trim()
-/** Baştaki sıra numarasını ("1.", "1-", "1)") atar */
-const stripNumbering = (s: string) => s.replace(/^\s*\d{1,3}\s*[.)\-–]\s*/, '')
+/** Baştaki sıra numarasını ("1.", "1-", "1)") ya da madde işaretini ("•", "-") atar */
+const stripNumbering = (s: string) => s.replace(/^\s*(?:\d{1,3}\s*[.)\-–]|[•·●▪◦*\-–])\s*/, '')
+/** Metnin içinde geçen ünvanlı doktor adı ("… Dr. Veysel Alimoğlu ile …") */
+const DOCTOR_IN_TEXT = /(?:Prof\.?\s*|Doç\.?\s*|Op\.?\s*|Uzm\.?\s*)?Dr\.?\s+(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]+|[A-ZÇĞİÖŞÜ]{2,})(?:\s+(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]+|[A-ZÇĞİÖŞÜ]{2,})){0,2}/
 
 function isNameLike(line: string): boolean {
   if (TITLE_RE.test(line)) return true
@@ -30,7 +32,10 @@ const isHeaderJunk = (r: WordDoctorRow) => !r.phone && !r.notes && /liste|rehber
 
 function appendNote(row: WordDoctorRow, text: string) {
   const t = clean(text)
-  if (t) row.notes = row.notes ? `${row.notes} · ${t}` : t
+  if (!t) return
+  // Paragraf devamı (küçük harfle başlayan satır ya da cümle bitmiş) boşlukla, ayrı bilgi " · " ile eklenir
+  const prose = /^[a-zçğıöşü]/.test(t) || /[.!?,;]$/.test(row.notes) || row.notes.split(' ').length >= 6
+  row.notes = row.notes ? `${row.notes}${prose ? ' ' : ' · '}${t}` : t
 }
 
 /** Tablo satırları: başlık satırı varsa sütunlara göre, yoksa içerikten (telefon sütunu, ilk metin = ad) */
@@ -69,7 +74,13 @@ function parseLines(lines: string[]): WordDoctorRow[] {
   const out: WordDoctorRow[] = []
   let cur: WordDoctorRow | null = null
   const close = () => {
-    if (cur && (cur.name || cur.phone)) out.push(cur)
+    const c = cur as WordDoctorRow | null
+    if (c && !c.name) {
+      // "Not:" altındaki serbest yazıda geçen doktor ("Maç sırasında Dr. Veysel Alimoğlu ile…")
+      const m = c.notes.match(DOCTOR_IN_TEXT)
+      if (m) c.name = m[0].trim()
+    }
+    if (c && (c.name || c.phone || c.notes)) out.push(c)
     cur = null
   }
   const nextHasPhone = (i: number) => {
@@ -81,6 +92,8 @@ function parseLines(lines: string[]): WordDoctorRow[] {
   }
 
   lines.forEach((raw, i) => {
+    // Madde işaretli satır ("• Dr. Ad", "• Zoom Toplantısı") her zaman yeni kayıttır
+    const bullet = /^\s*[•·●▪◦*]/.test(raw)
     const line = stripNumbering(raw).trim()
     if (!line) {
       close()
@@ -97,9 +110,14 @@ function parseLines(lines: string[]): WordDoctorRow[] {
       else appendNote(cur, line)
       return
     }
-    if (NOTES_LABEL_RE.test(line)) {
-      if (!cur) cur = { name: '', phone: '', notes: '' }
-      appendNote(cur, line.replace(NOTES_LABEL_RE, ''))
+    if (NOTES_LABEL_RE.test(line) || /^(not|açıklama|aciklama)\s*:?$/i.test(line)) {
+      const rest = line.replace(NOTES_LABEL_RE, '').replace(/^(not|açıklama|aciklama)\s*:?$/i, '')
+      if (!rest.trim() || !cur) {
+        // Tek başına "Not:" başlığı → ayrı not bloğu (önceki doktorun açıklamasına karışmaz)
+        close()
+        cur = { name: '', phone: '', notes: '' }
+      }
+      appendNote(cur!, rest)
       return
     }
     const m = line.match(PHONE_RE)
@@ -127,10 +145,14 @@ function parseLines(lines: string[]): WordDoctorRow[] {
       return
     }
     // Telefonsuz satır
-    if (!cur) {
+    if (bullet) {
+      close()
       cur = { name: clean(line), phone: '', notes: '' }
+    } else if (!cur) {
+      cur = isNameLike(line) || line.split(/\s+/).length <= 3 ? { name: clean(line), phone: '', notes: '' } : { name: '', phone: '', notes: clean(line) }
     } else if (!cur.name) {
-      cur.name = clean(line)
+      if (isNameLike(line) && !cur.notes) cur.name = clean(line)
+      else appendNote(cur, line)
     } else if (isNameLike(line) && (cur.phone || TITLE_RE.test(line) || nextHasPhone(i))) {
       close()
       cur = { name: clean(line), phone: '', notes: '' }
