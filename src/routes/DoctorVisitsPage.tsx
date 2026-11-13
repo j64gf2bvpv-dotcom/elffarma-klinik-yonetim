@@ -272,7 +272,7 @@ function RepWeekSection({
         <Separator className="mb-1" />
         {/* Gün satırları hazır gösterilmez (kullanıcı isteği, 2026-11-13: "günleri ben gireyim tek tek,
             sen gösterme"): günü seçip doktoru yazınca o gün listede belirir. */}
-        <div className="flex items-center gap-2 rounded-lg border border-dashed p-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed p-2">
           <Input
             type="date"
             className="w-[9.5rem] shrink-0"
@@ -282,7 +282,7 @@ function RepWeekSection({
             value={entryDate}
             onChange={(e) => e.target.value && e.target.value <= dateKey(new Date()) && setEntryDate(e.target.value)}
           />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-[11rem] flex-1">
             <QuickVisitInput visitDate={entryDate} salesRepId={rep.id} customers={customers} />
           </div>
         </div>
@@ -292,9 +292,13 @@ function RepWeekSection({
           const dayVisits = visitsByDay.get(key) ?? []
           const isToday = key === dateKey(new Date())
           return (
-            <div key={key} className="rounded-lg border p-3">
+            // Günler birbirine karışmasın: gün başlığı şeffaf kırmızı şerit (kullanıcı isteği, 2026-11-13)
+            <div key={key} className="overflow-hidden rounded-lg border p-3">
               <p
-                className={cn('text-sm font-medium capitalize', isToday && 'text-primary')}
+                className={cn(
+                  '-mx-3 -mt-3 mb-2 bg-red-500/10 px-3 py-1.5 text-sm font-semibold capitalize text-red-700 dark:bg-red-500/15 dark:text-red-300',
+                  isToday && 'underline underline-offset-4',
+                )}
                 title={format(day, 'EEEE, d MMMM', { locale: trLocale }) + (isToday ? ' (bugün)' : '')}
               >
                 {format(day, 'EEEE d MMMM', { locale: trLocale })}
@@ -311,7 +315,7 @@ function RepWeekSection({
                           </span>
                           {(visit.phone || cariPhone.get(visit.customer_id ?? '')) && (
                             <span className="flex items-center gap-1.5 text-muted-foreground" title={visit.phone ? undefined : "Cari Kart'taki numara"}>
-                              <Phone className="size-3.5" /> {visit.phone || formatTrPhoneForDisplay(cariPhone.get(visit.customer_id ?? '') ?? '')}
+                              <Phone className="size-3.5" /> {formatTrPhoneForDisplay((visit.phone || cariPhone.get(visit.customer_id ?? '') || '').replace(/^0(?=\d{10}$)/, '').replace(/^0(?=[\d\s]{12,}$)/, ''))}
                             </span>
                           )}
                           {visit.email && (
