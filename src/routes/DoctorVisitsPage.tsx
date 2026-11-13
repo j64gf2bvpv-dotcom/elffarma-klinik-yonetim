@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DoctorVisitDialog } from '@/features/doctorVisits/DoctorVisitDialog'
+import { VisitImportDialog } from '@/features/doctorVisits/VisitImportDialog'
 import { useCreateVisit, useDeleteVisit, useVisitsInRange } from '@/features/doctorVisits/hooks'
 import { useCustomers } from '@/features/customers/hooks'
 import { Input } from '@/components/ui/input'
@@ -381,6 +382,7 @@ export function DoctorVisitsPage() {
                 { header: 'Sosyal Medya', value: (v) => v.social_media ?? '' },
               ]}
             />
+            <VisitImportDialog reps={activeReps} days={days} visits={visits} customers={customers} />
             <SalesRepDialog />
           </div>
         }
