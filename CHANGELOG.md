@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.382] - 2026-11-13
+- Temsilci raporuna eklenen doktorlar Cari Kart'la eşleştiriliyor (isim, yoksa telefon+soyadı); kartta yoksa ad/telefonla Cari Kart'a ekleniyor, boş telefon dolduruluyor. Yeni kartta ekleyen temsilci (sales_rep_id + not) tutuluyor, Cari Kart listesinde "Ekleyen: …" görünüyor. Mevcut 13 bağlantısız ziyaret eşleştirildi (10 yeni kart).
+
 ## [2.17.381] - 2026-11-13
 - Temsilci raporu: "WhatsApp Sohbetinden İçe Aktar" (.txt/.zip dışa aktarım) — mesajlar tarih tarih okunuyor, sadece temsilcinin doktor bilgileri alınıyor, sohbet/medya satırları atılıyor; daha önce eklenen doktorlar tekrar eklenmiyor. Günü gelmemiş tarihlere gidilemiyor ve kayıt eklenemiyor.
 

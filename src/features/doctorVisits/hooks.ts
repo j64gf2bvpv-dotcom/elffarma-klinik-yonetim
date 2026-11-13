@@ -42,6 +42,7 @@ export function useCreateVisit() {
       ])
       queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
       queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
       toast.success('Doktor eklendi')
     },
     onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
@@ -58,6 +59,7 @@ export function useUpdateVisit() {
       )
       queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
       queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
       toast.success('Doktor bilgileri güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
@@ -74,6 +76,7 @@ export function useDeleteVisit() {
       )
       queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
       queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
       toast.success('Doktor silindi')
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),

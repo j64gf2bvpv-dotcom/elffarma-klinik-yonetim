@@ -35,6 +35,7 @@ import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { exportCustomersVcf } from '@/features/customers/exportVcf'
 import { ImportMenu } from '@/components/ImportMenu'
 import { WordImportDialog } from '@/features/customers/WordImportDialog'
+import { useSalesReps } from '@/features/salesReps/hooks'
 import { VcfImportDialog } from '@/features/customers/VcfImportDialog'
 import { LocationFillDialog } from '@/features/customers/LocationFillDialog'
 import { NameCleanupDialog } from '@/features/customers/NameCleanupDialog'
@@ -233,6 +234,9 @@ export function CustomersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers, onlyDuplicates, duplicateKeys])
   const [wordImportOpen, setWordImportOpen] = React.useState(false)
+  // Haftalık rapordan Cari Kart'a eklenen doktorlarda ekleyen temsilci gösterilir
+  const { data: salesReps = [] } = useSalesReps()
+  const repNameById = React.useMemo(() => new Map(salesReps.map((r) => [r.id, r.name])), [salesReps])
 
   async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
     const summary = await importCustomerRows(rows, everyCustomer)
@@ -439,6 +443,11 @@ export function CustomersPage() {
                       {dup.name && (
                         <Badge variant="destructive" className="shrink-0" title="Cari Kart'ta aynı isimde başka kayıt var">
                           Yinelenen isim
+                        </Badge>
+                      )}
+                      {customer.sales_rep_id && customer.tags.includes('ziyaret') && repNameById.get(customer.sales_rep_id) && (
+                        <Badge variant="outline" className="shrink-0 font-normal" title={customer.notes ?? 'Haftalık rapordan eklendi'}>
+                          Ekleyen: {repNameById.get(customer.sales_rep_id)}
                         </Badge>
                       )}
                     </div>

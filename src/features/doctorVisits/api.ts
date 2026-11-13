@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete } from '@/lib/offlineMutation'
 import type { DoctorVisit } from '@/types/database'
+import { ensureVisitCustomer } from './linkCustomer'
 
 export interface DoctorVisitInput {
   visit_date: string
@@ -56,12 +57,26 @@ export async function fetchVisitDates(): Promise<string[]> {
   return (data as { visit_date: string }[]).map((r) => r.visit_date)
 }
 
+/** Cari Kart'a bağlı değilse doktoru Cari Kart'ta bulur ya da ekler (bkz. linkCustomer.ts); hata ziyaret kaydını engellemez */
+async function withCustomer(input: DoctorVisitInput): Promise<DoctorVisitInput> {
+  if (input.customer_id || !input.doctor_name.trim()) return input
+  try {
+    const customerId = await ensureVisitCustomer(input.doctor_name, input.phone, input.sales_rep_id, input.visit_date)
+    return customerId ? { ...input, customer_id: customerId } : input
+  } catch (err) {
+    console.warn('[ziyaret] Cari Kart eşleştirilemedi', err)
+    return input
+  }
+}
+
 export async function createVisit(input: DoctorVisitInput): Promise<DoctorVisit> {
-  return offlineInsert<DoctorVisit>('doctor_visits', { ...input }, `Doktor ziyareti: ${input.doctor_name}`)
+  const body = await withCustomer(input)
+  return offlineInsert<DoctorVisit>('doctor_visits', { ...body }, `Doktor ziyareti: ${input.doctor_name}`)
 }
 
 export async function updateVisit(id: string, input: DoctorVisitInput): Promise<DoctorVisit> {
-  return offlineUpdate<DoctorVisit>('doctor_visits', id, { ...input }, `Doktor ziyareti güncelleme: ${input.doctor_name}`)
+  const body = await withCustomer(input)
+  return offlineUpdate<DoctorVisit>('doctor_visits', id, { ...body }, `Doktor ziyareti güncelleme: ${input.doctor_name}`)
 }
 
 export async function deleteVisit(id: string): Promise<void> {
