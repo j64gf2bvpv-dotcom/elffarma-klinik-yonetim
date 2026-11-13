@@ -95,6 +95,7 @@ export async function importCustomerRows(
           return Number.isFinite(n) ? n : null
         })(),
         address: readCell(row, 'Adres') || null,
+        notes: readCell(row, 'Açıklama', 'Notlar', 'Not') || null,
         is_invoiced: /faturalı|evet/i.test(isInvoicedText),
         tags: readCell(row, 'Etiketler')
           ? readCell(row, 'Etiketler').split(',').map((t) => t.trim()).filter(Boolean)

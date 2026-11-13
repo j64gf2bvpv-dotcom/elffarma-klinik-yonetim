@@ -17,6 +17,8 @@ interface ImportMenuProps {
   templateHeaders: string[]
   templateSampleRows: Record<string, string | number>[]
   label?: string
+  /** Menüye eklenecek ek seçenekler (ör. Cari Kart'ın "Word Dosyası Seç...") */
+  children?: React.ReactNode
 }
 
 export function ImportMenu({
@@ -25,6 +27,7 @@ export function ImportMenu({
   templateHeaders,
   templateSampleRows,
   label = 'İçe Aktar',
+  children,
 }: ImportMenuProps) {
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [importing, setImporting] = React.useState(false)
@@ -86,6 +89,7 @@ export function ImportMenu({
           <DropdownMenuItem onSelect={() => inputRef.current?.click()}>
             <Upload /> Excel Dosyası Seç...
           </DropdownMenuItem>
+          {children}
         </DropdownMenuContent>
       </DropdownMenu>
     </>

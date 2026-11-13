@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.375] - 2026-11-13
+- Cari Kart > İçe Aktar: "Word Dosyası Seç..." eklendi. Word'deki (tablo ya da satır satır liste) doktor adı, telefon ve açıklama tek tek okunup önizlemede düzenlenebiliyor, onaylanınca Cari Kart'a ekleniyor (kayıtlı numaralar atlanıyor).
+
 ## [2.17.374] - 2026-11-13
 - Haftalık Satış Temsilcisi Raporu: her doktor satırında düzenle ve sil düğmesi var. Temsilci silme artık ziyaretleriyle birlikte çalışıyor; satış/tahsilat/kongre kaydı olan temsilci için Türkçe açıklama veriliyor.
 

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Search, Phone, Tag, ReceiptText, MapPin, Building2, User, CalendarClock, FileSpreadsheet, Trash2, Loader2, Star, Pencil, Contact } from 'lucide-react'
+import { Search, Phone, Tag, ReceiptText, MapPin, Building2, User, CalendarClock, FileSpreadsheet, Trash2, Loader2, Star, Pencil, Contact, FileText } from 'lucide-react'
 import { getPaymentDueStatus } from '@/lib/paymentDue'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -34,6 +34,7 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { exportCustomersVcf } from '@/features/customers/exportVcf'
 import { ImportMenu } from '@/components/ImportMenu'
+import { WordImportDialog } from '@/features/customers/WordImportDialog'
 import { VcfImportDialog } from '@/features/customers/VcfImportDialog'
 import { LocationFillDialog } from '@/features/customers/LocationFillDialog'
 import { NameCleanupDialog } from '@/features/customers/NameCleanupDialog'
@@ -231,6 +232,8 @@ export function CustomersPage() {
       .sort((a, b) => (phoneKey(a.phone) ?? '').localeCompare(phoneKey(b.phone) ?? '') || nameKey(a.full_name).localeCompare(nameKey(b.full_name), 'tr'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers, onlyDuplicates, duplicateKeys])
+  const [wordImportOpen, setWordImportOpen] = React.useState(false)
+
   async function handleImport(rows: Record<string, unknown>[]): Promise<ImportSummary> {
     const summary = await importCustomerRows(rows, everyCustomer)
     if (summary.added > 0) await queryClient.invalidateQueries({ queryKey: ['customers'] })
@@ -288,7 +291,12 @@ export function CustomersPage() {
               templateFilename="cari-kart-sablon"
               templateHeaders={CUSTOMER_IMPORT_HEADERS}
               templateSampleRows={CUSTOMER_IMPORT_SAMPLE_ROWS}
-            />
+            >
+              <DropdownMenuItem onSelect={() => setWordImportOpen(true)}>
+                <FileText className="text-primary" /> Word Dosyası Seç...
+              </DropdownMenuItem>
+            </ImportMenu>
+            <WordImportDialog open={wordImportOpen} onOpenChange={setWordImportOpen} customers={everyCustomer} onImport={handleImport} />
             <VcfImportDialog />
             <BulkWhatsAppDialog customers={shownCustomers} filterLabel={bulkFilterLabel} />
             <LocationFillDialog />
