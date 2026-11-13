@@ -404,18 +404,18 @@ export function DoctorVisitsPage() {
             </Button>
             <Input type="date" className="w-40" title="Tarih seçin — o haftanın raporu açılır" value={dateKey(weekStart)} onChange={(e) => goToDate(e.target.value)} />
             <Select value={dateKey(weekStart)} onValueChange={goToDate}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-56 gap-2 [&>span]:min-w-0 [&>span]:truncate" title="Kayıtlı Raporlar">
                 <SelectValue placeholder="Kayıtlı Raporlar" />
               </SelectTrigger>
               <SelectContent>
                 {!reportWeeks.some(([k]) => k === dateKey(weekStart)) && (
                   <SelectItem value={dateKey(weekStart)}>
-                    {format(weekStart, 'd MMM', { locale: trLocale })} haftası (boş)
+                    {format(weekStart, 'd MMM yyyy', { locale: trLocale })} · boş
                   </SelectItem>
                 )}
                 {reportWeeks.map(([k, n]) => (
                   <SelectItem key={k} value={k}>
-                    {format(new Date(`${k}T00:00:00`), 'd MMM yyyy', { locale: trLocale })} haftası · {n} doktor
+                    {format(new Date(`${k}T00:00:00`), 'd MMM yyyy', { locale: trLocale })} · {n} doktor
                   </SelectItem>
                 ))}
               </SelectContent>
