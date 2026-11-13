@@ -99,10 +99,15 @@ function parseLocationInput(text: string): DetectedLocation | null | 'invalid' {
   return detected
 }
 
+/** Doktor olmayan rehber numaraları bu etiketle Cari Kart listesinden ayrılır (kullanıcı isteği, 2026-11-13:
+ *  "cari kartta doktor olanlar kalsın, diğer numaraları ayrı bir bölüme taşı"). Silinmez, tek tıkla geri alınır. */
+const OTHER_TAG = 'diğer numara'
+
 export function CustomersPage() {
   const [search, setSearch] = React.useState('')
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [invoiceFilter, setInvoiceFilter] = React.useState<InvoiceFilter>('all')
+  const [showOthers, setShowOthers] = React.useState(false)
   const [provinceFilter, setProvinceFilter] = React.useState(ALL_PROVINCES)
   const [tagFilter, setTagFilter] = React.useState(ALL_TAGS)
   const [sortBy, setSortBy] = React.useState<SortOption>('name_asc')
@@ -113,11 +118,12 @@ export function CustomersPage() {
   )
   const { data: regions = [] } = useRegions()
   const availableTags = React.useMemo(
-    () => Array.from(new Set(allCustomers.flatMap((c) => c.tags))).sort((a, b) => a.localeCompare(b, 'tr')),
+    () => Array.from(new Set(allCustomers.flatMap((c) => c.tags).filter((t) => t !== OTHER_TAG))).sort((a, b) => a.localeCompare(b, 'tr')),
     [allCustomers],
   )
   const customers = React.useMemo(() => {
-    let result = tagFilter === ALL_TAGS ? allCustomers : allCustomers.filter((c) => c.tags.includes(tagFilter))
+    let result = allCustomers.filter((c) => c.tags.includes(OTHER_TAG) === showOthers)
+    if (tagFilter !== ALL_TAGS) result = result.filter((c) => c.tags.includes(tagFilter))
 
     result = [...result].sort((a, b) => {
       switch (sortBy) {
@@ -135,7 +141,7 @@ export function CustomersPage() {
       }
     })
     return result
-  }, [allCustomers, tagFilter, sortBy])
+  }, [allCustomers, tagFilter, sortBy, showOthers])
   const deleteMutation = useDeleteCustomer()
   const queryClient = useQueryClient()
   const [customerToDelete, setCustomerToDelete] = React.useState<Customer | null>(null)
@@ -317,11 +323,21 @@ export function CustomersPage() {
         }
       />
 
-      <Tabs value={invoiceFilter} onValueChange={(v) => setInvoiceFilter(v as InvoiceFilter)} className="mb-4">
+      <Tabs
+        value={showOthers ? 'others' : invoiceFilter}
+        onValueChange={(v) => {
+          setShowOthers(v === 'others')
+          setInvoiceFilter(v === 'others' ? 'all' : (v as InvoiceFilter))
+        }}
+        className="mb-4"
+      >
         <TabsList>
           <TabsTrigger value="all">Tümü</TabsTrigger>
           <TabsTrigger value="invoiced">Faturalı</TabsTrigger>
           <TabsTrigger value="not_invoiced">Faturasız</TabsTrigger>
+          <TabsTrigger value="others" title="Doktor olmayan rehber numaraları — Cari Kart listesinde görünmez">
+            Diğer Numaralar ({everyCustomer.filter((c) => c.tags.includes(OTHER_TAG)).length})
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -541,9 +557,9 @@ export function CustomersPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {customer.tags.length > 0 ? (
+                    {customer.tags.some((t) => t !== OTHER_TAG) ? (
                       <div className="flex flex-wrap gap-1">
-                        {customer.tags.map((tag) => (
+                        {customer.tags.filter((tag) => tag !== OTHER_TAG).map((tag) => (
                           <Badge key={tag} variant="secondary">
                             <Tag className="size-3" />
                             {tag}
@@ -556,6 +572,19 @@ export function CustomersPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={showOthers ? 'Doktor — Cari Kart listesine geri al' : 'Doktor değil — Diğer Numaralar bölümüne taşı'}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          saveField(customer.id, {
+                            tags: showOthers ? customer.tags.filter((t) => t !== OTHER_TAG) : [...customer.tags, OTHER_TAG],
+                          })
+                        }}
+                      >
+                        {showOthers ? <><User className="size-3.5" /> Cari'ye Al</> : <><Contact className="size-3.5" /> Diğer'e Taşı</>}
+                      </Button>
                       <Button variant="ghost" size="sm" asChild>
                         <Link to={`/cari-hesap/${customer.id}`}>
                           <FileSpreadsheet className="size-3.5" /> Cari Hesap
@@ -597,8 +626,8 @@ export function CustomersPage() {
           bağımsız tüm cari sayısı; filtre varsa listede kaçının göründüğü de. */}
       {!isLoading && (
         <p className="text-muted-foreground mt-3 text-right text-sm">
-          Cari Kart'ta toplam <span className="text-foreground font-semibold">{everyCustomer.length}</span> kişi
-          {customers.length !== everyCustomer.length && (
+          Cari Kart'ta toplam <span className="text-foreground font-semibold">{everyCustomer.filter((c) => !c.tags.includes(OTHER_TAG)).length}</span> doktor
+          {customers.length !== everyCustomer.filter((c) => c.tags.includes(OTHER_TAG) === showOthers).length && (
             <>
               {' '}
               · listede <span className="text-foreground font-semibold">{customers.length}</span> kişi gösteriliyor
