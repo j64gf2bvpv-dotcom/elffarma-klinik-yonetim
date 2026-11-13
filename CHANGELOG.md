@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.377] - 2026-11-13
+- Temsilci raporu: İçe Aktar her temsilcinin kartına taşındı; o karttan yüklenen Word/Excel doktorları doğrudan o temsilcinin listesine ekleniyor.
+
 ## [2.17.376] - 2026-11-13
 - Haftalık Satış Temsilcisi Raporu'na "İçe Aktar" eklendi: Word ya da Excel'deki doktor adı, telefon ve açıklama tek tek okunuyor; temsilci ve gün seçilip önizlemede düzenlenerek rapora ekleniyor.
 

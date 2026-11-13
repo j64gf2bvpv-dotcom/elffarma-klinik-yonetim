@@ -197,6 +197,7 @@ function RepWeekSection({
         </CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant="outline">{visits.length} doktor</Badge>
+          <VisitImportDialog rep={rep} days={days} visits={visits} customers={customers} />
           <Button variant="ghost" size="icon" title="Temsilciyi sil" onClick={handleDeleteRep}>
             <Trash2 className="size-4 text-destructive" />
           </Button>
@@ -382,7 +383,6 @@ export function DoctorVisitsPage() {
                 { header: 'Sosyal Medya', value: (v) => v.social_media ?? '' },
               ]}
             />
-            <VisitImportDialog reps={activeReps} days={days} visits={visits} customers={customers} />
             <SalesRepDialog />
           </div>
         }

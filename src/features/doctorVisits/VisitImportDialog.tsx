@@ -23,11 +23,10 @@ interface ImportRow {
   doctor_name: string
   phone: string
   notes: string
-  sales_rep_id: string
   visit_date: string
 }
 
-const TEMPLATE_HEADERS = ['Tarih', 'Temsilci', 'Doktor', 'Telefon', 'Açıklama']
+const TEMPLATE_HEADERS = ['Tarih', 'Doktor', 'Telefon', 'Açıklama']
 const fold = (s: string) => s.toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ').trim()
 
 /** Excel satırında başlığı büyük/küçük harf ve boşluk farkını önemsemeden bulur */
@@ -54,24 +53,24 @@ function toDateKey(v: unknown): string | null {
 }
 
 /**
- * Haftalık Satış Temsilcisi Raporu'na içe aktarma (kullanıcı isteği, 2026-11-13). Word (.docx) ya da
- * Excel dosyasındaki doktorlar (ad, telefon, açıklama) önizlemede tek tek gösterilir; her satırın
- * temsilcisi ve günü seçilebilir (Excel'de Tarih/Temsilci sütunu varsa oradan gelir). Onaylanınca
- * ziyaret olarak eklenir; Cari Kart'taki doktorla birebir aynı isim karta bağlanır.
+ * Haftalık Satış Temsilcisi Raporu'na içe aktarma (kullanıcı isteği, 2026-11-13). Her temsilcinin
+ * kartında kendi düğmesi var ("içe aktar kısmı personeller için tek tek olsun"): Word (.docx) ya da
+ * Excel dosyasındaki doktorlar (ad, telefon, açıklama) önizlemede tek tek gösterilir, her satırın
+ * günü seçilebilir (Excel'de Tarih sütunu varsa oradan gelir). Onaylanınca O TEMSİLCİNİN listesine
+ * eklenir; Cari Kart'taki doktorla birebir aynı isim karta bağlanır.
  */
 export function VisitImportDialog({
-  reps,
+  rep,
   days,
   visits,
   customers,
 }: {
-  reps: SalesRep[]
+  rep: SalesRep
   days: Date[]
   visits: DoctorVisit[]
   customers: Customer[]
 }) {
   const [open, setOpen] = React.useState(false)
-  const [repId, setRepId] = React.useState('')
   const [date, setDate] = React.useState('')
   const [fileName, setFileName] = React.useState<string | null>(null)
   const [rows, setRows] = React.useState<ImportRow[]>([])
@@ -84,18 +83,11 @@ export function VisitImportDialog({
   function handleOpenChange(next: boolean) {
     if (next) {
       const today = format(new Date(), 'yyyy-MM-dd')
-      setRepId((r) => (reps.some((x) => x.id === r) ? r : (reps[0]?.id ?? '')))
       setDate(dayKeys.includes(today) ? today : dayKeys[0])
       setFileName(null)
       setRows([])
     }
     setOpen(next)
-  }
-
-  function findRep(name: unknown): string | null {
-    const key = fold(String(name ?? ''))
-    if (!key) return null
-    return reps.find((r) => fold(r.name) === key)?.id ?? reps.find((r) => fold(r.name).startsWith(key) || key.startsWith(fold(r.name)))?.id ?? null
   }
 
   async function pickFile(file: File | undefined) {
@@ -108,7 +100,6 @@ export function VisitImportDialog({
           doctor_name: r.name,
           phone: r.phone,
           notes: r.notes,
-          sales_rep_id: repId,
           visit_date: date,
         }))
       } else if (/\.(xlsx|xls|csv)$/i.test(file.name)) {
@@ -117,7 +108,6 @@ export function VisitImportDialog({
             doctor_name: String(pick(row, 'Doktor', 'Doktor Adı', 'Ad Soyad', 'Adı Soyadı', 'İsim', 'Ad') ?? '').trim(),
             phone: String(pick(row, 'Telefon', 'Tel', 'GSM', 'Cep', 'Cep Telefonu') ?? '').trim(),
             notes: String(pick(row, 'Açıklama', 'Not', 'Notlar', 'Aciklama') ?? '').trim(),
-            sales_rep_id: findRep(pick(row, 'Temsilci', 'Satış Temsilcisi', 'Personel')) ?? repId,
             visit_date: toDateKey(pick(row, 'Tarih', 'Ziyaret Tarihi', 'Gün')) ?? date,
           }))
           .filter((r) => r.doctor_name || r.phone)
@@ -141,8 +131,8 @@ export function VisitImportDialog({
   const applyToAll = (patch: Partial<ImportRow>) => setRows((rs) => rs.map((r) => ({ ...r, ...patch })))
 
   const isDuplicate = (r: ImportRow) =>
-    visits.some((v) => v.sales_rep_id === r.sales_rep_id && v.visit_date === r.visit_date && fold(v.doctor_name) === fold(r.doctor_name))
-  const ready = rows.filter((r) => r.doctor_name.trim() && r.sales_rep_id && r.visit_date && !isDuplicate(r))
+    visits.some((v) => v.sales_rep_id === rep.id && v.visit_date === r.visit_date && fold(v.doctor_name) === fold(r.doctor_name))
+  const ready = rows.filter((r) => r.doctor_name.trim() && r.visit_date && !isDuplicate(r))
 
   async function handleConfirm() {
     setBusy(true)
@@ -155,7 +145,7 @@ export function VisitImportDialog({
         try {
           await createVisit({
             visit_date: r.visit_date,
-            sales_rep_id: r.sales_rep_id,
+            sales_rep_id: rep.id,
             doctor_name: customer?.full_name ?? name,
             customer_id: customer?.id ?? null,
             phone: r.phone.trim() || customer?.phone || null,
@@ -167,7 +157,7 @@ export function VisitImportDialog({
         }
       }
       await queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
-      if (added) toast.success(`${added} doktor rapora eklendi`)
+      if (added) toast.success(`${added} doktor ${rep.name} listesine eklendi`)
       if (errors.length) toast.error(`${errors.length} doktor eklenemedi`, { description: errors.slice(0, 3).join(' • ') })
       if (!errors.length) setOpen(false)
     } finally {
@@ -180,14 +170,14 @@ export function VisitImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <Button variant="outline" onClick={() => handleOpenChange(true)} disabled={!reps.length}>
-        <Upload className="size-4" /> İçe Aktar
+      <Button variant="outline" size="sm" title={`${rep.name} listesine Word/Excel'den doktor aktar`} onClick={() => handleOpenChange(true)}>
+        <Upload className="size-3.5" /> İçe Aktar
       </Button>
       <DialogContent className="flex max-h-[88vh] flex-col overflow-hidden sm:max-w-5xl">
         <DialogHeader>
-          <DialogTitle>Rapora Doktor İçe Aktar</DialogTitle>
+          <DialogTitle>{rep.name} — Doktor İçe Aktar</DialogTitle>
           <DialogDescription>
-            Word ya da Excel dosyasındaki doktorların adı, telefonu ve açıklaması tek tek okunur. Temsilciyi ve günü seçin, kontrol edip kaydedin.
+            Word ya da Excel dosyasındaki doktorların adı, telefonu ve açıklaması tek tek okunur ve {rep.name} listesine eklenir. Günü seçin, kontrol edip kaydedin.
           </DialogDescription>
         </DialogHeader>
         <input
@@ -199,27 +189,6 @@ export function VisitImportDialog({
         />
 
         <div className="flex flex-wrap items-end gap-3">
-          <div className="grid gap-1.5">
-            <Label>Temsilci</Label>
-            <Select
-              value={repId}
-              onValueChange={(v) => {
-                setRepId(v)
-                applyToAll({ sales_rep_id: v })
-              }}
-            >
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Seçin" />
-              </SelectTrigger>
-              <SelectContent>
-                {reps.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
           <div className="grid gap-1.5">
             <Label>Gün</Label>
             <Select
@@ -241,7 +210,7 @@ export function VisitImportDialog({
               </SelectContent>
             </Select>
           </div>
-          <p className="pb-2 text-xs text-muted-foreground">Değiştirince listedeki bütün doktorlara uygulanır; tek tek satırdan da değiştirebilirsiniz.</p>
+          <p className="pb-2 text-xs text-muted-foreground">Değiştirince listedeki bütün doktorlara uygulanır; her doktorun gününü satırından da değiştirebilirsiniz.</p>
         </div>
 
         {!rows.length ? (
@@ -259,7 +228,7 @@ export function VisitImportDialog({
             >
               {busy ? <Loader2 className="size-8 animate-spin" /> : <FileText className="size-8" />}
               Word ya da Excel dosyasını seçmek için tıklayın veya buraya sürükleyin
-              <span className="text-xs">Word: tablo ya da "Dr. Ad Soyad - 0532 123 45 67 - açıklama" satırları · Excel: Tarih, Temsilci, Doktor, Telefon, Açıklama sütunları</span>
+              <span className="text-xs">Word: tablo ya da "Dr. Ad Soyad - 0532 123 45 67 - açıklama" satırları · Excel: Tarih, Doktor, Telefon, Açıklama sütunları</span>
             </button>
             <Button
               variant="link"
@@ -267,7 +236,7 @@ export function VisitImportDialog({
               className="justify-self-start"
               onClick={() =>
                 downloadExcelTemplate('temsilci-raporu-sablon', TEMPLATE_HEADERS, [
-                  { Tarih: format(new Date(), 'dd.MM.yyyy'), Temsilci: reps[0]?.name ?? '', Doktor: 'Dr. Ayşe Yılmaz', Telefon: '0532 123 45 67', Açıklama: 'Numune bırakıldı' },
+                  { Tarih: format(new Date(), 'dd.MM.yyyy'), Doktor: 'Dr. Ayşe Yılmaz', Telefon: '0532 123 45 67', Açıklama: 'Numune bırakıldı' },
                 ])
               }
             >
@@ -292,7 +261,6 @@ export function VisitImportDialog({
                     <TableHead>Doktor Adı</TableHead>
                     <TableHead className="w-40">Telefon</TableHead>
                     <TableHead>Açıklama</TableHead>
-                    <TableHead className="w-36">Temsilci</TableHead>
                     <TableHead className="w-36">Gün</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
@@ -316,20 +284,6 @@ export function VisitImportDialog({
                         </TableCell>
                         <TableCell>
                           <Input value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} />
-                        </TableCell>
-                        <TableCell>
-                          <Select value={r.sales_rep_id} onValueChange={(v) => update(r.key, { sales_rep_id: v })}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seçin" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {reps.map((x) => (
-                                <SelectItem key={x.id} value={x.id}>
-                                  {x.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
                         </TableCell>
                         <TableCell>
                           <Select value={r.visit_date} onValueChange={(v) => update(r.key, { visit_date: v })}>
