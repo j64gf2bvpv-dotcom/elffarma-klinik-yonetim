@@ -48,6 +48,31 @@ export async function setSalesRepActive(id: string, is_active: boolean): Promise
   await offlineUpdate('sales_reps', id, { is_active }, 'Satış temsilcisi durumu güncelleme')
 }
 
+/** Silmeyi engelleyen bağlı kayıtlar (satış/tahsilat/kongre dağıtımı) — prim hesabı bunlara bağlı, silinmez */
+const BLOCKING_REFS: { table: string; label: string }[] = [
+  { table: 'sales', label: 'satış' },
+  { table: 'payments', label: 'tahsilat' },
+  { table: 'congress_participant_products', label: 'kongre ürün dağıtımı' },
+]
+
+/**
+ * Temsilciyi siler: önce haftalık rapordaki doktor ziyaretleri (onay penceresinin söylediği gibi),
+ * sonra temsilci. Satış/tahsilat/kongre kaydı varsa hiçbir şey silinmeden anlaşılır bir hata verir
+ * (eskiden doctor_visits yabancı anahtarı yüzünden İngilizce veritabanı hatası çıkıyordu).
+ */
 export async function deleteSalesRep(id: string): Promise<void> {
+  const linked: string[] = []
+  for (const ref of BLOCKING_REFS) {
+    const { count, error } = await supabase.from(ref.table).select('id', { count: 'exact', head: true }).eq('sales_rep_id', id)
+    if (error) throw error
+    if (count) linked.push(`${count} ${ref.label}`)
+  }
+  if (linked.length) {
+    throw new Error(
+      `Bu temsilciye bağlı ${linked.join(', ')} kaydı var; silinirse bu kayıtların temsilci bilgisi kaybolur. Temsilciyi silmek yerine pasif yapabilirsiniz.`,
+    )
+  }
+  const { error } = await supabase.from('doctor_visits').delete().eq('sales_rep_id', id)
+  if (error) throw error
   return offlineDelete('sales_reps', id, 'Satış temsilcisi silme')
 }

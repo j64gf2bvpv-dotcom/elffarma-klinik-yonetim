@@ -32,7 +32,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DoctorVisitDialog } from '@/features/doctorVisits/DoctorVisitDialog'
-import { useCreateVisit, useVisitsInRange } from '@/features/doctorVisits/hooks'
+import { useCreateVisit, useDeleteVisit, useVisitsInRange } from '@/features/doctorVisits/hooks'
 import { useCustomers } from '@/features/customers/hooks'
 import { Input } from '@/components/ui/input'
 import { SalesRepDialog } from '@/features/salesReps/SalesRepDialog'
@@ -151,6 +151,7 @@ function RepWeekSection({
   customers: Customer[]
 }) {
   const deleteRepMutation = useDeleteSalesRep()
+  const deleteVisitMutation = useDeleteVisit()
   const { confirm, dialog } = useConfirmDialog()
 
   const visitsByDay = React.useMemo(() => {
@@ -166,6 +167,11 @@ function RepWeekSection({
   async function handleDeleteRep() {
     if (!(await confirm(`${rep.name} silinsin mi? Bu temsilciye ait tüm doktor ziyaret kayıtları da silinecek.`))) return
     deleteRepMutation.mutate(rep.id)
+  }
+
+  async function handleDeleteVisit(visit: DoctorVisit) {
+    if (!(await confirm(`${visit.doctor_name} bu günün listesinden silinsin mi?`))) return
+    deleteVisitMutation.mutate(visit.id)
   }
 
   return (
@@ -190,7 +196,7 @@ function RepWeekSection({
         </CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant="outline">{visits.length} doktor</Badge>
-          <Button variant="ghost" size="icon" onClick={handleDeleteRep}>
+          <Button variant="ghost" size="icon" title="Temsilciyi sil" onClick={handleDeleteRep}>
             <Trash2 className="size-4 text-destructive" />
           </Button>
         </div>
@@ -267,7 +273,12 @@ function RepWeekSection({
                             </span>
                           )}
                         </div>
-                        <DoctorVisitDialog visitDate={key} salesRepId={rep.id} visit={visit} />
+                        <div className="flex items-center">
+                          <DoctorVisitDialog visitDate={key} salesRepId={rep.id} visit={visit} />
+                          <Button variant="ghost" size="icon" title="Doktoru sil" onClick={() => void handleDeleteVisit(visit)}>
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
                       {visit.notes && (
                         <p className="mt-1.5 flex items-start gap-1.5 text-xs text-muted-foreground">
