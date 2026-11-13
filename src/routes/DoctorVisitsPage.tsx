@@ -264,9 +264,9 @@ function RepWeekSection({
             className="w-[9.5rem] shrink-0"
             title="Gün seçin"
             min={dateKey(days[0])}
-            max={dateKey(days[days.length - 1])}
+            max={[dateKey(days[days.length - 1]), dateKey(new Date())].sort()[0]}
             value={entryDate}
-            onChange={(e) => e.target.value && setEntryDate(e.target.value)}
+            onChange={(e) => e.target.value && e.target.value <= dateKey(new Date()) && setEntryDate(e.target.value)}
           />
           <div className="min-w-0 flex-1">
             <QuickVisitInput visitDate={entryDate} salesRepId={rep.id} customers={customers} />
@@ -357,7 +357,9 @@ export function DoctorVisitsPage() {
     }
     return [...counts.entries()].sort((a, b) => b[0].localeCompare(a[0]))
   }, [visitDates])
-  const goToDate = (value: string) => value && setWeekStart(startOfWeek(new Date(`${value}T00:00:00`), { weekStartsOn: 1 }))
+  // Günü gelmemiş tarihlere gidilmez (kullanıcı isteği, 2026-11-13)
+  const goToDate = (value: string) => value && value <= dateKey(new Date()) && setWeekStart(startOfWeek(new Date(`${value}T00:00:00`), { weekStartsOn: 1 }))
+  const isCurrentWeek = dateKey(weekStart) >= thisWeekKey
 
   const monthStart = React.useMemo(() => startOfMonth(new Date()), [])
   const { data: weekPayments = [] } = usePayments({
@@ -414,10 +416,10 @@ export function DoctorVisitsPage() {
             <span className="text-sm font-medium whitespace-nowrap">
               {format(weekStart, 'd MMM', { locale: trLocale })} – {format(weekEnd, 'd MMM yyyy', { locale: trLocale })}
             </span>
-            <Button variant="outline" size="icon" title="Sonraki hafta" onClick={() => setWeekStart((d) => addWeeks(d, 1))}>
+            <Button variant="outline" size="icon" title="Sonraki hafta" disabled={isCurrentWeek} onClick={() => setWeekStart((d) => addWeeks(d, 1))}>
               <ChevronRight className="size-4" />
             </Button>
-            <Input type="date" className="w-40" title="Tarih seçin — o haftanın raporu açılır" value={dateKey(weekStart)} onChange={(e) => goToDate(e.target.value)} />
+            <Input type="date" className="w-40" title="Tarih seçin — o haftanın raporu açılır" max={dateKey(new Date())} value={dateKey(weekStart)} onChange={(e) => goToDate(e.target.value)} />
             <Select value={dateKey(weekStart)} onValueChange={goToDate}>
               <SelectTrigger className="w-56 gap-2 [&>span]:min-w-0 [&>span]:truncate" title="Kayıtlı Raporlar">
                 <SelectValue placeholder="Kayıtlı Raporlar" />
@@ -428,7 +430,7 @@ export function DoctorVisitsPage() {
                     {format(weekStart, 'd MMM yyyy', { locale: trLocale })} · boş
                   </SelectItem>
                 )}
-                {reportWeeks.map(([k, n]) => (
+                {reportWeeks.filter(([k]) => k <= thisWeekKey).map(([k, n]) => (
                   <SelectItem key={k} value={k}>
                     {format(new Date(`${k}T00:00:00`), 'd MMM yyyy', { locale: trLocale })} · {n} doktor
                   </SelectItem>

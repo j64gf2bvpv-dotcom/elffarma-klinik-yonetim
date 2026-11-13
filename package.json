@@ -1,7 +1,7 @@
 {
   "name": "klinik-yonetim",
   "private": true,
-  "version": "2.17.380",
+  "version": "2.17.381",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "description": "Medikal estetik klinikleri için müşteri, stok, tahsilat ve randevu yönetimi",
@@ -55,6 +55,7 @@
     "html2canvas-pro": "^2.4.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.26.0",
     "mammoth": "^1.12.0",
     "pdfjs-dist": "^6.2.108",

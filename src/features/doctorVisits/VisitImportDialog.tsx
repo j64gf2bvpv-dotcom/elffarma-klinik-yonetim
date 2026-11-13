@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { useQueryClient } from '@tanstack/react-query'
-import { FileSpreadsheet, FileText, Loader2, Trash2, Upload } from 'lucide-react'
+import { FileSpreadsheet, FileText, Loader2, MessageCircle, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -16,8 +16,9 @@ import { getErrorMessage } from '@/lib/utils'
 import { parseDoctorWord } from '@/features/customers/parseDoctorWord'
 import { IMAGE_ACCEPT, isImageFile } from '@/lib/ensureReadableImage'
 import { readVisitImage } from './readVisitImage'
+import { parseWhatsAppChat, readWhatsAppChatFile } from './whatsappChat'
 import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
-import { createVisit } from './api'
+import { createVisit, fetchVisitsInRange } from './api'
 
 interface ImportRow {
   key: number
@@ -77,6 +78,10 @@ export function VisitImportDialog({
   const [rows, setRows] = React.useState<ImportRow[]>([])
   const [busy, setBusy] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const chatRef = React.useRef<HTMLInputElement>(null)
+  // İçe aktarılan tarihlerdeki mevcut kayıtlar (başka haftalar dahil) — mükerrer eklenmesin
+  const [existing, setExisting] = React.useState<DoctorVisit[]>([])
+  const today = format(new Date(), 'yyyy-MM-dd')
   const queryClient = useQueryClient()
 
   const dayKeys = days.map((d) => format(d, 'yyyy-MM-dd'))
@@ -87,6 +92,7 @@ export function VisitImportDialog({
       setDate(dayKeys.includes(today) ? today : dayKeys[0])
       setFileName(null)
       setRows([])
+      setExisting([])
     }
     setOpen(next)
   }
@@ -96,7 +102,15 @@ export function VisitImportDialog({
     setBusy(true)
     try {
       let parsed: Omit<ImportRow, 'key'>[]
-      if (/\.docx$/i.test(file.name)) {
+      if (/\.(txt|zip)$/i.test(file.name)) {
+        // WhatsApp "Sohbeti Dışa Aktar": her mesaj kendi tarihine, sadece doktor kayıtları
+        parsed = parseWhatsAppChat(await readWhatsAppChatFile(file), rep.name).map((r) => ({
+          doctor_name: r.name,
+          phone: r.phone,
+          notes: r.notes,
+          visit_date: r.date ?? date,
+        }))
+      } else if (/\.docx$/i.test(file.name)) {
         parsed = (await parseDoctorWord(file)).map((r) => ({
           doctor_name: r.name,
           phone: r.phone,
@@ -121,12 +135,18 @@ export function VisitImportDialog({
           visit_date: r.date ?? date,
         }))
       } else {
-        throw new Error('Word (.docx), Excel (.xlsx) ya da resim dosyası seçin.')
+        throw new Error('Word (.docx), Excel (.xlsx), resim ya da WhatsApp sohbeti (.txt/.zip) seçin.')
       }
+      // Günü gelmemiş tarihler alınmaz (kullanıcı isteği, 2026-11-13)
+      const future = parsed.filter((r) => r.visit_date > today).length
+      parsed = parsed.filter((r) => r.visit_date <= today)
+      if (future) toast.info(`İleri tarihli ${future} kayıt alınmadı`)
       if (!parsed.length) {
         toast.error('Dosyada doktor bulunamadı')
         return
       }
+      const dates = parsed.map((r) => r.visit_date).sort()
+      setExisting(await fetchVisitsInRange(dates[0], dates[dates.length - 1], rep.id).catch(() => []))
       setFileName(file.name)
       setRows(parsed.map((r, i) => ({ ...r, key: i })))
     } catch (err) {
@@ -140,8 +160,8 @@ export function VisitImportDialog({
   const applyToAll = (patch: Partial<ImportRow>) => setRows((rs) => rs.map((r) => ({ ...r, ...patch })))
 
   const isDuplicate = (r: ImportRow) =>
-    visits.some((v) => v.sales_rep_id === rep.id && v.visit_date === r.visit_date && fold(v.doctor_name) === fold(r.doctor_name))
-  const ready = rows.filter((r) => r.doctor_name.trim() && r.visit_date && !isDuplicate(r))
+    [...visits, ...existing].some((v) => v.sales_rep_id === rep.id && v.visit_date === r.visit_date && fold(v.doctor_name) === fold(r.doctor_name))
+  const ready = rows.filter((r) => r.doctor_name.trim() && r.visit_date && r.visit_date <= today && !isDuplicate(r))
 
   async function handleConfirm() {
     setBusy(true)
@@ -189,13 +209,20 @@ export function VisitImportDialog({
         <DialogHeader>
           <DialogTitle>{rep.name} — Doktor İçe Aktar</DialogTitle>
           <DialogDescription>
-            Word, Excel ya da resimdeki doktorların adı, telefonu ve açıklaması tek tek okunur ve {rep.name} listesine eklenir. Resimde gün yazıyorsa gün de oradan alınır; kontrol edip kaydedin.
+            Word, Excel, resim ya da WhatsApp sohbetindeki doktorların adı, telefonu ve açıklaması tek tek okunur ve {rep.name} listesine eklenir. Resimde gün yazıyorsa gün de oradan alınır; kontrol edip kaydedin.
           </DialogDescription>
         </DialogHeader>
         <input
           ref={inputRef}
           type="file"
           accept={`.docx,.xlsx,.xls,.csv,${IMAGE_ACCEPT}`}
+          className="hidden"
+          onChange={(e) => void pickFile(e.target.files?.[0]).finally(() => (e.target.value = ''))}
+        />
+        <input
+          ref={chatRef}
+          type="file"
+          accept=".txt,.zip"
           className="hidden"
           onChange={(e) => void pickFile(e.target.files?.[0]).finally(() => (e.target.value = ''))}
         />
@@ -206,15 +233,16 @@ export function VisitImportDialog({
             <Input
               type="date"
               className="w-44"
+              max={today}
               value={date}
               onChange={(e) => {
-                if (!e.target.value) return
+                if (!e.target.value || e.target.value > today) return
                 setDate(e.target.value)
                 applyToAll({ visit_date: e.target.value })
               }}
             />
           </div>
-          <p className="pb-2 text-xs text-muted-foreground">Eski ya da ileri bir tarih de seçebilirsiniz. Değiştirince bütün doktorlara uygulanır; her doktorun tarihini satırından da değiştirebilirsiniz.</p>
+          <p className="pb-2 text-xs text-muted-foreground">Eski bir tarih de seçebilirsiniz (günü gelmemiş tarih seçilemez). Değiştirince bütün doktorlara uygulanır; her doktorun tarihini satırından da değiştirebilirsiniz.</p>
         </div>
 
         {!rows.length ? (
@@ -234,6 +262,12 @@ export function VisitImportDialog({
               Word, Excel ya da resim (fotoğraf, ekran görüntüsü) seçmek için tıklayın veya buraya sürükleyin
               <span className="text-xs">Word/resim: tablo ya da "Dr. Ad Soyad - 0532 123 45 67 - açıklama" satırları, gün başlıkları ("Pazartesi", "13.11.2026") · Excel: Tarih, Doktor, Telefon, Açıklama sütunları</span>
             </button>
+            <Button variant="outline" disabled={busy} onClick={() => chatRef.current?.click()} className="justify-self-start">
+              <MessageCircle className="size-4 text-success" /> WhatsApp Sohbetinden İçe Aktar (.txt / .zip)
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              WhatsApp'ta sohbeti açın → kişi/grup adına dokunun → "Sohbeti Dışa Aktar" → "Medya Olmadan". Gelen dosyayı buraya seçin; mesajlar tarih tarih okunur, sadece doktor bilgileri alınır.
+            </p>
             <Button
               variant="link"
               size="sm"
@@ -290,7 +324,7 @@ export function VisitImportDialog({
                           <Textarea rows={3} className="min-h-0 text-sm" value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} />
                         </TableCell>
                         <TableCell>
-                          <Input type="date" value={r.visit_date} onChange={(e) => e.target.value && update(r.key, { visit_date: e.target.value })} />
+                          <Input type="date" max={today} value={r.visit_date} onChange={(e) => e.target.value && e.target.value <= today && update(r.key, { visit_date: e.target.value })} />
                         </TableCell>
                         <TableCell>
                           <Button variant="ghost" size="icon" title="Listeden çıkar" onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}>

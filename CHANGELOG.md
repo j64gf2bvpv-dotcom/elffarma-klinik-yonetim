@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.381] - 2026-11-13
+- Temsilci raporu: "WhatsApp Sohbetinden İçe Aktar" (.txt/.zip dışa aktarım) — mesajlar tarih tarih okunuyor, sadece temsilcinin doktor bilgileri alınıyor, sohbet/medya satırları atılıyor; daha önce eklenen doktorlar tekrar eklenmiyor. Günü gelmemiş tarihlere gidilemiyor ve kayıt eklenemiyor.
+
 ## [2.17.380] - 2026-11-13
 - Temsilci raporu: resimden okuma WhatsApp mesajlarını ("23 Eki Cum" tarihi, madde işaretli doktorlar, paragraf açıklamalar, "Not:" bloğundaki doktor) ayrı ayrı okuyor; gönderen adı, saatler ve doktor olmayan maddeler ayıklanıyor, İ/Ü okuma hataları düzeltiliyor. Gün satırları hazır gösterilmiyor: günü seçip doktor yazılıyor, yalnız girilen günler listeleniyor.
 
