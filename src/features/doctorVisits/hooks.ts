@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import {
   createVisit,
   deleteVisit,
+  fetchRepDoctorTotals,
   fetchVisitDates,
   fetchVisitsByDoctorName,
   fetchVisitsInRange,
@@ -19,6 +20,11 @@ export function useVisitsInRange(from: string, to: string, salesRepId?: string) 
 }
 
 /** Ayrı anahtar: ['doctor_visits'] önekindeki iyimser güncellemeler bu dizi (string[]) üzerinde çalışmasın */
+/** Ayrı anahtar (nesne döner): ['doctor_visits'] önekindeki dizi güncellemeleri buna dokunmasın */
+export function useRepDoctorTotals() {
+  return useQuery({ queryKey: ['doctor_visit_totals'], queryFn: fetchRepDoctorTotals })
+}
+
 export function useVisitDates() {
   return useQuery({ queryKey: ['doctor_visit_dates'], queryFn: fetchVisitDates })
 }
@@ -42,6 +48,7 @@ export function useCreateVisit() {
       ])
       queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
       queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+      queryClient.invalidateQueries({ queryKey: ['doctor_visit_totals'] })
       queryClient.invalidateQueries({ queryKey: ['customers'] })
       toast.success('Doktor eklendi')
     },
@@ -59,6 +66,7 @@ export function useUpdateVisit() {
       )
       queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
       queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+      queryClient.invalidateQueries({ queryKey: ['doctor_visit_totals'] })
       queryClient.invalidateQueries({ queryKey: ['customers'] })
       toast.success('Doktor bilgileri güncellendi')
     },
@@ -76,6 +84,7 @@ export function useDeleteVisit() {
       )
       queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
       queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+      queryClient.invalidateQueries({ queryKey: ['doctor_visit_totals'] })
       queryClient.invalidateQueries({ queryKey: ['customers'] })
       toast.success('Doktor silindi')
     },

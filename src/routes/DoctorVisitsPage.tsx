@@ -6,6 +6,7 @@ import {
   format,
   startOfMonth,
   startOfWeek,
+  subDays,
   subWeeks,
 } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
@@ -22,6 +23,7 @@ import {
   Users,
   Plus,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -33,7 +35,7 @@ import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DoctorVisitDialog } from '@/features/doctorVisits/DoctorVisitDialog'
 import { VisitImportDialog } from '@/features/doctorVisits/VisitImportDialog'
-import { useCreateVisit, useDeleteVisit, useVisitDates, useVisitsInRange } from '@/features/doctorVisits/hooks'
+import { useCreateVisit, useDeleteVisit, useRepDoctorTotals, useVisitDates, useVisitsInRange } from '@/features/doctorVisits/hooks'
 import { useCustomers } from '@/features/customers/hooks'
 import { Input } from '@/components/ui/input'
 import { formatTrPhoneForDisplay } from '@/features/whatsapp/normalizePhone'
@@ -150,12 +152,14 @@ function RepWeekSection({
   visits,
   performance,
   customers,
+  totalDoctors,
 }: {
   rep: SalesRep
   days: Date[]
   visits: DoctorVisit[]
   performance: RepPerformance
   customers: Customer[]
+  totalDoctors: number
 }) {
   const queryClient = useQueryClient()
   const [clearing, setClearing] = React.useState(false)
@@ -195,6 +199,7 @@ function RepWeekSection({
     }
     await queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
     void queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+      void queryClient.invalidateQueries({ queryKey: ['doctor_visit_totals'] })
     setClearing(false)
     if (failed) toast.error(`${failed} doktor silinemedi`)
     else toast.success(`${rep.name} listesindeki bu haftanın doktorları silindi`)
@@ -248,6 +253,11 @@ function RepWeekSection({
               <p className="text-xs text-muted-foreground">Bu Ay Ciro</p>
               <p className="font-semibold">{currency(performance.monthRevenue)}</p>
             </div>
+          </div>
+          <div className="col-span-2 flex items-center gap-2 border-t pt-2">
+            <Users className="size-4 text-primary" />
+            <p className="text-xs text-muted-foreground">Şimdiye kadar görüşülen</p>
+            <p className="ml-auto font-semibold">{totalDoctors} doktor</p>
           </div>
           {performance.monthDoctors.length > 0 && (
             <div className="col-span-2 flex items-start gap-2">
@@ -352,6 +362,7 @@ export function DoctorVisitsPage() {
   const { data: visits = [] } = useVisitsInRange(dateKey(weekStart), dateKey(weekEnd))
   // Eski/ileri tarihli raporlar (kullanıcı isteği, 2026-11-13): kaydı olan haftalar listesi + takvimden hafta seçme
   const { data: visitDates = [] } = useVisitDates()
+  const { data: doctorTotals = {} } = useRepDoctorTotals()
   const thisWeekKey = dateKey(startOfWeek(new Date(), { weekStartsOn: 1 }))
   const reportWeeks = React.useMemo(() => {
     const counts = new Map<string, number>()
@@ -378,6 +389,7 @@ export function DoctorVisitsPage() {
       setClearingAll(false)
       void queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
       void queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+      void queryClient.invalidateQueries({ queryKey: ['doctor_visit_totals'] })
     }
   }
   const goToDate = (value: string) => value && value <= dateKey(new Date()) && setWeekStart(startOfWeek(new Date(`${value}T00:00:00`), { weekStartsOn: 1 }))
@@ -512,12 +524,68 @@ export function DoctorVisitsPage() {
             rep={rep}
             days={days}
             visits={visits.filter((v) => v.sales_rep_id === rep.id)}
+            totalDoctors={doctorTotals[rep.id] ?? 0}
             performance={
               performanceByRep.get(rep.id) ?? { weekRevenue: 0, monthRevenue: 0, monthDoctors: [] }
             }
           />
         ))}
       </div>
+
+      <FrequentVisitWarnings reps={salesReps} />
     </div>
+  )
+}
+
+/** Son 30 günde aynı temsilcinin aynı doktorla bu kadar ya da daha fazla görüşmesi uyarı sayılır */
+const FREQUENT_VISIT_LIMIT = 3
+
+/**
+ * Raporun altında sık görüşme uyarısı (kullanıcı isteği, 2026-11-13: "aynı hocalarla fazla görüşme yapılınca
+ * uyarı versin"). Doktor Cari Kart bağlantısıyla (yoksa adıyla) eşleştirilir; tarihler eskiden yeniye listelenir.
+ */
+function FrequentVisitWarnings({ reps }: { reps: SalesRep[] }) {
+  const to = dateKey(new Date())
+  const from = dateKey(subDays(new Date(), 29))
+  const { data: recent = [] } = useVisitsInRange(from, to)
+  const repName = new Map(reps.map((r) => [r.id, r.name]))
+  const groups = new Map<string, { rep: string; doctor: string; dates: string[] }>()
+  for (const v of recent) {
+    if (!v.sales_rep_id) continue
+    const doctorKey = v.customer_id ?? v.doctor_name.toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ').trim()
+    const key = `${v.sales_rep_id}|${doctorKey}`
+    const g = groups.get(key) ?? { rep: repName.get(v.sales_rep_id) ?? '—', doctor: v.doctor_name, dates: [] }
+    g.dates.push(v.visit_date)
+    groups.set(key, g)
+  }
+  const frequent = [...groups.values()]
+    .filter((g) => g.dates.length >= FREQUENT_VISIT_LIMIT)
+    .sort((a, b) => b.dates.length - a.dates.length || a.rep.localeCompare(b.rep, 'tr'))
+  if (!frequent.length) return null
+  return (
+    <Card className="mt-6 border-amber-500/40 bg-amber-500/5">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="size-4" /> Sık Görüşme Uyarısı
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Son 30 günde aynı doktorla {FREQUENT_VISIT_LIMIT} ya da daha fazla görüşme yapılmış.
+        </p>
+      </CardHeader>
+      <CardContent className="grid gap-2">
+        {frequent.map((g) => (
+          <div key={`${g.rep}-${g.doctor}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border bg-background/60 px-3 py-2 text-sm">
+            <span className="font-medium">{g.doctor}</span>
+            <span className="text-muted-foreground">{g.rep}</span>
+            <Badge variant="outline" className="border-amber-500/60 text-amber-700 dark:text-amber-400">
+              {g.dates.length} görüşme
+            </Badge>
+            <span className="ml-auto text-xs text-muted-foreground">
+              {[...g.dates].sort().map((d) => format(new Date(`${d}T00:00:00`), 'd MMM', { locale: trLocale })).join(' · ')}
+            </span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   )
 }

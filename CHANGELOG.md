@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.387] - 2026-11-13
+- Temsilci raporu okuyucusu: "Dr.Ad" (boşluksuz), küçük harfli soyad, akan yazıda ünvanlı/ünvansız ad+telefon, "Dr.X ziyaret edildi" ve parantezli şehir ayrı kayıt; telefonlar açıklamadan Telefon alanına, emoji ve kapanış selamları atılıyor. Temsilci kartında şimdiye kadar görüşülen doktor sayısı; raporun altında son 30 günde aynı doktorla 3+ görüşme uyarısı. Emrah'ın birleşik 15 kaydı 31 kayda ayrıldı.
+
 ## [2.17.386] - 2026-11-13
 - Temsilci raporu: ziyarette telefon yoksa Cari Kart'taki numara (telefon/cep/WhatsApp; kartta yoksa aynı isimli diğer kart) kayıt sırasında ziyarete yazılıyor; mevcut 5 ziyaret dolduruldu.
 

@@ -187,6 +187,7 @@ export function VisitImportDialog({
       }
       await queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
       void queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+      void queryClient.invalidateQueries({ queryKey: ['doctor_visit_totals'] })
       void queryClient.invalidateQueries({ queryKey: ['customers'] })
       const otherWeek = ready.filter((r) => !dayKeys.includes(r.visit_date)).length
       if (added)

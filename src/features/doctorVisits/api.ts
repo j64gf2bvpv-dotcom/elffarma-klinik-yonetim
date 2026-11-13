@@ -50,6 +50,26 @@ export async function fetchVisitsByDoctorName(doctorName: string): Promise<Docto
   return data as DoctorVisit[]
 }
 
+/**
+ * Temsilci başına şimdiye kadar görüşülen FARKLI doktor sayısı (kullanıcı isteği, 2026-11-13). Aynı doktor
+ * Cari Kart bağlantısıyla (yoksa adıyla) bir kez sayılır.
+ */
+export async function fetchRepDoctorTotals(): Promise<Record<string, number>> {
+  const sets = new Map<string, Set<string>>()
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from('doctor_visits').select('sales_rep_id, customer_id, doctor_name').order('id').range(from, from + 999)
+    if (error) throw error
+    for (const v of data as { sales_rep_id: string | null; customer_id: string | null; doctor_name: string }[]) {
+      if (!v.sales_rep_id) continue
+      const set = sets.get(v.sales_rep_id) ?? new Set<string>()
+      set.add(v.customer_id ?? v.doctor_name.toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ').trim())
+      sets.set(v.sales_rep_id, set)
+    }
+    if (!data || data.length < 1000) break
+  }
+  return Object.fromEntries([...sets].map(([k, v]) => [k, v.size]))
+}
+
 /** Kaydı olan bütün ziyaret tarihleri (geçmiş/ileri haftaların raporlarını seçmek için) */
 export async function fetchVisitDates(): Promise<string[]> {
   const { data, error } = await supabase.from('doctor_visits').select('visit_date').order('visit_date', { ascending: false })
