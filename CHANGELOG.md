@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.378] - 2026-11-13
+- Temsilci raporu: kart çöp kutusu artık temsilciyi değil sadece o haftanın doktorlarını siliyor; düğmeler kart içinde hizalı. İçe Aktar resim de okuyor (gün başlıkları/tarih, doktor, telefon, açıklama). Tarih seçici ve "Kayıtlı Raporlar" listesiyle eski/ileri haftalar açılıp doktor eklenebiliyor.
+
 ## [2.17.377] - 2026-11-13
 - Temsilci raporu: İçe Aktar her temsilcinin kartına taşındı; o karttan yüklenen Word/Excel doktorları doğrudan o temsilcinin listesine ekleniyor.
 

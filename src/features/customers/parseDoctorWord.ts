@@ -26,7 +26,7 @@ function isNameLike(line: string): boolean {
   return words.length >= 2 && words.length <= 5 && words.every((w) => /^[A-ZÇĞİÖŞÜ]/.test(w))
 }
 
-const isHeaderJunk = (r: WordDoctorRow) => !r.phone && !r.notes && /liste|rehber|doktorlar|telefon|isim/.test(r.name.toLocaleLowerCase('tr-TR'))
+const isHeaderJunk = (r: WordDoctorRow) => !r.phone && !r.notes && /liste|rehber|doktorlar|telefon|isim|haftal|ziyaret|rapor|program/.test(r.name.toLocaleLowerCase('tr-TR'))
 
 function appendNote(row: WordDoctorRow, text: string) {
   const t = clean(text)
@@ -140,6 +140,13 @@ function parseLines(lines: string[]): WordDoctorRow[] {
   })
   close()
   return out
+}
+
+/** Düz metin satırlarındaki doktorlar (resimden okunan yazı için de kullanılır) */
+export function parseDoctorLines(lines: string[]): WordDoctorRow[] {
+  return parseLines(lines)
+    .map((r) => ({ name: r.name, phone: r.phone.trim(), notes: r.notes }))
+    .filter((r) => !isHeaderJunk(r))
 }
 
 /** .docx dosyasındaki doktorları (ad, telefon, açıklama) sırayla çıkarır */

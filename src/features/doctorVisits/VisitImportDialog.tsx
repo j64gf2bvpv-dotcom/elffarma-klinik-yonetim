@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { format } from 'date-fns'
-import { tr as trLocale } from 'date-fns/locale/tr'
 import { useQueryClient } from '@tanstack/react-query'
 import { FileSpreadsheet, FileText, Loader2, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
@@ -10,11 +9,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { downloadExcelTemplate, readExcelFile } from '@/lib/importData'
 import { getErrorMessage } from '@/lib/utils'
 import { parseDoctorWord } from '@/features/customers/parseDoctorWord'
+import { IMAGE_ACCEPT, isImageFile } from '@/lib/ensureReadableImage'
+import { readVisitImage } from './readVisitImage'
 import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
 import { createVisit } from './api'
 
@@ -111,8 +111,16 @@ export function VisitImportDialog({
             visit_date: toDateKey(pick(row, 'Tarih', 'Ziyaret Tarihi', 'Gün')) ?? date,
           }))
           .filter((r) => r.doctor_name || r.phone)
+      } else if (isImageFile(file)) {
+        // Resim: yazı tanımayla okunur; gün başlığı/tarih varsa o gün, yoksa seçili gün
+        parsed = (await readVisitImage(file, days)).map((r) => ({
+          doctor_name: r.name,
+          phone: r.phone,
+          notes: r.notes,
+          visit_date: r.date ?? date,
+        }))
       } else {
-        throw new Error('Word (.docx) ya da Excel (.xlsx) dosyası seçin.')
+        throw new Error('Word (.docx), Excel (.xlsx) ya da resim dosyası seçin.')
       }
       if (!parsed.length) {
         toast.error('Dosyada doktor bulunamadı')
@@ -157,7 +165,12 @@ export function VisitImportDialog({
         }
       }
       await queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
-      if (added) toast.success(`${added} doktor ${rep.name} listesine eklendi`)
+      void queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+      const otherWeek = ready.filter((r) => !dayKeys.includes(r.visit_date)).length
+      if (added)
+        toast.success(`${added} doktor ${rep.name} listesine eklendi`, {
+          description: otherWeek ? `${otherWeek} tanesi başka haftada — o haftayı seçince görünür.` : undefined,
+        })
       if (errors.length) toast.error(`${errors.length} doktor eklenemedi`, { description: errors.slice(0, 3).join(' • ') })
       if (!errors.length) setOpen(false)
     } finally {
@@ -165,52 +178,42 @@ export function VisitImportDialog({
     }
   }
 
-  const dateOptions = Array.from(new Set([...dayKeys, ...rows.map((r) => r.visit_date)])).sort()
-  const dateLabel = (k: string) => format(new Date(`${k}T00:00:00`), 'EEE d MMM', { locale: trLocale })
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <Button variant="outline" size="sm" title={`${rep.name} listesine Word/Excel'den doktor aktar`} onClick={() => handleOpenChange(true)}>
-        <Upload className="size-3.5" /> İçe Aktar
+      <Button variant="ghost" size="icon" className="size-8" title={`İçe Aktar — ${rep.name} listesine Word/Excel'den doktor ekle`} onClick={() => handleOpenChange(true)}>
+        <Upload className="size-4" />
       </Button>
       <DialogContent className="flex max-h-[88vh] flex-col overflow-hidden sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle>{rep.name} — Doktor İçe Aktar</DialogTitle>
           <DialogDescription>
-            Word ya da Excel dosyasındaki doktorların adı, telefonu ve açıklaması tek tek okunur ve {rep.name} listesine eklenir. Günü seçin, kontrol edip kaydedin.
+            Word, Excel ya da resimdeki doktorların adı, telefonu ve açıklaması tek tek okunur ve {rep.name} listesine eklenir. Resimde gün yazıyorsa gün de oradan alınır; kontrol edip kaydedin.
           </DialogDescription>
         </DialogHeader>
         <input
           ref={inputRef}
           type="file"
-          accept=".docx,.xlsx,.xls,.csv"
+          accept={`.docx,.xlsx,.xls,.csv,${IMAGE_ACCEPT}`}
           className="hidden"
           onChange={(e) => void pickFile(e.target.files?.[0]).finally(() => (e.target.value = ''))}
         />
 
         <div className="flex flex-wrap items-end gap-3">
           <div className="grid gap-1.5">
-            <Label>Gün</Label>
-            <Select
+            <Label>Tarih</Label>
+            <Input
+              type="date"
+              className="w-44"
               value={date}
-              onValueChange={(v) => {
-                setDate(v)
-                applyToAll({ visit_date: v })
+              onChange={(e) => {
+                if (!e.target.value) return
+                setDate(e.target.value)
+                applyToAll({ visit_date: e.target.value })
               }}
-            >
-              <SelectTrigger className="w-40 capitalize">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {dayKeys.map((k) => (
-                  <SelectItem key={k} value={k} className="capitalize">
-                    {dateLabel(k)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </div>
-          <p className="pb-2 text-xs text-muted-foreground">Değiştirince listedeki bütün doktorlara uygulanır; her doktorun gününü satırından da değiştirebilirsiniz.</p>
+          <p className="pb-2 text-xs text-muted-foreground">Eski ya da ileri bir tarih de seçebilirsiniz. Değiştirince bütün doktorlara uygulanır; her doktorun tarihini satırından da değiştirebilirsiniz.</p>
         </div>
 
         {!rows.length ? (
@@ -227,8 +230,8 @@ export function VisitImportDialog({
               className="flex flex-col items-center gap-2 rounded-lg border border-dashed p-10 text-sm text-muted-foreground hover:bg-accent"
             >
               {busy ? <Loader2 className="size-8 animate-spin" /> : <FileText className="size-8" />}
-              Word ya da Excel dosyasını seçmek için tıklayın veya buraya sürükleyin
-              <span className="text-xs">Word: tablo ya da "Dr. Ad Soyad - 0532 123 45 67 - açıklama" satırları · Excel: Tarih, Doktor, Telefon, Açıklama sütunları</span>
+              Word, Excel ya da resim (fotoğraf, ekran görüntüsü) seçmek için tıklayın veya buraya sürükleyin
+              <span className="text-xs">Word/resim: tablo ya da "Dr. Ad Soyad - 0532 123 45 67 - açıklama" satırları, gün başlıkları ("Pazartesi", "13.11.2026") · Excel: Tarih, Doktor, Telefon, Açıklama sütunları</span>
             </button>
             <Button
               variant="link"
@@ -261,7 +264,7 @@ export function VisitImportDialog({
                     <TableHead>Doktor Adı</TableHead>
                     <TableHead className="w-40">Telefon</TableHead>
                     <TableHead>Açıklama</TableHead>
-                    <TableHead className="w-36">Gün</TableHead>
+                    <TableHead className="w-40">Tarih</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
@@ -286,18 +289,7 @@ export function VisitImportDialog({
                           <Input value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} />
                         </TableCell>
                         <TableCell>
-                          <Select value={r.visit_date} onValueChange={(v) => update(r.key, { visit_date: v })}>
-                            <SelectTrigger className="capitalize">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {dateOptions.map((k) => (
-                                <SelectItem key={k} value={k} className="capitalize">
-                                  {dateLabel(k)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Input type="date" value={r.visit_date} onChange={(e) => e.target.value && update(r.key, { visit_date: e.target.value })} />
                         </TableCell>
                         <TableCell>
                           <Button variant="ghost" size="icon" title="Listeden çıkar" onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}>

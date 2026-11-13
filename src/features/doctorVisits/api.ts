@@ -49,6 +49,13 @@ export async function fetchVisitsByDoctorName(doctorName: string): Promise<Docto
   return data as DoctorVisit[]
 }
 
+/** Kaydı olan bütün ziyaret tarihleri (geçmiş/ileri haftaların raporlarını seçmek için) */
+export async function fetchVisitDates(): Promise<string[]> {
+  const { data, error } = await supabase.from('doctor_visits').select('visit_date').order('visit_date', { ascending: false })
+  if (error) throw error
+  return (data as { visit_date: string }[]).map((r) => r.visit_date)
+}
+
 export async function createVisit(input: DoctorVisitInput): Promise<DoctorVisit> {
   return offlineInsert<DoctorVisit>('doctor_visits', { ...input }, `Doktor ziyareti: ${input.doctor_name}`)
 }

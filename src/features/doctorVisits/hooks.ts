@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import {
   createVisit,
   deleteVisit,
+  fetchVisitDates,
   fetchVisitsByDoctorName,
   fetchVisitsInRange,
   updateVisit,
@@ -15,6 +16,11 @@ export function useVisitsInRange(from: string, to: string, salesRepId?: string) 
     queryKey: ['doctor_visits', from, to, salesRepId],
     queryFn: () => fetchVisitsInRange(from, to, salesRepId),
   })
+}
+
+/** Ayrı anahtar: ['doctor_visits'] önekindeki iyimser güncellemeler bu dizi (string[]) üzerinde çalışmasın */
+export function useVisitDates() {
+  return useQuery({ queryKey: ['doctor_visit_dates'], queryFn: fetchVisitDates })
 }
 
 export function useVisitsByDoctorName(doctorName: string | undefined) {
@@ -35,6 +41,7 @@ export function useCreateVisit() {
         created,
       ])
       queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
+      queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
       toast.success('Doktor eklendi')
     },
     onError: (error: Error) => toast.error('Eklenemedi', { description: error.message }),
@@ -50,6 +57,7 @@ export function useUpdateVisit() {
         old?.map((v) => (v.id === id ? { ...v, ...updated } : v)),
       )
       queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
+      queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
       toast.success('Doktor bilgileri güncellendi')
     },
     onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
@@ -65,6 +73,7 @@ export function useDeleteVisit() {
         old?.filter((v) => v.id !== id),
       )
       queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
+      queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
       toast.success('Doktor silindi')
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),

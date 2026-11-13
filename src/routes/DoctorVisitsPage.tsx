@@ -33,11 +33,15 @@ import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DoctorVisitDialog } from '@/features/doctorVisits/DoctorVisitDialog'
 import { VisitImportDialog } from '@/features/doctorVisits/VisitImportDialog'
-import { useCreateVisit, useDeleteVisit, useVisitsInRange } from '@/features/doctorVisits/hooks'
+import { useCreateVisit, useDeleteVisit, useVisitDates, useVisitsInRange } from '@/features/doctorVisits/hooks'
 import { useCustomers } from '@/features/customers/hooks'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SalesRepDialog } from '@/features/salesReps/SalesRepDialog'
-import { useDeleteSalesRep, useSalesReps } from '@/features/salesReps/hooks'
+import { useSalesReps } from '@/features/salesReps/hooks'
+import { deleteVisit } from '@/features/doctorVisits/api'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { usePayments } from '@/features/payments/hooks'
 import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -151,7 +155,8 @@ function RepWeekSection({
   performance: RepPerformance
   customers: Customer[]
 }) {
-  const deleteRepMutation = useDeleteSalesRep()
+  const queryClient = useQueryClient()
+  const [clearing, setClearing] = React.useState(false)
   const deleteVisitMutation = useDeleteVisit()
   const { confirm, dialog } = useConfirmDialog()
 
@@ -165,9 +170,25 @@ function RepWeekSection({
     return map
   }, [visits, days])
 
-  async function handleDeleteRep() {
-    if (!(await confirm(`${rep.name} silinsin mi? Bu temsilciye ait tüm doktor ziyaret kayıtları da silinecek.`))) return
-    deleteRepMutation.mutate(rep.id)
+  // Çöp kutusu temsilciyi DEĞİL, sadece bu haftaki doktor listesini siler (kullanıcı isteği, 2026-11-13:
+  // "sil yaptığımda personel silinmesin, sadece içeriye eklediğim haftalık doktorlar silinsin")
+  async function handleClearWeek() {
+    if (!visits.length || clearing) return
+    if (!(await confirm(`${rep.name} listesindeki bu haftanın ${visits.length} doktoru silinsin mi? Temsilci silinmez.`))) return
+    setClearing(true)
+    let failed = 0
+    for (const visit of visits) {
+      try {
+        await deleteVisit(visit.id)
+      } catch {
+        failed++
+      }
+    }
+    await queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
+    void queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
+    setClearing(false)
+    if (failed) toast.error(`${failed} doktor silinemedi`)
+    else toast.success(`${rep.name} listesindeki bu haftanın doktorları silindi`)
   }
 
   async function handleDeleteVisit(visit: DoctorVisit) {
@@ -178,8 +199,8 @@ function RepWeekSection({
   return (
     <>
     <Card>
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2 text-base">
+      <CardHeader className="flex-row items-center justify-between gap-2">
+        <CardTitle className="flex min-w-0 items-center gap-2 text-base">
           <SalesRepDialog
             rep={rep}
             trigger={
@@ -190,15 +211,15 @@ function RepWeekSection({
                     {getInitials(rep.name)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hover:underline">{rep.name}</span>
+                <span className="truncate hover:underline">{rep.name}</span>
               </button>
             }
           />
         </CardTitle>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">{visits.length} doktor</Badge>
+        <div className="flex shrink-0 items-center gap-1">
+          <Badge variant="outline" className="whitespace-nowrap">{visits.length} doktor</Badge>
           <VisitImportDialog rep={rep} days={days} visits={visits} customers={customers} />
-          <Button variant="ghost" size="icon" title="Temsilciyi sil" onClick={handleDeleteRep}>
+          <Button variant="ghost" size="icon" title="Bu haftanın doktorlarını sil (temsilci silinmez)" disabled={!visits.length || clearing} onClick={() => void handleClearWeek()}>
             <Trash2 className="size-4 text-destructive" />
           </Button>
         </div>
@@ -253,8 +274,8 @@ function RepWeekSection({
               {dayVisits.length > 0 && (
                 <div className="mt-2 grid gap-2">
                   {dayVisits.map((visit) => (
-                    <div key={visit.id} className="rounded-md bg-muted/50 px-3 py-2 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div key={visit.id} className="flex items-start gap-2 rounded-md bg-muted/50 py-1.5 pr-1 pl-3 text-sm">
+                      <div className="min-w-0 flex-1 py-0.5">
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                           <span className="flex items-center gap-1.5 font-medium">
                             <User className="size-3.5 text-muted-foreground" /> {visit.doctor_name}
@@ -275,18 +296,18 @@ function RepWeekSection({
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center">
-                          <DoctorVisitDialog visitDate={key} salesRepId={rep.id} visit={visit} />
-                          <Button variant="ghost" size="icon" title="Doktoru sil" onClick={() => void handleDeleteVisit(visit)}>
-                            <Trash2 className="size-4 text-destructive" />
-                          </Button>
-                        </div>
+                        {visit.notes && (
+                          <p className="mt-1.5 flex items-start gap-1.5 text-xs text-muted-foreground">
+                            <Package className="mt-0.5 size-3.5 shrink-0" /> {visit.notes}
+                          </p>
+                        )}
                       </div>
-                      {visit.notes && (
-                        <p className="mt-1.5 flex items-start gap-1.5 text-xs text-muted-foreground">
-                          <Package className="mt-0.5 size-3.5 shrink-0" /> {visit.notes}
-                        </p>
-                      )}
+                      <div className="flex shrink-0 items-center">
+                        <DoctorVisitDialog visitDate={key} salesRepId={rep.id} visit={visit} />
+                        <Button variant="ghost" size="icon" className="size-8" title="Doktoru sil" onClick={() => void handleDeleteVisit(visit)}>
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -310,6 +331,18 @@ export function DoctorVisitsPage() {
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd })
 
   const { data: visits = [] } = useVisitsInRange(dateKey(weekStart), dateKey(weekEnd))
+  // Eski/ileri tarihli raporlar (kullanıcı isteği, 2026-11-13): kaydı olan haftalar listesi + takvimden hafta seçme
+  const { data: visitDates = [] } = useVisitDates()
+  const thisWeekKey = dateKey(startOfWeek(new Date(), { weekStartsOn: 1 }))
+  const reportWeeks = React.useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const d of visitDates) {
+      const k = dateKey(startOfWeek(new Date(`${d}T00:00:00`), { weekStartsOn: 1 }))
+      counts.set(k, (counts.get(k) ?? 0) + 1)
+    }
+    return [...counts.entries()].sort((a, b) => b[0].localeCompare(a[0]))
+  }, [visitDates])
+  const goToDate = (value: string) => value && setWeekStart(startOfWeek(new Date(`${value}T00:00:00`), { weekStartsOn: 1 }))
 
   const monthStart = React.useMemo(() => startOfMonth(new Date()), [])
   const { data: weekPayments = [] } = usePayments({
@@ -359,16 +392,39 @@ export function DoctorVisitsPage() {
         title="Haftalık Satış Temsilcisi Raporu"
         description="Her satış temsilcisinin isminin altında kendi haftalık doktor listesi"
         actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => setWeekStart((d) => subWeeks(d, 1))}>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button variant="outline" size="icon" title="Önceki hafta" onClick={() => setWeekStart((d) => subWeeks(d, 1))}>
               <ChevronLeft className="size-4" />
             </Button>
             <span className="text-sm font-medium whitespace-nowrap">
               {format(weekStart, 'd MMM', { locale: trLocale })} – {format(weekEnd, 'd MMM yyyy', { locale: trLocale })}
             </span>
-            <Button variant="outline" size="icon" onClick={() => setWeekStart((d) => addWeeks(d, 1))}>
+            <Button variant="outline" size="icon" title="Sonraki hafta" onClick={() => setWeekStart((d) => addWeeks(d, 1))}>
               <ChevronRight className="size-4" />
             </Button>
+            <Input type="date" className="w-40" title="Tarih seçin — o haftanın raporu açılır" value={dateKey(weekStart)} onChange={(e) => goToDate(e.target.value)} />
+            <Select value={dateKey(weekStart)} onValueChange={goToDate}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Kayıtlı Raporlar" />
+              </SelectTrigger>
+              <SelectContent>
+                {!reportWeeks.some(([k]) => k === dateKey(weekStart)) && (
+                  <SelectItem value={dateKey(weekStart)}>
+                    {format(weekStart, 'd MMM', { locale: trLocale })} haftası (boş)
+                  </SelectItem>
+                )}
+                {reportWeeks.map(([k, n]) => (
+                  <SelectItem key={k} value={k}>
+                    {format(new Date(`${k}T00:00:00`), 'd MMM yyyy', { locale: trLocale })} haftası · {n} doktor
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {dateKey(weekStart) !== thisWeekKey && (
+              <Button variant="outline" onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}>
+                Bu Hafta
+              </Button>
+            )}
             <ExportMenu<(typeof exportRows)[number]>
               title={`Haftalık Satış Temsilcisi Raporu (${format(weekStart, 'd MMM', { locale: trLocale })} – ${format(weekEnd, 'd MMM yyyy', { locale: trLocale })})`}
               filename={`satis-temsilcisi-raporu-${format(weekStart, 'yyyy-MM-dd')}`}
