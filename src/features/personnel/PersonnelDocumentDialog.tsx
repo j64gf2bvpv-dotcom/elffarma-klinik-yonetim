@@ -12,6 +12,7 @@ import { getDocumentUrl, isPdfFile, isPdfPath } from '@/lib/documentAttachments'
 import { getErrorMessage } from '@/lib/utils'
 import type { PersonnelDocument } from '@/types/database'
 import { uploadPersonnelAttachment } from './api'
+import { readDocDates } from './readDocDates'
 import { DOC_TYPE_BY_KEY, PERSONNEL_DOC_TYPES } from './docTypes'
 import { useSavePersonnelDocument } from './hooks'
 
@@ -38,6 +39,7 @@ export function PersonnelDocumentDialog({
   const [files, setFiles] = React.useState<Attachment[]>([])
   const [saving, setSaving] = React.useState(false)
   const [dragging, setDragging] = React.useState(false)
+  const [readingDates, setReadingDates] = React.useState(false)
   const fileRef = React.useRef<HTMLInputElement>(null)
   const save = useSavePersonnelDocument()
 
@@ -60,8 +62,28 @@ export function PersonnelDocumentDialog({
     setOpen(next)
   }
 
+  /**
+   * Dosyadaki belge tarihi ve geçerlilik tarihi boş alanlara yazılır (kullanıcı isteği, 2026-11-17: "özlük dosyasını
+   * koyduğumda içinde varsa belge tarihi ve geçerlilik tarihi olsun"). Elle girilmiş tarihin üzerine yazılmaz.
+   */
+  async function fillDatesFrom(file: File) {
+    if (docDate && validUntil) return
+    setReadingDates(true)
+    try {
+      const found = await readDocDates(file)
+      if (found.documentDate) setDocDate((cur) => cur || found.documentDate!)
+      if (found.validUntil) setValidUntil((cur) => cur || found.validUntil!)
+      if (found.documentDate || found.validUntil) toast.success('Tarihler belgeden okundu', { description: 'Kontrol edip gerekirse düzeltin.' })
+    } catch {
+      // Okunamazsa tarihler elle girilir
+    } finally {
+      setReadingDates(false)
+    }
+  }
+
   async function addFiles(list: Iterable<File>) {
     const all = Array.from(list)
+    let firstNew: File | null = null
     for (const f of all) {
       if (!isImageFile(f) && !isPdfFile(f)) {
         toast.warning(`${f.name}: sadece resim ve PDF eklenebilir`)
@@ -71,10 +93,12 @@ export function PersonnelDocumentDialog({
         // HEIC (iPhone) önizlemede görünsün diye JPEG'e çevrilir
         const file = isPdfFile(f) ? f : await ensureReadableImage(f)
         setFiles((prev) => [...prev, { kind: 'new', file, url: isPdfFile(file) ? null : URL.createObjectURL(file) }])
+        firstNew ??= file
       } catch (err) {
         toast.error(`${f.name} açılamadı`, { description: getErrorMessage(err) })
       }
     }
+    if (firstNew) await fillDatesFrom(firstNew)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -141,7 +165,9 @@ export function PersonnelDocumentDialog({
           )}
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="pd-date">Belge Tarihi</Label>
+              <Label htmlFor="pd-date" className="flex items-center gap-1.5">
+                Belge Tarihi {readingDates && <Loader2 className="size-3 animate-spin text-muted-foreground" />}
+              </Label>
               <Input id="pd-date" type="date" value={docDate} onChange={(e) => setDocDate(e.target.value)} />
             </div>
             <div className="grid gap-1.5">
