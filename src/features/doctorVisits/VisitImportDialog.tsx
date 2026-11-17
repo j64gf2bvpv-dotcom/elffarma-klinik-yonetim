@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { format } from 'date-fns'
+import { endOfWeek, format, startOfWeek } from 'date-fns'
+import { tr as trLocale } from 'date-fns/locale/tr'
 import { useQueryClient } from '@tanstack/react-query'
 import { FileSpreadsheet, FileText, Loader2, MessageCircle, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
@@ -268,7 +269,7 @@ export function VisitImportDialog({
               <MessageCircle className="size-4 text-success" /> WhatsApp Sohbetinden İçe Aktar (.txt / .zip)
             </Button>
             <p className="text-xs text-muted-foreground">
-              WhatsApp'ta sohbeti açın → kişi/grup adına dokunun → "Sohbeti Dışa Aktar" → "Medya Olmadan". Gelen dosyayı buraya seçin; mesajlar tarih tarih okunur, sadece doktor bilgileri alınır.
+              WhatsApp'ta sohbeti açın → kişi/grup adına dokunun → "Sohbeti Dışa Aktar" → "Medya Olmadan". Gelen dosyayı buraya seçin; mesajlar tarih tarih okunur, yalnızca doktorların adı ve telefonu alınır.
             </p>
             <Button
               variant="link"
@@ -306,10 +307,23 @@ export function VisitImportDialog({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r, i) => {
+                  {/* Hafta hafta, her hafta kendi başlığıyla (kullanıcı isteği, 2026-11-17: "listede haftalık görünsün tek tek") */}
+                  {[...rows].sort((a, b) => a.visit_date.localeCompare(b.visit_date) || a.key - b.key).map((r, i, sorted) => {
                     const dup = isDuplicate(r)
+                    const wk = (d: string) => format(startOfWeek(new Date(`${d}T00:00:00`), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+                    const newWeek = i === 0 || wk(sorted[i - 1].visit_date) !== wk(r.visit_date)
+                    const ws = new Date(`${wk(r.visit_date)}T00:00:00`)
                     return (
-                      <TableRow key={r.key} className={dup ? 'opacity-60' : undefined}>
+                      <React.Fragment key={r.key}>
+                      {newWeek && (
+                        <TableRow className="bg-red-500/10 hover:bg-red-500/10">
+                          <TableCell colSpan={6} className="py-1.5 text-sm font-semibold text-red-700 dark:text-red-300">
+                            {format(ws, 'd MMM', { locale: trLocale })} – {format(endOfWeek(ws, { weekStartsOn: 1 }), 'd MMM yyyy', { locale: trLocale })} haftası ·{' '}
+                            {sorted.filter((x) => wk(x.visit_date) === wk(r.visit_date)).length} doktor
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      <TableRow className={dup ? 'opacity-60' : undefined}>
                         <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                         <TableCell>
                           <Input value={r.doctor_name} onChange={(e) => update(r.key, { doctor_name: e.target.value })} placeholder="Doktor adı gerekli" aria-invalid={!r.doctor_name.trim()} />
@@ -334,6 +348,7 @@ export function VisitImportDialog({
                           </Button>
                         </TableCell>
                       </TableRow>
+                      </React.Fragment>
                     )
                   })}
                 </TableBody>

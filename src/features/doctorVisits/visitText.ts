@@ -61,7 +61,7 @@ function findDate(line: string, days: Date[]): { date: string; start: number; en
     if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) return { date: `${y}-${pad(mo)}-${pad(d)}`, start: m.index!, end: m.index! + m[0].length }
   }
   const f = fold(line)
-  m = f.match(new RegExp(`(?<![\\d])(\\d{1,2})\\s+(${MONTHS.join('|')})[a-z]*\\.?(?:\\s+(\\d{4}))?(?![a-z])`))
+  m = f.match(new RegExp(`(?<![\\d])(\\d{1,2})\\s*(${MONTHS.join('|')})[a-z]*\\.?(?:\\s+(\\d{4}))?(?![a-z])`))
   if (m && +m[1] >= 1 && +m[1] <= 31) {
     let y = m[3] ? +m[3] : new Date().getFullYear()
     let date = `${y}-${pad(MONTHS.indexOf(m[2]) + 1)}-${pad(+m[1])}`

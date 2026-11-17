@@ -1,6 +1,7 @@
 import { addDays, startOfWeek } from 'date-fns'
 
 import { parseVisitLines, type ImageVisitRow } from './visitText'
+import { ORG_RE } from './reportParser'
 
 interface ChatMessage {
   date: string
@@ -59,7 +60,12 @@ export function parseWhatsAppChat(text: string, repName: string): ImageVisitRow[
     if (!lines.join('').trim()) continue
     const weekStart = startOfWeek(new Date(`${msg.date}T00:00:00`), { weekStartsOn: 1 })
     const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
-    for (const row of parseVisitLines(lines, days, repName)) out.push({ ...row, date: row.date ?? msg.date })
+    // Sohbetten yalnız doktorun adı ve telefonu alınır (kullanıcı isteği, 2026-11-17: "sadece doktorların isimleri ve
+    // telefon numaraları içeri aktarılsın, başka hiçbir şey aktarılmasın") — açıklama yok, kurumlar (klinik/merkez) yok
+    for (const row of parseVisitLines(lines, days, repName)) {
+      if (ORG_RE.test(row.name)) continue
+      out.push({ name: row.name, phone: row.phone, notes: '', date: row.date ?? msg.date })
+    }
   }
   // Aynı gün aynı doktor iki mesajda geçtiyse açıklamalar birleştirilir
   const merged = new Map<string, ImageVisitRow>()

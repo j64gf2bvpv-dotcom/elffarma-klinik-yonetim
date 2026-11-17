@@ -25,7 +25,7 @@ const TITLE_TOKEN = '(?:(?:Prof|Doç|Doc|Op|Uzm)(?:\\.\\s*|\\s+))*Dr(?:\\.\\s*|\
 const ANY_WORD = '[A-Za-zÇĞİÖŞÜçğıöşü]+'
 // Akan yazıda "… bir hekim Dr.Abdurrahman Bozkurt 0506 781 42 44 …" / "Dr.Asena balta Dr.İzzet balta 0532 …":
 // ünvan + ad (küçük harfli soyad dahil) + telefon başladığı yerde yeni kayıt başlar
-const MOBILE_START = '(?:\\+?90\\s?)?\\(?0?\\s?5\\d{2}'
+const MOBILE_START = '(?:\\+?90\\s?)?\\(?0?\\s?5\\d{2}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{2}[\\s.-]?\\d{2}(?!\\d)'
 const RUN_ON_SPLIT = new RegExp(
   `(?<=\\S)(?<!\\b(?:Prof|Doç|Doc|Op|Uzm|Dr)\\.?)\\s+(?=(?:${TITLE_TOKEN}${ANY_WORD}(?:\\s+${ANY_WORD}){0,2}(?:\\s*\\([^)]*\\))?\\s+){1,3}${MOBILE_START})`,
   'g',
@@ -47,7 +47,9 @@ const TITLE_START = /^(?:prof|doç|doc|op|uzm|dr)\b\.?/i
 // Adın sonuna takılan, isim olmayan kelimeler ("Dr. Tolga Şahin Bugün …", "Dr. Garip Gülfırat Ziyaret …")
 const NAME_STOP = /^(bugün|ziyaret|görüşme|görüşmede|klinik|kliniği|kliniğinde|sipariş|ürün|genel|telefon|tel|için|ile|ise|tarafından|tarafında|adana|istanbul|ankara|izmir|bursa)$/i
 
-const PHONE_RE = /(?:\+?\s?90[\s.-]?)?(?:0\s?)?\(?0?\s?[2-5]\d{2}\)?[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}(?!\d)/
+// Madde/numara işareti: "•", "*", "-", "1.", "1)", "1-)", "8-"
+const LIST_MARK = /^\s*(?:[•·●▪◦*]|[-–](?=\s)|\d{1,3}\s*-?\s*[.)]|\d{1,3}\s*[-–](?!\d))\s*/
+const PHONE_RE = /(?:\+?\s?90[\s.-]?)?(?:0\s?)?\(?0?\s?[2-5]\d{2}\)?[\s.-]{0,2}\d{3}[\s.-]{0,2}\d{2}[\s.-]{0,2}\d{2}(?!\d)/
 const PHONE_ALL_RE = new RegExp(PHONE_RE.source, 'g')
 /** Açıklamadaki telefonlar kayda (Telefon alanına) taşınır, metinden silinir (kullanıcı isteği, 2026-11-13) */
 function pullPhones(c: { phone: string; notes: string }) {
@@ -71,7 +73,15 @@ const CHAT_RE = /merhaba|selam|kolay gelsin|iyi akşamlar|iyi günler|teşekkür
 const REPORT_SECTION_RE = /(rapor|ziyaret edilen|ziyaret gerçekleştirilen|görüşme notları|saha|hekimler|kurumlar|sipariş bilgi|diğer çalışma|^not$|^notlar$|^sipariş$|^siparişler$)/i
 // Bir kaydın içindeki bilgi satırları
 const FIELD_RE = /^(ürün|miktar|toplam tutar|tutar|telefon|tel|gsm|cep|e-?posta|mail|vergi( dairesi| kimlik no| no)?|fatura|teslimat|adres|sipariş|iban)\b[^:]{0,25}:/i
-const NOT_A_VISIT_RE = /toplantı|zoom|meeting|webinar/i
+const NOT_A_VISIT_RE = /toplantı|zoom|meeting|webinar|masterclass|master class|elffarma|kongre|organizasyon|workshop|eğitim|fiyat listesi/i
+// Adın bittiğini gösteren kelimeler (fiil, ürün, işlem)
+const NAME_END_RE =
+  /^(ziyaret|edildi|ile|görüşül|görüşme|için|tarafından|ziyaretinde|paket|kutu|adet|flakon|ürün|sipariş|borç|ödeme|numune|katalog|kampanya|bvrs|mixo|fil+[iı]c[iı]a|pdrn|sap+h?[iı]re|el[iı]s[iı]r|el[iı]x[iı]r|star|somon|amc|vola|dna|vitapep|antiage|alanya|antalya|mersin|adana|ankara|istanbul|izmir|bursa|konya|kayseri|kırıkkale|manavgat|eryaman|gata)$/i
+// Ünvansız kayıt adı ancak kurumsa kabul (kişi adı telefonla gelir): "Snap Clinic", "Kardelen Tıp Merkezi"
+export const ORG_RE = /klinik|clinic|merkez|hastane|poliklinik|estetik|aesthetic|medikal|medical|medica|tıp|sağlık|güzellik|dental|diş|muayenehane|este\b/i
+// Sipariş/fatura bilgisi: kayda yazılmaz (adres, vergi, TC, ÜTS, e-posta, IBAN)
+const PRIVATE_LINE_RE = /(\b(mah\.?|mahallesi|sk\.?|sokak|cad\.?|caddesi|bulv\.?|bulvarı|apt\.?|daire|blok)\b|\bno\s*:|\bkat\s*:|\bvd\b|vergi|t\.?c\.?\s*(kimlik)?\s*(no)?\s*:|\büts\b|@|iban|\btr\d{2}\s?\d{4})/i
+const PRIVATE_FIELD_RE = /^(e-?posta|mail|vergi|fatura|teslimat|adres|iban|t\.?c|üts)/i
 
 /** Başlıktaki ek bilgi ("Plastik Cerrahi", "Murat Bey / Merkez Sahibi") paragraftan " · " ile ayrılır */
 const headNote = (rest: string) => (rest && !/[.!?]$/.test(rest) ? `${rest} ·` : rest)
@@ -106,18 +116,33 @@ export function headingNames(text: string): string[] {
   for (let i = 0; i < marks.length; i++) {
     const start = marks[i].index! + marks[i][0].length
     const m = [marks[i][0], marks[i][0], text.slice(start, i + 1 < marks.length ? marks[i + 1].index : undefined)]
-    const all = m[2].replace(/[&,;–—-]+/g, ' ').replace(/\bve\b/gi, ' ').split(/\s+/).filter(Boolean)
-    // Ad, fiil/bağlaç ya da küçük harfli hitapta biter ("Dr.Ersin uçan ziyaret edildi", "Dr.Ersin uçan Ersin hoca")
-    const stopAt = all.findIndex((w, i) => i > 0 && (/^(ziyaret|edildi|ile|görüşül|görüşme|için|tarafından|ziyaretinde)/i.test(w) || /^(hoca|hocam|bey|hanım|hn)$/.test(w) || (i > 1 && w === all[0])))
-    const words = (stopAt > 0 ? all.slice(0, stopAt) : all).filter((w) => /^\p{L}+$/u.test(w)).slice(0, 4)
+    // Ad noktalama, rakam/saat, fiil, ürün kelimesi ya da küçük harfli hitapta biter
+    // ("Dr.Ersin uçan ziyaret edildi", "Dr alparslan Tekiner 5 paket…", "Dr Mustafa sütçü 12:00", "Dr Hüseyin Öztürk (gata)")
+    const all = m[2].replace(/[’'][a-zçğıöşü]+/gi, '').split(/[,;:.!?()]/)[0].replace(/[&–—-]+/g, ' ').replace(/\bve\b/gi, ' ').split(/\s+/).filter(Boolean)
+    const allUpper = !!all[0] && all[0] === all[0].toLocaleUpperCase('tr-TR')
+    const words: string[] = []
+    // "Dr hanım ürünlerimizi…" — ad değil hitap
+    if (/^(hanım|hanim|bey|hoca|hocam|hn)$/i.test(all[0] ?? '')) continue
+    for (const [j, w] of all.entries()) {
+      if (!/^\p{L}+$/u.test(w)) break
+      if (j > 0 && (NAME_END_RE.test(w) || /^(hoca|hocam|bey|hanım|hn)$/.test(w) || (j > 1 && w === all[0]))) break
+      // 3. kelimeden sonra küçük harf adın bittiğini gösterir — satır orada bitiyorsa soyadıdır ("Dr rümeysa nur bayrak")
+      if (j >= 2 && /^[a-zçğıöşü]/.test(w) && j < all.length - 1 && /^\p{L}+$/u.test(all[j + 1])) break
+      if (j >= 2 && !allUpper && w.length >= 3 && w === w.toLocaleUpperCase('tr-TR')) break // "Dr Mustafa kaplan GATA"
+      words.push(w)
+      if (words.length === 4) break
+    }
     while (words.length > 1 && NAME_STOP.test(words[words.length - 1])) words.pop()
     if (!words.length) continue
     // Ayrılma eki: "Dr.Abdurrahman Bozkurttan 0506…" → Bozkurt
     const last = words[words.length - 1]
     if (words.length > 1 && last.length >= 8) words[words.length - 1] = last.replace(/(?<=\p{L}{5})(t|d)(a|e)n$/u, '')
-    const cap = (w: string) => (w === w.toLocaleUpperCase('tr-TR') && w.length > 1 ? w : w.slice(0, 1).toLocaleUpperCase('tr-TR') + w.slice(1))
-    const title = m[1].replace(/\s+/g, ' ').replace(/(Prof|Doç|Doc|Op|Uzm|Dr)\.?\s*/g, '$1. ').trim()
-    const name = `${title} ${words.map(cap).join(' ')}`
+    // Tamamı büyük harfli ad ("DR BIRGÜL ALTINTÜRK") → "Birgül ALTINTÜRK"
+    const cap = (w: string, last: boolean) =>
+      w === w.toLocaleUpperCase('tr-TR') && w.length > 1 ? (allUpper && !last ? w.slice(0, 1) + w.slice(1).toLocaleLowerCase('tr-TR') : w) : w.slice(0, 1).toLocaleUpperCase('tr-TR') + w.slice(1)
+    const T: Record<string, string> = { prof: 'Prof.', doç: 'Doç.', doc: 'Doç.', op: 'Op.', uzm: 'Uzm.', dr: 'Dr.' }
+    const title = m[1].replace(/(prof|doç|doc|op|uzm|dr)\.?\s*/gi, (t) => `${T[t.replace(/[.\s]/g, '').toLocaleLowerCase('tr-TR')]} `).trim()
+    const name = `${title} ${words.map((w, j) => cap(w, j === words.length - 1)).join(' ')}`
     if (!out.some((n) => fold(n) === fold(name))) out.push(name)
   }
   return out
@@ -125,7 +150,7 @@ export function headingNames(text: string): string[] {
 
 /** Cari Kart / ziyaret için ad: ünvanlıysa yalnız isim, değilse ilk ayraçtan önceki kısım */
 export function cleanVisitName(raw: string): string {
-  const text = raw.replace(/^\s*(?:[•·●▪◦*\-–]|\d{1,3}[.)])\s*/, '').trim()
+  const text = raw.replace(LIST_MARK, '').trim()
   if (TITLE_START.test(text)) {
     const names = findDoctorNames(text)
     if (names.length) return names[0]
@@ -134,7 +159,7 @@ export function cleanVisitName(raw: string): string {
 }
 
 // fromSentence: kayıt bir cümleden çıkarıldı ("Gün içerisinde Dr. X ile…") — sonraki adsız paragraflar genel yazıdır
-type Rec = { names: string[]; phone: string; notes: string; bullet?: boolean; fromSentence?: boolean }
+type Rec = { names: string[]; phone: string; notes: string; bullet?: boolean; fromSentence?: boolean; nameOnly?: boolean }
 
 function capitalRatio(s: string): number {
   const words = s.split(/\s+/).filter((w) => /\p{L}/u.test(w))
@@ -162,7 +187,17 @@ export function parseReportLines(lines: string[]): WordDoctorRow[] {
     pullPhones(c)
     for (const name of c.names) {
       if (!name || NOT_A_VISIT_RE.test(name)) continue
-      out.push({ name, phone: c.phone, notes: c.notes.replace(/\s+/g, ' ').replace(/\s*·$/, '').replace(CLOSING_RE, '').trim() })
+      // Açıklama doktorun adıyla başlamasın ("Dr Sabri güncan ( kampanya…" → "kampanya…")
+      const nameWords = name.replace(/^(?:(?:Prof|Doç|Op|Uzm|Dr)\.\s*)+/, '').split(' ').map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      const ownName = new RegExp(`^${TITLE_TOKEN}${nameWords.join('\\s+')}\\s*[(:,;–—-]*\\s*`, 'iu')
+      const notes = c.notes
+        .replace(/<?\s*bu mesaj düzenlendi\s*>?/gi, '')
+        .replace(/\s+/g, ' ')
+        .replace(/\s*·$/, '')
+        .replace(CLOSING_RE, '')
+        .trim()
+      // Ad cümlenin öznesiyse ("Dr. Cihan Kirişçioğlu ile ürünlerimizin…") kalır
+      out.push({ name, phone: c.phone.replace(/\s{2,}/g, ' ').trim(), notes: notes.replace(ownName, (m) => (/^(ile|ziyaret|tarafından|için|[’'])/i.test(notes.slice(m.length)) ? m : '')).trim() })
     }
   }
   const start = (names: string[], phone: string, notes: string, bullet = false) => {
@@ -176,12 +211,20 @@ export function parseReportLines(lines: string[]): WordDoctorRow[] {
     cur = { names, phone, notes, bullet }
   }
   // "Teslimat Adresi:" / "Ürün Talebi:" gibi değeri alt satırlarda devam eden alan
-  let fieldOpen = false
+  let fieldOpen: false | 'keep' | 'drop' = false
 
   const nameOnly = new RegExp(`^\\s*${TITLE_TOKEN}${ANY_WORD}(?:\\s+${ANY_WORD}){0,2}\\s*$`, 'i')
   const prepared = lines.flatMap((l) => {
     // Akan yazıdan bölünen parçalar madde gibi işaretlenir (yeni kayıt sınırı)
-    const parts = l.replace(EMOJI_RE, '').replace(/(\p{L})\(/gu, '$1 (').replace(RUN_ON_SPLIT, '\n• ').replace(RUN_ON_SPLIT_UNTITLED, '\n• ').replace(RUN_ON_SPLIT_VISIT, '\n• ').split('\n')
+    // İsim düzeltme mesajları ("Dr.Melike Şener değil", "ismi yanlış yazdım") kayıt değildir
+    if (/\bdeğil\s*$|yanlış yazdım|yanlis yazdim/i.test(l)) return ['']
+    const parts = l
+      .replace(EMOJI_RE, '')
+      .replace(/\b(Dr|Prof|Op|Uzm|Doç)\s+\.(?=\s*\p{L})/giu, '$1.')
+      .replace(/(\p{L})\(/gu, '$1 (')
+      // satır içi numaralı liste: "… 5-)Dr Fatih … 6-)Dr Pelin …"
+      .replace(/(?<=\S)\s*\d{1,2}\s*-?\)\s*(?=(?:dr|prof|op|uzm)\b)/gi, '\n• ')
+      .replace(RUN_ON_SPLIT, '\n• ').replace(RUN_ON_SPLIT_UNTITLED, '\n• ').replace(RUN_ON_SPLIT_VISIT, '\n• ').split('\n')
     const bare = (p: string) => p.replace(/^•\s*/, '')
     // Cümle başındaki kısa girişten ("Eğitimin ardından Dr. X ziyaret edildi.") bölünmez — cümle bütün kalır
     for (let i = parts.length - 1; i > 0; i--) {
@@ -193,14 +236,15 @@ export function parseReportLines(lines: string[]): WordDoctorRow[] {
     for (let i = parts.length - 2; i >= 0; i--) if (nameOnly.test(bare(parts[i])) && TITLE_START.test(bare(parts[i + 1]).trim())) parts.splice(i, 2, `${parts[i]} ${bare(parts[i + 1])}`)
     return parts
   })
-  for (const raw of prepared) {
+  const phoneOnly = (l: string | undefined) => !!l && PHONE_RE.test(l) && !/\p{L}{3}/u.test(l.replace(PHONE_RE, ''))
+  for (const [idx, raw] of prepared.entries()) {
     if (!raw.trim()) {
       prevBlank = true
       fieldOpen = false
       continue
     }
-    const bullet = /^\s*(?:[•·●▪◦*\-–]|\d{1,3}[.)])\s+/.test(raw)
-    const line = raw.replace(/^\s*(?:[•·●▪◦*\-–]|\d{1,3}[.)])\s*/, '').replace(/\*+/g, '').trim()
+    const bullet = LIST_MARK.test(raw) && !/^\s*\d{1,3}\s*[.]\d/.test(raw)
+    const line = raw.replace(LIST_MARK, '').replace(/\*+/g, '').trim()
     const atBoundary = prevBlank || prevEnded || bullet || !cur
     const ended = /[.!?]$/.test(line)
     const words = wordCount(line)
@@ -211,12 +255,15 @@ export function parseReportLines(lines: string[]): WordDoctorRow[] {
 
     try {
       if (fieldOpen && !titled) {
-        append(line, false)
+        if (fieldOpen === 'keep' && !PRIVATE_LINE_RE.test(line)) append(line, false)
         continue
       }
+      // Adres/vergi/TC/e-posta satırları hiçbir kayda yazılmaz
+      if (!titled && PRIVATE_LINE_RE.test(line) && !phone) continue
       // 1) Kaydın bilgi satırı (Telefon:, Ürün:, Adres: …)
       if (!titled && FIELD_RE.test(line)) {
-        fieldOpen = /:\s*$/.test(line)
+        fieldOpen = /:\s*$/.test(line) ? (PRIVATE_FIELD_RE.test(line) ? 'drop' : 'keep') : false
+        if (PRIVATE_FIELD_RE.test(line) && !/^(telefon|tel|gsm|cep)/i.test(line)) continue
         const c = cur as Rec | null
         if (c && section !== 'skip') {
           if (phone && !c.phone && /^(telefon|tel|gsm|cep)/i.test(line)) c.phone = phone
@@ -253,10 +300,23 @@ export function parseReportLines(lines: string[]): WordDoctorRow[] {
           const notes = restNames.length ? '' : phone ? rest.replace(phoneMatch![0], '').replace(/^[\s,;–—-]+|[\s,;–—-]+$/g, '') : rest
           start([...headNames, ...restNames], phone, headNote(notes), bullet)
         } else if (!ended && words <= 8 && headNames.length) {
+          const c = cur as Rec | null
+          // Alt alta yazılmış, aynı yerdeki hekimler ortak telefon/açıklama paylaşır:
+          // "Dr. Çağan Dikmen" / "Dr.püren Dikmen" / "0539 …" / "Doktorlar ziyaret edildi…"
+          // Yalnız ikisi de salt ad satırıysa ("Dr Olympos hastanesi yeşim yayla izin de" gibi ekli satırlar birleşmez)
+          const lineNameOnly = wordCount(line) <= headNames.reduce((n, h) => n + wordCount(h.replace(/^(?:(?:Prof|Doç|Op|Uzm|Dr)\.\s*)+/, '')) + 1, 0)
+          if (c && c.nameOnly && lineNameOnly && !bullet && !c.bullet && !prevBlank && !c.phone && !c.notes && !c.fromSentence && !phone && (phoneOnly(prepared[idx + 1]) || phoneOnly(prepared[idx + 2]))) {
+            for (const n of headNames) if (!c.names.some((x) => fold(x) === fold(n))) c.names.push(n)
+            continue
+          }
           start(headNames, phone, '', bullet) // başlık: "Dr. Kerem Aras", "Dr. Oğuz Yaşar & Dr. Özer Özdemir"
+          if (cur && lineNameOnly) (cur as Rec).nameOnly = true
         } else {
           // Cümle: "Dr. Hasan Asker ziyaret edildi. …" → ad cümleden, cümle açıklama
           let names = findDoctorNames(line).slice(0, 1)
+          // Küçük harfli ad ("Dr alparslan Tekiner 5 paket…") büyük harf kuralına uymaz → başlık ayrıştırıcısı
+          const hn = headingNames(line.split(/\s+/).slice(0, 6).join(' ')).slice(0, 1)
+          if (hn.length && (!names.length || hn[0].length > names[0].length)) names = hn
           let notes = line
           if (bullet) {
             names = headingNames(line.split(/\s+/).slice(0, 4).join(' ')).slice(0, 1)
@@ -277,8 +337,22 @@ export function parseReportLines(lines: string[]): WordDoctorRow[] {
       if (!titled && phone && atBoundary) {
         const at = line.indexOf(phoneMatch![0])
         const prefix = line.slice(0, at).replace(/[\s,:;–—-]+$/, '').trim()
-        if (prefix && wordCount(prefix) <= 4 && !/\d/.test(prefix) && capitalRatio(prefix) >= 0.5 && !CHAT_RE.test(prefix)) {
+        if (prefix && wordCount(prefix) <= 4 && !/\d/.test(prefix) && capitalRatio(prefix) >= 0.5 && !CHAT_RE.test(prefix) && !NOT_A_VISIT_RE.test(prefix) && !PRIVATE_LINE_RE.test(prefix)) {
           start([prefix.split(/\s+/).map((w) => w.slice(0, 1).toLocaleUpperCase('tr-TR') + w.slice(1)).join(' ')], phone, line.slice(at + phoneMatch![0].length).replace(/^[\s,;:|–—-]+/, ''), true)
+          continue
+        }
+      }
+      // 3b') Ünvansız ad satırı + alt satırda telefon: "Murat Keskin" / "0533 608 08 43"
+      if (!titled && !phone && phoneOnly(prepared[idx + 1]) && wordCount(line) >= 2 && wordCount(line) <= 4 && !/\d/.test(line) && capitalRatio(line) === 1 && !CHAT_RE.test(line) && !NOT_A_VISIT_RE.test(line) && !PRIVATE_LINE_RE.test(line)) {
+        start([line.split(/\s+/).map((w) => w.slice(0, 1).toLocaleUpperCase('tr-TR') + w.slice(1)).join(' ')], '', '')
+        continue
+      }
+      // 3c) Ünvansız liste maddesi adla başlıyorsa kayıt: "1-)Caner emlik ( Bvrs…", "2-)Yılmaz turan Bvrs pl…"
+      if (bullet && !titled && /^[A-ZÇĞİÖŞÜ]/.test(line) && !CHAT_RE.test(line) && !NOT_A_VISIT_RE.test(line) && !PRIVATE_LINE_RE.test(line) && !ORG_RE.test(line.split(/\s+/).slice(0, 4).join(' '))) {
+        const nm = headingNames(`Dr. ${line}`)[0]?.replace(/^Dr\.\s*/, '')
+        if (nm && nm.split(' ').length >= 2) {
+          const used = line.match(new RegExp(`^(?:\\S+\\s*){${nm.split(' ').length}}`))?.[0] ?? ''
+          start([nm], phone, line.slice(used.length).replace(/^[\s(,;:–—-]+/, ''), true)
           continue
         }
       }
@@ -297,8 +371,13 @@ export function parseReportLines(lines: string[]): WordDoctorRow[] {
         !/^(ziyaret|görüşme|ayrıca|daha|bugün|sabah|gün)\b/i.test(bare)
       ) {
         const [head, ...restParts] = bare.split(SEP_RE)
-        start([head.replace(/[\s,;/]+$/, '').trim()], phone, headNote(restParts.join(': ').trim()), bullet)
-        continue
+        const orgName = head.replace(/[\s,;/]+$/, '').trim()
+        // Yalnız kurumlar kayıt olur; "Uygun", "Masterclass Adana", "Elffarma …" gibi kısa satırlar atılır
+        if (ORG_RE.test(orgName) && !NOT_A_VISIT_RE.test(orgName) && wordCount(orgName) >= 2 && !/^(merkez|klinik|hastane|şube)\b/i.test(orgName)) {
+          start([orgName], phone, headNote(restParts.join(': ').trim()), bullet)
+          continue
+        }
+        if (wordCount(bare) <= 3 || NOT_A_VISIT_RE.test(bare)) continue
       }
       // Madde listesinden sonra gelen genel paragraf ("ziyaret edilmiştir. Doktorlarla…") son maddeye yazılmaz
       const c0 = cur as Rec | null
