@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.396] - 2026-11-17
+- Tam ekran resim görüntüleyici (components/ImageViewer): Personel Özlük'te küçük resme tıklayınca fotoğraf ekrana sığarak açılıyor; tekerlek/trackpad/+− ile yakınlaştırma, sürükleyerek gezme, çift tıkla 2x, "Ekrana sığdır" ve "Fotoğrafı değiştir". Fotoğrafı olmayan kişide tıklayınca fotoğraf seçiliyor.
+
 ## [2.17.395] - 2026-11-17
 - Personel Özlük: listede ve kişi sayfasında fotoğraf/monograma tıklayınca küçük resim seçilip yükleniyor; evrak tablosunda "Eksikleri gizle / göster" düğmesi (tercih hatırlanır).
 

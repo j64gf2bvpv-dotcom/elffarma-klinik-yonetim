@@ -1,7 +1,9 @@
 import * as React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Camera, Loader2, UserRound } from 'lucide-react'
+import { Camera, Loader2, UserRound, ZoomIn } from 'lucide-react'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { ImageViewer } from '@/components/ImageViewer'
 import { getDocumentUrl, removeDocuments } from '@/lib/documentAttachments'
 import { IMAGE_ACCEPT, ensureReadableImage } from '@/lib/ensureReadableImage'
 import { cn, getErrorMessage } from '@/lib/utils'
@@ -21,6 +23,7 @@ export function PersonPhoto({ path, className, personnelId }: { path: string | n
   const qc = useQueryClient()
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [busy, setBusy] = React.useState(false)
+  const [viewing, setViewing] = React.useState(false)
 
   async function change(file: File | undefined) {
     if (!file || !personnelId) return
@@ -46,16 +49,18 @@ export function PersonPhoto({ path, className, personnelId }: { path: string | n
     <>
       <button
         type="button"
-        title="Fotoğraf değiştir"
+        title={url ? 'Büyüt' : 'Fotoğraf ekle'}
         className={cn(box, 'group cursor-pointer')}
         onClick={(e) => {
           e.stopPropagation()
-          inputRef.current?.click()
+          // Fotoğraf varsa tam ekranda açılır (yakınlaştırılabilir), yoksa fotoğraf seçilir
+          if (url) setViewing(true)
+          else inputRef.current?.click()
         }}
       >
         {content}
         <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-white opacity-0 transition-opacity group-hover:opacity-100">
-          {busy ? <Loader2 className="size-1/3 animate-spin" /> : <Camera className="size-1/3" />}
+          {url ? <ZoomIn className="size-1/3" /> : <Camera className="size-1/3" />}
         </span>
         {busy && (
           <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-white">
@@ -63,6 +68,26 @@ export function PersonPhoto({ path, className, personnelId }: { path: string | n
           </span>
         )}
       </button>
+      <span onClick={(e) => e.stopPropagation()} className="contents">
+        <ImageViewer
+          key={String(viewing)}
+          src={url ?? null}
+          open={viewing}
+          onOpenChange={setViewing}
+          title="Fotoğraf"
+          actions={
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setViewing(false)
+                inputRef.current?.click()
+              }}
+            >
+              <Camera /> Fotoğrafı değiştir
+            </Button>
+          }
+        />
+      </span>
       <input
         ref={inputRef}
         type="file"
