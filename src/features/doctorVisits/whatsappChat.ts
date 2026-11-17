@@ -1,4 +1,4 @@
-import { addDays, startOfWeek } from 'date-fns'
+import { addDays, format, startOfWeek, subDays } from 'date-fns'
 
 import { parseVisitLines, type ImageVisitRow } from './visitText'
 import { ORG_RE } from './reportParser'
@@ -12,7 +12,7 @@ interface ChatMessage {
 // iOS: "[23.10.2026 00:02:15] Duygu: …" / "[23.10.2026, 00:02:15] …"
 // Android: "23.10.2026 00:02 - Duygu: …" / "10/23/26, 12:02 AM - Duygu: …"
 const MESSAGE_RE =
-  /^\[?(\d{1,2})[./-](\d{1,2})[./-](\d{2,4}),?\s+\d{1,2}[:.]\d{2}(?:[:.]\d{2})?(?:\s*[AaPp][Mm])?\]?\s*(?:-\s*)?([^:]{1,60}?):\s?(.*)$/
+  /^\[?(\d{1,2})[./-](\d{1,2})[./-](\d{2,4}),?\s+(\d{1,2})[:.]\d{2}(?:[:.]\d{2})?(?:\s*([AaPp])[Mm])?\]?\s*(?:-\s*)?([^:]{1,60}?):\s?(.*)$/
 
 /** Sohbet dışa aktarımında dosya/medya ve sistem satırları ("<Medya dahil edilmedi>", "görüntü dahil edilmedi"…) */
 const NOISE_RE = /(dahil edilmedi|omitted|<attached|<ek:|medya|bu mesaj silindi|this message was deleted|şifreleme|end-to-end|uçtan uca|\.(jpe?g|png|pdf|opus|mp4|webp)\b)/i
@@ -33,7 +33,13 @@ function splitMessages(text: string): ChatMessage[] {
   for (const raw of text.replace(/[‎‏‪-‮⁦-⁩﻿]/g, '').replace(/ /g, ' ').split(/\r?\n/)) {
     const m = raw.match(MESSAGE_RE)
     const date = m && toDate(m[1], m[2], m[3])
-    if (m && date) messages.push({ date, sender: m[4].trim(), lines: [m[5]] })
+    if (m && date) {
+      // Gece yarısından sonra (05:00'e kadar) gönderilen rapor önceki günün ziyaretleridir ("23 Eki 00:02" → 22 Ekim)
+      let hour = +m[4]
+      if (m[5]) hour = (hour % 12) + (/p/i.test(m[5]) ? 12 : 0)
+      const visitDate = hour < 5 ? format(subDays(new Date(`${date}T12:00:00`), 1), 'yyyy-MM-dd') : date
+      messages.push({ date: visitDate, sender: m[6].trim(), lines: [m[7]] })
+    }
     else if (messages.length) messages[messages.length - 1].lines.push(raw) // çok satırlı mesajın devamı
   }
   return messages
