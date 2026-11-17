@@ -19,7 +19,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { CustomerCombobox } from '@/features/customers/CustomerCombobox'
 import { PaymentForm } from '@/features/payments/PaymentForm'
 import { SampleRequestForm } from '@/features/samples/SampleRequestForm'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
@@ -138,7 +137,9 @@ export function DoctorVisitDialog({
       visit_date: visitDate,
       sales_rep_id: salesRepId,
       doctor_name: values.doctor_name,
-      customer_id: values.customer_id || null,
+      // "Cari Karta Bağla" alanı yok (kullanıcı isteği, 2026-11-17): bağlantı kayıtta otomatik yapılır (api.withCustomer);
+      // ad değişmediyse mevcut bağ korunur, değiştiyse yeni ada göre yeniden eşleştirilir
+      customer_id: visit && values.doctor_name.trim() === visit.doctor_name.trim() ? (visit.customer_id ?? null) : null,
       phone: values.phone || null,
       email: values.email || null,
       social_media: values.social_media || null,
@@ -244,18 +245,6 @@ export function DoctorVisitDialog({
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={bulkForm.control}
-                        name={`visits.${index}.customer_id`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Cari Karta Bağla (opsiyonel)</FormLabel>
-                            <FormControl>
-                              <CustomerCombobox value={field.value ?? undefined} onChange={field.onChange} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
                       <div className="grid grid-cols-2 gap-2">
                         <FormField
                           control={bulkForm.control}
@@ -342,19 +331,6 @@ export function DoctorVisitDialog({
                   <FormLabel>Adı Soyadı</FormLabel>
                   <FormControl>
                     <Input placeholder="Dr. Ayşe Yılmaz" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="customer_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cari Karta Bağla (opsiyonel)</FormLabel>
-                  <FormControl>
-                    <CustomerCombobox value={field.value ?? undefined} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

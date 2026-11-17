@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.392] - 2026-11-17
+- Temsilci raporu: doktor ekleme/düzenleme penceresinden "Cari Karta Bağla" alanı kaldırıldı; Cari Kart bağlantısı kayıtta otomatik (ad değişince yeniden eşleştiriliyor).
+
 ## [2.17.391] - 2026-11-17
 - Temsilci raporu: bu haftadayken kartlar son haftanın (en yeni kaydın haftası) Pazartesi–Cuma günlerini gün gün gösteriyor, boş günlerde "Kayıt yok". WhatsApp sohbetinde 05:00'ten önce gönderilen rapor önceki güne yazılıyor; Duygu'nun 23 Ekim gece raporundaki 5 kayıt 22 Ekim'e alındı.
 
