@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.398] - 2026-11-17
+- Personel Özlük: "Toplu PDF Ekle" — çok sayfalı özlük PDF'i tek seferde yükleniyor; her sayfa okunup (metin ya da yazı tanıma) türü tahmin ediliyor (ehliyet, SGK işe giriş, askerlik, iş sözleşmesi, sağlık raporu…), devam sayfaları birleşiyor, sayfalar ayrı PDF olarak ilgili evrak satırına konuyor (var olan evraka ekleniyor), belge/geçerlilik tarihleri dolduruluyor. Önizlemede türler değiştirilebilir. pdf-lib eklendi.
+
 ## [2.17.397] - 2026-11-17
 - Personel Özlük: "Ayrılanlar" sekmesinden eklenen kişide işten çıkış tarihi bugünle dolu geliyor ve kişi Ayrılanlar'a düşüyor; çıkış tarihi bugün olan kişi artık ayrılmış sayılıyor.
 

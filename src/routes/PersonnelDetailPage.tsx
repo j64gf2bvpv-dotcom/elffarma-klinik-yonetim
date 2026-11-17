@@ -15,6 +15,7 @@ import { getErrorMessage } from '@/lib/utils'
 import { useDeletePersonnel, useDeletePersonnelDocument, usePersonnel, usePersonnelDocuments } from '@/features/personnel/hooks'
 import { PersonnelFormDialog } from '@/features/personnel/PersonnelFormDialog'
 import { PersonnelDocumentDialog } from '@/features/personnel/PersonnelDocumentDialog'
+import { PersonnelBulkPdfDialog } from '@/features/personnel/PersonnelBulkPdfDialog'
 import { PersonPhoto } from '@/features/personnel/PersonPhoto'
 import { PERSONNEL_DOC_TYPES, docTypeLabel } from '@/features/personnel/docTypes'
 import { docSummary, isActivePerson, trDate, validity } from '@/features/personnel/status'
@@ -215,6 +216,7 @@ export function PersonnelDetailPage() {
                   {hideMissing ? <Eye /> : <EyeOff />} {hideMissing ? `Eksikleri göster (${s.missing.length})` : 'Eksikleri gizle'}
                 </Button>
               )}
+              <PersonnelBulkPdfDialog personnelId={person.id} docs={docs} />
               <PersonnelDocumentDialog
                 personnelId={person.id}
                 trigger={
