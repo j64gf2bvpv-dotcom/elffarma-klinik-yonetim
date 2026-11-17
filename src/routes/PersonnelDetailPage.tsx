@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Pencil, Trash2, Plus, FileImage, FileText, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -17,6 +17,8 @@ import { PersonnelFormDialog } from '@/features/personnel/PersonnelFormDialog'
 import { PersonnelDocumentDialog } from '@/features/personnel/PersonnelDocumentDialog'
 import { PersonnelBulkPdfDialog } from '@/features/personnel/PersonnelBulkPdfDialog'
 import { PersonnelFillFromDocsDialog } from '@/features/personnel/PersonnelFillFromDocsDialog'
+import { vehiclesOfPerson } from '@/features/personnel/vehicleLink'
+import { useVehicles } from '@/features/vehicles/hooks'
 import { PersonPhoto } from '@/features/personnel/PersonPhoto'
 import { PERSONNEL_DOC_TYPES, docTypeLabel } from '@/features/personnel/docTypes'
 import { docSummary, isActivePerson, isValidTcNo, trDate, validity } from '@/features/personnel/status'
@@ -45,7 +47,7 @@ const INFO: { title: string; rows: [keyof Personnel, string][] }[] = [
     ],
   },
   {
-    title: 'İş',
+    title: 'İş Bilgileri',
     rows: [
       ['position', 'Görevi'],
       ['department', 'Birimi'],
@@ -79,6 +81,8 @@ export function PersonnelDetailPage() {
   const removePerson = useDeletePersonnel()
   const removeDoc = useDeletePersonnelDocument()
   const person = people.find((p) => p.id === id)
+  const { data: allVehicles = [] } = useVehicles()
+  const myVehicles = person ? vehiclesOfPerson(person, people, allVehicles) : []
   // Eksik evrak satırları istenince gizlenir; tercih bu bilgisayarda hatırlanır (kullanıcı isteği, 2026-11-17)
   const [hideMissing, setHideMissing] = React.useState(() => {
     try {
@@ -204,6 +208,20 @@ export function PersonnelDetailPage() {
                 ))}
               </div>
             ))}
+            {/* Kişiye verilmiş araç — Araçlar bölümünden (kullanıcı isteği, 2026-11-17: "hangi araç ona verildi, kartına işle") */}
+            {myVehicles.length > 0 && (
+              <div className="grid gap-1.5">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground">ARAÇ</p>
+                {myVehicles.map((v) => (
+                  <div key={v.id} className="grid grid-cols-[120px_1fr] gap-2 text-sm">
+                    <span className="text-muted-foreground">{v.plate_number || 'Plakasız'}</span>
+                    <Link to="/araclar" className="break-words hover:underline">
+                      {[v.brand_model, v.year].filter(Boolean).join(' · ')}
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -221,7 +239,7 @@ export function PersonnelDetailPage() {
                   {hideMissing ? <Eye /> : <EyeOff />} {hideMissing ? `Eksikleri göster (${s.missing.length})` : 'Eksikleri gizle'}
                 </Button>
               )}
-              <PersonnelFillFromDocsDialog person={person} docs={docs} />
+              <PersonnelFillFromDocsDialog person={person} docs={docs} vehicles={myVehicles} />
               <PersonnelBulkPdfDialog personnelId={person.id} person={person} docs={docs} />
               <PersonnelDocumentDialog
                 personnelId={person.id}                person={person}

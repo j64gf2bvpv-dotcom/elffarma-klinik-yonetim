@@ -3,6 +3,11 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.404] - 2026-11-17
+- Personel kartında "ARAÇ" bölümü: Araçlar'da kişiye verilmiş araç (plaka, model) görünüyor. "Belgelerden Doldur" araçtaki ehliyet ön/arka yüzünü de okuyor (kan grubu, T.C. no, doğum bilgileri); kişinin ehliyet evrakı yoksa araçtaki ehliyet evraklara kopyalanıyor. Okunamayan dosya artık bütün okumayı kilitlemiyor.
+- Fotoğrafı olmayan personele ehliyetteki fotoğraf (saç dahil baş, kare, büyütülüp netleştirilmiş) konuldu.
+- Evrak tarihleri: e-Devlet belgelerinde doğum tarihi belge tarihi sanılmıyor; Furkan'ın 3 evrakının tarihleri düzeltildi. "İş" başlığı "İş Bilgileri" oldu.
+
 ## [2.17.403] - 2026-11-17
 - Personel kartında yalnız dolu bilgiler görünüyor (boş satır/bölüm gizli).
 - Belgelerden okuma: telefon da sözleşme/sağlık raporundan okunuyor; taramada noktası kaybolan İ harfi Türkçe ünlü uyumuyla düzeltiliyor ("KEÇIÖREN" → "Keçiören", "KAPI" → "Kapı"). Erhan'ın adresi ikametgâh belgesine göre güncellendi.

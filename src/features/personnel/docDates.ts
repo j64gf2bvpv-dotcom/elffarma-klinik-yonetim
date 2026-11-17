@@ -41,7 +41,11 @@ export function parseDocDates(text: string): DocDates {
     else if (ISSUE_RE.test(context)) result.documentDate ??= dates[0]
     else free.push(...dates)
   })
-  const sorted = [...new Set(free)].sort()
+  // Etiketi ayrı sütunda kalmış doğum tarihi: belgedeki en yeni tarihten 14 yıldan eskiyse belge tarihi sayılmaz
+  // (e-Devlet adli sicil / askerlik belgelerinde "21.02.1996" belge tarihi sanılıyordu)
+  const newest = [...free].sort().at(-1)
+  const birthLike = (d: string) => !!newest && Date.parse(newest) - Date.parse(d) > 14 * 365 * 864e5
+  const sorted = [...new Set(free)].filter((d) => !birthLike(d)).sort()
   if (!result.documentDate && sorted.length) result.documentDate = sorted[0]
   // Etiketsiz geçerlilik: belge tarihinden en az bir ay sonraki en ileri tarih
   if (!result.validUntil && sorted.length > 1) {

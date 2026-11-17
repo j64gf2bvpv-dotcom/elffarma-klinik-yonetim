@@ -10,7 +10,8 @@ import { readBillText } from '@/features/bills/readBill'
 import { downloadDocument, isPdfPath } from '@/lib/documentAttachments'
 import { getErrorMessage } from '@/lib/utils'
 import type { Personnel, PersonnelDocument } from '@/types/database'
-import { savePersonnelDocument, updatePersonnel } from './api'
+import type { VehicleWithRelations } from '@/features/vehicles/api'
+import { savePersonnelDocument, updatePersonnel, uploadPersonnelAttachment } from './api'
 import { classifyDocText } from './classifyDoc'
 import { docTypeLabel } from './docTypes'
 import { ID_FIELDS, ID_FIELD_LABELS, mergeIdInfo, parseIdInfo, type IdInfo } from './idInfo'
@@ -22,7 +23,14 @@ const SKIP_TYPES = new Set(['vesikalik', 'cv', 'kvkk', 'isg_egitim'])
 
 type Change = { key: keyof IdInfo; current: string | null; found: string; source: string; on: boolean }
 type TypeFix = { doc: PersonnelDocument; to: string; on: boolean }
+/** Araçlar bölümündeki ehliyet fotoğrafı — kişinin evraklarında ehliyet yoksa oraya da kopyalanır */
+type LicenseCopy = { paths: string[]; plate: string; on: boolean }
 
+const fold = (s: string) => s.toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ')
+/** Bir dosya takılırsa bütün okuma kilitlenmesin — süre dolunca o dosya atlanır */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([p, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('zaman aşımı')), ms))])
+}
 const show = (k: keyof IdInfo, v: string | null) => (v && k === 'birth_date' ? trDate(v) : (v ?? ''))
 // Yazım farkı da düzeltilir ("kazan" → "Kazan"), yalnız boşluk farkı sayılmaz
 const same = (a: string | null, b: string) => (a ?? '').replace(/\s+/g, ' ').trim() === b
@@ -34,38 +42,73 @@ const same = (a: string | null, b: string) => (a ?? '').replace(/\s+/g, ' ').tri
  * Yanlış türde yüklenmiş evrak (ör. "Ehliyet" diye yüklenmiş kimlik kartı) da düzeltilmek üzere önerilir.
  * Okuma bilgisayarda yapılır, hiçbir servise gönderilmez.
  */
-export function PersonnelFillFromDocsDialog({ person, docs }: { person: Personnel; docs: PersonnelDocument[] }) {
+export function PersonnelFillFromDocsDialog({
+  person,
+  docs,
+  vehicles = [],
+}: {
+  person: Personnel
+  docs: PersonnelDocument[]
+  /** Kişiye verilmiş araçlar — araçtaki ehliyet ön/arka yüzü de okunur (kullanıcı isteği, 2026-11-17) */
+  vehicles?: VehicleWithRelations[]
+}) {
   const [open, setOpen] = React.useState(false)
   const [progress, setProgress] = React.useState<string | null>(null)
   const [changes, setChanges] = React.useState<Change[] | null>(null)
   const [typeFixes, setTypeFixes] = React.useState<TypeFix[]>([])
+  const [failed, setFailed] = React.useState<string[]>([])
+  const [licenseCopy, setLicenseCopy] = React.useState<LicenseCopy | null>(null)
   const [saving, setSaving] = React.useState(false)
   const qc = useQueryClient()
 
   const readable = docs
     .filter((d) => d.attachment_paths.length && !SKIP_TYPES.has(d.doc_type))
     .sort((a, b) => (ORDER.indexOf(a.doc_type) + 1 || 99) - (ORDER.indexOf(b.doc_type) + 1 || 99))
+  const vehicleLicenses = vehicles
+    .map((v) => ({ plate: v.plate_number || v.brand_model, paths: [v.license_front_path, v.license_back_path].filter((p): p is string => !!p) }))
+    .filter((v) => v.paths.length)
+  // Araçtaki ehliyet sahte bir "ehliyet" evrakı gibi okunur, ehliyet sırasına konur
+  const sources: (PersonnelDocument & { vehiclePlate?: string })[] = [
+    ...vehicleLicenses.map((v) => ({ ...({} as PersonnelDocument), id: `arac-${v.plate}`, doc_type: 'ehliyet', title: `Ehliyet (araç ${v.plate})`, attachment_paths: v.paths, vehiclePlate: v.plate })),
+    ...readable,
+  ].sort((a, b) => (ORDER.indexOf(a.doc_type) + 1 || 99) - (ORDER.indexOf(b.doc_type) + 1 || 99))
 
   async function scan() {
     setOpen(true)
     setChanges(null)
     setTypeFixes([])
+    setLicenseCopy(null)
     const found: { info: IdInfo; label: string }[] = []
     const fixes: TypeFix[] = []
+    const failed: string[] = []
     const have = new Set(docs.map((d) => d.doc_type))
     try {
       let n = 0
-      const total = readable.reduce((s, d) => s + d.attachment_paths.length, 0)
-      for (const d of readable) {
+      const total = sources.reduce((s, d) => s + d.attachment_paths.length, 0)
+      for (const d of sources) {
         let docText = ''
         for (const path of d.attachment_paths) {
           setProgress(`Evraklar okunuyor… ${++n}/${total} (${docTypeLabel(d.doc_type)})`)
-          const blob = await downloadDocument(path)
-          const file = new File([blob], isPdfPath(path) ? 'belge.pdf' : 'belge.jpg', { type: isPdfPath(path) ? 'application/pdf' : 'image/jpeg' })
-          docText += '\n' + (await readBillText(file).catch(() => ''))
+          try {
+            docText +=
+              '\n' +
+              (await withTimeout(
+                downloadDocument(path).then((blob) =>
+                  readBillText(new File([blob], isPdfPath(path) ? 'belge.pdf' : 'belge.jpg', { type: isPdfPath(path) ? 'application/pdf' : 'image/jpeg' })),
+                ),
+                90_000,
+              ))
+          } catch (err) {
+            console.warn('[belgelerden doldur]', path, err)
+            failed.push(d.title || docTypeLabel(d.doc_type))
+          }
         }
         // Evrak yanlış türde yüklenmişse metin asıl türüne göre okunur ve tür düzeltmesi önerilir
         const guessed = classifyDocText(docText)
+        if (d.vehiclePlate) {
+          found.push({ info: parseIdInfo(docText, 'ehliyet'), label: d.title ?? 'Ehliyet' })
+          continue
+        }
         const type = guessed && guessed !== d.doc_type && d.doc_type !== 'diger' && !have.has(guessed) ? guessed : d.doc_type
         if (type !== d.doc_type) {
           fixes.push({ doc: d, to: type, on: true })
@@ -78,10 +121,14 @@ export function PersonnelFillFromDocsDialog({ person, docs }: { person: Personne
       for (const k of ID_FIELDS) {
         const v = merged[k]
         if (!v || same(person[k], v)) continue
+        // Kartta daha ayrıntılı yazılmışsa ("Adana / Yüreğir") belgedeki kısa hali ("Adana") önerilmez
+        if ((k === 'birth_place' || k === 'address') && person[k] && fold(person[k]).includes(fold(v))) continue
         list.push({ key: k, current: person[k], found: v, source: found.find((f) => f.info[k] === v)?.label ?? '', on: true })
       }
       setChanges(list)
       setTypeFixes(fixes)
+      setFailed(failed)
+      if (!have.has('ehliyet') && vehicleLicenses.length) setLicenseCopy({ ...vehicleLicenses[0], on: true })
     } catch (err) {
       toast.error('Evraklar okunamadı', { description: getErrorMessage(err) })
       setOpen(false)
@@ -96,6 +143,24 @@ export function PersonnelFillFromDocsDialog({ person, docs }: { person: Personne
     setSaving(true)
     try {
       if (Object.keys(patch).length) await updatePersonnel(person.id, patch)
+      if (licenseCopy?.on) {
+        // Dosya kopyalanır (aynı dosya paylaşılmaz — evrak silinince araçtaki fotoğraf gitmesin)
+        const paths: string[] = []
+        for (const [i, p] of licenseCopy.paths.entries()) {
+          const blob = await downloadDocument(p)
+          const pdf = isPdfPath(p)
+          paths.push(await uploadPersonnelAttachment(person.id, new File([blob], `ehliyet-${i + 1}.${pdf ? 'pdf' : 'jpg'}`, { type: pdf ? 'application/pdf' : 'image/jpeg' })))
+        }
+        await savePersonnelDocument(undefined, {
+          personnel_id: person.id,
+          doc_type: 'ehliyet',
+          title: null,
+          document_date: null,
+          valid_until: null,
+          attachment_paths: paths,
+          note: null,
+        })
+      }
       for (const f of typeFixes.filter((x) => x.on)) {
         const { id, created_by: _c, created_at: _a, updated_at: _u, ...rest } = f.doc
         await savePersonnelDocument(id, { ...rest, doc_type: f.to })
@@ -110,16 +175,16 @@ export function PersonnelFillFromDocsDialog({ person, docs }: { person: Personne
     }
   }
 
-  const count = (changes?.filter((c) => c.on).length ?? 0) + typeFixes.filter((f) => f.on).length
+  const count = (changes?.filter((c) => c.on).length ?? 0) + typeFixes.filter((f) => f.on).length + (licenseCopy?.on ? 1 : 0)
 
   return (
     <Dialog open={open} onOpenChange={(o) => !progress && !saving && setOpen(o)}>
       <Button
         size="sm"
         variant="outline"
-        disabled={!readable.length}
+        disabled={!sources.length}
         onClick={() => void scan()}
-        title={readable.length ? 'Yüklü evrakları okuyup kimlik bilgilerini karta işle' : 'Önce kimlik, ehliyet gibi evrakları ekleyin'}
+        title={sources.length ? 'Yüklü evrakları okuyup kimlik bilgilerini karta işle' : 'Önce kimlik, ehliyet gibi evrakları ekleyin'}
       >
         <ScanText /> Belgelerden Doldur
       </Button>
@@ -134,7 +199,7 @@ export function PersonnelFillFromDocsDialog({ person, docs }: { person: Personne
           <div className="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground">
             <Loader2 className="size-5 animate-spin" /> {progress ?? 'Hazırlanıyor…'}
           </div>
-        ) : !changes.length && !typeFixes.length ? (
+        ) : !changes.length && !typeFixes.length && !licenseCopy ? (
           <p className="p-6 text-center text-sm text-muted-foreground">Kart bilgileri belgelerle uyuşuyor, değiştirilecek bir şey yok.</p>
         ) : (
           <div className="max-h-[60vh] overflow-y-auto rounded-md border text-sm">
@@ -184,15 +249,31 @@ export function PersonnelFillFromDocsDialog({ person, docs }: { person: Personne
                     </td>
                   </tr>
                 ))}
+                {licenseCopy && (
+                  <tr className="border-t align-top">
+                    <td className="p-2">
+                      <Checkbox checked={licenseCopy.on} onCheckedChange={(v) => setLicenseCopy((l) => l && { ...l, on: !!v })} aria-label="Ehliyeti evraklara ekle" />
+                    </td>
+                    <td className="p-2 font-medium">Ehliyet evrakı</td>
+                    <td className="p-2 text-muted-foreground">yok</td>
+                    <td className="p-2">
+                      <span className="font-medium text-emerald-700 dark:text-emerald-400">Araçtaki ehliyet eklenecek</span>
+                      <span className="block text-xs text-muted-foreground">{licenseCopy.plate}</span>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
+        )}
+        {!progress && failed.length > 0 && (
+          <p className="text-xs text-amber-600">Okunamayan evrak: {[...new Set(failed)].join(', ')} — tekrar deneyin ya da evrakı yeniden yükleyin.</p>
         )}
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)} disabled={!!progress || saving}>
             Kapat
           </Button>
-          {!!changes?.length || typeFixes.length ? (
+          {!!changes?.length || typeFixes.length || licenseCopy ? (
             <Button onClick={() => void apply()} disabled={saving || !count}>
               {saving && <Loader2 className="animate-spin" />} {count} Değişikliği Kaydet
             </Button>
