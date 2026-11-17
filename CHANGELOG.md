@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.400] - 2026-11-17
+- Personel kartı: "Belgelerden Doldur" — yüklü evraklar (kimlik, ehliyet, e-Devlet adli sicil/askerlik/ikametgâh, diploma, sağlık raporu, sözleşme) okunup T.C. no, doğum tarihi/yeri, cinsiyet, kan grubu, adres, eğitim, askerlik, ehliyet sınıfı kartla karşılaştırılıyor; boş ya da uyuşmayanlar onayla düzeltiliyor, yanlış türde yüklenmiş evrak da düzeltiliyor. Kimlik kartı arka yüzündeki makine okunur satır da okunuyor.
+- Bilgiler tek düzende kaydediliyor: adres (Mah./Sk./Cad./No: düzeni, baş harfler büyük), doğum yeri, görev/birim, acil durum kişisi, e-posta; mevcut kayıtlar da düzenlendi. Kart başlıkları ("İŞ") doğru büyük harfle yazılıyor.
+
 ## [2.17.399] - 2026-11-17
 - Toplu PDF: yan ya da ters taranmış sayfalar otomatik düzeltiliyor (yazı tanıma kutularının yönünden 90/180/270° bulunuyor), düz haliyle okunup ilgili evraka düz kaydediliyor; elle döndürme düğmesi de var.
 - Kimlik bilgileri otomatik: kimlik, ehliyet, nüfus kaydı, askerlik ve banka belgelerinden T.C. no, doğum tarihi/yeri, cinsiyet, kan grubu, ehliyet sınıfı, askerlik durumu ve IBAN okunup personel kartındaki boş alanlara yazılıyor (tek evrak eklemede ve toplu PDF'te).

@@ -16,6 +16,7 @@ import { useDeletePersonnel, useDeletePersonnelDocument, usePersonnel, usePerson
 import { PersonnelFormDialog } from '@/features/personnel/PersonnelFormDialog'
 import { PersonnelDocumentDialog } from '@/features/personnel/PersonnelDocumentDialog'
 import { PersonnelBulkPdfDialog } from '@/features/personnel/PersonnelBulkPdfDialog'
+import { PersonnelFillFromDocsDialog } from '@/features/personnel/PersonnelFillFromDocsDialog'
 import { PersonPhoto } from '@/features/personnel/PersonPhoto'
 import { PERSONNEL_DOC_TYPES, docTypeLabel } from '@/features/personnel/docTypes'
 import { docSummary, isActivePerson, trDate, validity } from '@/features/personnel/status'
@@ -188,7 +189,7 @@ export function PersonnelDetailPage() {
               if (!filled.length) return null
               return (
                 <div key={sec.title} className="grid gap-1.5">
-                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{sec.title}</p>
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground">{sec.title.toLocaleUpperCase('tr-TR')}</p>
                   {filled.map(([k, label]) => (
                     <div key={k} className="grid grid-cols-[120px_1fr] gap-2 text-sm">
                       <span className="text-muted-foreground">{label}</span>
@@ -215,6 +216,7 @@ export function PersonnelDetailPage() {
                   {hideMissing ? <Eye /> : <EyeOff />} {hideMissing ? `Eksikleri göster (${s.missing.length})` : 'Eksikleri gizle'}
                 </Button>
               )}
+              <PersonnelFillFromDocsDialog person={person} docs={docs} />
               <PersonnelBulkPdfDialog personnelId={person.id} person={person} docs={docs} />
               <PersonnelDocumentDialog
                 personnelId={person.id}                person={person}

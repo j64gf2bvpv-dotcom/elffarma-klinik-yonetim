@@ -58,3 +58,91 @@ export function formatPhoneTyping(value: string): string {
   const parts = [d.slice(0, 4), d.slice(4, 7), d.slice(7, 9), d.slice(9, 11), d.slice(11)].filter(Boolean)
   return parts.join(' ')
 }
+
+/** Yer adı: "KADIKÖY-ISTANBUL" / "adana/yüreğir" → "Kadıköy-Istanbul" / "Adana / Yüreğir" */
+export function formatPlaceName(raw: string | null | undefined): string {
+  const s = (raw ?? '').replace(/\s*\/\s*/g, ' / ').replace(/\s+/g, ' ').trim()
+  return s
+    .split(' ')
+    .map((w) => (w === '/' ? w : cap(w)))
+    .join(' ')
+}
+
+// Adres kısaltmaları — tek tip yazılır
+const ADDRESS_ABBR: [RegExp, string][] = [
+  [/^(mah|mahallesi|mahalle|mh)\.?$/i, 'Mah.'],
+  [/^(sok|sk|sokak|sokağı|sokagi)\.?$/i, 'Sk.'],
+  [/^(cad|cd|caddesi|cadde)\.?$/i, 'Cad.'],
+  [/^(bulv|blv|bulvarı|bulvari)\.?$/i, 'Bulv.'],
+  [/^(apt|apartmanı|apartmani)\.?$/i, 'Apt.'],
+  [/^(sit|sitesi)\.?$/i, 'Sitesi'],
+  [/^(kat)\.?$/i, 'Kat'],
+  [/^(daire|d)\.?$/i, 'Daire'],
+  [/^(blok|blk)\.?$/i, 'Blok'],
+]
+
+/**
+ * Adres tek düzende yazılır (kullanıcı isteği, 2026-11-17: "doğru eksiksiz düzenli nizami olsun"):
+ * "2000 evler mah 76034 sok lale apt no 24/2 seyhan/adana" → "2000 Evler Mah. 76034 Sk. Lale Apt. No: 24/2 Seyhan / Adana".
+ * Kelimelerin baş harfi büyük, kısaltmalar tek tip, "No"/"İç Kapı No" iki noktalı; içerik değiştirilmez.
+ */
+export function formatAddress(raw: string | null | undefined): string {
+  let s = (raw ?? '').replace(/\s+/g, ' ').trim()
+  if (!s) return ''
+  // "5088.no.relaxplus" gibi noktayla bitişik yazılmış kelimeler ayrılır (sayı içi nokta/kesir korunur)
+  s = s.replace(/(\p{L})\.(?=[\p{L}\d])/gu, '$1. ').replace(/(\d)\.(?=\p{L})/gu, '$1. ')
+  // "d:4" → "d: 4"; "56:56" gibi rakam arası iki nokta olduğu gibi kalır
+  s = s.replace(/\s*\/\s*/g, ' / ').replace(/\s*,\s*/g, ', ').replace(/(\p{L})\s*:\s*/gu, '$1: ')
+  // "24 / 2" kapı numarası kesri bitişik kalır
+  s = s.replace(/(\d) \/ (\d)/g, '$1/$2')
+  const words = s.split(' ')
+  const out: string[] = []
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i]
+    const bare = w.replace(/[.,:]+$/, '')
+    const tail = w.slice(bare.length).replace(/^\./, '')
+    const abbr = ADDRESS_ABBR.find(([re]) => re.test(bare))
+    if (abbr) {
+      out.push(abbr[1] + tail.replace(/^\./, ''))
+      continue
+    }
+    if (/^no$/i.test(bare)) {
+      out.push(/^\d/.test(words[i + 1] ?? '') ? 'No:' : 'No.')
+      continue
+    }
+    if (/^(iç|ic)$/i.test(bare) && /^kap[ıi]$/i.test(words[i + 1]?.replace(/[.,:]+$/, '') ?? '')) {
+      out.push('İç Kapı')
+      i++
+      continue
+    }
+    // Tek harfli blok adı (G Blok) ve rakamla başlayanlar olduğu gibi büyük
+    if (/^\p{L}$/u.test(bare)) out.push(up(bare) + tail)
+    else if (/^\d/.test(bare)) out.push(up(w))
+    else out.push(cap(bare) + tail)
+  }
+  return out
+    .join(' ')
+    .replace(/No: :/g, 'No:')
+    .replace(/(\d\.)(?=\p{L})/gu, '$1 ')
+    .replace(/No:(?=\S)/g, 'No: ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const SMALL_WORDS = new Set(['ve', 'ile', 'veya', 'de', 'da', 'ki'])
+/**
+ * Görev, birim gibi serbest metinler: her kelimenin baş harfi büyük ("türkiye satış direktörü" → "Türkiye Satış
+ * Direktörü"); "ve/ile" küçük kalır, "IT", "AR-GE" gibi kısa büyük harfli kısaltmalara dokunulmaz.
+ */
+export function formatTitleText(raw: string | null | undefined): string {
+  return (raw ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map((w, i) => {
+      if (i > 0 && SMALL_WORDS.has(low(w))) return low(w)
+      if (/^\p{Lu}{2,3}$|^\p{Lu}{2}-\p{Lu}{2}$/u.test(w)) return w
+      return cap(w)
+    })
+    .join(' ')
+}

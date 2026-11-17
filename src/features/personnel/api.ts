@@ -3,7 +3,7 @@ import { offlineInsert, offlineUpdate, offlineDelete } from '@/lib/offlineMutati
 import { removeDocuments, uploadDocumentAttachment } from '@/lib/documentAttachments'
 import { resizeImageFile } from '@/lib/resizeImage'
 import type { Personnel, PersonnelDocument } from '@/types/database'
-import { formatPersonName, formatPhoneTR } from '@/lib/personFormat'
+import { formatAddress, formatPersonName, formatPhoneTR, formatPlaceName, formatTitleText } from '@/lib/personFormat'
 
 export type PersonnelInput = Omit<Personnel, 'id' | 'created_by' | 'created_at' | 'updated_at'>
 export type PersonnelDocumentInput = Omit<PersonnelDocument, 'id' | 'created_by' | 'created_at' | 'updated_at'>
@@ -22,12 +22,24 @@ export async function fetchPersonnelDocuments(personnelId?: string): Promise<Per
   return data as PersonnelDocument[]
 }
 
-/** Ad "Ad SOYAD", telefonlar "0532 123 45 67" düzeninde kaydedilir (bkz. lib/personFormat) */
+/**
+ * Bilgiler tek düzende kaydedilir (kullanıcı isteği, 2026-11-17: "adresi, telefonu, doğum yeri küçük yazıldıysa
+ * düzenle, girilen bilgilerin hepsi nizami olsun"): ad "Ad SOYAD", telefon "0532 123 45 67", adres/doğum yeri/görev
+ * baş harfleri büyük, e-posta küçük harf (bkz. lib/personFormat)
+ */
 function tidy<T extends Partial<PersonnelInput>>(input: T): T {
   const out = { ...input }
   if (out.full_name) out.full_name = formatPersonName(out.full_name)
   if (out.phone) out.phone = formatPhoneTR(out.phone)
   if (out.emergency_contact_phone) out.emergency_contact_phone = formatPhoneTR(out.emergency_contact_phone)
+  if (out.emergency_contact_name) out.emergency_contact_name = formatPersonName(out.emergency_contact_name)
+  if (out.address) out.address = formatAddress(out.address)
+  if (out.birth_place) out.birth_place = formatPlaceName(out.birth_place)
+  if (out.tc_no) out.tc_no = out.tc_no.replace(/\s/g, '')
+  if (out.iban) out.iban = out.iban.replace(/\s/g, '').toUpperCase()
+  if (out.email) out.email = out.email.trim().toLocaleLowerCase('en-US')
+  if (out.position) out.position = formatTitleText(out.position)
+  if (out.department) out.department = formatTitleText(out.department)
   return out
 }
 
