@@ -79,7 +79,7 @@ export function PersonnelPage() {
                 },
               ]}
             />
-            <PersonnelFormDialog />
+            <PersonnelFormDialog leaving={tab === 'left'} />
           </div>
         }
       />

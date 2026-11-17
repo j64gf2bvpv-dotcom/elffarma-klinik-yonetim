@@ -18,7 +18,8 @@ export function docSummary(docs: PersonnelDocument[]) {
   return { done: PERSONNEL_DOC_TYPES.length - missing.length, total: PERSONNEL_DOC_TYPES.length, missing, expired, soon }
 }
 
-export const isActivePerson = (p: Personnel) => !p.end_date || p.end_date >= new Date().toISOString().slice(0, 10)
+// İşten çıkış tarihi bugün ya da geçmişse ayrılmış; yalnız ileri tarihli çıkış hâlâ çalışıyor sayılır (yerel tarih)
+export const isActivePerson = (p: Personnel) => !p.end_date || p.end_date > new Date().toLocaleDateString('sv-SE')
 
 export const trDate = (d: string | null | undefined) => (d ? new Date(d + 'T00:00:00').toLocaleDateString('tr-TR') : '')
 

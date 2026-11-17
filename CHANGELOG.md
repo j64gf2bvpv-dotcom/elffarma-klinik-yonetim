@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.397] - 2026-11-17
+- Personel Özlük: "Ayrılanlar" sekmesinden eklenen kişide işten çıkış tarihi bugünle dolu geliyor ve kişi Ayrılanlar'a düşüyor; çıkış tarihi bugün olan kişi artık ayrılmış sayılıyor.
+
 ## [2.17.396] - 2026-11-17
 - Tam ekran resim görüntüleyici (components/ImageViewer): Personel Özlük'te küçük resme tıklayınca fotoğraf ekrana sığarak açılıyor; tekerlek/trackpad/+− ile yakınlaştırma, sürükleyerek gezme, çift tıkla 2x, "Ekrana sığdır" ve "Fotoğrafı değiştir". Fotoğrafı olmayan kişide tıklayınca fotoğraf seçiliyor.
 

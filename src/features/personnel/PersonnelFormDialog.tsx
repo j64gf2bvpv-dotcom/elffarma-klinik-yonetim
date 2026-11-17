@@ -99,7 +99,11 @@ const SECTIONS: { title: string; fields: { key: keyof PersonnelInput; label: str
   },
 ]
 
-export function PersonnelFormDialog({ person, trigger }: { person?: Personnel; trigger?: React.ReactNode }) {
+/**
+ * `leaving`: "Ayrılanlar" sekmesinden ekleniyor — işten çıkış tarihi bugünle dolu gelir, kişi Ayrılanlar'a düşer
+ * (kullanıcı isteği, 2026-11-17: "ayrılanlara ekleyince çalışan personel kısmına ekleniyor").
+ */
+export function PersonnelFormDialog({ person, trigger, leaving }: { person?: Personnel; trigger?: React.ReactNode; leaving?: boolean }) {
   const [open, setOpen] = React.useState(false)
   const [form, setForm] = React.useState<Form>(EMPTY)
   const [photo, setPhoto] = React.useState<File | null>(null)
@@ -113,6 +117,7 @@ export function PersonnelFormDialog({ person, trigger }: { person?: Personnel; t
     if (next) {
       const f = { ...EMPTY }
       if (person) for (const k of Object.keys(EMPTY) as (keyof PersonnelInput)[]) f[k] = (person[k] as string | null) ?? ''
+      else if (leaving) f.end_date = new Date().toLocaleDateString('sv-SE')
       setForm(f)
       setPhoto(null)
       setPhotoUrl(null)
@@ -171,7 +176,7 @@ export function PersonnelFormDialog({ person, trigger }: { person?: Personnel; t
       </DialogTrigger>
       <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{person ? 'Personel Bilgilerini Düzenle' : 'Yeni Personel'}</DialogTitle>
+          <DialogTitle>{person ? 'Personel Bilgilerini Düzenle' : leaving ? 'Yeni Personel (Ayrılan)' : 'Yeni Personel'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-5">
           <div className="flex items-center gap-4">
