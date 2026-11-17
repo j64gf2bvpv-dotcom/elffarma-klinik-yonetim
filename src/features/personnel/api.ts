@@ -5,6 +5,20 @@ import { resizeImageFile } from '@/lib/resizeImage'
 import type { Personnel, PersonnelDocument } from '@/types/database'
 import { formatAddress, formatPersonName, formatPhoneTR, formatPlaceName, formatTitleText } from '@/lib/personFormat'
 
+// Seçmeli alanlar tek yazımla kaydedilir ("BEKAR", "bekar" → "Bekâr")
+const CHOICES: Partial<Record<keyof Personnel, string[]>> = {
+  gender: ['Kadın', 'Erkek'],
+  marital_status: ['Bekâr', 'Evli', 'Boşanmış', 'Dul'],
+  blood_type: ['0 Rh+', '0 Rh-', 'A Rh+', 'A Rh-', 'B Rh+', 'B Rh-', 'AB Rh+', 'AB Rh-'],
+  education: ['İlkokul', 'Ortaokul', 'Lise', 'Ön Lisans', 'Lisans', 'Yüksek Lisans', 'Doktora'],
+  military_status: ['Yapıldı', 'Muaf', 'Tecilli', 'Yapılmadı'],
+}
+const choiceKey = (s: string) =>
+  s.toLocaleLowerCase('tr-TR').replace(/[âà]/g, 'a').replace(/ı/g, 'i').replace(/o(?=\s*rh)/, '0').replace(/[\s.]/g, '')
+export function normalizeChoice(field: keyof Personnel, value: string): string {
+  return CHOICES[field]?.find((o) => choiceKey(o) === choiceKey(value)) ?? value.trim()
+}
+
 export type PersonnelInput = Omit<Personnel, 'id' | 'created_by' | 'created_at' | 'updated_at'>
 export type PersonnelDocumentInput = Omit<PersonnelDocument, 'id' | 'created_by' | 'created_at' | 'updated_at'>
 
@@ -37,6 +51,10 @@ function tidy<T extends Partial<PersonnelInput>>(input: T): T {
   if (out.birth_place) out.birth_place = formatPlaceName(out.birth_place)
   if (out.tc_no) out.tc_no = out.tc_no.replace(/\s/g, '')
   if (out.iban) out.iban = out.iban.replace(/\s/g, '').toUpperCase()
+  for (const k of Object.keys(CHOICES) as (keyof Personnel & keyof T)[]) {
+    const v = out[k]
+    if (typeof v === 'string' && v) (out as Record<string, unknown>)[k] = normalizeChoice(k, v)
+  }
   if (out.email) out.email = out.email.trim().toLocaleLowerCase('en-US')
   if (out.position) out.position = formatTitleText(out.position)
   if (out.department) out.department = formatTitleText(out.department)

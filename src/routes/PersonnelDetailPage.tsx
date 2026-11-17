@@ -19,7 +19,7 @@ import { PersonnelBulkPdfDialog } from '@/features/personnel/PersonnelBulkPdfDia
 import { PersonnelFillFromDocsDialog } from '@/features/personnel/PersonnelFillFromDocsDialog'
 import { PersonPhoto } from '@/features/personnel/PersonPhoto'
 import { PERSONNEL_DOC_TYPES, docTypeLabel } from '@/features/personnel/docTypes'
-import { docSummary, isActivePerson, trDate, validity } from '@/features/personnel/status'
+import { docSummary, isActivePerson, isValidTcNo, trDate, validity } from '@/features/personnel/status'
 import type { Personnel, PersonnelDocument } from '@/types/database'
 
 const INFO: { title: string; rows: [keyof Personnel, string][] }[] = [
@@ -184,21 +184,30 @@ export function PersonnelDetailPage() {
                 <Badge variant={isActivePerson(person) ? 'outline' : 'secondary'}>{isActivePerson(person) ? 'Çalışıyor' : 'Ayrıldı'}</Badge>
               </div>
             </div>
-            {INFO.map((sec) => {
-              const filled = sec.rows.filter(([k]) => person[k])
-              if (!filled.length) return null
-              return (
-                <div key={sec.title} className="grid gap-1.5">
-                  <p className="text-xs font-semibold tracking-wide text-muted-foreground">{sec.title.toLocaleUpperCase('tr-TR')}</p>
-                  {filled.map(([k, label]) => (
-                    <div key={k} className="grid grid-cols-[120px_1fr] gap-2 text-sm">
-                      <span className="text-muted-foreground">{label}</span>
-                      <span className="break-words">{DATE_FIELDS.has(k) ? trDate(person[k] as string) : String(person[k])}</span>
-                    </div>
-                  ))}
-                </div>
-              )
-            })}
+            {/* Her kişide aynı kart: bütün satırlar gösterilir, boş olan "—" (kullanıcı isteği, 2026-11-17: "birisinde kan
+                grubu var diğerinde yok, hepsinde aynı kişi kartı olmalı") */}
+            {INFO.map((sec) => (
+              <div key={sec.title} className="grid gap-1.5">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground">{sec.title.toLocaleUpperCase('tr-TR')}</p>
+                {sec.rows.map(([k, label]) => (
+                  <div key={k} className="grid grid-cols-[120px_1fr] gap-2 text-sm">
+                    <span className="text-muted-foreground">{label}</span>
+                    {person[k] ? (
+                      <span className="break-words">
+                        {DATE_FIELDS.has(k) ? trDate(person[k] as string) : String(person[k])}
+                        {k === 'tc_no' && !isValidTcNo(String(person[k])) && (
+                          <span className="ml-2 text-xs text-amber-600" title="T.C. kimlik no 11 hane olmalı ve doğrulama kuralına uymalı">
+                            hatalı — kontrol edin
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/60">—</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
           </CardContent>
         </Card>
 
