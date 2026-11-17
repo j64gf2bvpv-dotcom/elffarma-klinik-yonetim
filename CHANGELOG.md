@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.390] - 2026-11-17
+- Temsilci raporu: bu haftadayken her temsilcinin kartında doktor girilmiş son 5 günün listesi (en yeni üstte, telefonlarıyla); geçmiş hafta seçilince o hafta görünür.
+
 ## [2.17.389] - 2026-11-17
 - Temsilci raporu: WhatsApp sohbetinden içe aktarma artık yalnız doktorların adı ve telefonunu alıyor (açıklama, kurum, adres yok). Sipariş sohbetleri için okuyucu: "1-)" numaralı listeler, küçük harfli/özensiz adlar, ürün/şehir kelimelerinde ad bitişi, alt satırdaki telefon, alt alta yazılmış aynı yerdeki hekimler, isim düzeltme mesajları, kısa cevaplar ("Uygun") ve adres/vergi satırları ayıklanıyor. İçe aktarma önizlemesi hafta hafta. Duygu/Emrah/Furkan sohbet kayıtları yedeklenip ad+telefonla yeniden aktarıldı.
 

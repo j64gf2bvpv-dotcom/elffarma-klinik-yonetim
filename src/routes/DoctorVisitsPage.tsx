@@ -153,6 +153,7 @@ function RepWeekSection({
   performance,
   customers,
   totalDoctors,
+  recentVisits,
 }: {
   rep: SalesRep
   days: Date[]
@@ -160,6 +161,8 @@ function RepWeekSection({
   performance: RepPerformance
   customers: Customer[]
   totalDoctors: number
+  /** Bu haftadayken: temsilcinin doktor girilmiş son 5 gününün kayıtları (kullanıcı isteği, 2026-11-17) */
+  recentVisits?: DoctorVisit[]
 }) {
   const queryClient = useQueryClient()
   const [clearing, setClearing] = React.useState(false)
@@ -173,15 +176,21 @@ function RepWeekSection({
   // Seçilen gün bu haftada değilse (hafta değişti): bugün bu haftadaysa bugün, değilse haftanın ilk günü
   const entryDate = weekKeys.includes(pickedDate) ? pickedDate : weekKeys.includes(dateKey(new Date())) ? dateKey(new Date()) : weekKeys[0]
 
+  // Liste: bu haftadayken son 5 günün doktorları, geçmiş haftada o haftanın günleri
+  const listVisits = recentVisits ?? visits
+  const listDays = React.useMemo(
+    () => (recentVisits ? [...new Set(recentVisits.map((v) => v.visit_date))].sort().reverse().map((d) => new Date(`${d}T00:00:00`)) : days),
+    [recentVisits, days],
+  )
   const visitsByDay = React.useMemo(() => {
     const map = new Map<string, DoctorVisit[]>()
-    for (const day of days) map.set(dateKey(day), [])
-    for (const visit of visits) {
+    for (const day of listDays) map.set(dateKey(day), [])
+    for (const visit of listVisits) {
       const list = map.get(visit.visit_date)
       if (list) list.push(visit)
     }
     return map
-  }, [visits, days])
+  }, [listVisits, listDays])
 
   // Çöp kutusu temsilciyi DEĞİL, sadece bu haftaki doktor listesini siler (kullanıcı isteği, 2026-11-13:
   // "sil yaptığımda personel silinmesin, sadece içeriye eklediğim haftalık doktorlar silinsin")
@@ -286,8 +295,11 @@ function RepWeekSection({
             <QuickVisitInput visitDate={entryDate} salesRepId={rep.id} customers={customers} />
           </div>
         </div>
-        {visits.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">Bu hafta henüz doktor girilmedi.</p>}
-        {days.filter((day) => (visitsByDay.get(dateKey(day))?.length ?? 0) > 0).map((day) => {
+        {recentVisits && listVisits.length > 0 && (
+          <p className="text-xs font-medium text-muted-foreground">Son 5 günün doktorları ({listVisits.length})</p>
+        )}
+        {listVisits.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">Henüz doktor girilmedi.</p>}
+        {listDays.filter((day) => (visitsByDay.get(dateKey(day))?.length ?? 0) > 0).map((day) => {
           const key = dateKey(day)
           const dayVisits = visitsByDay.get(key) ?? []
           const isToday = key === dateKey(new Date())
@@ -367,6 +379,18 @@ export function DoctorVisitsPage() {
   // Eski/ileri tarihli raporlar (kullanıcı isteği, 2026-11-13): kaydı olan haftalar listesi + takvimden hafta seçme
   const { data: visitDates = [] } = useVisitDates()
   const { data: doctorTotals = {} } = useRepDoctorTotals()
+  // Bu haftadayken kartlarda her temsilcinin doktor girdiği son 5 gün (yeni hafta boş görünmesin)
+  const { data: recentPool = [] } = useVisitsInRange(dateKey(subDays(new Date(), 180)), dateKey(new Date()))
+  const recentByRep = React.useMemo(() => {
+    const map = new Map<string, DoctorVisit[]>()
+    const byRep = new Map<string, DoctorVisit[]>()
+    for (const v of recentPool) if (v.sales_rep_id) byRep.set(v.sales_rep_id, [...(byRep.get(v.sales_rep_id) ?? []), v])
+    for (const [rep, list] of byRep) {
+      const last5 = new Set([...new Set(list.map((v) => v.visit_date))].sort().slice(-5))
+      map.set(rep, list.filter((v) => last5.has(v.visit_date)))
+    }
+    return map
+  }, [recentPool])
   const thisWeekKey = dateKey(startOfWeek(new Date(), { weekStartsOn: 1 }))
   const reportWeeks = React.useMemo(() => {
     const counts = new Map<string, number>()
@@ -529,6 +553,7 @@ export function DoctorVisitsPage() {
             days={days}
             visits={visits.filter((v) => v.sales_rep_id === rep.id)}
             totalDoctors={doctorTotals[rep.id] ?? 0}
+            recentVisits={dateKey(weekStart) >= thisWeekKey ? (recentByRep.get(rep.id) ?? []) : undefined}
             performance={
               performanceByRep.get(rep.id) ?? { weekRevenue: 0, monthRevenue: 0, monthDoctors: [] }
             }
