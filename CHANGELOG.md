@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.402] - 2026-11-17
+- Toplu PDF ile eklenen evraklara artık "Toplu PDF'ten (dosya, sayfa)" notu yazılmıyor; "Diğer" evrak belge adını alıyor (ör. Öğrenci Belgesi). Mevcut kayıtlardaki bu notlar temizlendi.
+
 ## [2.17.401] - 2026-11-17
 - Personel kartı her kişide aynı: bütün satırlar (kan grubu, adres, IBAN…) gösteriliyor, boş olan "—". Hatalı/eksik haneli T.C. no "hatalı — kontrol edin" uyarısı alıyor. Seçmeli alanlar (medeni hâl, cinsiyet, kan grubu, eğitim, askerlik) tek yazımla kaydediliyor ("BEKAR" → "Bekâr").
 

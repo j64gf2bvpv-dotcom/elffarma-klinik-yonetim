@@ -17,6 +17,19 @@ import { trDate } from './status'
 import { analyzePdf, extractPages, rotateDataUrl, type PdfPageInfo } from './splitPdf'
 
 const SKIP = 'skip'
+
+/** "Diğer" evrakın adı: bilinen belge adlarından biri metinde geçiyorsa o, yoksa "Diğer Evrak" */
+function otherTitle(text: string): string {
+  const t = text.toLocaleLowerCase('tr-TR').replace(/ı/g, 'i')
+  const known: [RegExp, string][] = [
+    [/ogrenci belgesi|öğrenci belgesi/, 'Öğrenci Belgesi'],
+    [/sertifika/, 'Sertifika'],
+    [/transkript|not döküm/, 'Transkript'],
+    [/vukuatli|vukuatlı/, 'Nüfus Kayıt Örneği'],
+    [/hizmet döküm|hizmet dokum/, 'SGK Hizmet Dökümü'],
+  ]
+  return known.find(([re]) => re.test(t))?.[1] ?? 'Diğer Evrak'
+}
 type Row = PdfPageInfo & { assigned: string }
 type Group = { type: string; pages: Row[] }
 
@@ -127,11 +140,12 @@ export function PersonnelBulkPdfDialog({ personnelId, person, docs }: { personne
           await savePersonnelDocument(undefined, {
             personnel_id: personnelId,
             doc_type: g.type,
-            title: g.type === 'diger' ? `Toplu PDF ${range}` : null,
+            title: g.type === 'diger' ? otherTitle(g.pages.map((p) => p.text).join('\n')) : null,
             document_date: documentDate,
             valid_until: validUntil,
             attachment_paths: [path],
-            note: `Toplu PDF'ten (${file.name}, ${range})`,
+            // Evrakın nereden geldiği yazılmaz (kullanıcı isteği, 2026-11-17)
+            note: null,
           })
         }
         added++
