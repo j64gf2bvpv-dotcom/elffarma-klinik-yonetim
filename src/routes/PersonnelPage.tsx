@@ -131,7 +131,7 @@ export function PersonnelPage() {
                 return (
                   <TableRow key={p.id} className="cursor-pointer" onClick={() => navigate(`/personel/${p.id}`)}>
                     <TableCell>
-                      <PersonPhoto path={p.photo_path} className="size-10" />
+                      <PersonPhoto path={p.photo_path} personnelId={p.id} className="size-10" />
                     </TableCell>
                     <TableCell className="font-medium">
                       {p.full_name}

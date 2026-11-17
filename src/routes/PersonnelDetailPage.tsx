@@ -1,5 +1,6 @@
+import * as React from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Pencil, Trash2, Plus, FileImage, FileText } from 'lucide-react'
+import { Pencil, Trash2, Plus, FileImage, FileText, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -76,6 +77,24 @@ export function PersonnelDetailPage() {
   const removePerson = useDeletePersonnel()
   const removeDoc = useDeletePersonnelDocument()
   const person = people.find((p) => p.id === id)
+  // Eksik evrak satırları istenince gizlenir; tercih bu bilgisayarda hatırlanır (kullanıcı isteği, 2026-11-17)
+  const [hideMissing, setHideMissing] = React.useState(() => {
+    try {
+      return localStorage.getItem('personnel-hide-missing') === '1'
+    } catch {
+      return false
+    }
+  })
+  function toggleMissing() {
+    setHideMissing((v) => {
+      try {
+        localStorage.setItem('personnel-hide-missing', v ? '0' : '1')
+      } catch {
+        /* tarayıcı depolaması kapalıysa yalnız bu oturumda geçerli */
+      }
+      return !v
+    })
+  }
 
   if (!person) {
     return (
@@ -97,6 +116,7 @@ export function PersonnelDetailPage() {
     ...docs.filter((d) => !PERSONNEL_DOC_TYPES.some((t) => t.key === d.doc_type)).map((doc) => ({ key: doc.id, label: docTypeLabel(doc.doc_type, doc.title), doc })),
   ]
   const s = docSummary(docs)
+  const shownRows = hideMissing ? rows.filter((r) => r.doc) : rows
 
   async function handleDeletePerson() {
     if (!person) return
@@ -156,7 +176,7 @@ export function PersonnelDetailPage() {
         <Card>
           <CardContent className="grid gap-4 pt-6">
             <div className="flex items-center gap-3">
-              <PersonPhoto path={person.photo_path} className="size-20" />
+              <PersonPhoto path={person.photo_path} personnelId={person.id} className="size-20" />
               <div>
                 <p className="font-semibold">{person.full_name}</p>
                 <Badge variant={isActivePerson(person) ? 'outline' : 'secondary'}>{isActivePerson(person) ? 'Çalışıyor' : 'Ayrıldı'}</Badge>
@@ -189,14 +209,21 @@ export function PersonnelDetailPage() {
                 {s.expired.length ? ` · ${s.expired.length} süresi dolmuş` : ''}
               </span>
             </CardTitle>
-            <PersonnelDocumentDialog
-              personnelId={person.id}
-              trigger={
-                <Button size="sm">
-                  <Plus /> Evrak Ekle
+            <div className="flex items-center gap-2">
+              {s.missing.length > 0 && (
+                <Button size="sm" variant="outline" onClick={toggleMissing} title={hideMissing ? 'Eksik evrakları listede göster' : 'Eksik evrakları listeden gizle'}>
+                  {hideMissing ? <Eye /> : <EyeOff />} {hideMissing ? `Eksikleri göster (${s.missing.length})` : 'Eksikleri gizle'}
                 </Button>
-              }
-            />
+              )}
+              <PersonnelDocumentDialog
+                personnelId={person.id}
+                trigger={
+                  <Button size="sm">
+                    <Plus /> Evrak Ekle
+                  </Button>
+                }
+              />
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -211,7 +238,14 @@ export function PersonnelDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => {
+                {shownRows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-6 text-center text-muted-foreground">
+                      Henüz evrak eklenmedi.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {shownRows.map((r) => {
                   const v = r.doc ? validity(r.doc) : undefined
                   return (
                     <TableRow key={r.key}>

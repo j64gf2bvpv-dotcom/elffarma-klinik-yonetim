@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.395] - 2026-11-17
+- Personel Özlük: listede ve kişi sayfasında fotoğraf/monograma tıklayınca küçük resim seçilip yükleniyor; evrak tablosunda "Eksikleri gizle / göster" düğmesi (tercih hatırlanır).
+
 ## [2.17.394] - 2026-11-17
 - Personel Özlük: evrak dosyası (resim/PDF) eklenince içindeki belge tarihi ve geçerlilik tarihi okunup boş alanlara yazılıyor (ehliyetteki 4a/4b, "Geçerlilik/Düzenleme/Rapor Tarihi" etiketleri; doğum tarihi alınmaz).
 
