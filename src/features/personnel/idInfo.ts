@@ -1,5 +1,5 @@
 import type { Personnel } from '@/types/database'
-import { formatAddress, formatPlaceName } from '@/lib/personFormat'
+import { formatAddress, formatPhoneTR, formatPlaceName } from '@/lib/personFormat'
 import { isValidTcNo } from './status'
 
 export const ID_FIELDS = [
@@ -9,6 +9,7 @@ export const ID_FIELDS = [
   'gender',
   'blood_type',
   'address',
+  'phone',
   'education',
   'military_status',
   'license_class',
@@ -25,6 +26,7 @@ export const ID_FIELD_LABELS: Record<keyof IdInfo, string> = {
   gender: 'Cinsiyet',
   blood_type: 'Kan Grubu',
   address: 'Adres',
+  phone: 'Telefon',
   education: 'Eğitim',
   military_status: 'Askerlik Durumu',
   license_class: 'Ehliyet Sınıfı',
@@ -141,6 +143,14 @@ export function parseIdInfo(text: string, docType?: string | null): IdInfo {
   // Adres: ikametgâh belgesi, sağlık raporu, iş sözleşmesi — "MAH." ile başlayan satır ve devamı
   if (docType === 'ikametgah' || docType === 'saglik_raporu' || docType === 'is_sozlesmesi' || docType === 'nufus_kayit') {
     out.address = findAddress(lines)
+  }
+  // Telefon: kişinin kendi beyanı olan belgelerden (sözleşme, sağlık raporu, başvuru) — cep numarası
+  if (docType === 'is_sozlesmesi' || docType === 'saglik_raporu' || docType === 'cv' || docType === 'aile_durum') {
+    for (let i = 0; i < lines.length && !out.phone; i++) {
+      if (!/telefon|tel\s*no|cep|gsm|mobile|phone/.test(low[i]) || /işveren|isveren|firma|şirket|sirket/.test(low[i])) continue
+      const m = `${lines[i]} ${lines[i + 1] ?? ''}`.match(/(?<!\d)(?:\+?90\s*)?0?\s*(5\d{2})[\s.-]*(\d{3})[\s.-]*(\d{2})[\s.-]*(\d{2})(?!\d)/)
+      if (m) out.phone = formatPhoneTR(`0${m[1]}${m[2]}${m[3]}${m[4]}`)
+    }
   }
   if (docType === 'askerlik') {
     if (/terhis|yerine getir|yapmistir|tamamlam/.test(all)) out.military_status = 'Yapıldı'

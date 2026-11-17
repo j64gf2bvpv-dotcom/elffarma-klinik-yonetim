@@ -184,26 +184,22 @@ export function PersonnelDetailPage() {
                 <Badge variant={isActivePerson(person) ? 'outline' : 'secondary'}>{isActivePerson(person) ? 'Çalışıyor' : 'Ayrıldı'}</Badge>
               </div>
             </div>
-            {/* Her kişide aynı kart: bütün satırlar gösterilir, boş olan "—" (kullanıcı isteği, 2026-11-17: "birisinde kan
-                grubu var diğerinde yok, hepsinde aynı kişi kartı olmalı") */}
-            {INFO.map((sec) => (
+            {/* Kartta yalnız dolu bilgiler görünür; boş satır ve tamamen boş bölüm gösterilmez (kullanıcı isteği,
+                2026-11-17: "personel kişi kartında olmayan bilgiler görünmesin") */}
+            {INFO.filter((sec) => sec.rows.some(([k]) => person[k])).map((sec) => (
               <div key={sec.title} className="grid gap-1.5">
                 <p className="text-xs font-semibold tracking-wide text-muted-foreground">{sec.title.toLocaleUpperCase('tr-TR')}</p>
-                {sec.rows.map(([k, label]) => (
+                {sec.rows.filter(([k]) => person[k]).map(([k, label]) => (
                   <div key={k} className="grid grid-cols-[120px_1fr] gap-2 text-sm">
                     <span className="text-muted-foreground">{label}</span>
-                    {person[k] ? (
-                      <span className="break-words">
-                        {DATE_FIELDS.has(k) ? trDate(person[k] as string) : String(person[k])}
-                        {k === 'tc_no' && !isValidTcNo(String(person[k])) && (
-                          <span className="ml-2 text-xs text-amber-600" title="T.C. kimlik no 11 hane olmalı ve doğrulama kuralına uymalı">
-                            hatalı — kontrol edin
-                          </span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground/60">—</span>
-                    )}
+                    <span className="break-words">
+                      {DATE_FIELDS.has(k) ? trDate(person[k] as string) : String(person[k])}
+                      {k === 'tc_no' && !isValidTcNo(String(person[k])) && (
+                        <span className="ml-2 text-xs text-amber-600" title="T.C. kimlik no 11 hane olmalı ve doğrulama kuralına uymalı">
+                          hatalı — kontrol edin
+                        </span>
+                      )}
+                    </span>
                   </div>
                 ))}
               </div>

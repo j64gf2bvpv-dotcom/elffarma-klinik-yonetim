@@ -14,6 +14,39 @@ const up = (s: string) => s.toLocaleUpperCase('tr-TR')
 const low = (s: string) => s.toLocaleLowerCase('tr-TR')
 const cap = (w: string) => w.split(/([-'’])/).map((p) => (/^[-'’]$/.test(p) ? p : up(p.slice(0, 1)) + low(p.slice(1)))).join('')
 
+const FRONT = /[EÖÜİ]/
+const BACK = /[AOU]/
+/**
+ * Büyük harfle yazılmış kelimedeki "I": taranmış belgelerde İ'nin noktası çoğu zaman okunmaz ("KEÇIÖREN"). Türkçe
+ * ünlü uyumuna göre karar verilir: yakınındaki ünlü ince (e, ö, ü, i) ise i, kalın (a, o, u) ise ı — "KEÇIÖREN" →
+ * "Keçiören", "YELLICE" → "Yellice", "KAPI" → "Kapı". Karar verilemezse i.
+ */
+function fixUpperI(w: string): string {
+  if (!w.includes('I') || w !== up(w)) return w
+  // Ünlü uyumuna uymayan bilinen yer adları
+  const known = ['İSTANBUL', 'İZMİR', 'İZMİT', 'İSKENDERUN', 'İNEGÖL', 'DİYARBAKIR', 'İSTİKLAL', 'CUMHURİYET', 'MİLLET', 'İNÖNÜ'].find(
+    (k) => k.replace(/İ/g, 'I') === w.replace(/İ/g, 'I'),
+  )
+  if (known) return known
+  const chars = [...w]
+  return chars
+    .map((c, i) => {
+      if (c !== 'I') return c
+      for (let j = i - 1; j >= 0; j--) if (FRONT.test(chars[j]) || BACK.test(chars[j]) || chars[j] === 'Ğ') {
+        if (FRONT.test(chars[j])) return 'İ'
+        if (BACK.test(chars[j])) return 'I'
+      }
+      for (let j = i + 1; j < chars.length; j++) {
+        if (FRONT.test(chars[j])) return 'İ'
+        if (BACK.test(chars[j])) return 'I'
+      }
+      return 'İ'
+    })
+    .join('')
+}
+/** Yer/adres kelimesi: büyük harfli yazımdaki I düzeltilip baş harf büyük yapılır */
+const capPlace = (w: string) => cap(fixUpperI(w))
+
 /** "emrah karabıyık" → "Emrah KARABIYIK", "DR mustafa yavuz" → "Dr. Mustafa YAVUZ", "Dr. Ömer hoca" → "Dr. Ömer Hoca" */
 export function formatPersonName(raw: string | null | undefined): string {
   const s = (raw ?? '').replace(/\s+/g, ' ').trim()
@@ -64,7 +97,7 @@ export function formatPlaceName(raw: string | null | undefined): string {
   const s = (raw ?? '').replace(/\s*\/\s*/g, ' / ').replace(/\s+/g, ' ').trim()
   return s
     .split(' ')
-    .map((w) => (w === '/' ? w : cap(w)))
+    .map((w) => (w === '/' ? w : capPlace(w)))
     .join(' ')
 }
 
@@ -118,7 +151,7 @@ export function formatAddress(raw: string | null | undefined): string {
     // Tek harfli blok adı (G Blok) ve rakamla başlayanlar olduğu gibi büyük
     if (/^\p{L}$/u.test(bare)) out.push(up(bare) + tail)
     else if (/^\d/.test(bare)) out.push(up(w))
-    else out.push(cap(bare) + tail)
+    else out.push(capPlace(bare) + tail)
   }
   return out
     .join(' ')

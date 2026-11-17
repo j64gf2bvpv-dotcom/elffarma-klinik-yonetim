@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.403] - 2026-11-17
+- Personel kartında yalnız dolu bilgiler görünüyor (boş satır/bölüm gizli).
+- Belgelerden okuma: telefon da sözleşme/sağlık raporundan okunuyor; taramada noktası kaybolan İ harfi Türkçe ünlü uyumuyla düzeltiliyor ("KEÇIÖREN" → "Keçiören", "KAPI" → "Kapı"). Erhan'ın adresi ikametgâh belgesine göre güncellendi.
+
 ## [2.17.402] - 2026-11-17
 - Toplu PDF ile eklenen evraklara artık "Toplu PDF'ten (dosya, sayfa)" notu yazılmıyor; "Diğer" evrak belge adını alıyor (ör. Öğrenci Belgesi). Mevcut kayıtlardaki bu notlar temizlendi.
 
