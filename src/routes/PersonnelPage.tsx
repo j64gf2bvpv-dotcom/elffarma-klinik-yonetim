@@ -150,7 +150,6 @@ export function PersonnelPage() {
                           {s.done}/{s.total}
                         </span>
                         {s.missing.length > 0 && <Badge variant="outline">{s.missing.length} eksik</Badge>}
-                        {s.expired.length > 0 && <Badge variant="destructive">{s.expired.length} süresi dolmuş</Badge>}
                         {s.soon.length > 0 && (
                           <Badge variant="outline" className="border-amber-500/60 text-amber-600">
                             {s.soon.length} süresi yaklaşıyor

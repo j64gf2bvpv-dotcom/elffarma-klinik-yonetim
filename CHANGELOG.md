@@ -3,6 +3,11 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.399] - 2026-11-17
+- Toplu PDF: yan ya da ters taranmış sayfalar otomatik düzeltiliyor (yazı tanıma kutularının yönünden 90/180/270° bulunuyor), düz haliyle okunup ilgili evraka düz kaydediliyor; elle döndürme düğmesi de var.
+- Kimlik bilgileri otomatik: kimlik, ehliyet, nüfus kaydı, askerlik ve banka belgelerinden T.C. no, doğum tarihi/yeri, cinsiyet, kan grubu, ehliyet sınıfı, askerlik durumu ve IBAN okunup personel kartındaki boş alanlara yazılıyor (tek evrak eklemede ve toplu PDF'te).
+- Özlük evraklarında "Süresi dolmuş" yazısı kaldırıldı.
+
 ## [2.17.398] - 2026-11-17
 - Personel Özlük: "Toplu PDF Ekle" — çok sayfalı özlük PDF'i tek seferde yükleniyor; her sayfa okunup (metin ya da yazı tanıma) türü tahmin ediliyor (ehliyet, SGK işe giriş, askerlik, iş sözleşmesi, sağlık raporu…), devam sayfaları birleşiyor, sayfalar ayrı PDF olarak ilgili evrak satırına konuyor (var olan evraka ekleniyor), belge/geçerlilik tarihleri dolduruluyor. Önizlemede türler değiştirilebilir. pdf-lib eklendi.
 

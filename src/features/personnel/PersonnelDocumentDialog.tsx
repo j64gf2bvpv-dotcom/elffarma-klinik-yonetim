@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { IMAGE_ACCEPT, ensureReadableImage, isImageFile } from '@/lib/ensureReadableImage'
 import { getDocumentUrl, isPdfFile, isPdfPath } from '@/lib/documentAttachments'
 import { getErrorMessage } from '@/lib/utils'
-import type { PersonnelDocument } from '@/types/database'
-import { uploadPersonnelAttachment } from './api'
+import type { Personnel, PersonnelDocument } from '@/types/database'
+import { useQueryClient } from '@tanstack/react-query'
+import { updatePersonnel, uploadPersonnelAttachment } from './api'
+import { idFieldList, missingIdFields, parseIdInfo } from './idInfo'
 import { readDocDates } from './readDocDates'
 import { DOC_TYPE_BY_KEY, PERSONNEL_DOC_TYPES } from './docTypes'
 import { useSavePersonnelDocument } from './hooks'
@@ -21,11 +23,14 @@ type Attachment = { kind: 'saved'; path: string; url: string | null } | { kind: 
 /** Personel evrakı ekle / düzenle — tür, tarih, geçerlilik, not ve resim/PDF dosyaları (2026-11-12) */
 export function PersonnelDocumentDialog({
   personnelId,
+  person,
   doc,
   defaultType,
   trigger,
 }: {
   personnelId: string
+  /** Verilirse belgeden okunan kimlik bilgileri kişinin kartındaki boş alanlara yazılır */
+  person?: Personnel
   doc?: PersonnelDocument
   defaultType?: string
   trigger: React.ReactNode
@@ -42,6 +47,9 @@ export function PersonnelDocumentDialog({
   const [readingDates, setReadingDates] = React.useState(false)
   const fileRef = React.useRef<HTMLInputElement>(null)
   const save = useSavePersonnelDocument()
+  const qc = useQueryClient()
+  // Eklenen dosyaların metni — kayıtta kimlik bilgileri bundan okunur
+  const readTexts = React.useRef<string[]>([])
 
   function handleOpenChange(next: boolean) {
     if (next) {
@@ -50,6 +58,7 @@ export function PersonnelDocumentDialog({
       setDocDate(doc?.document_date ?? '')
       setValidUntil(doc?.valid_until ?? '')
       setNote(doc?.note ?? '')
+      readTexts.current = []
       const saved: Attachment[] = (doc?.attachment_paths ?? []).map((path) => ({ kind: 'saved', path, url: null }))
       setFiles(saved)
       for (const a of saved) {
@@ -67,10 +76,11 @@ export function PersonnelDocumentDialog({
    * koyduğumda içinde varsa belge tarihi ve geçerlilik tarihi olsun"). Elle girilmiş tarihin üzerine yazılmaz.
    */
   async function fillDatesFrom(file: File) {
-    if (docDate && validUntil) return
+    if (docDate && validUntil && !person) return
     setReadingDates(true)
     try {
       const found = await readDocDates(file)
+      readTexts.current.push(found.text)
       if (found.documentDate) setDocDate((cur) => cur || found.documentDate!)
       if (found.validUntil) setValidUntil((cur) => cur || found.validUntil!)
       if (found.documentDate || found.validUntil) toast.success('Tarihler belgeden okundu', { description: 'Kontrol edip gerekirse düzeltin.' })
@@ -78,6 +88,23 @@ export function PersonnelDocumentDialog({
       // Okunamazsa tarihler elle girilir
     } finally {
       setReadingDates(false)
+    }
+  }
+
+  /**
+   * Kimlik/ehliyet/nüfus/askerlik/banka belgesindeki bilgiler kişinin kartındaki boş alanlara yazılır
+   * (kullanıcı isteği, 2026-11-17: "kimlik kısımlarını da otomatik girsin bilgileri"). Dolu alanlara dokunulmaz.
+   */
+  async function fillIdentity() {
+    if (!person || !readTexts.current.length) return
+    const info = missingIdFields(person, parseIdInfo(readTexts.current.join('\n'), docType))
+    if (!Object.keys(info).length) return
+    try {
+      await updatePersonnel(person.id, info)
+      await qc.invalidateQueries({ queryKey: ['personnel'] })
+      toast.success('Kimlik bilgileri karta işlendi', { description: idFieldList(info) })
+    } catch {
+      // Kimlik bilgisi yazılamazsa evrak yine de kaydedilmiştir
     }
   }
 
@@ -123,6 +150,7 @@ export function PersonnelDocumentDialog({
           note: note.trim() || null,
         },
       })
+      await fillIdentity()
       setOpen(false)
     } catch (err) {
       toast.error('Kaydedilemedi', { description: getErrorMessage(err) })

@@ -152,7 +152,7 @@ export function PersonnelDetailPage() {
               rows={rows}
               columns={[
                 { header: 'Evrak', value: (r) => r.label },
-                { header: 'Durum', value: (r) => (!r.doc ? 'Eksik' : validity(r.doc) === 'expired' ? 'Süresi dolmuş' : 'Var') },
+                { header: 'Durum', value: (r) => (!r.doc ? 'Eksik' : validity(r.doc) === 'soon' ? 'Süresi yaklaşıyor' : 'Var') },
                 { header: 'Belge Tarihi', value: (r) => trDate(r.doc?.document_date) },
                 { header: 'Geçerlilik', value: (r) => trDate(r.doc?.valid_until) },
                 { header: 'Not', value: (r) => r.doc?.note ?? '' },
@@ -207,7 +207,6 @@ export function PersonnelDetailPage() {
               Evraklar{' '}
               <span className="text-sm font-normal text-muted-foreground">
                 {s.done}/{s.total} tamam{s.missing.length ? ` · ${s.missing.length} eksik` : ''}
-                {s.expired.length ? ` · ${s.expired.length} süresi dolmuş` : ''}
               </span>
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -216,9 +215,9 @@ export function PersonnelDetailPage() {
                   {hideMissing ? <Eye /> : <EyeOff />} {hideMissing ? `Eksikleri göster (${s.missing.length})` : 'Eksikleri gizle'}
                 </Button>
               )}
-              <PersonnelBulkPdfDialog personnelId={person.id} docs={docs} />
+              <PersonnelBulkPdfDialog personnelId={person.id} person={person} docs={docs} />
               <PersonnelDocumentDialog
-                personnelId={person.id}
+                personnelId={person.id}                person={person}
                 trigger={
                   <Button size="sm">
                     <Plus /> Evrak Ekle
@@ -260,8 +259,6 @@ export function PersonnelDetailPage() {
                           <Badge variant="outline" className="text-muted-foreground">
                             Eksik
                           </Badge>
-                        ) : v === 'expired' ? (
-                          <Badge variant="destructive">Süresi dolmuş</Badge>
                         ) : v === 'soon' ? (
                           <Badge variant="outline" className="border-amber-500/60 text-amber-600">
                             Süresi yaklaşıyor
@@ -298,7 +295,7 @@ export function PersonnelDetailPage() {
                         {r.doc ? (
                           <>
                             <PersonnelDocumentDialog
-                              personnelId={person.id}
+                              personnelId={person.id}                              person={person}
                               doc={r.doc}
                               trigger={
                                 <Button variant="ghost" size="icon" title="Düzenle">
@@ -312,7 +309,7 @@ export function PersonnelDetailPage() {
                           </>
                         ) : (
                           <PersonnelDocumentDialog
-                            personnelId={person.id}
+                            personnelId={person.id}                            person={person}
                             defaultType={r.key}
                             trigger={
                               <Button variant="outline" size="sm">

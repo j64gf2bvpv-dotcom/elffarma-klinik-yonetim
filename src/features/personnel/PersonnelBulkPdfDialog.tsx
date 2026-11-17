@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { FileStack, Loader2 } from 'lucide-react'
+import { FileStack, Loader2, RotateCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ImageViewer } from '@/components/ImageViewer'
 import { isPdfFile } from '@/lib/documentAttachments'
 import { getErrorMessage } from '@/lib/utils'
-import type { PersonnelDocument } from '@/types/database'
-import { savePersonnelDocument, uploadPersonnelAttachment } from './api'
+import type { Personnel, PersonnelDocument } from '@/types/database'
+import { savePersonnelDocument, updatePersonnel, uploadPersonnelAttachment } from './api'
+import { ID_FIELD_LABELS, idFieldList, missingIdFields, parseIdInfo, type IdInfo } from './idInfo'
 import { PERSONNEL_DOC_TYPES, docTypeLabel } from './docTypes'
 import { trDate } from './status'
-import { analyzePdf, extractPages, type PdfPageInfo } from './splitPdf'
+import { analyzePdf, extractPages, rotateDataUrl, type PdfPageInfo } from './splitPdf'
 
 const SKIP = 'skip'
 type Row = PdfPageInfo & { assigned: string }
@@ -37,7 +38,7 @@ function groupsOf(rows: Row[]): Group[] {
  * evrak satırlarına konur (kullanıcı isteği, 2026-11-17). Kayıttan önce her sayfanın türü önizlemede değiştirilebilir.
  * O türden evrak zaten varsa dosya ona eklenir (boş tarihleri doldurulur), yoksa yeni evrak açılır.
  */
-export function PersonnelBulkPdfDialog({ personnelId, docs }: { personnelId: string; docs: PersonnelDocument[] }) {
+export function PersonnelBulkPdfDialog({ personnelId, person, docs }: { personnelId: string; person?: Personnel; docs: PersonnelDocument[] }) {
   const [open, setOpen] = React.useState(false)
   const [file, setFile] = React.useState<File | null>(null)
   const [rows, setRows] = React.useState<Row[]>([])
@@ -81,6 +82,18 @@ export function PersonnelBulkPdfDialog({ personnelId, docs }: { personnelId: str
 
   const groups = groupsOf(rows)
 
+  // Kimlik/ehliyet/nüfus/askerlik/banka sayfalarından okunan bilgiler — kartta boş olan alanlara yazılır
+  // (kullanıcı isteği, 2026-11-17: "kimlik kısımlarını da otomatik girsin bilgileri")
+  const idInfo: IdInfo = {}
+  if (person) {
+    for (const r of rows) {
+      if (r.assigned === SKIP) continue
+      for (const [k, v] of Object.entries(parseIdInfo(r.text, r.assigned)) as [keyof IdInfo, string][]) idInfo[k] ??= v
+    }
+  }
+  const newId = person ? missingIdFields(person, idInfo) : {}
+  const hasNewId = Object.keys(newId).length > 0
+
   async function save() {
     if (!file || !groups.length) return
     setSaving(true)
@@ -90,7 +103,12 @@ export function PersonnelBulkPdfDialog({ personnelId, docs }: { personnelId: str
         const first = g.pages[0].index + 1
         const last = g.pages[g.pages.length - 1].index + 1
         const range = first === last ? `sayfa ${first}` : `sayfa ${first}–${last}`
-        const part = await extractPages(file, g.pages.map((p) => p.index), `${g.type}-${range.replace(/\s/g, '')}`)
+        const part = await extractPages(
+          file,
+          g.pages.map((p) => p.index),
+          `${g.type}-${range.replace(/\s/g, '')}`,
+          g.pages.map((p) => p.rotation),
+        )
         const path = await uploadPersonnelAttachment(personnelId, part)
         const documentDate = g.pages.find((p) => p.dates.documentDate)?.dates.documentDate ?? null
         const validUntil = g.pages.find((p) => p.dates.validUntil)?.dates.validUntil ?? null
@@ -118,8 +136,9 @@ export function PersonnelBulkPdfDialog({ personnelId, docs }: { personnelId: str
         }
         added++
       }
+      if (person && hasNewId) await updatePersonnel(person.id, newId)
       await Promise.all([qc.invalidateQueries({ queryKey: ['personnel'] }), qc.invalidateQueries({ queryKey: ['personnel_documents'] })])
-      toast.success(`${added} evrak yerine konuldu`)
+      toast.success(`${added} evrak yerine konuldu`, hasNewId ? { description: `Kimlik bilgileri karta işlendi: ${idFieldList(newId)}` } : undefined)
       handleOpenChange(false)
     } catch (err) {
       toast.error('Evraklar kaydedilemedi', { description: getErrorMessage(err) })
@@ -163,6 +182,14 @@ export function PersonnelBulkPdfDialog({ personnelId, docs }: { personnelId: str
             <p className="text-sm">
               <b>{file?.name}</b> · {rows.length} sayfa · <b>{groups.length}</b> evrak olarak kaydedilecek
             </p>
+            {hasNewId && (
+              <p className="rounded-md border border-emerald-500/40 bg-emerald-500/5 px-3 py-2 text-xs">
+                <b>Karta yazılacak kimlik bilgileri:</b>{' '}
+                {(Object.entries(newId) as [keyof IdInfo, string][])
+                  .map(([k, v]) => `${ID_FIELD_LABELS[k]}: ${k === 'birth_date' ? trDate(v) : v}`)
+                  .join(' · ')}
+              </p>
+            )}
             <div className="min-h-0 flex-1 overflow-y-auto rounded-md border">
               {rows.map((r) => {
                 const g = groups.find((x) => x.pages.includes(r))
@@ -175,6 +202,7 @@ export function PersonnelBulkPdfDialog({ personnelId, docs }: { personnelId: str
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">
                         Sayfa {r.index + 1}
+                        {r.rotation > 0 && <span className="ml-2 text-xs font-normal text-emerald-600">({r.rotation}° düzeltildi)</span>}
                         {!isFirst && r.assigned !== SKIP && <span className="ml-2 text-xs font-normal text-muted-foreground">(önceki sayfanın devamı)</span>}
                       </p>
                       {isFirst && (g?.pages.some((p) => p.dates.documentDate || p.dates.validUntil) ?? false) && (
@@ -191,6 +219,18 @@ export function PersonnelBulkPdfDialog({ personnelId, docs }: { personnelId: str
                         <p className="text-xs text-amber-600">Bu evrak zaten var — dosya ona eklenecek</p>
                       )}
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Sayfayı döndür (yan/ters taranmışsa)"
+                      onClick={() =>
+                        void rotateDataUrl(r.thumb, 90).then((thumb) =>
+                          setRows((rs) => rs.map((x) => (x.index === r.index ? { ...x, thumb, rotation: (x.rotation + 90) % 360 } : x))),
+                        )
+                      }
+                    >
+                      <RotateCw />
+                    </Button>
                     <Select value={r.assigned} onValueChange={(v) => setRows((rs) => rs.map((x) => (x.index === r.index ? { ...x, assigned: v } : x)))}>
                       <SelectTrigger className="w-64">
                         <SelectValue />
