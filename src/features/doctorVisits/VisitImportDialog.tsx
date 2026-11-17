@@ -334,7 +334,7 @@ export function VisitImportDialog({
                           )}
                         </TableCell>
                         <TableCell>
-                          <Input value={r.phone} onChange={(e) => update(r.key, { phone: e.target.value })} />
+                          <Input type="tel" value={r.phone} onChange={(e) => update(r.key, { phone: e.target.value })} />
                         </TableCell>
                         <TableCell>
                           <Textarea rows={3} className="min-h-0 text-sm" value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} />

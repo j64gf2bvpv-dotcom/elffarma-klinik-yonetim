@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete } from '@/lib/offlineMutation'
 import type { DoctorVisit } from '@/types/database'
 import { ensureVisitCustomer } from './linkCustomer'
+import { formatPersonName, formatPhoneTR } from '@/lib/personFormat'
 
 export interface DoctorVisitInput {
   visit_date: string
@@ -81,7 +82,9 @@ export async function fetchVisitDates(): Promise<string[]> {
  * Cari Kart'a bağlı değilse doktoru Cari Kart'ta bulur ya da ekler (bkz. linkCustomer.ts); ziyarette telefon
  * yoksa Cari Kart'taki numara ziyarete yazılır (kullanıcı isteği, 2026-11-13). Hata ziyaret kaydını engellemez.
  */
-async function withCustomer(input: DoctorVisitInput): Promise<DoctorVisitInput> {
+async function withCustomer(raw: DoctorVisitInput): Promise<DoctorVisitInput> {
+  // Ad "Dr. Ad SOYAD", telefon "0532 123 45 67" düzeninde (bkz. lib/personFormat)
+  const input = { ...raw, doctor_name: formatPersonName(raw.doctor_name), phone: raw.phone ? formatPhoneTR(raw.phone) : raw.phone }
   if (!input.doctor_name.trim()) return input
   try {
     if (input.customer_id) {
@@ -89,11 +92,11 @@ async function withCustomer(input: DoctorVisitInput): Promise<DoctorVisitInput> 
       const { data } = await supabase.from('customers').select('phone, mobile_phone, whatsapp_phone').eq('id', input.customer_id).maybeSingle()
       const c = data as { phone: string | null; mobile_phone: string | null; whatsapp_phone: string | null } | null
       const phone = c?.phone?.trim() || c?.mobile_phone?.trim() || c?.whatsapp_phone?.trim()
-      return phone ? { ...input, phone } : input
+      return phone ? { ...input, phone: formatPhoneTR(phone) } : input
     }
     const found = await ensureVisitCustomer(input.doctor_name, input.phone, input.sales_rep_id, input.visit_date)
     if (!found) return input
-    return { ...input, customer_id: found.id, phone: input.phone?.trim() || found.phone || input.phone }
+    return { ...input, customer_id: found.id, phone: input.phone?.trim() || (found.phone ? formatPhoneTR(found.phone) : input.phone) }
   } catch (err) {
     console.warn('[ziyaret] Cari Kart eşleştirilemedi', err)
     return input

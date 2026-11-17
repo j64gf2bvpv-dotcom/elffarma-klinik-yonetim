@@ -3,6 +3,7 @@ import { offlineInsert, offlineUpdate, offlineDelete } from '@/lib/offlineMutati
 import { removeDocuments, uploadDocumentAttachment } from '@/lib/documentAttachments'
 import { resizeImageFile } from '@/lib/resizeImage'
 import type { Personnel, PersonnelDocument } from '@/types/database'
+import { formatPersonName, formatPhoneTR } from '@/lib/personFormat'
 
 export type PersonnelInput = Omit<Personnel, 'id' | 'created_by' | 'created_at' | 'updated_at'>
 export type PersonnelDocumentInput = Omit<PersonnelDocument, 'id' | 'created_by' | 'created_at' | 'updated_at'>
@@ -21,12 +22,22 @@ export async function fetchPersonnelDocuments(personnelId?: string): Promise<Per
   return data as PersonnelDocument[]
 }
 
+/** Ad "Ad SOYAD", telefonlar "0532 123 45 67" düzeninde kaydedilir (bkz. lib/personFormat) */
+function tidy<T extends Partial<PersonnelInput>>(input: T): T {
+  const out = { ...input }
+  if (out.full_name) out.full_name = formatPersonName(out.full_name)
+  if (out.phone) out.phone = formatPhoneTR(out.phone)
+  if (out.emergency_contact_phone) out.emergency_contact_phone = formatPhoneTR(out.emergency_contact_phone)
+  return out
+}
+
 export async function createPersonnel(input: PersonnelInput): Promise<Personnel> {
-  return offlineInsert<Personnel>('personnel', { ...input }, `Personel: ${input.full_name}`)
+  const body = tidy(input)
+  return offlineInsert<Personnel>('personnel', { ...body }, `Personel: ${body.full_name}`)
 }
 
 export async function updatePersonnel(id: string, input: Partial<PersonnelInput>): Promise<Personnel> {
-  return offlineUpdate<Personnel>('personnel', id, { ...input }, 'Personel güncelleme')
+  return offlineUpdate<Personnel>('personnel', id, { ...tidy(input) }, 'Personel güncelleme')
 }
 
 /** Personeli ve bütün evrak dosyalarını siler */

@@ -4,6 +4,7 @@ import { normalizeTrPhone } from '@/features/whatsapp/normalizePhone'
 import { trFold } from '@/lib/detectProvince'
 import { turkeyProvinces } from '@/lib/turkeyProvinces'
 import type { Customer, CustomerPendingProduct, DoctorType, PaymentMethod } from '@/types/database'
+import { formatPersonName } from '@/lib/personFormat'
 
 export interface CustomerInput {
   full_name: string
@@ -113,7 +114,7 @@ export async function createCustomer(input: CustomerInput): Promise<Customer> {
   const createdBy = await getCurrentUserId()
   return offlineInsert<Customer>(
     'customers',
-    { ...toCanonicalProvince(input), phone: toCanonicalPhone(input.phone), created_by: createdBy },
+    { ...toCanonicalProvince(input), full_name: formatPersonName(input.full_name), phone: toCanonicalPhone(input.phone), created_by: createdBy },
     `Doktor: ${input.full_name}`,
   )
 }
@@ -126,6 +127,7 @@ export async function createCustomer(input: CustomerInput): Promise<Customer> {
 export async function updateCustomerFields(id: string, patch: Partial<CustomerInput>): Promise<Customer> {
   const body: Partial<CustomerInput> = toCanonicalProvince({ ...patch })
   if (body.phone !== undefined) body.phone = toCanonicalPhone(body.phone)
+  if (body.full_name) body.full_name = formatPersonName(body.full_name)
   return offlineUpdate<Customer>('customers', id, body, 'Doktor bilgisi düzenleme')
 }
 
@@ -141,7 +143,7 @@ export async function updateCustomer(id: string, input: CustomerInput): Promise<
   return offlineUpdate<Customer>(
     'customers',
     id,
-    { ...toCanonicalProvince(input), phone: toCanonicalPhone(input.phone) },
+    { ...toCanonicalProvince(input), full_name: formatPersonName(input.full_name), phone: toCanonicalPhone(input.phone) },
     `Doktor güncelleme: ${input.full_name}`,
   )
 }

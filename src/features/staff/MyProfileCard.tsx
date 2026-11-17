@@ -152,7 +152,7 @@ export function MyProfileCard() {
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label className="text-xs">Telefon</Label>
-              <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
+              <Input type="tel" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
             </div>
             <div className="grid gap-1.5">
               <Label className="text-xs">WhatsApp (farklıysa)</Label>

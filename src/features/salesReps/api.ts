@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { offlineInsert, offlineUpdate, offlineDelete } from '@/lib/offlineMutation'
 import { resizeImageFile } from '@/lib/resizeImage'
 import type { SalesRep } from '@/types/database'
+import { formatPersonName } from '@/lib/personFormat'
 
 export async function fetchSalesReps(): Promise<SalesRep[]> {
   const { data, error } = await supabase.from('sales_reps').select('*').order('name')
@@ -10,7 +11,8 @@ export async function fetchSalesReps(): Promise<SalesRep[]> {
 }
 
 export async function createSalesRep(name: string): Promise<SalesRep> {
-  return offlineInsert<SalesRep>('sales_reps', { name }, `Satış temsilcisi: ${name}`)
+  const tidy = formatPersonName(name)
+  return offlineInsert<SalesRep>('sales_reps', { name: tidy }, `Satış temsilcisi: ${tidy}`)
 }
 
 export interface SalesRepUpdateInput {
@@ -23,7 +25,7 @@ export interface SalesRepUpdateInput {
 }
 
 export async function updateSalesRep(id: string, input: SalesRepUpdateInput): Promise<SalesRep> {
-  return offlineUpdate<SalesRep>('sales_reps', id, { ...input }, 'Satış temsilcisi güncelleme')
+  return offlineUpdate<SalesRep>('sales_reps', id, { ...input, ...(input.name ? { name: formatPersonName(input.name) } : {}) }, 'Satış temsilcisi güncelleme')
 }
 
 /**

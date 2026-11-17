@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Check, ChevronsUpDown, Plus, User } from 'lucide-react'
+import { formatPhoneTR } from '@/lib/personFormat'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -63,7 +64,7 @@ export function CustomerCombobox({ value, onChange, placeholder }: CustomerCombo
                     />
                     <div>
                       <p>{customer.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                      <p className="text-xs text-muted-foreground">{formatPhoneTR(customer.phone)}</p>
                     </div>
                   </CommandItem>
                 ))}

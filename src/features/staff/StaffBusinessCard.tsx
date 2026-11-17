@@ -1,5 +1,6 @@
 import { UserCircle2, Phone, MessageCircle, Mail, MapPin, Link2 } from 'lucide-react'
 import type { Staff } from '@/types/database'
+import { formatPhoneTR } from '@/lib/personFormat'
 
 type CardStaff = Pick<
   Staff,
@@ -42,7 +43,7 @@ export function StaffBusinessCard({ staff }: { staff: CardStaff }) {
         <div className="mt-4 grid gap-1.5 text-sm">
           {staff.phone && (
             <div className="flex items-center gap-2">
-              <Phone className="text-muted-foreground size-3.5 shrink-0" /> <span>{staff.phone}</span>
+              <Phone className="text-muted-foreground size-3.5 shrink-0" /> <span>{formatPhoneTR(staff.phone)}</span>
             </div>
           )}
           {whatsapp && (

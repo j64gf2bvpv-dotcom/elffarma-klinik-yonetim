@@ -1,3 +1,4 @@
+import { formatPhoneTR } from '@/lib/personFormat'
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, ShieldAlert } from 'lucide-react'
@@ -60,7 +61,7 @@ export function PersonnelPage() {
                 { header: 'T.C. Kimlik No', value: (p) => p.tc_no ?? '' },
                 { header: 'Görevi', value: (p) => p.position ?? '' },
                 { header: 'Birimi', value: (p) => p.department ?? '' },
-                { header: 'Telefon', value: (p) => p.phone ?? '' },
+                { header: 'Telefon', value: (p) => formatPhoneTR(p.phone) },
                 { header: 'E-posta', value: (p) => p.email ?? '' },
                 { header: 'Doğum Tarihi', value: (p) => trDate(p.birth_date) },
                 { header: 'İşe Giriş', value: (p) => trDate(p.start_date) },
@@ -141,7 +142,7 @@ export function PersonnelPage() {
                       )}
                     </TableCell>
                     <TableCell>{[p.position, p.department].filter(Boolean).join(' · ') || '—'}</TableCell>
-                    <TableCell className="tabular-nums">{p.phone ?? '—'}</TableCell>
+                    <TableCell className="tabular-nums">{p.phone ? formatPhoneTR(p.phone) : '—'}</TableCell>
                     <TableCell>{trDate(p.start_date) || '—'}</TableCell>
                     <TableCell>
                       <span className="flex flex-wrap items-center gap-1.5">

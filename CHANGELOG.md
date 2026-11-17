@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.393] - 2026-11-17
+- Programın her yerinde aynı isim/telefon düzeni (lib/personFormat): telefon kutuları yazarken "0532 123 45 67" biçimine giriyor; personel, Cari Kart, temsilci raporu ve temsilci kayıtlarında ad "Ad SOYAD" (ünvan/hitap/kurum korunur), telefon boşluklu kaydediliyor ve gösteriliyor. Mevcut 5 personel ve 263 ziyaret kaydı bu düzene getirildi.
+
 ## [2.17.392] - 2026-11-17
 - Temsilci raporu: doktor ekleme/düzenleme penceresinden "Cari Karta Bağla" alanı kaldırıldı; Cari Kart bağlantısı kayıtta otomatik (ad değişince yeniden eşleştiriliyor).
 

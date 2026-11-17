@@ -151,7 +151,7 @@ export function WordImportDialog({
                           )}
                         </TableCell>
                         <TableCell>
-                          <Input value={r.phone} onChange={(e) => update(r.key, { phone: e.target.value })} />
+                          <Input type="tel" value={r.phone} onChange={(e) => update(r.key, { phone: e.target.value })} />
                         </TableCell>
                         <TableCell>
                           <Input value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} />

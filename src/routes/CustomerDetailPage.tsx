@@ -1,3 +1,4 @@
+import { formatPhoneTR } from '@/lib/personFormat'
 import * as React from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { format } from 'date-fns'
@@ -354,12 +355,12 @@ export function CustomerDetailPage() {
               </p>
               {customer.mobile_phone && (
                 <p className="flex items-center gap-2">
-                  <Phone className="size-4 text-muted-foreground" /> {customer.mobile_phone} (cep)
+                  <Phone className="size-4 text-muted-foreground" /> {formatPhoneTR(customer.mobile_phone)} (cep)
                 </p>
               )}
               {customer.whatsapp_phone && (
                 <p className="flex items-center gap-2">
-                  <MessageCircle className="size-4 text-muted-foreground" /> {customer.whatsapp_phone}
+                  <MessageCircle className="size-4 text-muted-foreground" /> {formatPhoneTR(customer.whatsapp_phone)}
                 </p>
               )}
               {customer.email && (

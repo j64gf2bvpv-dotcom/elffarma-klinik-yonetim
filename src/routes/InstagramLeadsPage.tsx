@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Search, Phone, Mail, MapPin, AtSign, Trash2, StickyNote } from 'lucide-react'
+import { formatPhoneTR } from '@/lib/personFormat'
 
 import { PageHeader } from '@/components/layout/AppShell'
 import { Input } from '@/components/ui/input'
@@ -126,7 +127,7 @@ export function InstagramLeadsPage() {
                   <TableCell className="text-muted-foreground">
                     {lead.phone ? (
                       <span className="inline-flex items-center gap-1">
-                        <Phone className="size-3.5" /> {lead.phone}
+                        <Phone className="size-3.5" /> {formatPhoneTR(lead.phone)}
                       </span>
                     ) : (
                       '—'
