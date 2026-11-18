@@ -248,21 +248,51 @@ function CountItemRow({
     onSaveKutu(item.id, next)
   }
 
+  const isCounted = item.counted_quantity != null || item.counted_quantity_flakon != null || item.counted_quantity_small_box != null
+  const diffs = [
+    [finalPaket - baseline.paket, 'Tam Paket'],
+    [finalKutu - baseline.kutu, 'Küçük Kutu'],
+    [finalFlakon - baseline.flakon, 'Flakon'],
+  ].filter(([d]) => d !== 0) as [number, string][]
+
+  // Değişmeyen ürünü tek tıkla onaylama (profesyonel sayım programlarındaki "eşleşiyor" düğmesi —
+  // kullanıcı isteği, 2026-11-18: "ne yaptığımızı çözemiyoruz, anlaşılır olsun")
+  function confirmSame() {
+    setPaketValue(String(item.products.current_quantity))
+    setKutuValue(String(item.products.small_box_quantity ?? 0))
+    setFlakonValue(String(item.products.flakon_quantity))
+    onSavePaket(item.id, item.products.current_quantity)
+    onSaveKutu(item.id, item.products.small_box_quantity ?? 0)
+    onSaveFlakon(item.id, item.products.flakon_quantity)
+  }
+
+  const inputCls = (filled: boolean) =>
+    cn(
+      'h-9 w-full max-w-20 text-center text-base tabular-nums placeholder:text-muted-foreground/40',
+      filled && 'border-primary/60 bg-primary/5 font-semibold',
+    )
+  const readCell = (v: number | null) =>
+    v != null ? <span className="font-semibold tabular-nums">{v}</span> : <span className="text-muted-foreground">—</span>
+
   return (
-    <TableRow onClick={() => onSelect(item.id)} selected={selected}>
+    <TableRow
+      onClick={() => onSelect(item.id)}
+      selected={selected}
+      className={cn(isCounted && (diffs.length ? 'bg-warning/5' : 'bg-success/5'))}
+    >
       <TableCell className="font-medium break-words whitespace-normal">{item.products.name}</TableCell>
-      <TableCell className="font-bold text-foreground">
+      <TableCell className="text-muted-foreground whitespace-normal">
         {baselineLabel(baseline.paket, baseline.flakon, baseline.kutu)}
       </TableCell>
-      <TableCell className="border-l">
+      <TableCell className="border-l-2 border-l-primary/30! text-center">
         {readOnly ? (
-          <span>{item.counted_quantity != null ? `${item.counted_quantity} Tam Paket` : '—'}</span>
+          readCell(item.counted_quantity)
         ) : (
           <Input
             id={`count-paket-${item.id}`}
             type="number"
             min="0"
-            className="w-20"
+            className={inputCls(paketValue !== '')}
             placeholder={String(item.products.current_quantity)}
             value={paketValue}
             onChange={(e) => setPaketValue(e.target.value)}
@@ -278,15 +308,15 @@ function CountItemRow({
           />
         )}
       </TableCell>
-      <TableCell>
+      <TableCell className="text-center">
         {readOnly ? (
-          <span>{item.counted_quantity_small_box != null ? `${item.counted_quantity_small_box} Küçük Kutu` : '—'}</span>
+          readCell(item.counted_quantity_small_box)
         ) : (
           <Input
             id={`count-kutu-${item.id}`}
             type="number"
             min="0"
-            className="w-20"
+            className={inputCls(kutuValue !== '')}
             placeholder={String(item.products.small_box_quantity ?? 0)}
             value={kutuValue}
             onChange={(e) => setKutuValue(e.target.value)}
@@ -302,15 +332,15 @@ function CountItemRow({
           />
         )}
       </TableCell>
-      <TableCell>
+      <TableCell className="border-r-2 border-r-primary/30! text-center">
         {readOnly ? (
-          <span>{item.counted_quantity_flakon != null ? `${item.counted_quantity_flakon} Flakon` : '—'}</span>
+          readCell(item.counted_quantity_flakon)
         ) : (
           <Input
             id={`count-flakon-${item.id}`}
             type="number"
             min="0"
-            className="w-20"
+            className={inputCls(flakonValue !== '')}
             placeholder={String(item.products.flakon_quantity)}
             value={flakonValue}
             onChange={(e) => setFlakonValue(e.target.value)}
@@ -326,42 +356,99 @@ function CountItemRow({
           />
         )}
       </TableCell>
-      <TableCell className="border-l font-medium">
-        <span className="inline-flex items-center gap-1.5">
-          {finalStockLabel(finalPaket, finalFlakon, finalKutu)}
-          {(item.counted_quantity != null || item.counted_quantity_flakon != null || item.counted_quantity_small_box != null) &&
-            (finalPaket === baseline.paket && finalFlakon === baseline.flakon && finalKutu === baseline.kutu ? (
-              <span title="Son sayımla aynı">
-                <CheckCircle2 className="size-4 text-success" />
-              </span>
-            ) : (
-              <span title="Son sayımdan farklı">
-                <AlertTriangle className="size-4 text-destructive" />
-              </span>
-            ))}
-        </span>
+      <TableCell className="whitespace-normal">
+        {!isCounted ? (
+          readOnly ? (
+            <span className="text-sm text-muted-foreground">Sayılmadı</span>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">Sayılmadı</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 border-success/40 text-success hover:bg-success/10 hover:text-success"
+                title="Depodaki adet, son sayımla aynı — tek tıkla onayla"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  confirmSame()
+                }}
+              >
+                <CheckCircle2 className="size-3.5" /> Aynı
+              </Button>
+            </div>
+          )
+        ) : diffs.length === 0 ? (
+          <div className="grid gap-0.5">
+            <span className="inline-flex items-center gap-1 text-sm font-medium text-success">
+              <CheckCircle2 className="size-4" /> Değişiklik yok
+            </span>
+            {finalStockLabel(finalPaket, finalFlakon, finalKutu) !== '—' && (
+              <span className="text-xs text-muted-foreground">{finalStockLabel(finalPaket, finalFlakon, finalKutu)}</span>
+            )}
+          </div>
+        ) : (
+          <div className="grid gap-0.5">
+            <span className="inline-flex flex-wrap items-center gap-1 text-sm font-semibold">
+              <AlertTriangle className="size-4 text-warning" />
+              {diffs.map(([d, unit]) => (
+                <span key={unit} className={d > 0 ? 'text-success' : 'text-destructive'}>
+                  {d > 0 ? `+${d}` : `−${-d}`} {unit}
+                </span>
+              ))}
+            </span>
+            <span className="text-xs text-muted-foreground">Yeni stok: {finalStockLabel(finalPaket, finalFlakon, finalKutu)}</span>
+          </div>
+        )}
       </TableCell>
       <TableCell>
         <ItemNoteInput item={item} onSave={onSaveNote} />
       </TableCell>
       {!readOnly && (
-        <TableCell>
+        <TableCell className="text-center">
           <Button
             type="button"
             variant="ghost"
             size="icon"
+            className="size-8 text-muted-foreground hover:text-destructive"
             title="Sayımdan çıkar"
             onClick={(e) => {
               e.stopPropagation()
               onDelete(item)
             }}
           >
-            <Trash2 className="size-4 text-destructive" />
+            <Trash2 className="size-4" />
           </Button>
         </TableCell>
       )}
       {lowCountDialog}
     </TableRow>
+  )
+}
+
+/** Sayım tablosunun iki satırlı başlığı: Beklenen | Bugün Sayılan (Tam Paket / Küçük Kutu / Flakon) | Sonuç | Not */
+function CountTableHeader({ prevLabel, dateLabel, editable }: { prevLabel: string; dateLabel: string; editable: boolean }) {
+  return (
+    <TableHeader>
+      <TableRow>
+        <TableHead rowSpan={2} className="w-56 align-bottom">Ürün</TableHead>
+        <TableHead rowSpan={2} className="w-44 align-bottom leading-tight whitespace-normal">
+          Beklenen
+          <span className="block text-[11px] font-normal normal-case text-muted-foreground">{prevLabel}</span>
+        </TableHead>
+        <TableHead colSpan={3} className="border-x-2 border-x-primary/30! bg-primary/10! text-center text-primary">
+          Bugün Sayılan · {dateLabel}
+        </TableHead>
+        <TableHead rowSpan={2} className="w-56 align-bottom">Sonuç</TableHead>
+        <TableHead rowSpan={2} className="w-52 align-bottom">Not</TableHead>
+        {editable && <TableHead rowSpan={2} className="w-12"></TableHead>}
+      </TableRow>
+      <TableRow>
+        <TableHead className="w-24 border-l-2 border-l-primary/30! text-center">Tam Paket</TableHead>
+        <TableHead className="w-24 text-center">Küçük Kutu</TableHead>
+        <TableHead className="w-24 border-r-2 border-r-primary/30! text-center">Flakon</TableHead>
+      </TableRow>
+    </TableHeader>
   )
 }
 
@@ -537,39 +624,12 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
               sayımı değil, İSTENEN herhangi bir gün tamamlanabilir/güncellenebilir. */}
           {!isLoading && items.length > 0 && isOpenCount && (
             <>
-              <Table className={COUNT_TABLE_GRID}>
-                <TableHeader>
-                  <TableRow className="border-b-2! border-border!">
-                    <TableHead>Ürün</TableHead>
-                    <TableHead className="text-xs font-bold text-foreground">
-                      {previousCount ? (
-                        <span className="bg-muted text-foreground rounded-md -ml-2 px-2 py-1">
-                          {format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })}
-                        </span>
-                      ) : (
-                        'Sistemdeki Miktar'
-                      )}
-                    </TableHead>
-                    <TableHead className="border-l leading-tight whitespace-normal">
-                      Tam Paket
-                      <br />
-                      (Kutu)
-                    </TableHead>
-                    <TableHead className="leading-tight whitespace-normal">
-                      Küçük
-                      <br />
-                      Kutu
-                    </TableHead>
-                    <TableHead>Flakon</TableHead>
-                    <TableHead className="border-l text-xs font-bold text-foreground">
-                      <span className="bg-primary text-primary-foreground rounded-md -ml-2 px-2 py-1">
-                        {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
-                      </span>
-                    </TableHead>
-                    <TableHead>{format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })} Notu</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
+              <Table className={cn('table-fixed', COUNT_TABLE_GRID)}>
+                <CountTableHeader
+                  prevLabel={previousCount ? `${format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })} sayımı` : 'sistemdeki stok'}
+                  dateLabel={format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
+                  editable
+                />
                 <TableBody>
                   {items.map((item, index) => (
                     <CountItemRow
@@ -885,6 +945,10 @@ export function DailyCountPanel() {
     return paketChanged || flakonChanged || kutuChanged
   }).length
 
+  const countedCount = items.filter(
+    (i) => i.counted_quantity != null || i.counted_quantity_flakon != null || i.counted_quantity_small_box != null,
+  ).length
+
   // "Son stok" = bugün girilen tam sayım varsa o, yoksa taban (önceki sayım)
   // — Sayımı Tamamla sonrası depoya yansıyacak gerçek son değer bu (bkz.
   // completeCount()'taki aynı fark mantığı).
@@ -1094,6 +1158,37 @@ export function DailyCountPanel() {
             </div>
           )}
         </CardHeader>
+        <div className="mx-4 mb-4 grid gap-3 rounded-lg border bg-muted/30 p-3 md:grid-cols-[1fr_auto] md:items-center">
+          <div className="grid gap-1.5">
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+              <span>
+                <strong className="text-base tabular-nums">{countedCount}</strong>
+                <span className="text-muted-foreground"> / {items.length} ürün sayıldı</span>
+              </span>
+              {pendingChangeCount > 0 && (
+                <span className="text-warning-foreground">
+                  <strong className="tabular-nums">{pendingChangeCount}</strong> üründe fark var
+                </span>
+              )}
+              {items.length - countedCount > 0 && (
+                <span className="text-muted-foreground">{items.length - countedCount} ürün bekliyor</span>
+              )}
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-success transition-all"
+                style={{ width: `${items.length ? (countedCount / items.length) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+          {!isCompleted && (
+            <ol className="grid gap-0.5 text-xs text-muted-foreground md:max-w-sm">
+              <li><strong className="text-foreground">1.</strong> Depodaki adetleri "Bugün Sayılan" kutularına yazın (gri rakam = sistemdeki adet).</li>
+              <li><strong className="text-foreground">2.</strong> Adet değişmediyse <span className="font-medium text-success">✓ Aynı</span> düğmesine basın.</li>
+              <li><strong className="text-foreground">3.</strong> Bitince <strong className="text-foreground">Sayımı Tamamla ve Stoğu Güncelle</strong>.</li>
+            </ol>
+          )}
+        </div>
         <CardContent className="grid gap-6 px-0 pt-0 pb-4">
           {(
             [
@@ -1108,34 +1203,11 @@ export function DailyCountPanel() {
                   {groupLabel}
                 </h3>
                 <Table className={cn('table-fixed', COUNT_TABLE_GRID)}>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-56">Ürün</TableHead>
-                      <TableHead className="w-44 font-bold text-foreground">
-                        {previousCompletedCount
-                          ? `${format(new Date(previousCompletedCount.count_date), 'dd.MM.yyyy', { locale: trLocale })} - SON SAYIM`
-                          : 'Sistemdeki Miktar'}
-                      </TableHead>
-                      <TableHead className="w-28 border-l leading-tight whitespace-normal">
-                        Tam Paket
-                        <br />
-                        (Kutu)
-                      </TableHead>
-                      <TableHead className="w-28 leading-tight whitespace-normal">
-                        Küçük
-                        <br />
-                        Kutu
-                      </TableHead>
-                      <TableHead className="w-28">Flakon</TableHead>
-                      <TableHead className="w-48 animate-text-blink border-l font-bold text-destructive">
-                        {activeDateLabel}
-                      </TableHead>
-                      <TableHead className="w-56" title={`${activeDateShort} sayımına ait ürün notları`}>
-                        {activeDateShort} Notu
-                      </TableHead>
-                      {!isCompleted && <TableHead className="w-12"></TableHead>}
-                    </TableRow>
-                  </TableHeader>
+                  <CountTableHeader
+                    prevLabel={previousCompletedCount ? `${format(new Date(previousCompletedCount.count_date), 'dd.MM.yyyy', { locale: trLocale })} sayımı` : 'sistemdeki stok'}
+                    dateLabel={activeDateShort}
+                    editable={!isCompleted}
+                  />
                   <TableBody>
                     {groupItems.map((item, index) => (
                       <CountItemRow

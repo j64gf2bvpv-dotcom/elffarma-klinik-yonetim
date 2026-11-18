@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.406] - 2026-11-18
+- Günlük Sayım ekranı sadeleştirildi: "Beklenen → Bugün Sayılan → Sonuç" düzeni, üstte ilerleme çubuğu ve 3 adımlık yol tarifi, değişmeyen ürün için tek tıkla "✓ Aynı" düğmesi, Sonuç sütununda fark (+/−) ve yeni stok; yanıp sönen tarih başlığı kaldırıldı.
+
 ## [2.17.405] - 2026-11-18
 - Ruhsat okuma: muayene damgasının farklı yazımları da tanınıyor ("mua:geç.tri", "mua geç tr"). 34 EYN 355'in muayene tarihi ruhsattan okunup işlendi (15.12.2027); diğer araçların tarihleri ruhsatlarıyla kontrol edildi.
 
