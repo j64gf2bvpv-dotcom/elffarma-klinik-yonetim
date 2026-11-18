@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.405] - 2026-11-18
+- Ruhsat okuma: muayene damgasının farklı yazımları da tanınıyor ("mua:geç.tri", "mua geç tr"). 34 EYN 355'in muayene tarihi ruhsattan okunup işlendi (15.12.2027); diğer araçların tarihleri ruhsatlarıyla kontrol edildi.
+
 ## [2.17.404] - 2026-11-17
 - Personel kartında "ARAÇ" bölümü: Araçlar'da kişiye verilmiş araç (plaka, model) görünüyor. "Belgelerden Doldur" araçtaki ehliyet ön/arka yüzünü de okuyor (kan grubu, T.C. no, doğum bilgileri); kişinin ehliyet evrakı yoksa araçtaki ehliyet evraklara kopyalanıyor. Okunamayan dosya artık bütün okumayı kilitlemiyor.
 - Fotoğrafı olmayan personele ehliyetteki fotoğraf (saç dahil baş, kare, büyütülüp netleştirilmiş) konuldu.

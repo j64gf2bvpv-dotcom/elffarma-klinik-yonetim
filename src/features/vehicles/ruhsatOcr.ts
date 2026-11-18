@@ -425,7 +425,9 @@ export function parseRuhsatLayout(segments: Segment[], fullText: string): Regist
   f.first_registration_date = toIso(get(/\(B\)|İLK\s*TESC[İI]L/, isDate))
   f.registration_date = toIso(get(/\((?:I|1|İ|L)\)\s*TESC[İI]L|^TESC[İI]L\s*TAR/, isDate))
   // Muayene: "MUAYENE GEÇERLİLİK" ya da (Z.2) Diğer Bilgiler içinde "mua.geç.trh: 12-06-2026"
-  f.inspection_valid_until = toIso(get(/MUA\.?\s*GE[ÇC]|MUAYENE/, isDate)) ?? toIso(fullText.match(/MUA\.?\s*GE[ÇC][^0-9]{0,12}(\d{1,2}[./-]\d{1,2}[./-]\d{4})/)?.[1] ?? null)
+  // Damga farklı yazılabiliyor: "mua.geç.trh", "mua:geç.tri", "mua geç tr" (2026-11-18)
+  f.inspection_valid_until =
+    toIso(get(/MUA\W{0,2}\s*GE[ÇC]|MUAYENE/, isDate)) ?? toIso(fullText.match(/MUA\W{0,2}\s*GE[ÇC][^0-9]{0,14}(\d{1,2}[./-]\d{1,2}[./-]\d{4})/)?.[1] ?? null)
 
   const brand = get(/\(D\.1\)|MARKASI/, isText)
   const commercial = get(/\(D\.3\)|T[İI]CAR[İI]\s*ADI/, isText) ?? get(/\(D\.2\)|T[İI]P[İI]/, isText)
