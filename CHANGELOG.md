@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.407] - 2026-11-18
+- Geçmiş Sayımlar listesi yenilendi: Tarih (gün adıyla) | Durum | kaç ürün sayıldı / kaç değişiklik | Not sütunları, işlemler tek "⋯" menüsünde. "Geri Al" artık yalnızca en son tamamlanan sayımda açık (eski sayımı geri almak sonraki stok hareketlerini bozuyordu); stoğa dokunmadan durum değiştiren seçici kaldırıldı, tarih değişikliği aynı tarihe çakışmayı engelleyen pencereyle yapılıyor.
+
 ## [2.17.406] - 2026-11-18
 - Günlük Sayım ekranı sadeleştirildi: "Beklenen → Bugün Sayılan → Sonuç" düzeni, üstte ilerleme çubuğu ve 3 adımlık yol tarifi, değişmeyen ürün için tek tıkla "✓ Aynı" düğmesi, Sonuç sütununda fark (+/−) ve yeni stok; yanıp sönen tarih başlığı kaldırıldı.
 

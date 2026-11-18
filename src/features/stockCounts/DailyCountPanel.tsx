@@ -11,9 +11,11 @@ import {
   ImageDown,
   AlertTriangle,
   Trash2,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  MoreHorizontal,
+  Eye,
+  CalendarDays,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -22,7 +24,14 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ImportMenu } from '@/components/ImportMenu'
 import { SaleForm } from '@/features/sales/SaleForm'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
@@ -33,6 +42,7 @@ import {
   useAddCountItem,
   useCompleteCount,
   useCountItems,
+  useCountStats,
   useDeleteCountItem,
   useDeleteStockCount,
   usePastCounts,
@@ -49,7 +59,7 @@ import {
   useUpdateCountNotes,
 } from './hooks'
 import { exportDailySummaryImage } from './exportSummaryImage'
-import { todayDate, type StockCountItemWithProduct } from './api'
+import { todayDate, type CountStats, type StockCountItemWithProduct } from './api'
 import type { StockCount } from '@/types/database'
 import { cn } from '@/lib/utils'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
@@ -58,6 +68,9 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog'
  * Sayım tablolarında her hücrenin etrafında çizgi — tablo görünümü
  * (kullanıcı isteği, 2026-10-14: "aralarda çizgi şeklinde tablo şeklinde yap").
  */
+/** Geçmiş Sayımlar listesinin sütunları: Tarih | Durum | Ürünler | Not | İşlemler */
+const PAST_GRID = 'grid grid-cols-[minmax(11rem,1.1fr)_8.5rem_minmax(10rem,1fr)_minmax(0,1.6fr)_2.5rem] items-center gap-3'
+
 const COUNT_TABLE_GRID =
   'border-collapse border border-border [&_td]:border [&_td]:border-border [&_th]:border [&_th]:border-border [&_th]:bg-muted/40'
 
@@ -462,7 +475,20 @@ function CountTableHeader({ prevLabel, dateLabel, editable }: { prevLabel: strin
  * bir önceki sayımın tarihi, "Son Stok" yerine bu sayımın kendi tarihi
  * (kullanıcı isteği, 2026-08-22).
  */
-function PastCountRow({ count, previousCount }: { count: StockCount; previousCount?: StockCount }) {
+function PastCountRow({
+  count,
+  previousCount,
+  stats,
+  canUndo,
+  takenDates,
+}: {
+  count: StockCount
+  previousCount?: StockCount
+  stats?: CountStats
+  /** Sadece EN SON tamamlanan sayım geri alınabilir — eski bir sayımı geri almak sonradan olan tüm stok hareketlerini bozar */
+  canUndo: boolean
+  takenDates: string[]
+}) {
   const [open, setOpen] = React.useState(false)
   const { data: items = [], isLoading } = useCountItems(open ? count.id : undefined)
   const { data: previousItems = [] } = useCountItems(open ? previousCount?.id : undefined)
@@ -530,82 +556,123 @@ function PastCountRow({ count, previousCount }: { count: StockCount; previousCou
     undoMutation.mutate(count.id)
   }
 
+  const [dateDialogOpen, setDateDialogOpen] = React.useState(false)
+  const [newDate, setNewDate] = React.useState(count.count_date)
+  const dateTaken = newDate !== count.count_date && takenDates.includes(newDate)
+  const d = new Date(count.count_date)
+
   return (
-    <div className="rounded-md border">
-      <div className="flex w-full flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex flex-1 items-center gap-2 text-left hover:text-foreground"
-        >
-          <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
-          {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
-        </button>
-        <div className="flex items-center gap-2">
-          {/* Tarih elle öne/arkaya alınabilir (kullanıcı isteği, 2026-08-25) —
-              ör. yanlış güne düşmüş bir sayımı düzeltmek için. */}
-          <Input
-            type="date"
-            className="h-7 w-36"
-            value={count.count_date}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => e.target.value && updateDateMutation.mutate({ stockCountId: count.id, countDate: e.target.value })}
-            disabled={updateDateMutation.isPending}
-          />
-          {/* Durum elle değiştirilebilir (kullanıcı isteği, 2026-08-24) — sadece
-              etiketi değiştirir, stok hareketi UYGULAMAZ (bkz. api.ts). */}
-          <Select
-            value={count.status}
-            onValueChange={(value) => setStatus.mutate({ stockCountId: count.id, status: value as StockCount['status'] })}
-            disabled={setStatus.isPending}
-          >
-            <SelectTrigger
-              className={cn(
-                'h-7 w-32',
-                count.status === 'completed'
-                  ? 'border-success/40 bg-success/10 text-success-foreground'
-                  : 'border-secondary/40 bg-secondary/40 text-secondary-foreground',
-              )}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="open">Açık</SelectItem>
-              <SelectItem value="completed">Tamamlandı</SelectItem>
-            </SelectContent>
-          </Select>
-          {count.status === 'completed' && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 text-destructive hover:text-destructive"
-              title="Bu sayımın uyguladığı stok değişikliklerini geri alır"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleUndoComplete()
-              }}
-              disabled={undoMutation.isPending}
-            >
-              {undoMutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Undo2 className="size-3.5" />}
-              Geri Al
-            </Button>
+    <div className={cn('border-b last:border-b-0', open && 'bg-muted/20')}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setOpen((v) => !v)}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setOpen((v) => !v))}
+        className={cn(PAST_GRID, 'cursor-pointer px-4 py-3 text-sm transition-colors hover:bg-accent/50')}
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <ChevronRight className={cn('size-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')} />
+          <span className="font-semibold tabular-nums">{format(d, 'dd.MM.yyyy', { locale: trLocale })}</span>
+          <span className="truncate text-muted-foreground">{format(d, 'EEEE', { locale: trLocale })}</span>
+        </div>
+        <div>
+          {count.status === 'completed' ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-medium text-success">
+              <CheckCircle2 className="size-3.5" /> Tamamlandı
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-warning/20 px-2.5 py-0.5 text-xs font-medium text-warning-foreground">
+              <AlertTriangle className="size-3.5" /> Yarım kaldı
+            </span>
           )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-7"
-            title="Sayımı Sil"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDeleteCount()
-            }}
-          >
-            <Trash2 className="size-3.5 text-destructive" />
-          </Button>
+        </div>
+        <div className="text-muted-foreground tabular-nums">
+          {stats ? (
+            <>
+              <span className="text-foreground">{stats.counted}</span> / {stats.total} sayıldı
+              {stats.changed > 0 && <span className="ml-2 font-medium text-warning-foreground">· {stats.changed} değişiklik</span>}
+            </>
+          ) : (
+            '—'
+          )}
+        </div>
+        <div className="truncate text-muted-foreground" title={count.notes ?? ''}>
+          {count.notes || '—'}
+        </div>
+        <div className="flex justify-end" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" className="size-8" title="İşlemler">
+                {undoMutation.isPending || deleteCountMutation.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <MoreHorizontal className="size-4" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuItem onSelect={() => setOpen(true)}>
+                <Eye className="size-4" /> Ayrıntıları Göster
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  setNewDate(count.count_date)
+                  setDateDialogOpen(true)
+                }}
+              >
+                <CalendarDays className="size-4" /> Tarihi Değiştir
+              </DropdownMenuItem>
+              {count.status === 'open' && (
+                <DropdownMenuItem
+                  onSelect={() => setStatus.mutate({ stockCountId: count.id, status: 'completed' })}
+                >
+                  <CheckCircle2 className="size-4" /> Kapat (stoğa dokunmadan)
+                </DropdownMenuItem>
+              )}
+              {count.status === 'completed' && (
+                <DropdownMenuItem disabled={!canUndo} onSelect={handleUndoComplete}>
+                  <Undo2 className="size-4" />
+                  <span className="grid">
+                    Stok Değişikliklerini Geri Al
+                    {!canUndo && <span className="text-[11px] text-muted-foreground">Sadece en son sayım geri alınabilir</span>}
+                  </span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={handleDeleteCount}>
+                <Trash2 className="size-4" /> Sayımı Sil
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
+      <Dialog open={dateDialogOpen} onOpenChange={setDateDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Sayım Tarihini Değiştir</DialogTitle>
+            <DialogDescription>Sadece tarih değişir; ürünlere ve stoğa dokunulmaz.</DialogDescription>
+          </DialogHeader>
+          <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
+          {dateTaken && <p className="text-sm text-destructive">Bu tarihte zaten bir sayım var.</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDateDialogOpen(false)}>
+              Vazgeç
+            </Button>
+            <Button
+              disabled={!newDate || newDate === count.count_date || dateTaken || updateDateMutation.isPending}
+              onClick={() =>
+                updateDateMutation.mutate(
+                  { stockCountId: count.id, countDate: newDate },
+                  { onSuccess: () => setDateDialogOpen(false) },
+                )
+              }
+            >
+              {updateDateMutation.isPending && <Loader2 className="animate-spin" />}
+              Kaydet
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {open && (
         <div className="border-t">
           <div className="border-b p-3">
@@ -859,6 +926,13 @@ export function DailyCountPanel() {
 
   const { confirm, dialog } = useConfirmDialog()
   const deleteCountMutation = useDeleteStockCount()
+
+  const pastList = pastCounts.filter((c) => c.id !== activeCount?.id)
+  const { data: countStats = {} } = useCountStats(pastList.map((c) => c.id))
+  // Geri alma yalnız EN SON tamamlanan sayımda güvenli (eskisini geri almak sonraki hareketleri bozar)
+  const latestCompletedId = [...pastCounts, ...(todayCount ? [todayCount] : [])]
+    .filter((c) => c.status === 'completed')
+    .sort((a, b) => b.count_date.localeCompare(a.count_date))[0]?.id
   const updateDateMutation = useUpdateCountDate()
 
   // Nav okları yanındaki tarih artık elle seçilebiliyor (kullanıcı isteği,
@@ -1094,8 +1168,12 @@ export function DailyCountPanel() {
                   size="sm"
                   className="text-destructive hover:text-destructive"
                   onClick={() => handleUndoComplete(activeCount.id)}
-                  disabled={undoMutation.isPending}
-                  title="Bu sayımın uyguladığı stok değişikliklerini geri alır"
+                  disabled={undoMutation.isPending || activeCount.id !== latestCompletedId}
+                  title={
+                    activeCount.id !== latestCompletedId
+                      ? 'Sadece en son tamamlanan sayım geri alınabilir'
+                      : 'Bu sayımın uyguladığı stok değişikliklerini geri alır'
+                  }
                 >
                   {undoMutation.isPending ? <Loader2 className="animate-spin" /> : <Undo2 className="size-3.5" />}
                   Geri Al
@@ -1233,22 +1311,31 @@ export function DailyCountPanel() {
         </CardContent>
       </Card>
 
-      {pastCounts.length > 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Geçmiş Sayımlar</CardTitle>
+      {pastList.length > 0 && (
+        <Card className="overflow-hidden">
+          <CardHeader className="flex-row items-center justify-between gap-2 pb-4">
+            <CardTitle className="text-sm">Geçmiş Sayımlar</CardTitle>
+            <span className="text-xs text-muted-foreground">Ayrıntı için satıra tıklayın</span>
           </CardHeader>
-          <CardContent className="grid gap-2">
-            {pastCounts
-              .filter((c) => c.id !== activeCount.id)
-              .map((c) => (
-                <PastCountRow
-                  key={c.id}
-                  count={c}
-                  previousCount={pastCounts.find((p) => p.status === 'completed' && p.count_date < c.count_date)}
-                />
-              ))}
-          </CardContent>
+          <div className="border-t">
+            <div className={cn(PAST_GRID, 'bg-muted/40 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase')}>
+              <span className="pl-6">Tarih</span>
+              <span>Durum</span>
+              <span>Ürünler</span>
+              <span>Not</span>
+              <span />
+            </div>
+            {pastList.map((c) => (
+              <PastCountRow
+                key={c.id}
+                count={c}
+                previousCount={pastCounts.find((p) => p.status === 'completed' && p.count_date < c.count_date)}
+                stats={countStats[c.id]}
+                canUndo={c.id === latestCompletedId}
+                takenDates={navDates}
+              />
+            ))}
+          </div>
         </Card>
       )}
       {dialog}

@@ -6,6 +6,7 @@ import {
   deleteCountItem,
   deleteStockCount,
   fetchCountItems,
+  fetchCountStats,
   fetchPastCounts,
   fetchTodayCount,
   reopenCount,
@@ -28,6 +29,14 @@ export function useTodayCount() {
 
 export function usePastCounts() {
   return useQuery({ queryKey: ['stock_counts', 'past'], queryFn: fetchPastCounts })
+}
+
+export function useCountStats(stockCountIds: string[]) {
+  return useQuery({
+    queryKey: ['stock_count_items', 'stats', stockCountIds.join(',')],
+    queryFn: () => fetchCountStats(stockCountIds),
+    enabled: stockCountIds.length > 0,
+  })
 }
 
 export function useCountItems(stockCountId: string | undefined) {

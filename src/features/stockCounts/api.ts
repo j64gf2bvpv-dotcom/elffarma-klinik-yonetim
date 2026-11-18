@@ -462,3 +462,35 @@ export async function setCountStatusManually(stockCountId: string, status: Stock
 export async function deleteStockCount(stockCountId: string): Promise<void> {
   await offlineDelete('stock_counts', stockCountId, 'Sayım silme')
 }
+
+export interface CountStats {
+  total: number
+  counted: number
+  changed: number
+}
+
+/** Geçmiş Sayımlar listesindeki özet satırı için: her sayımda kaç ürün var, kaçı sayılmış, kaçında fark çıkmış */
+export async function fetchCountStats(stockCountIds: string[]): Promise<Record<string, CountStats>> {
+  const out: Record<string, CountStats> = {}
+  if (!stockCountIds.length) return out
+  const { data, error } = await supabase
+    .from('stock_count_items')
+    .select(
+      'stock_count_id, expected_quantity, expected_quantity_flakon, expected_quantity_small_box, counted_quantity, counted_quantity_flakon, counted_quantity_small_box',
+    )
+    .in('stock_count_id', stockCountIds)
+  if (error) throw error
+  for (const r of data ?? []) {
+    const s = (out[r.stock_count_id] ??= { total: 0, counted: 0, changed: 0 })
+    s.total++
+    const counted = r.counted_quantity != null || r.counted_quantity_flakon != null || r.counted_quantity_small_box != null
+    if (counted) s.counted++
+    if (
+      (r.counted_quantity != null && r.counted_quantity !== r.expected_quantity) ||
+      (r.counted_quantity_flakon != null && r.counted_quantity_flakon !== r.expected_quantity_flakon) ||
+      (r.counted_quantity_small_box != null && r.counted_quantity_small_box !== (r.expected_quantity_small_box ?? 0))
+    )
+      s.changed++
+  }
+  return out
+}
