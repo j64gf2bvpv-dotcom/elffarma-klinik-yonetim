@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.408] - 2026-11-18
+- Geçmiş sayım ayrıntısı rapor görünümüne çevrildi: marka grupları, Önceki → Sayılan → Fark sütunları, Tümü / Değişenler / Sayılanlar süzgeci, boş ürünler soluk; notlar sade (tıklayınca yazılıyor), sayım notu boşsa yalnız "+ Sayım notu ekle".
+
 ## [2.17.407] - 2026-11-18
 - Geçmiş Sayımlar listesi yenilendi: Tarih (gün adıyla) | Durum | kaç ürün sayıldı / kaç değişiklik | Not sütunları, işlemler tek "⋯" menüsünde. "Geri Al" artık yalnızca en son tamamlanan sayımda açık (eski sayımı geri almak sonraki stok hareketlerini bozuyordu); stoğa dokunmadan durum değiştiren seçici kaldırıldı, tarih değişikliği aynı tarihe çakışmayı engelleyen pencereyle yapılıyor.
 

@@ -674,13 +674,14 @@ function PastCountRow({
         </DialogContent>
       </Dialog>
       {open && (
-        <div className="border-t">
-          <div className="border-b p-3">
+        <div className="mx-4 mb-4 overflow-hidden rounded-lg border bg-card shadow-sm">
+          <div className="border-b px-4 py-3">
             <CountNotesField
               key={count.id}
               countId={count.id}
               initial={count.notes ?? ''}
               dateLabel={format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
+              compact
             />
           </div>
           {isLoading && <p className="text-muted-foreground p-3 text-sm">Yükleniyor...</p>}
@@ -741,48 +742,12 @@ function PastCountRow({
             </>
           )}
           {!isLoading && items.length > 0 && !isOpenCount && (
-            <Table className={COUNT_TABLE_GRID}>
-              <TableHeader>
-                <TableRow className="border-b-2! border-border!">
-                  <TableHead>Ürün</TableHead>
-                  <TableHead className="text-xs font-bold text-foreground">
-                    {previousCount ? (
-                      <span className="bg-muted text-foreground rounded-md -ml-2 px-2 py-1">
-                        {format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale })}
-                      </span>
-                    ) : (
-                      'O Günkü Stok'
-                    )}
-                  </TableHead>
-                  <TableHead className="border-l text-xs font-bold text-foreground">
-                    <span className="bg-primary text-primary-foreground rounded-md -ml-2 px-2 py-1">
-                      {format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
-                    </span>
-                  </TableHead>
-                  <TableHead>{format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })} Notu</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((i) => (
-                  <TableRow key={i.id}>
-                    <TableCell className="font-medium">{i.products.name}</TableCell>
-                    <TableCell className="font-bold text-foreground">
-                      {baselineLabel(i.expected_quantity, i.expected_quantity_flakon, i.expected_quantity_small_box ?? 0)}
-                    </TableCell>
-                    <TableCell className="border-l font-medium">
-                      {finalStockLabel(
-                        resolveCounted(i.expected_quantity, i.counted_quantity),
-                        resolveCounted(i.expected_quantity_flakon, i.counted_quantity_flakon),
-                        resolveCounted(i.expected_quantity_small_box ?? 0, i.counted_quantity_small_box),
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <ItemNoteInput item={i} onSave={(id, note) => updateItemNoteMutation.mutate({ id, note })} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <CompletedCountReport
+              items={items}
+              prevLabel={previousCount ? format(new Date(previousCount.count_date), 'dd.MM.yyyy', { locale: trLocale }) : 'Önceki stok'}
+              dateLabel={format(new Date(count.count_date), 'dd.MM.yyyy', { locale: trLocale })}
+              onSaveNote={(id, note) => updateItemNoteMutation.mutate({ id, note })}
+            />
           )}
         </div>
       )}
@@ -791,15 +756,160 @@ function PastCountRow({
   )
 }
 
+/**
+ * Tamamlanmış bir sayımın rapor görünümü (kullanıcı isteği, 2026-11-18: "profesyonel olsun"): marka grupları,
+ * Önceki → Sayılan → Fark sütunları, Tümü / Değişenler / Sayılanlar süzgeci; boş ürünler soluk gösterilir.
+ */
+function CompletedCountReport({
+  items,
+  prevLabel,
+  dateLabel,
+  onSaveNote,
+}: {
+  items: StockCountItemWithProduct[]
+  prevLabel: string
+  dateLabel: string
+  onSaveNote: (id: string, note: string | null) => void
+}) {
+  const rows = items.map((i) => {
+    const prev = { paket: i.expected_quantity, kutu: i.expected_quantity_small_box ?? 0, flakon: i.expected_quantity_flakon }
+    const fin = {
+      paket: resolveCounted(prev.paket, i.counted_quantity),
+      kutu: resolveCounted(prev.kutu, i.counted_quantity_small_box),
+      flakon: resolveCounted(prev.flakon, i.counted_quantity_flakon),
+    }
+    const counted = i.counted_quantity != null || i.counted_quantity_flakon != null || i.counted_quantity_small_box != null
+    const diffs = (
+      [
+        [fin.paket - prev.paket, 'Tam Paket'],
+        [fin.kutu - prev.kutu, 'Küçük Kutu'],
+        [fin.flakon - prev.flakon, 'Flakon'],
+      ] as [number, string][]
+    ).filter(([d]) => d !== 0)
+    const empty = !counted && !prev.paket && !prev.kutu && !prev.flakon && !i.note
+    return { i, prev, fin, counted, diffs, empty }
+  })
+  const changedN = rows.filter((r) => r.diffs.length).length
+  const countedN = rows.filter((r) => r.counted).length
+  const [filter, setFilter] = React.useState<'all' | 'changed' | 'counted'>('all')
+  const shown = rows.filter((r) => (filter === 'changed' ? r.diffs.length > 0 : filter === 'counted' ? r.counted : true))
+  const groups = (
+    [
+      ['Dermakor', shown.filter((r) => r.i.products.brand_line === 'dermakor')],
+      ['Swiss', shown.filter((r) => r.i.products.brand_line === 'swiss')],
+      ['Diğer', shown.filter((r) => r.i.products.brand_line !== 'dermakor' && r.i.products.brand_line !== 'swiss')],
+    ] as const
+  ).filter(([, g]) => g.length)
+
+  const chip = (key: typeof filter, label: string, n: number) => (
+    <button
+      type="button"
+      onClick={() => setFilter(key)}
+      className={cn(
+        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+        filter === key ? 'border-primary bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-accent',
+      )}
+    >
+      {label} <span className="tabular-nums opacity-80">{n}</span>
+    </button>
+  )
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
+        {chip('all', 'Tümü', rows.length)}
+        {chip('changed', 'Değişenler', changedN)}
+        {chip('counted', 'Sayılanlar', countedN)}
+      </div>
+      {groups.length === 0 ? (
+        <p className="px-4 py-6 text-center text-sm text-muted-foreground">Bu süzgece uyan ürün yok.</p>
+      ) : (
+        <table className="w-full table-fixed text-sm">
+          <colgroup>
+            <col className="w-[24%]" />
+            <col className="w-[19%]" />
+            <col className="w-[19%]" />
+            <col className="w-[16%]" />
+            <col className="w-[22%]" />
+          </colgroup>
+          <thead>
+            <tr className="border-b text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              <th className="px-4 py-2 font-medium">Ürün</th>
+              <th className="px-3 py-2 font-medium">Önceki · {prevLabel}</th>
+              <th className="px-3 py-2 font-medium text-foreground">Sayılan · {dateLabel}</th>
+              <th className="px-3 py-2 font-medium">Fark</th>
+              <th className="px-3 py-2 font-medium">Not</th>
+            </tr>
+          </thead>
+          {groups.map(([label, g]) => (
+            <tbody key={label}>
+              <tr>
+                <td colSpan={5} className="bg-muted/40 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
+                  {label}
+                </td>
+              </tr>
+              {g.map(({ i, prev, fin, counted, diffs, empty }) => (
+                <tr
+                  key={i.id}
+                  className={cn('border-b last:border-b-0 hover:bg-accent/40', empty && 'text-muted-foreground/60', diffs.length > 0 && 'bg-warning/5')}
+                >
+                  <td className="px-4 py-2.5 font-medium break-words">{i.products.name}</td>
+                  <td className="px-3 py-2.5 tabular-nums text-muted-foreground">{finalStockLabel(prev.paket, prev.flakon, prev.kutu)}</td>
+                  <td className={cn('px-3 py-2.5 tabular-nums', counted ? 'font-semibold' : 'text-muted-foreground')}>
+                    {counted && !fin.paket && !fin.kutu && !fin.flakon ? '0 (stok yok)' : finalStockLabel(fin.paket, fin.flakon, fin.kutu)}
+                    {!counted && !empty && <span className="ml-1 text-xs">(sayılmadı)</span>}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {diffs.length ? (
+                      <span className="flex flex-wrap gap-x-2 font-semibold tabular-nums">
+                        {diffs.map(([d, unit]) => (
+                          <span key={unit} className={d > 0 ? 'text-success' : 'text-destructive'}>
+                            {d > 0 ? `+${d}` : `−${-d}`} {unit}
+                          </span>
+                        ))}
+                      </span>
+                    ) : counted ? (
+                      <span className="inline-flex items-center gap-1 text-success">
+                        <CheckCircle2 className="size-3.5" /> Aynı
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/60">—</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <ItemNoteInput item={i} onSave={onSaveNote} subtle />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      )}
+    </div>
+  )
+}
+
 /** Ürün satırı not kutusu — Enter / dışarı tıklayınca kaydeder; geçmiş (tamamlanmış) günlerde de yazılabilir. */
-function ItemNoteInput({ item, onSave }: { item: { id: string; note: string | null }; onSave: (id: string, note: string | null) => void }) {
+function ItemNoteInput({
+  item,
+  onSave,
+  subtle = false,
+}: {
+  item: { id: string; note: string | null }
+  onSave: (id: string, note: string | null) => void
+  /** Rapor görünümünde: kutu çerçevesiz, düz yazı gibi; üzerine gelince/tıklayınca kutu olur */
+  subtle?: boolean
+}) {
   const [value, setValue] = React.useState(item.note ?? '')
   React.useEffect(() => setValue(item.note ?? ''), [item.note])
   return (
     <Input
       value={value}
-      placeholder="Not ekle…"
-      className="h-8 text-sm"
+      placeholder={subtle ? '+ Not' : 'Not ekle…'}
+      className={cn(
+        'h-8 text-sm',
+        subtle && 'border-transparent bg-transparent shadow-none placeholder:text-muted-foreground/40 hover:border-border focus-visible:border-ring focus-visible:bg-background',
+      )}
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => setValue(e.target.value)}
       onBlur={() => {
@@ -814,10 +924,29 @@ function ItemNoteInput({ item, onSave }: { item: { id: string; note: string | nu
 }
 
 /** Günün sayımı için genel not (kullanıcı isteği, 2026-10-26: "günlük sayımda not kısmı da olsun"). */
-function CountNotesField({ countId, initial, dateLabel }: { countId: string; initial: string; dateLabel: string }) {
+function CountNotesField({
+  countId,
+  initial,
+  dateLabel,
+  compact = false,
+}: {
+  countId: string
+  initial: string
+  dateLabel: string
+  /** Geçmiş sayım ayrıntısında: not yoksa sadece küçük "Sayım notu ekle" bağlantısı */
+  compact?: boolean
+}) {
   const [value, setValue] = React.useState(initial)
+  const [editing, setEditing] = React.useState(false)
   const save = useUpdateCountNotes()
   React.useEffect(() => setValue(initial), [initial])
+  if (compact && !editing && !initial.trim()) {
+    return (
+      <button type="button" onClick={() => setEditing(true)} className="text-sm text-muted-foreground hover:text-foreground">
+        + Sayım notu ekle
+      </button>
+    )
+  }
   return (
     <div className="grid w-full max-w-xl gap-1">
       <label htmlFor="count-notes" className="text-xs font-medium text-muted-foreground">
@@ -828,6 +957,7 @@ function CountNotesField({ countId, initial, dateLabel }: { countId: string; ini
         value={value}
         rows={2}
         placeholder={`${dateLabel} günü sayımıyla ilgili not (ör. eksik koli, depoya giden ürünler)…`}
+        autoFocus={compact && editing}
         onChange={(e) => setValue(e.target.value)}
         onBlur={() => {
           const next = value.trim() || null
