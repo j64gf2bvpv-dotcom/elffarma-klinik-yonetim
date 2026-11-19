@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.410] - 2026-11-19
+- Günlük Sayım tablosunda adet kutuları, "Aynı" düğmesi, not kutusu ve satır yükseklikleri küçültüldü; kutular sütun ortasında.
+
 ## [2.17.409] - 2026-11-19
 - Geçmiş sayım ayrıntısı çerçeveli, çizgili, sade bir tabloya çevrildi: fark rakamları renkli etiketlerle, stoğu olmayan ürünler varsayılan gizli ("göster" ile açılır), notlar yalnız üzerine gelince görünüyor; "Swiss" başlığının "SWİSS" görünmesi düzeltildi.
 

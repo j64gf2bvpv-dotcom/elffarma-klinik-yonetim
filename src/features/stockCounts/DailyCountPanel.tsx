@@ -72,7 +72,7 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 const PAST_GRID = 'grid grid-cols-[minmax(11rem,1.1fr)_8.5rem_minmax(10rem,1fr)_minmax(0,1.6fr)_2.5rem] items-center gap-3'
 
 const COUNT_TABLE_GRID =
-  'border-collapse border border-border [&_td]:border [&_td]:border-border [&_th]:border [&_th]:border-border [&_th]:bg-muted/40'
+  'border-collapse border border-border [&_td]:py-1.5 [&_td]:border [&_td]:border-border [&_th]:border [&_th]:border-border [&_th]:bg-muted/40'
 
 
 /** "Sistemdeki Miktar" / "Son Sayım" / "O Günkü Stok" gibi taban hücreleri için —
@@ -281,7 +281,7 @@ function CountItemRow({
 
   const inputCls = (filled: boolean) =>
     cn(
-      'h-9 w-full max-w-20 text-center text-base tabular-nums placeholder:text-muted-foreground/40',
+      'mx-auto h-7 w-full max-w-14 px-1 text-center text-sm tabular-nums placeholder:text-muted-foreground/40',
       filled && 'border-primary/60 bg-primary/5 font-semibold',
     )
   const readCell = (v: number | null) =>
@@ -380,7 +380,7 @@ function CountItemRow({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-7 border-success/40 text-success hover:bg-success/10 hover:text-success"
+                className="h-6 px-2 text-xs border-success/40 text-success hover:bg-success/10 hover:text-success"
                 title="Depodaki adet, son sayımla aynı — tek tıkla onayla"
                 onClick={(e) => {
                   e.stopPropagation()
@@ -423,7 +423,7 @@ function CountItemRow({
             type="button"
             variant="ghost"
             size="icon"
-            className="size-8 text-muted-foreground hover:text-destructive"
+            className="size-7 text-muted-foreground hover:text-destructive"
             title="Sayımdan çıkar"
             onClick={(e) => {
               e.stopPropagation()
@@ -457,9 +457,9 @@ function CountTableHeader({ prevLabel, dateLabel, editable }: { prevLabel: strin
         {editable && <TableHead rowSpan={2} className="w-12"></TableHead>}
       </TableRow>
       <TableRow>
-        <TableHead className="w-24 border-l-2 border-l-primary/30! text-center">Tam Paket</TableHead>
-        <TableHead className="w-24 text-center">Küçük Kutu</TableHead>
-        <TableHead className="w-24 border-r-2 border-r-primary/30! text-center">Flakon</TableHead>
+        <TableHead className="w-20 border-l-2 border-l-primary/30! text-center">Tam Paket</TableHead>
+        <TableHead className="w-20 text-center">Küçük Kutu</TableHead>
+        <TableHead className="w-20 border-r-2 border-r-primary/30! text-center">Flakon</TableHead>
       </TableRow>
     </TableHeader>
   )
@@ -937,7 +937,7 @@ function ItemNoteInput({
       value={value}
       placeholder={subtle ? '+ Not ekle' : 'Not ekle…'}
       className={cn(
-        'h-8 text-sm',
+        'h-7 text-[13px]',
         subtle && 'border-transparent bg-transparent shadow-none placeholder:text-transparent group-hover:placeholder:text-muted-foreground/50 focus-visible:placeholder:text-muted-foreground/50 hover:border-border focus-visible:border-ring focus-visible:bg-background',
       )}
       onClick={(e) => e.stopPropagation()}
