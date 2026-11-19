@@ -19,7 +19,7 @@ export interface DoctorVisitInput {
   check_in_lng?: number | null
   discussed_products?: string | null
   competitor_products?: string | null
-  sale?: { items: { text: string; amount: number | null }[]; total: number | null } | null
+  sale?: { items: { text: string; amount: number | null }[]; total: number | null; pending?: boolean; stock?: 'done' | 'skipped' } | null
   next_visit_date?: string | null
   signature_data?: string | null
 }

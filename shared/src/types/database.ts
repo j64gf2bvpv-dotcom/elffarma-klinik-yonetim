@@ -285,7 +285,7 @@ export interface DoctorVisit {
   competitor_products: string | null
   next_visit_date: string | null
   /** Ziyarette satılanlar: {items:[{text, amount}], total} (2026-11-19) */
-  sale?: { items: { text: string; amount: number | null }[]; total: number | null } | null
+  sale?: { items: { text: string; amount: number | null }[]; total: number | null; pending?: boolean; stock?: 'done' | 'skipped' } | null
   signature_data: string | null
   created_at: string
   updated_at: string

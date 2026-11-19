@@ -45,12 +45,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SalesRepDialog } from '@/features/salesReps/SalesRepDialog'
 import { useSalesReps } from '@/features/salesReps/hooks'
-import { deleteVisit, deleteVisitsInRange } from '@/features/doctorVisits/api'
+import { deleteVisit, deleteVisitsInRange, setVisitSale } from '@/features/doctorVisits/api'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { usePayments } from '@/features/payments/hooks'
 import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
 import type { VisitSale } from '@/features/doctorVisits/chatSales'
+import { SaleStockDialog } from '@/features/doctorVisits/SaleStockDialog'
 import { ExportMenu } from '@/components/ExportMenu'
 import { confirmAction, useConfirmDialog } from '@/hooks/useConfirmDialog'
 
@@ -135,13 +136,20 @@ function QuickVisitInput({ visitDate, salesRepId, customers }: { visitDate: stri
 }
 
 /** Ziyarette satılanlar — ürün ürün, tutarıyla (WhatsApp sohbetinden içe aktarılan satışlar, 2026-11-19) */
-function VisitSaleList({ sale }: { sale: VisitSale }) {
+function VisitSaleList({ visit, sale, repName }: { visit: DoctorVisit; sale: VisitSale; repName: string }) {
   const tl = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
   const showTotal = sale.total != null && (sale.items.length > 1 || sale.items[0]?.amount !== sale.total)
+  const [stockOpen, setStockOpen] = React.useState(false)
+  const queryClient = useQueryClient()
+  const skip = async () => {
+    await setVisitSale(visit.id, { ...sale, stock: 'skipped' })
+    void queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
+  }
   return (
-    <div className="mt-1.5 rounded-md border border-success/30 bg-success/5 px-2 py-1.5 text-xs">
-      <p className="mb-1 flex items-center gap-1 font-semibold text-success">
-        <ShoppingCart className="size-3.5" /> Satış
+    <div className={cn('mt-1.5 rounded-md border px-2 py-1.5 text-xs', sale.pending ? 'border-warning/40 bg-warning/5' : 'border-success/30 bg-success/5')}>
+      <p className={cn('mb-1 flex flex-wrap items-center gap-1 font-semibold', sale.pending ? 'text-warning' : 'text-success')}>
+        <ShoppingCart className="size-3.5" /> {sale.pending ? 'Bekleyen sipariş' : 'Satış'}
+        {sale.pending && <span className="font-normal">— ürün gelince gönderilecek</span>}
       </p>
       <ul className="grid gap-0.5">
         {sale.items.map((it, i) => (
@@ -157,6 +165,30 @@ function VisitSaleList({ sale }: { sale: VisitSale }) {
           <span className="tabular-nums">{tl(sale.total!)}</span>
         </p>
       )}
+      {/* Stoktan düşme teyidi (kullanıcı isteği, 2026-11-19) */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-1.5">
+        {sale.stock === 'done' ? (
+          <span className="font-medium text-success">✓ Stoktan düşüldü</span>
+        ) : sale.stock === 'skipped' ? (
+          <>
+            <span className="text-muted-foreground">Stoktan düşülmedi</span>
+            <button type="button" className="text-primary underline-offset-2 hover:underline" onClick={() => setStockOpen(true)}>
+              Şimdi düş
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="font-medium">Stoktan düşülsün mü?</span>
+            <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => setStockOpen(true)}>
+              Evet
+            </Button>
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => void skip()}>
+              Hayır
+            </Button>
+          </>
+        )}
+      </div>
+      <SaleStockDialog visit={visit} sale={sale} repName={repName} open={stockOpen} onOpenChange={setStockOpen} />
     </div>
   )
 }
@@ -348,7 +380,7 @@ function RepWeekSection({
                             </span>
                           )}
                         </div>
-                        {visit.sale && visit.sale.items?.length > 0 && <VisitSaleList sale={visit.sale} />}
+                        {visit.sale && visit.sale.items?.length > 0 && <VisitSaleList visit={visit} sale={visit.sale} repName={rep.name} />}
                         {visit.notes && (
                           <p className="mt-1.5 flex items-start gap-1.5 text-xs text-muted-foreground">
                             <Package className="mt-0.5 size-3.5 shrink-0" /> {visit.notes}

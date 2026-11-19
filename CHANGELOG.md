@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.424] - 2026-11-19
+- WhatsApp sohbetinden fiyatsız siparişler ("1 kutu BVRS STAR AŞISI SİPARİŞİMDİR", "10 paket Bvrs satıldı") ve "ürünler gelince gönderilecek" bekleyen siparişler de alınıyor, hangi doktorun altındaysa ona yazılıyor; aynı satış iki mesajda geçerse tek sayılıyor, ödünç ürün satış sayılmıyor.
+- Her satışın altında "Stoktan düşülsün mü?" teyidi: Evet denince ürünler katalogla eşleştirilip (adet/fiyat düzeltilebilir) stoktan düşülüyor ve Satışlar'a kaydediliyor; Hayır denince dokunulmuyor.
+
 ## [2.17.423] - 2026-11-19
 - WhatsApp sohbeti içe aktarılınca temsilcinin fiyatı yazılmış satışları (doktor, ürün, adet, tutar, toplam) okunuyor ve o günün doktor kaydına işleniyor; Satış Temsilcisi Raporu'nda doktorun adı/telefonu altında "Satış" kutusunda görünüyor. Hedef/teklif/ödeme konuşmaları alınmıyor.
 - Doktor kayıtlarında telefon numarası her zaman ismin altında.

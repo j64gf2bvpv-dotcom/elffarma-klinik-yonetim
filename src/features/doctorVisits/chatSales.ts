@@ -18,6 +18,10 @@ export interface SaleItem {
 export interface VisitSale {
   items: SaleItem[]
   total: number | null
+  /** "Ürünler gelince gönderilecek" — sipariş alındı, ürün henüz gönderilmedi */
+  pending?: boolean
+  /** Stoktan düşme teyidi: 'done' düşüldü (satış kaydı açıldı), 'skipped' düşülmesin dendi */
+  stock?: 'done' | 'skipped'
 }
 export interface ChatSaleRow {
   date: string
@@ -46,6 +50,14 @@ const QTY_RE = /^\s*\d+\s*(?:\+\s*\d+\s*)?(?:x\s*)?(?:tam\s+)?(?:paket|kutu|adet
 // Satış olmayan fiyat cümleleri (hedef, teklif, ödeme, bakiye, gelecekte verilecek…)
 const NOT_SALE_RE =
   /hedef|forecast|potansiyel|tutar[ıi]nda|teklif|talep|bekleniyor|ver[iı]c[eə]k|veril[iı]?[cç]ek|verilecek|alacak\b|planlan|bakiye|[öo]deme|kart[ıi]?nd|iban|indirim|zam\b|ortalama|civar[ıi]|den\s*$|dan\s*$/i
+// Fiyatsız sipariş satırı: sipariş/satış fiili şart ("1 kutu BVRS STAR AŞISI SİPARİŞİMDİR", "10 paket Bvrs satıldı")
+const ORDER_RE = /sipariş|alındı|aldı\b|satıldı|satış yapıldı|verildi|vade|gönderil|verilecek/i
+// Henüz sipariş olmayan niyet/öneri cümleleri
+const FUTURE_RE = /geçecek|geçicek|geçecek|vericek|verecek|düşünüyor|değerlendir|planl|talep|fiyat ver|teklif|kaldı|azal|bitince|alacak|alıcak|istiyor|bilgilendirme|deneyecek|denemek/i
+// Ürün gelince gönderilecek (bekleyen sipariş)
+const PENDING_RE = /gel(?:ince|diğinde|diğin\s*de|dikten sonra|ir gelmez)|stoğa gir|stoklara gir|stok(?:a|lara)? giriş|ürün bekliyor|bekliyor(?!um|uz|sun)|kargoya\s+çıkar/i
+const QTY_PHRASE_RE = /(\d+)\s*(?:\+\s*(\d+)\s*)?(paket|kutu|adet|flakon|ad\.?|kt\.?)?/i
+const CITY_RE = /^(alanya|manavgat|antalya|ankara|istanbul|adana|mersin|konya|kayseri|eskişehir|hatay|bursa|izmir|kadıköy|çankaya|antakya|gaziantep|kocaeli|sakarya|adapazarı|ceyhan|tarsus|osmaniye|iskenderun)$/
 const LOCATION_WORDS = /masterclass|master class|adana|istanbul|ankara|eskişehir|eskisehir|hatay|mah\.?|sok|cad|apt|clinic|klinik|kongre|ödeme|kart|iban|vergi|fatura|teşekkür|merhaba|günaydın|uygun|tamam|hocam|burcu|atınç|elif/i
 
 function toDate(d: string, m: string, y: string): string | null {
@@ -94,7 +106,7 @@ function doctorIn(line: string): string | null {
   if (!m) return null
   const words: string[] = []
   for (const w of m[1].split(/\s+/)) {
-    if (PRODUCT_RE.test(w) || /^(hoca|hocaya|hocadan|bey|hanım|hn|ile|ve|için|siparişi?|paket|kutu|adet|ürün|tarafından)$/i.test(w)) break
+    if (PRODUCT_RE.test(w) || CITY_RE.test(w.toLocaleLowerCase('tr-TR')) || /^(hoca|hocaya|hocadan|bey|hanım|hn|ile|ve|için|siparişi?|paket|kutu|adet|ürün|tarafından)$/i.test(w)) break
     words.push(w.replace(/[’'](?:\p{L})*$/u, ''))
   }
   if (!words.length) return null
@@ -151,7 +163,16 @@ export function parseChatSales(text: string, repName: string): ChatSaleRow[] {
     const msg = all[i]
     if (!isRep(msg)) continue
     const lines = msg.lines.map(cleanLine).filter(Boolean)
-    if (!lines.some((l) => PRICE_RE.test(l))) continue
+    // "Ödemesini geçti ürün geldiğin de kargoya çıkarabiliriz" — az önceki satış bekleyen siparişdir
+    const last = out[out.length - 1]
+    if (last && last.date === msg.date && lastSaleMinutes != null && msg.minutes - lastSaleMinutes <= 10 && !lines.some((l) => PRICE_RE.test(l)) && lines.some((l) => PENDING_RE.test(l.toLocaleLowerCase('tr-TR')))) {
+      last.sale.pending = true
+      continue
+    }
+    if (!lines.some((l) => PRICE_RE.test(l))) {
+      out.push(...unpricedOrders(lines, msg.date))
+      continue
+    }
     // Yalnız tutardan oluşan mesaj ("195.000₺ KDV dahil") birkaç dakika önceki satışın toplamıdır
     const prevSale = out[out.length - 1]
     if (
@@ -250,10 +271,94 @@ export function parseChatSales(text: string, repName: string): ChatSaleRow[] {
         if (doctor) break
       }
     }
+    if (lines.some((l) => PENDING_RE.test(l.toLocaleLowerCase('tr-TR')))) sale.pending = true
     out.push({ date: msg.date, name: doctor ?? '', phone, sale })
     lastSaleMinutes = msg.minutes
   }
-  return out
+  return dedupeSales(out)
+}
+
+const lowerTr = (s: string) => s.toLocaleLowerCase('tr-TR')
+
+/** Satırdaki miktar + ürün ("Sappire PDRN 1kutu sipariş" → "1 kutu Sappire PDRN") */
+function qtyProduct(line: string): string | null {
+  const words = line.replace(/[()]/g, ' ').split(/\s+/).filter(Boolean)
+  const isProd = (w: string) => PRODUCT_RE.test(w) || /^(pl|deep|volume|light|lux|col|bio|strong|line|soft|plus|aşısı|aşı|asisi|dolgu|vitapep)$/i.test(fold(w))
+  // Ürün kelimelerinin ilk kesintisiz dizisi
+  let start = words.findIndex((w) => PRODUCT_RE.test(w))
+  if (start < 0) return null
+  while (start > 0 && isProd(words[start - 1])) start--
+  let end = start
+  while (end + 1 < words.length && isProd(words[end + 1])) end++
+  const product = words.slice(start, end + 1).join(' ')
+  const qm = line.match(QTY_PHRASE_RE)
+  if (!qm || !qm[3] && !/^\d+$/.test(words[start - 1] ?? '')) return null
+  const qty = `${qm[1]}${qm[2] ? `+${qm[2]}` : ''}${qm[3] ? ` ${qm[3].toLocaleLowerCase('tr-TR')}` : ''}`
+  return `${qty} ${product}`
+}
+
+/** Fiyatsız sipariş mesajı: her satırın doktoru, o satırın ya da üstündeki en yakın "Dr …" satırıdır */
+function unpricedOrders(lines: string[], date: string): ChatSaleRow[] {
+  const groups: ChatSaleRow[] = []
+  let doctor: string | null = null
+  let group: ChatSaleRow | null = null
+  for (const line of lines) {
+    const d = doctorIn(line)
+    if (d) {
+      doctor = d
+      group = null
+    }
+    const tel = line.match(/^(?:tel(?:efon)?|gsm|cep)?\s*:?\s*(\+?0?\s*\(?5\d{2}\)?[\s\d]{7,})$/i)
+    if (tel && group && !group.phone) {
+      group.phone = tel[1].trim()
+      continue
+    }
+    const low = lowerTr(line)
+    if (NOT_SALE_RE.test(low) && !PENDING_RE.test(low)) continue
+    // Ödünç/borç ürün ("Dr. X'ten 1 adet ödünç alındı, stoğa girince geri verilecek") satış değildir
+    if (/ödünç|borç|geri veril/.test(low)) continue
+    const pending = PENDING_RE.test(low)
+    if (!ORDER_RE.test(low) || (FUTURE_RE.test(low) && !pending)) continue
+    const item = qtyProduct(line)
+    if (!item) continue
+    if (!group) {
+      group = { date, name: doctor ?? '', phone: '', sale: { items: [], total: null } }
+      groups.push(group)
+    }
+    group.sale.items.push({ text: item, amount: null })
+    if (pending) group.sale.pending = true
+  }
+  return groups
+}
+
+/**
+ * Aynı satış hem fiyatlı sipariş mesajında hem de gün sonu raporunda ("10 paket Bvrs satıldı") geçebilir:
+ * 3 gün içinde aynı miktar + ürün ise fiyatsız tekrar atılır; fiyatlı kayıtta doktor yoksa rapordaki doktor yazılır.
+ */
+function dedupeSales(rows: ChatSaleRow[]): ChatSaleRow[] {
+  const key = (t: string) => {
+    const q = t.match(/\d+/)?.[0] ?? ''
+    const p = fold(t.match(PRODUCT_RE)?.[0] ?? '').replace(/\s+/g, '')
+    return `${q}|${p}`
+  }
+  const days = (a: string, b: string) => Math.abs(new Date(`${a}T00:00:00`).getTime() - new Date(`${b}T00:00:00`).getTime()) / 864e5
+  const sameDoctor = (a: string, b: string) => {
+    const wa = fold(a).replace(/^dr\.\s*/, '').split(/\s+/)
+    const wb = fold(b).replace(/^dr\.\s*/, '').split(/\s+/)
+    return wa.some((w) => w.length > 2 && wb.includes(w))
+  }
+  const priced = rows.filter((r) => r.sale.items.some((it) => it.amount != null) || r.sale.total != null)
+  return rows.filter((r) => {
+    if (priced.includes(r)) return true
+    const keys = r.sale.items.map((it) => key(it.text))
+    const twin = priced.find(
+      (p) => days(p.date, r.date) <= 3 && (!p.name || !r.name || sameDoctor(p.name, r.name)) && keys.every((k) => p.sale.items.some((it) => key(it.text) === k)),
+    )
+    if (!twin) return true
+    if (!twin.name && r.name) twin.name = r.name
+    if (r.sale.pending) twin.sale.pending = true
+    return false
+  })
 }
 
 /** Satış özeti tek satır ("5 paket Bvrs pl 175.000 ₺") — açıklama/dışa aktarma için */
