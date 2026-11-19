@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.423] - 2026-11-19
+- WhatsApp sohbeti içe aktarılınca temsilcinin fiyatı yazılmış satışları (doktor, ürün, adet, tutar, toplam) okunuyor ve o günün doktor kaydına işleniyor; Satış Temsilcisi Raporu'nda doktorun adı/telefonu altında "Satış" kutusunda görünüyor. Hedef/teklif/ödeme konuşmaları alınmıyor.
+- Doktor kayıtlarında telefon numarası her zaman ismin altında.
+
 ## [2.17.422] - 2026-11-19
 - Satış Temsilcisi Raporu: her temsilcinin "Bu Hafta Ciro" ve "Bu Ay Ciro" kutusunda kalem düğmesiyle ciro elle girilebiliyor ("elle" etiketiyle gösterilir, "Otomatiğe dön" ile tahsilat hesabına dönülür); ana sayfadaki temsilci raporu da elle girilen aylık ciroyu kullanıyor.
 

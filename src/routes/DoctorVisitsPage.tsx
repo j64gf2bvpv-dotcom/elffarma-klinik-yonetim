@@ -24,6 +24,7 @@ import {
   Plus,
   Loader2,
   AlertTriangle,
+  ShoppingCart,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -49,6 +50,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { usePayments } from '@/features/payments/hooks'
 import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
+import type { VisitSale } from '@/features/doctorVisits/chatSales'
 import { ExportMenu } from '@/components/ExportMenu'
 import { confirmAction, useConfirmDialog } from '@/hooks/useConfirmDialog'
 
@@ -128,6 +130,33 @@ function QuickVisitInput({ visitDate, salesRepId, customers }: { visitDate: stri
       >
         {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
       </Button>
+    </div>
+  )
+}
+
+/** Ziyarette satılanlar — ürün ürün, tutarıyla (WhatsApp sohbetinden içe aktarılan satışlar, 2026-11-19) */
+function VisitSaleList({ sale }: { sale: VisitSale }) {
+  const tl = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
+  const showTotal = sale.total != null && (sale.items.length > 1 || sale.items[0]?.amount !== sale.total)
+  return (
+    <div className="mt-1.5 rounded-md border border-success/30 bg-success/5 px-2 py-1.5 text-xs">
+      <p className="mb-1 flex items-center gap-1 font-semibold text-success">
+        <ShoppingCart className="size-3.5" /> Satış
+      </p>
+      <ul className="grid gap-0.5">
+        {sale.items.map((it, i) => (
+          <li key={i} className="flex items-baseline justify-between gap-2">
+            <span className="min-w-0">{it.text}</span>
+            {it.amount != null && <span className="shrink-0 font-medium tabular-nums">{tl(it.amount)}</span>}
+          </li>
+        ))}
+      </ul>
+      {showTotal && (
+        <p className="mt-1 flex justify-between gap-2 border-t border-success/20 pt-1 font-semibold">
+          <span>Toplam</span>
+          <span className="tabular-nums">{tl(sale.total!)}</span>
+        </p>
+      )}
     </div>
   )
 }
@@ -298,7 +327,8 @@ function RepWeekSection({
                   {dayVisits.map((visit) => (
                     <div key={visit.id} className="flex items-start gap-2 rounded-md bg-muted/50 py-1.5 pr-1 pl-3 text-sm">
                       <div className="min-w-0 flex-1 py-0.5">
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        {/* Telefon her zaman ismin altında (kullanıcı isteği, 2026-11-19: "numaraları yana almasın") */}
+                        <div className="grid gap-1">
                           <span className="flex items-center gap-1.5 font-medium">
                             <User className="size-3.5 text-muted-foreground" /> {visit.doctor_name}
                           </span>
@@ -318,6 +348,7 @@ function RepWeekSection({
                             </span>
                           )}
                         </div>
+                        {visit.sale && visit.sale.items?.length > 0 && <VisitSaleList sale={visit.sale} />}
                         {visit.notes && (
                           <p className="mt-1.5 flex items-start gap-1.5 text-xs text-muted-foreground">
                             <Package className="mt-0.5 size-3.5 shrink-0" /> {visit.notes}

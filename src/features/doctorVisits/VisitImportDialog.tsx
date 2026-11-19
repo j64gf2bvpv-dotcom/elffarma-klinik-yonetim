@@ -19,7 +19,8 @@ import { IMAGE_ACCEPT, isImageFile } from '@/lib/ensureReadableImage'
 import { readVisitImage } from './readVisitImage'
 import { parseWhatsAppChat, readWhatsAppChatFile } from './whatsappChat'
 import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
-import { createVisit, fetchRepVisitDoctors, fetchVisitsInRange } from './api'
+import { createVisit, fetchRepVisitDoctors, fetchVisitsInRange, setVisitSale } from './api'
+import { formatSale, parseChatSales, type VisitSale } from './chatSales'
 import { nameKey, phoneKey } from '@/features/customers/dedupe'
 import { updateCustomerFields } from '@/features/customers/api'
 
@@ -31,6 +32,8 @@ interface ImportRow {
   visit_date: string
   /** Kullanıcının elle seçimi; yoksa "programda yoksa ekle" kuralı geçerli */
   include?: boolean
+  /** WhatsApp sohbetinden okunan satış (ürün, tutar) */
+  sale?: VisitSale | null
 }
 
 const TEMPLATE_HEADERS = ['Tarih', 'Doktor', 'Telefon', 'Açıklama']
@@ -124,12 +127,24 @@ export function VisitImportDialog({
       let parsed: Omit<ImportRow, 'key'>[]
       if (/\.(txt|zip)$/i.test(file.name)) {
         // WhatsApp "Sohbeti Dışa Aktar": her mesaj kendi tarihine, sadece doktor kayıtları
-        parsed = parseWhatsAppChat(await readWhatsAppChatFile(file), rep.name).map((r) => ({
+        const chatText = await readWhatsAppChatFile(file)
+        const visitRows: Omit<ImportRow, 'key'>[] = parseWhatsAppChat(chatText, rep.name).map((r) => ({
           doctor_name: r.name,
           phone: r.phone,
           notes: r.notes,
           visit_date: r.date ?? date,
         }))
+        // Satışlar (yalnız fiyatı yazılmış ürünler) aynı gün aynı doktorun kaydına eklenir; doktor o gün yoksa yeni kayıt
+        for (const s of parseChatSales(chatText, rep.name)) {
+          const same = s.name ? visitRows.find((v) => v.visit_date === s.date && nameKey(v.doctor_name) === nameKey(s.name)) : undefined
+          if (same) {
+            same.sale = same.sale
+              ? { items: [...same.sale.items, ...s.sale.items], total: same.sale.total != null || s.sale.total != null ? (same.sale.total ?? 0) + (s.sale.total ?? 0) : null }
+              : s.sale
+            if (!same.phone) same.phone = s.phone
+          } else visitRows.push({ doctor_name: s.name, phone: s.phone, notes: '', visit_date: s.date, sale: s.sale })
+        }
+        parsed = visitRows
       } else if (/\.docx$/i.test(file.name)) {
         parsed = (await parseDoctorWord(file)).map((r) => ({
           doctor_name: r.name,
@@ -208,8 +223,16 @@ export function VisitImportDialog({
     if (matchedCustomer(r)) return "Cari Kart'ta var"
     return null
   }
-  const willAdd = (r: ImportRow) => r.include ?? !knownReason(r)
+  const willAdd = (r: ImportRow) => r.include ?? (!!r.sale || !knownReason(r))
   const ready = rows.filter((r) => r.doctor_name.trim() && r.visit_date && r.visit_date <= today && !isDuplicate(r) && willAdd(r))
+  // O gün zaten listede olan doktorun satışı: mevcut kayda yazılır (satışı yoksa ya da farklıysa)
+  const existingVisitOf = (r: ImportRow) =>
+    [...visits, ...existing].find((v) => v.sales_rep_id === rep.id && v.visit_date === r.visit_date && fold(v.doctor_name) === fold(r.doctor_name))
+  const saleUpdates = rows.filter((r) => {
+    if (!r.sale || !isDuplicate(r)) return false
+    const v = existingVisitOf(r)
+    return !!v && JSON.stringify(v.sale ?? null) !== JSON.stringify(r.sale)
+  })
   const knownCount = rows.filter((r) => !isDuplicate(r) && knownReason(r)).length
 
   async function handleConfirm() {
@@ -228,12 +251,25 @@ export function VisitImportDialog({
             customer_id: customer?.id ?? null,
             phone: r.phone.trim() || customer?.phone || null,
             notes: r.notes.trim() || null,
+            sale: r.sale ?? null,
           })
           added++
         } catch (err) {
           errors.push(`${name}: ${getErrorMessage(err)}`)
         }
       }
+      let salesSet = 0
+      for (const r of saleUpdates) {
+        const v = existingVisitOf(r)
+        if (!v) continue
+        try {
+          await setVisitSale(v.id, r.sale ?? null)
+          salesSet++
+        } catch (err) {
+          errors.push(`${r.doctor_name}: ${getErrorMessage(err)}`)
+        }
+      }
+      if (salesSet) toast.success(`${salesSet} doktorun satışı mevcut kaydına işlendi`)
       // Eklenmeyen (programda var) doktorların Cari Kart'ta eksik telefonu listeden tamamlanır
       let phonesFilled = 0
       for (const r of rows) {
@@ -353,6 +389,7 @@ export function VisitImportDialog({
               <span>
                 <b>{fileName}</b> · {rows.length} doktor okundu · <b className="text-success">{ready.length} yeni</b> eklenecek
                 {knownCount > 0 && <> · <b>{knownCount}</b> tanesi programda zaten var, eklenmeyecek</>}
+                {rows.some((r) => r.sale) && <> · <b className="text-success">{rows.filter((r) => r.sale).length} satış</b> okundu</>}
               </span>
               <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={busy}>
                 <Upload className="size-3.5" /> Başka dosya
@@ -387,7 +424,7 @@ export function VisitImportDialog({
                           </TableCell>
                         </TableRow>
                       )}
-                      <TableRow className={dup || !willAdd(r) ? 'bg-muted/30 opacity-60' : undefined}>
+                      <TableRow className={(dup && !saleUpdates.includes(r)) || (!dup && !willAdd(r)) ? 'bg-muted/30 opacity-60' : undefined}>
                         <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                         <TableCell>
                           <Input value={r.doctor_name} onChange={(e) => update(r.key, { doctor_name: e.target.value })} placeholder="Doktor adı gerekli" aria-invalid={!r.doctor_name.trim()} />
@@ -396,6 +433,13 @@ export function VisitImportDialog({
                               O gün zaten listede — eklenmeyecek
                             </Badge>
                           )}
+                          {r.sale && (
+                            <p className="mt-1 rounded bg-success/10 px-1.5 py-1 text-xs text-success">
+                              Satış: {formatSale(r.sale)}
+                              {dup && saleUpdates.includes(r) && ' — mevcut kayda işlenecek'}
+                            </p>
+                          )}
+                          {!r.doctor_name.trim() && r.sale && <p className="mt-1 text-xs text-destructive">Sohbette doktor adı yok — adı yazın ya da satırı silin</p>}
                           {!dup && (() => {
                             const reason = knownReason(r)
                             if (!reason) return <Badge className="mt-1 bg-success/15 text-success hover:bg-success/15">Yeni — eklenecek</Badge>
@@ -437,8 +481,8 @@ export function VisitImportDialog({
           <Button variant="ghost" onClick={() => setOpen(false)}>
             İptal
           </Button>
-          <Button onClick={() => void handleConfirm()} disabled={busy || !ready.length}>
-            {busy && rows.length > 0 && <Loader2 className="animate-spin" />} {ready.length} Doktoru Ekle
+          <Button onClick={() => void handleConfirm()} disabled={busy || (!ready.length && !saleUpdates.length)}>
+            {busy && rows.length > 0 && <Loader2 className="animate-spin" />} {[ready.length && `${ready.length} Doktoru Ekle`, saleUpdates.length && `${saleUpdates.length} Satışı İşle`].filter(Boolean).join(' + ')}
           </Button>
         </DialogFooter>
       </DialogContent>

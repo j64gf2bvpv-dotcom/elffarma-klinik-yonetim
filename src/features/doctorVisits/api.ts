@@ -19,6 +19,7 @@ export interface DoctorVisitInput {
   check_in_lng?: number | null
   discussed_products?: string | null
   competitor_products?: string | null
+  sale?: { items: { text: string; amount: number | null }[]; total: number | null } | null
   next_visit_date?: string | null
   signature_data?: string | null
 }
@@ -108,6 +109,11 @@ async function withCustomer(raw: DoctorVisitInput): Promise<DoctorVisitInput> {
     console.warn('[ziyaret] Cari Kart eşleştirilemedi', err)
     return input
   }
+}
+
+/** Var olan ziyarete satış bilgisi yazar (aynı gün aynı doktor zaten listedeyse içe aktarmada) */
+export async function setVisitSale(id: string, sale: DoctorVisitInput['sale']): Promise<void> {
+  await offlineUpdate<DoctorVisit>('doctor_visits', id, { sale }, 'Ziyarete satış ekleme')
 }
 
 export async function createVisit(input: DoctorVisitInput): Promise<DoctorVisit> {
