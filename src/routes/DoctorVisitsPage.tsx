@@ -19,7 +19,6 @@ import {
   AtSign,
   User,
   Trash2,
-  Wallet,
   Package,
   Users,
   Plus,
@@ -34,6 +33,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { RepAvatar } from '@/features/salesReps/RepAvatar'
+import { RevenueCell } from '@/features/salesReps/RevenueCell'
 import { DoctorVisitDialog } from '@/features/doctorVisits/DoctorVisitDialog'
 import { VisitImportDialog } from '@/features/doctorVisits/VisitImportDialog'
 import { useCreateVisit, useDeleteVisit, useRepDoctorTotals, useVisitDates, useVisitsInRange } from '@/features/doctorVisits/hooks'
@@ -52,9 +52,6 @@ import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
 import { ExportMenu } from '@/components/ExportMenu'
 import { confirmAction, useConfirmDialog } from '@/hooks/useConfirmDialog'
 
-function currency(n: number) {
-  return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
-}
 
 function dateKey(d: Date) {
   const copy = new Date(d)
@@ -238,20 +235,8 @@ function RepWeekSection({
       </CardHeader>
       <CardContent className="grid gap-3">
         <div className="mb-1 grid grid-cols-2 gap-3 rounded-lg border bg-muted/30 p-3 text-sm">
-          <div className="flex items-center gap-2">
-            <Wallet className="size-4 text-success" />
-            <div>
-              <p className="text-xs text-muted-foreground">Bu Hafta Ciro</p>
-              <p className="font-semibold">{currency(performance.weekRevenue)}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Wallet className="size-4 text-primary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Bu Ay Ciro</p>
-              <p className="font-semibold">{currency(performance.monthRevenue)}</p>
-            </div>
-          </div>
+          <RevenueCell repId={rep.id} repName={rep.name} type="week" periodStart={dateKey(days[0])} autoValue={performance.weekRevenue} label="Bu Hafta Ciro" iconClassName="text-success" />
+          <RevenueCell repId={rep.id} repName={rep.name} type="month" periodStart={format(startOfMonth(new Date()), 'yyyy-MM-dd')} autoValue={performance.monthRevenue} label="Bu Ay Ciro" iconClassName="text-primary" />
           <div className="col-span-2 flex items-center gap-2 border-t pt-2">
             <Users className="size-4 text-primary" />
             <p className="text-xs text-muted-foreground">Şimdiye kadar görüşülen</p>

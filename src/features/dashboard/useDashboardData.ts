@@ -9,7 +9,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
-import { startOfDay, startOfMonth, startOfWeek, subDays, subMonths, subWeeks } from 'date-fns'
+import { format, startOfDay, startOfMonth, startOfWeek, subDays, subMonths, subWeeks } from 'date-fns'
 
 import { usePayments } from '@/features/payments/hooks'
 import { useSales } from '@/features/sales/hooks'
@@ -18,6 +18,7 @@ import { useCustomers } from '@/features/customers/hooks'
 import { useInvoices } from '@/features/invoices/hooks'
 import { useProducts } from '@/features/stock/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
+import { useManualRevenue } from '@/features/salesReps/manualRevenue'
 import { useCongresses } from '@/features/congresses/hooks'
 import { useVehicles, useAllVehicleFuelLogs } from '@/features/vehicles/hooks'
 import { useAlertsSummary } from '@/features/alerts/useAlertsSummary'
@@ -74,6 +75,7 @@ export function useDashboardData() {
   const { data: invoices = [] } = useInvoices()
   const { data: products = [] } = useProducts('')
   const { data: salesReps = [] } = useSalesReps()
+  const { data: manualRevenue = [] } = useManualRevenue()
   const { data: congresses = [] } = useCongresses()
   const { data: vehicles = [] } = useVehicles()
   const { data: fuelLogs = [] } = useAllVehicleFuelLogs()
@@ -235,6 +237,14 @@ export function useDashboardData() {
     }
     const current = group(paymentsThisMonth)
     const previous = group(paymentsPrevMonth)
+    // Temsilci raporunda elle girilen aylık ciro varsa o geçerli (2026-11-19)
+    const thisMonthKey = format(startOfMonth(new Date()), 'yyyy-MM-dd')
+    const prevMonthKey = format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd')
+    for (const m of manualRevenue) {
+      if (m.period_type !== 'month') continue
+      if (m.period_start === thisMonthKey) current.set(m.sales_rep_id, Number(m.amount))
+      if (m.period_start === prevMonthKey) previous.set(m.sales_rep_id, Number(m.amount))
+    }
     return salesReps
       .filter((r) => r.is_active)
       .map((rep) => ({
@@ -245,7 +255,7 @@ export function useDashboardData() {
         photoUrl: rep.photo_url,
       }))
       .sort((a, b) => b.revenue - a.revenue)
-  }, [salesReps, paymentsThisMonth, paymentsPrevMonth])
+  }, [salesReps, paymentsThisMonth, paymentsPrevMonth, manualRevenue])
 
   const notifications = React.useMemo<NotificationItem[]>(() => {
     const items: NotificationItem[] = []
