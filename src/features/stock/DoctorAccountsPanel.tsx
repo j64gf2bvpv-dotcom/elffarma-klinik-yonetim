@@ -449,7 +449,7 @@ export function DoctorAccountsPanel() {
 
       <Card>
         <CardContent className="p-0">
-          <Table className="[&_td]:border-b [&_td]:border-border [&_td:not(:last-child)]:border-r [&_th]:border-b [&_th]:border-border [&_th]:bg-muted/40 [&_th:not(:last-child)]:border-r">
+          <Table className="[&_th]:whitespace-normal [&_td]:whitespace-normal [&_td]:border-b [&_td]:border-border [&_td:not(:last-child)]:border-r [&_th]:border-b [&_th]:border-border [&_th]:bg-muted/40 [&_th:not(:last-child)]:border-r">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8" />

@@ -1023,7 +1023,7 @@ export function CongressShipmentsPanel() {
       </div>
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <Table className="[&_th]:whitespace-normal [&_td]:whitespace-normal [&_td]:px-2 [&_th]:px-2">
             <TableHeader>
               <TableRow>
                 <TableHead>Kongre / Workshop</TableHead>
@@ -1083,16 +1083,16 @@ export function CongressShipmentsPanel() {
                           {s.product_name}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-1.5">
                         <TakenQtyCell shipment={s} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-1.5">
                         <ReturnQtyCell shipment={s} field="quantity_returned_sealed" otherValue={s.quantity_returned_open} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-1.5">
                         <ReturnQtyCell shipment={s} field="quantity_returned_open" otherValue={s.quantity_returned_sealed} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-1.5">
                         <UsedQtyCell shipment={s} />
                       </TableCell>
                       <TableCell className="text-muted-foreground max-w-40 truncate" title={s.note ?? undefined}>

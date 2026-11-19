@@ -238,7 +238,7 @@ export function CongressDetailPage() {
               {currency(netProfit)}
             </p>
             {profitMargin != null && (
-              <p className="text-xs text-muted-foreground">Marj: %{profitMargin.toFixed(1)}</p>
+              <p className="text-xs text-muted-foreground">Marj: %{profitMargin.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</p>
             )}
           </CardContent>
         </Card>

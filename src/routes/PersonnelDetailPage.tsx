@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, PREMIUM_TABLE } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
 import { confirmAction } from '@/hooks/useConfirmDialog'
 import { isPdfPath, openDocument } from '@/lib/documentAttachments'
@@ -252,7 +252,7 @@ export function PersonnelDetailPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
+            <Table className={PREMIUM_TABLE}>
               <TableHeader>
                 <TableRow>
                   <TableHead>Evrak</TableHead>
@@ -275,7 +275,7 @@ export function PersonnelDetailPage() {
                   const v = r.doc ? validity(r.doc) : undefined
                   return (
                     <TableRow key={r.key}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium whitespace-normal">
                         {r.label}
                         {r.doc?.note && <span className="block text-xs font-normal text-muted-foreground">{r.doc.note}</span>}
                       </TableCell>

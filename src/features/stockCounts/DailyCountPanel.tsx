@@ -70,7 +70,7 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog'
  */
 /** Geçmiş Sayımlar listesinin sütunları: Tarih | Durum | Ürünler | Not | İşlemler */
 const PAST_GRID =
-  'grid grid-cols-[2.25rem_7.5rem_7.5rem_9rem_7rem_7rem_minmax(0,1fr)_3rem] [&>*]:flex [&>*]:min-w-0 [&>*]:items-center [&>*]:border-r [&>*]:border-border/60 [&>*]:px-3 [&>*:last-child]:border-r-0'
+  'grid grid-cols-[2rem_minmax(6rem,1fr)_minmax(5rem,0.8fr)_minmax(7rem,1.1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(4rem,1.4fr)_2.75rem] [&>*]:flex [&>*]:min-w-0 [&>*]:items-center [&>*]:border-r [&>*]:border-border/60 [&>*]:px-3 [&>*:last-child]:border-r-0'
 
 // Dar pencerede sütunlar birbirine girmesin (2026-11-19): genişlikler yüzde, başlıklar alt satıra kayar, hücre içi sarar
 const COUNT_TABLE_GRID =

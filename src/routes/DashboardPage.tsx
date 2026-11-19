@@ -219,7 +219,7 @@ function StatCardV2({
                 )}
               >
                 {deltaPct >= 0 ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
-                {Math.abs(deltaPct).toFixed(1)}%
+                %{Math.abs(deltaPct).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
               </span>
             )}
           </div>

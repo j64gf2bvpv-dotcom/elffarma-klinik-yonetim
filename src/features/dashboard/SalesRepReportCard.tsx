@@ -53,7 +53,7 @@ export function SalesRepReportCard({
                   )}
                 >
                   {item.deltaPct >= 0 ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
-                  {Math.abs(item.deltaPct).toFixed(1)}%
+                  %{Math.abs(item.deltaPct).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                 </p>
               )}
             </div>

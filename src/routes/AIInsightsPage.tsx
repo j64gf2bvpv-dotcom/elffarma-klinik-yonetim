@@ -449,7 +449,7 @@ export function AIInsightsPage() {
     <div>
       <PageHeader
         title="Yapay Zeka Analiz"
-        description="Mevcut AIService üzerine kurulu: gerçek verilere dayanan soru-cevap, yönetim raporu ve öneriler"
+        description="Kendi verilerinize dayanan soru-cevap, yönetim raporu ve öneriler"
       />
 
       <div className="grid gap-6 lg:grid-cols-2">

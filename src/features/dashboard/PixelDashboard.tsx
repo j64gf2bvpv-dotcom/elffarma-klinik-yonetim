@@ -37,7 +37,7 @@ export function PixelDashboard() {
           tone="green"
           label="Araçlar"
           value={currency(data.vehicleStat.current)}
-          sublabel={`${data.vehicleCount} araç · aylık gider`}
+          sublabel={`${data.vehicleCount} araç · aylık`}
           deltaPct={data.vehicleStat.deltaPct}
           sparkline={data.vehicleStat.sparkline}
           to="/araclar"

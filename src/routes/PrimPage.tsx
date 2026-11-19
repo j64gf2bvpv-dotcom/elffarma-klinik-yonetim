@@ -84,7 +84,7 @@ export function PrimPage() {
     <div>
       <PageHeader
         title="Prim Hesaplama"
-        description="Ürün/kategori/marka/temsilci/klinik/doktor bazlı dinamik prim kuralları + seçilen dönem için bordro"
+        description="Ürün, kategori, marka, temsilci, klinik ve doktor bazlı prim kuralları ile seçilen dönemin prim bordrosu"
       />
 
       <div className="mb-6">

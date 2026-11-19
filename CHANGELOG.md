@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.439] - 2026-11-19
+- Genel test ve düzeltmeler: dar pencerede Personel evrak tablosu, Stok > Kongre/Workshop ve Doktor Hesapları tabloları ile Geçmiş Sayımlar listesi artık sığıyor; ana sayfa ve raporlarda yüzdeler Türkçe biçimde (%12,5); Araçlar kartındaki kesik yazı kısaldı; Yapay Zeka Analiz ve Prim Hesaplama açıklamaları sadeleşti; yedek boyutu ve kongre marjı Türkçe ondalıkla.
+
 ## [2.17.438] - 2026-11-19
 - Araçlar tablosunda araba fotoğrafı yerine küçük, marka renginde araba simgesi.
 
