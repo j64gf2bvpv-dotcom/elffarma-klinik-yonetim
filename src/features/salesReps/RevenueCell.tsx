@@ -77,7 +77,7 @@ export function RevenueCell({
         <PopoverContent align="end" className="grid w-64 gap-3">
           <div>
             <p className="text-sm font-semibold">{repName} — {label}</p>
-            <p className="text-xs text-muted-foreground">Tahsilatlardan hesaplanan: {currency(autoValue)}</p>
+            <p className="text-xs text-muted-foreground">Otomatik (tahsilat + stoktan düşülen satışlar): {currency(autoValue)}</p>
           </div>
           <Input
             autoFocus

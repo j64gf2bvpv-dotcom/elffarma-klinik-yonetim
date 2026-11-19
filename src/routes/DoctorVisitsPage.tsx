@@ -49,6 +49,8 @@ import { deleteVisit, deleteVisitsInRange, setVisitSale } from '@/features/docto
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { usePayments } from '@/features/payments/hooks'
+import { useSalesInRange } from '@/features/sales/hooks'
+import { repReportSalesByRep } from '@/features/salesReps/repRevenue'
 import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
 import type { VisitSale } from '@/features/doctorVisits/chatSales'
 import { SaleStockDialog } from '@/features/doctorVisits/SaleStockDialog'
@@ -473,6 +475,9 @@ export function DoctorVisitsPage() {
     to: new Date(weekEnd.getTime() + 86_399_000).toISOString(),
   })
   const { data: monthPayments = [] } = usePayments({ from: monthStart.toISOString() })
+  // Stoktan düşülen temsilci raporu satışları da ciroya eklenir (2026-11-19)
+  const salesFrom = dateKey(weekStart < monthStart ? weekStart : monthStart)
+  const { data: periodSales = [] } = useSalesInRange(salesFrom, dateKey(new Date()))
 
   const activeReps = salesReps.filter((r) => r.is_active)
   // Hızlı ekleme kutusundaki öneriler için Cari Kart doktorları
@@ -480,19 +485,20 @@ export function DoctorVisitsPage() {
 
   const performanceByRep = React.useMemo(() => {
     const map = new Map<string, RepPerformance>()
+    const weekSales = repReportSalesByRep(periodSales, dateKey(weekStart), dateKey(weekEnd))
+    const monthSales = repReportSalesByRep(periodSales, dateKey(monthStart), dateKey(new Date()))
     for (const rep of activeReps) {
-      const weekRevenue = weekPayments
-        .filter((p) => p.sales_rep_id === rep.id)
-        .reduce((sum, p) => sum + Number(p.amount), 0)
+      const weekRevenue =
+        weekPayments.filter((p) => p.sales_rep_id === rep.id).reduce((sum, p) => sum + Number(p.amount), 0) + (weekSales.get(rep.id) ?? 0)
       const monthRepPayments = monthPayments.filter((p) => p.sales_rep_id === rep.id)
-      const monthRevenue = monthRepPayments.reduce((sum, p) => sum + Number(p.amount), 0)
+      const monthRevenue = monthRepPayments.reduce((sum, p) => sum + Number(p.amount), 0) + (monthSales.get(rep.id) ?? 0)
       const monthDoctors = Array.from(
         new Set(monthRepPayments.map((p) => p.customers?.full_name).filter((n): n is string => !!n)),
       )
       map.set(rep.id, { weekRevenue, monthRevenue, monthDoctors })
     }
     return map
-  }, [activeReps, weekPayments, monthPayments])
+  }, [activeReps, weekPayments, monthPayments, periodSales, weekStart, weekEnd, monthStart])
 
   const repNameById = React.useMemo(() => new Map(salesReps.map((r) => [r.id, r.name])), [salesReps])
   const customerPhoneById = React.useMemo(() => new Map(customers.filter((c) => c.phone).map((c) => [c.id, c.phone])), [customers])

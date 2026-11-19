@@ -16,6 +16,7 @@ import { ensureVisitCustomer } from './linkCustomer'
 import { setVisitSale } from './api'
 import type { VisitSale } from './chatSales'
 import { matchProduct } from './productMatch'
+import { REP_REPORT_SALE_NOTE } from '@/features/salesReps/repRevenue'
 
 /** "10+2 mixo volume" → 12; "3 kutu" → 3; sayı yoksa 1 */
 function qtyOf(text: string): number {
@@ -97,7 +98,7 @@ export function SaleStockDialog({
           quantity: Number(l.qty),
           unit_price: Number(l.unitPrice),
           sale_date: visit.visit_date,
-          note: `Temsilci raporu (WhatsApp) — ${repName}: ${l.text}`,
+          note: `${REP_REPORT_SALE_NOTE} — ${repName}: ${l.text}`,
           movement_note: `${repName} satışı — ${visit.doctor_name}`,
         })
       }
@@ -106,6 +107,7 @@ export function SaleStockDialog({
       void queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
       void queryClient.invalidateQueries({ queryKey: ['products'] })
       void queryClient.invalidateQueries({ queryKey: ['sales'] })
+      void queryClient.invalidateQueries({ queryKey: ['payments'] })
       onOpenChange(false)
     } catch (err) {
       toast.error('Stoktan düşülemedi', { description: getErrorMessage(err) })

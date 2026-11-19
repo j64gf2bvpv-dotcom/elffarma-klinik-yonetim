@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.425] - 2026-11-19
+- Temsilci raporunda "Stoktan düş" ile onaylanan satışlar otomatik olarak temsilcinin Bu Hafta / Bu Ay cirosuna (ve ana sayfadaki temsilci raporuna) ekleniyor; ciro = tahsilatlar + bu satışlar.
+
 ## [2.17.424] - 2026-11-19
 - WhatsApp sohbetinden fiyatsız siparişler ("1 kutu BVRS STAR AŞISI SİPARİŞİMDİR", "10 paket Bvrs satıldı") ve "ürünler gelince gönderilecek" bekleyen siparişler de alınıyor, hangi doktorun altındaysa ona yazılıyor; aynı satış iki mesajda geçerse tek sayılıyor, ödünç ürün satış sayılmıyor.
 - Her satışın altında "Stoktan düşülsün mü?" teyidi: Evet denince ürünler katalogla eşleştirilip (adet/fiyat düzeltilebilir) stoktan düşülüyor ve Satışlar'a kaydediliyor; Hayır denince dokunulmuyor.

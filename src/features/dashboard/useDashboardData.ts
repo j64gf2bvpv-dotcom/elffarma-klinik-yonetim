@@ -19,6 +19,7 @@ import { useInvoices } from '@/features/invoices/hooks'
 import { useProducts } from '@/features/stock/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { useManualRevenue } from '@/features/salesReps/manualRevenue'
+import { repReportSalesByRep } from '@/features/salesReps/repRevenue'
 import { useCongresses } from '@/features/congresses/hooks'
 import { useVehicles, useAllVehicleFuelLogs } from '@/features/vehicles/hooks'
 import { useAlertsSummary } from '@/features/alerts/useAlertsSummary'
@@ -237,6 +238,11 @@ export function useDashboardData() {
     }
     const current = group(paymentsThisMonth)
     const previous = group(paymentsPrevMonth)
+    // Temsilci raporunda stoktan düşülen satışlar da ciroya eklenir (2026-11-19)
+    const now = new Date()
+    const add = (target: Map<string, number>, extra: Map<string, number>) => extra.forEach((v, k) => target.set(k, (target.get(k) ?? 0) + v))
+    add(current, repReportSalesByRep(sales, format(startOfMonth(now), 'yyyy-MM-dd'), format(now, 'yyyy-MM-dd')))
+    add(previous, repReportSalesByRep(sales, format(startOfMonth(subMonths(now, 1)), 'yyyy-MM-dd'), format(subDays(startOfMonth(now), 1), 'yyyy-MM-dd')))
     // Temsilci raporunda elle girilen aylık ciro varsa o geçerli (2026-11-19)
     const thisMonthKey = format(startOfMonth(new Date()), 'yyyy-MM-dd')
     const prevMonthKey = format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd')
@@ -255,7 +261,7 @@ export function useDashboardData() {
         photoUrl: rep.photo_url,
       }))
       .sort((a, b) => b.revenue - a.revenue)
-  }, [salesReps, paymentsThisMonth, paymentsPrevMonth, manualRevenue])
+  }, [salesReps, paymentsThisMonth, paymentsPrevMonth, manualRevenue, sales])
 
   const notifications = React.useMemo<NotificationItem[]>(() => {
     const items: NotificationItem[] = []
