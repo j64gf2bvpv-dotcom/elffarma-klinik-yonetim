@@ -23,6 +23,13 @@ export interface DoctorVisitInput {
   signature_data?: string | null
 }
 
+/** Temsilcinin bugüne kadarki tüm ziyaretlerindeki doktorlar — içe aktarmada "programda var mı" kıyası için */
+export async function fetchRepVisitDoctors(salesRepId: string): Promise<Pick<DoctorVisit, 'doctor_name' | 'phone' | 'visit_date'>[]> {
+  const { data, error } = await supabase.from('doctor_visits').select('doctor_name, phone, visit_date').eq('sales_rep_id', salesRepId).order('visit_date', { ascending: false })
+  if (error) throw error
+  return data as Pick<DoctorVisit, 'doctor_name' | 'phone' | 'visit_date'>[]
+}
+
 export async function fetchVisitsInRange(from: string, to: string, salesRepId?: string): Promise<DoctorVisit[]> {
   let query = supabase
     .from('doctor_visits')

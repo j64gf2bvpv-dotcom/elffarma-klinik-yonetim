@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.421] - 2026-11-19
+- İçe aktarmada her doktor ad ve telefonla programdakilerle (temsilcinin bütün listesi + Cari Kart) kıyaslanıyor: kayıtlı olanlar eklenmiyor ("Yine de ekle" ile eklenebilir), yalnız yeniler ekleniyor; eksik telefonlar Cari Kart'ta tamamlanıyor.
+
 ## [2.17.420] - 2026-11-19
 - Temsilci raporuna içe aktarma: hazır doktor listesi Excel'i ("Doktor Adı Soyadı / Telefon" gibi her başlıkla) ve listenin resmi/ekran görüntüsü satır satır okunuyor; telefonu boş olanlar da ekleniyor, Cari Kart'ta olmayanlar oraya da açılıyor.
 

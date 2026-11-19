@@ -19,7 +19,9 @@ import { IMAGE_ACCEPT, isImageFile } from '@/lib/ensureReadableImage'
 import { readVisitImage } from './readVisitImage'
 import { parseWhatsAppChat, readWhatsAppChatFile } from './whatsappChat'
 import type { Customer, DoctorVisit, SalesRep } from '@/types/database'
-import { createVisit, fetchVisitsInRange } from './api'
+import { createVisit, fetchRepVisitDoctors, fetchVisitsInRange } from './api'
+import { nameKey, phoneKey } from '@/features/customers/dedupe'
+import { updateCustomerFields } from '@/features/customers/api'
 
 interface ImportRow {
   key: number
@@ -27,6 +29,8 @@ interface ImportRow {
   phone: string
   notes: string
   visit_date: string
+  /** Kullanıcının elle seçimi; yoksa "programda yoksa ekle" kuralı geçerli */
+  include?: boolean
 }
 
 const TEMPLATE_HEADERS = ['Tarih', 'Doktor', 'Telefon', 'Açıklama']
@@ -95,6 +99,8 @@ export function VisitImportDialog({
   const chatRef = React.useRef<HTMLInputElement>(null)
   // İçe aktarılan tarihlerdeki mevcut kayıtlar (başka haftalar dahil) — mükerrer eklenmesin
   const [existing, setExisting] = React.useState<DoctorVisit[]>([])
+  // Temsilcinin bütün geçmiş ziyaretleri — doktor programda var mı kıyası
+  const [repDoctors, setRepDoctors] = React.useState<Pick<DoctorVisit, 'doctor_name' | 'phone' | 'visit_date'>[]>([])
   const today = format(new Date(), 'yyyy-MM-dd')
   const queryClient = useQueryClient()
 
@@ -161,6 +167,7 @@ export function VisitImportDialog({
       }
       const dates = parsed.map((r) => r.visit_date).sort()
       setExisting(await fetchVisitsInRange(dates[0], dates[dates.length - 1], rep.id).catch(() => []))
+      setRepDoctors(await fetchRepVisitDoctors(rep.id).catch(() => []))
       setFileName(file.name)
       setRows(parsed.map((r, i) => ({ ...r, key: i })))
     } catch (err) {
@@ -175,7 +182,35 @@ export function VisitImportDialog({
 
   const isDuplicate = (r: ImportRow) =>
     [...visits, ...existing].some((v) => v.sales_rep_id === rep.id && v.visit_date === r.visit_date && fold(v.doctor_name) === fold(r.doctor_name))
-  const ready = rows.filter((r) => r.doctor_name.trim() && r.visit_date && r.visit_date <= today && !isDuplicate(r))
+  /**
+   * Doktor programda var mı (kullanıcı isteği, 2026-11-19: "her doktoru ayrı, numarası varsa isim isim
+   * numaraları ile programdakini kıyaslasın, aynıysa eklemesin yeniyse eklesin"): aynı isim (ünvan/harf farkı
+   * gözetmeden) ya da aynı telefon + aynı soyadı (ortak klinik hattı başka doktorla karışmasın).
+   */
+  const sameDoctor = (r: ImportRow) => {
+    const nk = nameKey(r.doctor_name)
+    const pk = phoneKey(r.phone)
+    const last = (k: string) => k.split(' ').pop() ?? ''
+    return (name: string, ...phones: (string | null | undefined)[]) => {
+      const k = nameKey(name)
+      if (!nk || !k) return false
+      return k === nk || (!!pk && last(k) === last(nk) && phones.some((p) => phoneKey(p) === pk))
+    }
+  }
+  const matchedCustomer = (r: ImportRow) => {
+    const same = sameDoctor(r)
+    return customers.find((c) => same(c.full_name, c.phone, c.mobile_phone, c.whatsapp_phone))
+  }
+  const knownReason = (r: ImportRow): string | null => {
+    const same = sameDoctor(r)
+    const v = repDoctors.find((d) => same(d.doctor_name, d.phone))
+    if (v) return `${rep.name} listesinde var (${v.visit_date.split('-').reverse().join('.')})`
+    if (matchedCustomer(r)) return "Cari Kart'ta var"
+    return null
+  }
+  const willAdd = (r: ImportRow) => r.include ?? !knownReason(r)
+  const ready = rows.filter((r) => r.doctor_name.trim() && r.visit_date && r.visit_date <= today && !isDuplicate(r) && willAdd(r))
+  const knownCount = rows.filter((r) => !isDuplicate(r) && knownReason(r)).length
 
   async function handleConfirm() {
     setBusy(true)
@@ -199,6 +234,21 @@ export function VisitImportDialog({
           errors.push(`${name}: ${getErrorMessage(err)}`)
         }
       }
+      // Eklenmeyen (programda var) doktorların Cari Kart'ta eksik telefonu listeden tamamlanır
+      let phonesFilled = 0
+      for (const r of rows) {
+        if (ready.includes(r) || !phoneKey(r.phone)) continue
+        const c = matchedCustomer(r)
+        if (c && !c.phone?.trim() && !c.mobile_phone?.trim()) {
+          try {
+            await updateCustomerFields(c.id, { phone: r.phone.trim() })
+            phonesFilled++
+          } catch (err) {
+            errors.push(`${c.full_name}: ${getErrorMessage(err)}`)
+          }
+        }
+      }
+      if (phonesFilled) toast.success(`${phonesFilled} doktorun Cari Kart'taki eksik telefonu tamamlandı`)
       await queryClient.invalidateQueries({ queryKey: ['doctor_visits'] })
       void queryClient.invalidateQueries({ queryKey: ['doctor_visit_dates'] })
       void queryClient.invalidateQueries({ queryKey: ['doctor_visit_totals'] })
@@ -301,7 +351,8 @@ export function VisitImportDialog({
           <>
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span>
-                <b>{fileName}</b> · {rows.length} doktor okundu · <b>{ready.length}</b> tanesi eklenecek
+                <b>{fileName}</b> · {rows.length} doktor okundu · <b className="text-success">{ready.length} yeni</b> eklenecek
+                {knownCount > 0 && <> · <b>{knownCount}</b> tanesi programda zaten var, eklenmeyecek</>}
               </span>
               <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={busy}>
                 <Upload className="size-3.5" /> Başka dosya
@@ -313,8 +364,8 @@ export function VisitImportDialog({
                   <TableRow>
                     <TableHead className="w-8">#</TableHead>
                     <TableHead>Doktor Adı</TableHead>
-                    <TableHead className="w-40">Telefon</TableHead>
-                    <TableHead className="w-[40%]">Açıklama</TableHead>
+                    <TableHead className="w-44">Telefon</TableHead>
+                    <TableHead className="w-[30%]">Açıklama</TableHead>
                     <TableHead className="w-40">Tarih</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
@@ -336,7 +387,7 @@ export function VisitImportDialog({
                           </TableCell>
                         </TableRow>
                       )}
-                      <TableRow className={dup ? 'opacity-60' : undefined}>
+                      <TableRow className={dup || !willAdd(r) ? 'bg-muted/30 opacity-60' : undefined}>
                         <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                         <TableCell>
                           <Input value={r.doctor_name} onChange={(e) => update(r.key, { doctor_name: e.target.value })} placeholder="Doktor adı gerekli" aria-invalid={!r.doctor_name.trim()} />
@@ -345,12 +396,24 @@ export function VisitImportDialog({
                               O gün zaten listede — eklenmeyecek
                             </Badge>
                           )}
+                          {!dup && (() => {
+                            const reason = knownReason(r)
+                            if (!reason) return <Badge className="mt-1 bg-success/15 text-success hover:bg-success/15">Yeni — eklenecek</Badge>
+                            return (
+                              <div className="mt-1 flex flex-wrap items-center gap-1">
+                                <Badge variant="secondary">{reason}{willAdd(r) ? '' : ' — eklenmeyecek'}</Badge>
+                                <button type="button" className="text-primary text-xs underline-offset-2 hover:underline" onClick={() => update(r.key, { include: !willAdd(r) })}>
+                                  {willAdd(r) ? 'Ekleme' : 'Yine de ekle'}
+                                </button>
+                              </div>
+                            )
+                          })()}
                         </TableCell>
                         <TableCell>
-                          <Input type="tel" value={r.phone} onChange={(e) => update(r.key, { phone: e.target.value })} />
+                          <Input type="tel" className="min-w-36 tabular-nums" value={r.phone} onChange={(e) => update(r.key, { phone: e.target.value })} />
                         </TableCell>
                         <TableCell>
-                          <Textarea rows={3} className="min-h-0 text-sm" value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} />
+                          <Textarea rows={r.notes ? 3 : 1} className="min-h-9 text-sm" value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} />
                         </TableCell>
                         <TableCell>
                           <Input type="date" max={today} value={r.visit_date} onChange={(e) => e.target.value && e.target.value <= today && update(r.key, { visit_date: e.target.value })} />
