@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.433] - 2026-11-19
+- Menü sadeleşti, ilgili sayfalar tek yerde sekmelerle: Cari Kart (Doktorlar / Tahsilatlar / Satışlar / Bütçe Yılı), Ajanda (Ajanda / Hatırlatmalar), Ayarlar (Ayarlar / Yapay Zeka Analiz). Eski menü adresleri ve ana sayfadaki kısayollar yeni sekmelere yönleniyor; Kullanıcı Panel İzinleri'nde kapatılan bölüm sekmede de gizleniyor.
+
 ## [2.17.432] - 2026-11-19
 - Prim Hesaplama ve Ekip Performansı ayrı menü olmaktan çıktı, Satış Temsilcisi Raporu'nun içine sekme olarak taşındı (Haftalık Rapor / Prim Hesaplama / Ekip Performansı). Her temsilci kartında "Bu Ay Prim" (prim kurallarıyla hesaplanan) görünüyor, tıklayınca prim ayrıntısı açılıyor. Eski bağlantılar yeni yere yönleniyor.
 

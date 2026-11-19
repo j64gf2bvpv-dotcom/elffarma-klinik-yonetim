@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { CariKartHub, AjandaHub, AyarlarHub } from '@/routes/hubs'
 import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -6,28 +7,20 @@ import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { LoginPage } from '@/routes/LoginPage'
 import { ResetPasswordPage } from '@/routes/ResetPasswordPage'
 import { DashboardPage } from '@/routes/DashboardPage'
-import { CustomersPage } from '@/routes/CustomersPage'
 import { CustomerDetailPage } from '@/routes/CustomerDetailPage'
 import { CrmPage } from '@/routes/CrmPage'
-import { AIInsightsPage } from '@/routes/AIInsightsPage'
 import { InstagramLeadsPage } from '@/routes/InstagramLeadsPage'
 import { CariHesapPage } from '@/routes/CariHesapPage'
 import { CariHesapListPage } from '@/routes/CariHesapListPage'
-import { BudgetYearPage } from '@/routes/BudgetYearPage'
 import { ExpensesPage } from '@/routes/ExpensesPage'
 import { StockPage } from '@/routes/StockPage'
-import { PaymentsPage } from '@/routes/PaymentsPage'
 import { CongressesPage } from '@/routes/CongressesPage'
 import { CongressDetailPage } from '@/routes/CongressDetailPage'
 import { DoctorVisitsPage } from '@/routes/DoctorVisitsPage'
-import { SalesPage } from '@/routes/SalesPage'
-import { RemindersPage } from '@/routes/RemindersPage'
 import { TasksPage } from '@/routes/TasksPage'
-import { AgendaPage } from '@/routes/AgendaPage'
 import { VehiclesPage } from '@/routes/VehiclesPage'
 import { PersonnelPage } from '@/routes/PersonnelPage'
 import { PersonnelDetailPage } from '@/routes/PersonnelDetailPage'
-import { SettingsPage } from '@/routes/SettingsPage'
 import { supabase } from '@/lib/supabaseClient'
 
 // Şifre sıfırlama e-postasındaki bağlantı tıklandığında Electron main süreci
@@ -58,31 +51,31 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route index element={<DashboardPage />} />
-            <Route path="musteriler" element={<CustomersPage />} />
+            <Route path="musteriler" element={<CariKartHub />} />
             <Route path="musteriler/:id" element={<CustomerDetailPage />} />
             <Route path="prim" element={<Navigate to="/doktor-ziyaretleri?bolum=prim" replace />} />
             <Route path="crm" element={<CrmPage />} />
-            <Route path="ai-analiz" element={<AIInsightsPage />} />
+            <Route path="ai-analiz" element={<Navigate to="/ayarlar?bolum=ai" replace />} />
             <Route path="instagram-doktor-listesi" element={<InstagramLeadsPage />} />
             <Route path="cari-hesap" element={<CariHesapListPage />} />
             <Route path="cari-hesap/:id" element={<CariHesapPage />} />
             <Route path="stok" element={<StockPage />} />
-            <Route path="tahsilatlar" element={<PaymentsPage />} />
+            <Route path="tahsilatlar" element={<Navigate to="/musteriler?bolum=tahsilatlar" replace />} />
             <Route path="giderler" element={<ExpensesPage />} />
-            <Route path="butce-yili" element={<BudgetYearPage />} />
+            <Route path="butce-yili" element={<Navigate to="/musteriler?bolum=butce" replace />} />
             <Route path="kongreler" element={<CongressesPage />} />
             <Route path="kongreler/:id" element={<CongressDetailPage />} />
             <Route path="doktor-ziyaretleri" element={<DoctorVisitsPage />} />
-            <Route path="satislar" element={<SalesPage />} />
-            <Route path="hatirlatmalar" element={<RemindersPage />} />
+            <Route path="satislar" element={<Navigate to="/musteriler?bolum=satislar" replace />} />
+            <Route path="hatirlatmalar" element={<Navigate to="/ajanda?bolum=hatirlatmalar" replace />} />
             <Route path="gorevler" element={<TasksPage />} />
-            <Route path="ajanda" element={<AgendaPage />} />
+            <Route path="ajanda" element={<AjandaHub />} />
             <Route path="araclar" element={<VehiclesPage />} />
             <Route path="ekip-performansi" element={<Navigate to="/doktor-ziyaretleri?bolum=ekip" replace />} />
             <Route path="faturalar" element={<Navigate to="/giderler?bolum=fatura_takibi" replace />} />
             <Route path="personel" element={<PersonnelPage />} />
             <Route path="personel/:id" element={<PersonnelDetailPage />} />
-            <Route path="ayarlar" element={<SettingsPage />} />
+            <Route path="ayarlar" element={<AyarlarHub />} />
           </Route>
         </Route>
 
