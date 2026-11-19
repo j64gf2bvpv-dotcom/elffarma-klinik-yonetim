@@ -866,11 +866,21 @@ function ProductsTable({
                     {/* 3B düğme (kullanıcı isteği, 2026-11-19: "3d buton gibi daha büyük olsa", "arka planları daha belirgin
                         olsun, ürünlerin kutusu görünmüyor") — ürün fotoğrafının beyaz zemini çarpma karışımıyla kaybolur,
                         ürün kutusu renkli zeminin üstünde belirgin durur. */}
-                    <div className="isolate size-20 shrink-0 overflow-hidden rounded-xl border border-border bg-gradient-to-br from-muted to-muted-foreground/35 shadow-[0_3px_0_0_rgba(0,0,0,0.12),0_8px_18px_-6px_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_rgba(0,0,0,0.12),0_14px_24px_-8px_rgba(0,0,0,0.4)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.12),0_3px_8px_-4px_rgba(0,0,0,0.3)]">
+                    <div className="relative isolate size-20 shrink-0 overflow-hidden rounded-xl border border-border bg-muted shadow-[0_3px_0_0_rgba(0,0,0,0.12),0_8px_18px_-6px_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_rgba(0,0,0,0.12),0_14px_24px_-8px_rgba(0,0,0,0.4)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.12),0_3px_8px_-4px_rgba(0,0,0,0.3)]">
+                      {/* Arka plan: aynı ürün fotoğrafının büyütülmüş, flu hali (kullanıcı isteği, 2026-11-19: "ürünler net
+                          olsun, ürünlerin arkası flu olsun") */}
+                      {product.image_url && (
+                        <img
+                          src={product.image_url}
+                          alt=""
+                          aria-hidden
+                          className="pointer-events-none absolute inset-0 size-full scale-[2.2] object-cover opacity-80 blur-md saturate-150"
+                        />
+                      )}
                       <ZoomableThumbnail
                         src={product.image_url}
                         alt={product.name}
-                        className="size-20 max-w-none object-contain p-1 mix-blend-multiply dark:mix-blend-normal"
+                        className="relative size-20 max-w-none object-contain p-1 mix-blend-multiply drop-shadow-sm dark:mix-blend-normal"
                         fallback={<div className="size-20" />}
                       />
                     </div>

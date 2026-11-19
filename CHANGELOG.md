@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.416] - 2026-11-19
+- Ürün resimlerinde ürün net, arkası aynı fotoğrafın flu (bulanık) hali; MIXO LIGHT / VOLUME / DEEP'e Dermakor sitesinden ayrı kutu görselleri işlendi (önceden üçü aynı toplu görseli kullanıyordu).
+
 ## [2.17.415] - 2026-11-19
 - Ürün resimlerinin zemini belirginleştirildi: fotoğrafların beyaz zemini kaldırılıp ürün kutusu gri-renkli 3B düğme zemininin üstünde gösteriliyor.
 
