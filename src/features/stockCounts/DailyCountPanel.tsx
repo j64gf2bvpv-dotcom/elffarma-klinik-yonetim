@@ -397,9 +397,6 @@ function CountItemRow({
             <span className="inline-flex items-center gap-1 text-sm font-medium text-success">
               <CheckCircle2 className="size-4" /> Değişiklik yok
             </span>
-            {finalStockLabel(finalPaket, finalFlakon, finalKutu) !== '—' && (
-              <span className="text-xs text-muted-foreground">{finalStockLabel(finalPaket, finalFlakon, finalKutu)}</span>
-            )}
           </div>
         ) : (
           <div className="grid gap-0.5">
@@ -411,7 +408,6 @@ function CountItemRow({
                 </span>
               ))}
             </span>
-            <span className="text-xs text-muted-foreground">Yeni stok: {finalStockLabel(finalPaket, finalFlakon, finalKutu)}</span>
           </div>
         )}
       </TableCell>
