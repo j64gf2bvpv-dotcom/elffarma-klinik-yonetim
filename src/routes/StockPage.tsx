@@ -863,13 +863,17 @@ function ProductsTable({
                       tutamacı kaldırıldı; sıralama için satırın kendisi hâlâ
                       sürüklenebilir). */}
                   <TableCell>
-                    <ZoomableThumbnail
-                      src={product.image_url}
-                      alt={product.name}
-                      // 3B düğme görünümü (kullanıcı isteği, 2026-11-19: "ürün resimleri 3d buton gibi daha büyük olsa")
-                      className="size-20 max-w-none shrink-0 rounded-xl border border-border bg-gradient-to-b from-white to-muted/60 object-contain p-1.5 shadow-[0_3px_0_0_rgba(0,0,0,0.10),0_8px_18px_-6px_rgba(0,0,0,0.30)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_rgba(0,0,0,0.10),0_14px_24px_-8px_rgba(0,0,0,0.35)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.10),0_3px_8px_-4px_rgba(0,0,0,0.25)]"
-                      fallback={<div className="size-20 shrink-0 rounded-xl border border-border bg-gradient-to-b from-white to-muted/60 shadow-[0_3px_0_0_rgba(0,0,0,0.10),0_8px_18px_-6px_rgba(0,0,0,0.30)]" />}
-                    />
+                    {/* 3B düğme (kullanıcı isteği, 2026-11-19: "3d buton gibi daha büyük olsa", "arka planları daha belirgin
+                        olsun, ürünlerin kutusu görünmüyor") — ürün fotoğrafının beyaz zemini çarpma karışımıyla kaybolur,
+                        ürün kutusu renkli zeminin üstünde belirgin durur. */}
+                    <div className="isolate size-20 shrink-0 overflow-hidden rounded-xl border border-border bg-gradient-to-br from-muted to-muted-foreground/35 shadow-[0_3px_0_0_rgba(0,0,0,0.12),0_8px_18px_-6px_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_rgba(0,0,0,0.12),0_14px_24px_-8px_rgba(0,0,0,0.4)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.12),0_3px_8px_-4px_rgba(0,0,0,0.3)]">
+                      <ZoomableThumbnail
+                        src={product.image_url}
+                        alt={product.name}
+                        className="size-20 max-w-none object-contain p-1 mix-blend-multiply dark:mix-blend-normal"
+                        fallback={<div className="size-20" />}
+                      />
+                    </div>
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
