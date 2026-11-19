@@ -887,7 +887,8 @@ function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
 }
 
 
-export function BillsPage() {
+/** `embedded`: Giderler sayfasının içinde "Fatura Takibi" bölümü olarak (kullanıcı isteği, 2026-11-19: "faturalar giderlerin içinde, ayrı olmasın") — sayfa başlığı yerine yalnız düğmeler */
+export function BillsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { data: allTemplates = [] } = useUtilityBillTemplates()
   const { data: bills = [], isLoading } = useUtilityBills()
   const { data: subscriptions = [] } = useUtilitySubscriptions()
@@ -953,13 +954,8 @@ export function BillsPage() {
       .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category))
   }, [filtered, subscriptions, categoryFilter])
 
-  return (
-    <div>
-      <PageHeader
-        title="Faturalar"
-        description="Elektrik, doğalgaz, su, internet gibi sabit faturaları ve son ödeme tarihlerini takip edin"
-        actions={
-          <div className="flex gap-2">
+  const actions = (
+          <div className="flex flex-wrap gap-2">
             <ExportMenu<UtilityBill>
               title="Faturalar"
               filename="faturalar"
@@ -970,8 +966,18 @@ export function BillsPage() {
             <TemplatesManagerDialog />
             <BillFormDialog />
           </div>
-        }
-      />
+  )
+
+  return (
+    <div>
+      {embedded ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">Sabit faturalar, abonelikler ve son ödeme tarihleri</p>
+          {actions}
+        </div>
+      ) : (
+        <PageHeader title="Faturalar" description="Elektrik, doğalgaz, su, internet gibi sabit faturaları ve son ödeme tarihlerini takip edin" actions={actions} />
+      )}
 
       {/* Tutarlar ayrı sekmede (kullanıcı isteği, 2026-10-28: "faturalarda tutar kısmı ayrı bir menüde olsun") */}
       <Tabs defaultValue="bills">

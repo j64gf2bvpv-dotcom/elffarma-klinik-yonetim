@@ -23,6 +23,7 @@ import {
   Briefcase,
   Shapes,
   Wallet,
+  CalendarClock,
   type LucideIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -49,6 +50,9 @@ import { ExpenseEntriesPanel } from '@/features/expenseEntries/ExpenseEntriesPan
 import { entryExportColumns } from '@/features/expenseEntries/columns'
 import { confirmAction } from '@/hooks/useConfirmDialog'
 import { cn } from '@/lib/utils'
+import { useSearchParams } from 'react-router-dom'
+import { BillsPage } from '@/routes/BillsPage'
+import { useUtilityBills } from '@/features/bills/hooks'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -58,6 +62,7 @@ const currency0 = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', 
 /** Kategori simgeleri ve grupları (kullanıcı isteği, 2026-11-19: "giderler premium olmalı, kategori şeklinde, bakkal hesabı gibi değil") */
 const SECTION_ICON: Record<string, LucideIcon> = {
   genel: ReceiptIcon,
+  fatura_takibi: CalendarClock,
   elektrik: Zap,
   su: Droplets,
   dogalgaz: Flame,
@@ -95,7 +100,12 @@ export function ExpensesPage() {
   })
   const deleteMutation = useDeleteExpense()
   // Fatura, ofis ve muhasebe gider bölümleri (kullanıcı isteği, 2026-11-11 / 2026-11-12)
-  const [tab, setTab] = React.useState('genel')
+  // ?bolum=fatura_takibi gibi doğrudan bağlantı (eski /faturalar sayfası buraya yönlenir)
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = React.useState(searchParams.get('bolum') || 'genel')
+  const { data: utilityBills = [] } = useUtilityBills()
+  const unpaidBills = utilityBills.filter((b) => !b.is_paid)
+  const unpaidBillsTotal = unpaidBills.reduce((sum, b) => sum + Number(b.amount), 0)
   const { data: entries = [], isLoading: entriesLoading } = useExpenseEntries({ from: from || undefined, to: to || undefined })
   const entriesTotal = entries.reduce((sum, e) => sum + Number(e.amount), 0)
 
@@ -204,6 +214,15 @@ export function ExpensesPage() {
       <div className="grid gap-5 lg:grid-cols-[16.5rem_minmax(0,1fr)]">
         {/* Kategori menüsü — gruplu, simgeli, dönem tutarıyla */}
         <Card className="h-fit gap-0 p-2 lg:sticky lg:top-4">
+          <CategoryButton
+            icon={SECTION_ICON.fatura_takibi}
+            label="Fatura Takibi"
+            total={unpaidBillsTotal}
+            count={unpaidBills.length}
+            subtitle={unpaidBills.length ? `${unpaidBills.length} ödenmemiş · ${currency0(unpaidBillsTotal)}` : 'Ödenmemiş fatura yok'}
+            active={tab === 'fatura_takibi'}
+            onClick={() => setTab('fatura_takibi')}
+          />
           <CategoryButton icon={SECTION_ICON.genel} label="Genel Giderler" total={serviceTotal + otherTotal} count={expenses.length} active={tab === 'genel'} onClick={() => setTab('genel')} />
           {SECTION_GROUPS.map((g) => (
             <div key={g.label} className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-0.5 lg:block">
@@ -234,8 +253,13 @@ export function ExpensesPage() {
           <div className="mb-3 flex flex-wrap items-center gap-3">
             {(() => {
               const Icon = SECTION_ICON[tab] ?? Shapes
-              const label = tab === 'genel' ? 'Genel Giderler' : (EXPENSE_ENTRY_SECTIONS.find((x) => x.key === tab)?.label ?? '')
-              const total = tab === 'genel' ? serviceTotal + otherTotal : entries.filter((e) => e.category === tab).reduce((sum, e) => sum + Number(e.amount), 0)
+              const label = tab === 'genel' ? 'Genel Giderler' : tab === 'fatura_takibi' ? 'Fatura Takibi' : (EXPENSE_ENTRY_SECTIONS.find((x) => x.key === tab)?.label ?? '')
+              const total =
+                tab === 'genel'
+                  ? serviceTotal + otherTotal
+                  : tab === 'fatura_takibi'
+                    ? unpaidBillsTotal
+                    : entries.filter((e) => e.category === tab).reduce((sum, e) => sum + Number(e.amount), 0)
               return (
                 <>
                   <span className="flex size-10 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/15">
@@ -243,7 +267,7 @@ export function ExpensesPage() {
                   </span>
                   <div className="min-w-0">
                     <h2 className="text-lg leading-tight font-semibold">{label}</h2>
-                    <p className="text-sm text-muted-foreground tabular-nums">{currency(total)}</p>
+                    <p className="text-sm text-muted-foreground tabular-nums">{tab === 'fatura_takibi' ? `Ödenmemiş: ${currency(total)}` : currency(total)}</p>
                   </div>
                   {tab === 'genel' && (
                     <div className="ml-auto flex flex-wrap gap-2 text-xs">
@@ -255,6 +279,9 @@ export function ExpensesPage() {
               )
             })()}
           </div>
+        <TabsContent value="fatura_takibi">
+          <BillsPage embedded />
+        </TabsContent>
         <TabsContent value="genel">
         <Card>
           <CardContent className="p-0">
@@ -336,6 +363,7 @@ function CategoryButton({
   label,
   total,
   count,
+  subtitle,
   active,
   onClick,
 }: {
@@ -343,6 +371,7 @@ function CategoryButton({
   label: string
   total: number
   count: number
+  subtitle?: string
   active: boolean
   onClick: () => void
 }) {
@@ -366,8 +395,12 @@ function CategoryButton({
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">{label}</span>
         <span className={cn('block text-xs tabular-nums', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
-          {total > 0 ? currency0(total) : 'Kayıt yok'}
-          {count > 0 && ` · ${count}`}
+          {subtitle ?? (
+            <>
+              {total > 0 ? currency0(total) : 'Kayıt yok'}
+              {count > 0 && ` · ${count}`}
+            </>
+          )}
         </span>
       </span>
     </button>

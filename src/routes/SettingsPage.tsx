@@ -482,7 +482,8 @@ function NewTemplateForm() {
 // aksi halde admin kendi kendini (veya birini) bu ekrana erişemez hale
 // getirip izinleri geri açamayacağı bir kilitlenmeye sokabilirdi.
 const PERMISSION_NAV_KEYS = (Object.keys(tr.nav) as (keyof typeof tr.nav)[]).filter(
-  (key) => key !== 'dashboard' && key !== 'settings',
+  // Faturalar artık Giderler'in içinde (2026-11-19) — ayrı izin anahtarı yok
+  (key) => key !== 'dashboard' && key !== 'settings' && key !== 'bills',
 )
 
 /** Admin, her personel için sol menüde hangi sekmelerin görüneceğini burada belirler. */

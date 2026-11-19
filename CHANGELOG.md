@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.429] - 2026-11-19
+- Faturalar ayrı menü olmaktan çıktı, Giderler'in içine "Fatura Takibi" bölümü olarak taşındı (kategori menüsünün en üstünde, ödenmemiş fatura sayısı ve tutarıyla). Eski Faturalar bağlantıları ve son ödeme uyarısı oraya yönleniyor.
+
 ## [2.17.428] - 2026-11-19
 - Giderler sayfası yenilendi: üstte tek Toplam Gider kartı ve grupların (Faturalar, Ofis ve Yemek, Araç ve Ulaşım, Hizmet ve Diğer, Genel) payını gösteren renkli çubuk; solda gruplu, simgeli kategori menüsü (her kategoride dönem tutarı ve kayıt sayısı), grup başlıkları şeffaf kırmızı buzlu cam; dar ekranda kategoriler karo düzeninde. Büyük tutarlar artık kutudan taşmıyor.
 - Sol menünün kaydırma çubuğu ince ve zarif (yarı saydam, üzerine gelince belirginleşir).

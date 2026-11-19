@@ -27,7 +27,6 @@ import { TasksPage } from '@/routes/TasksPage'
 import { AgendaPage } from '@/routes/AgendaPage'
 import { VehiclesPage } from '@/routes/VehiclesPage'
 import { TeamPerformancePage } from '@/routes/TeamPerformancePage'
-import { BillsPage } from '@/routes/BillsPage'
 import { PersonnelPage } from '@/routes/PersonnelPage'
 import { PersonnelDetailPage } from '@/routes/PersonnelDetailPage'
 import { SettingsPage } from '@/routes/SettingsPage'
@@ -82,7 +81,7 @@ function App() {
             <Route path="ajanda" element={<AgendaPage />} />
             <Route path="araclar" element={<VehiclesPage />} />
             <Route path="ekip-performansi" element={<TeamPerformancePage />} />
-            <Route path="faturalar" element={<BillsPage />} />
+            <Route path="faturalar" element={<Navigate to="/giderler?bolum=fatura_takibi" replace />} />
             <Route path="personel" element={<PersonnelPage />} />
             <Route path="personel/:id" element={<PersonnelDetailPage />} />
             <Route path="ayarlar" element={<SettingsPage />} />

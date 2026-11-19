@@ -233,7 +233,7 @@ export function BillDuePopup() {
           ))}
         </div>
         <DialogFooter className="gap-2 sm:justify-between">
-          <Link to="/faturalar" onClick={() => setOpen(false)} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+          <Link to="/giderler?bolum=fatura_takibi" onClick={() => setOpen(false)} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
             <ReceiptText className="size-3.5" /> Faturalara git
           </Link>
           <Button onClick={() => setOpen(false)}>Kapat</Button>
