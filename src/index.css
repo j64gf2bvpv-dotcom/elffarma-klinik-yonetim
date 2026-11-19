@@ -174,18 +174,30 @@
   display: none;
 }
 
-/* Koyu marka renkli yan menüde: altın/beyaz tonlu, yarı saydam tutamak (kırmızı üstüne kırmızı görünmezdi) */
+/* Sol menü: ince (5px), oluksuz, zarif yarı saydam çizgi; üzerine gelince belirginleşir (kullanıcı isteği, 2026-11-19:
+   "soldaki menü çubuğu daha küçük, daha şık") */
+.bg-sidebar *::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
 .bg-sidebar *::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.06);
+  background: transparent;
   box-shadow: none;
+  margin: 6px;
 }
 .bg-sidebar *::-webkit-scrollbar-thumb,
 .bg-sidebar *::-webkit-scrollbar-thumb:horizontal {
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.3));
+  background-image: none;
+  background-color: rgba(255, 255, 255, 0.18);
+  border: 0;
   box-shadow: none;
+  min-height: 28px;
+}
+.bg-sidebar *:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.38);
 }
 .bg-sidebar *::-webkit-scrollbar-thumb:hover {
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.45));
+  background-color: rgba(255, 255, 255, 0.55);
 }
 
 /* Tablo gövdesinin kendi YATAY native çubuğunu gizler — geniş tablolarda

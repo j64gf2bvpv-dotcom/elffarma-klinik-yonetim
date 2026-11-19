@@ -1,11 +1,36 @@
 import * as React from 'react'
-import { Trash2, Wrench, Receipt as ReceiptIcon, Zap, FileSpreadsheet } from 'lucide-react'
+import {
+  Trash2,
+  Wrench,
+  Receipt as ReceiptIcon,
+  Zap,
+  FileSpreadsheet,
+  Droplets,
+  Flame,
+  Wifi,
+  Phone,
+  Building2,
+  CookingPot,
+  UtensilsCrossed,
+  Utensils,
+  Fuel,
+  Truck,
+  Handshake,
+  House,
+  Megaphone,
+  BedDouble,
+  Car,
+  Briefcase,
+  Shapes,
+  Wallet,
+  type LucideIcon,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
 
 import { PageHeader } from '@/components/layout/AppShell'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,17 +41,49 @@ import { useDeleteExpense, useExpenses } from '@/features/expenses/hooks'
 import { ExportMenu } from '@/components/ExportMenu'
 import { tr } from '@/i18n/tr'
 import type { Expense } from '@/types/database'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { exportToExcelMultiSheet } from '@/lib/exportData'
 import { EXPENSE_ENTRY_SECTIONS } from '@/features/expenseEntries/api'
 import { useExpenseEntries } from '@/features/expenseEntries/hooks'
 import { ExpenseEntriesPanel } from '@/features/expenseEntries/ExpenseEntriesPanel'
 import { entryExportColumns } from '@/features/expenseEntries/columns'
 import { confirmAction } from '@/hooks/useConfirmDialog'
+import { cn } from '@/lib/utils'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
 }
+const currency0 = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
+
+/** Kategori simgeleri ve grupları (kullanıcı isteği, 2026-11-19: "giderler premium olmalı, kategori şeklinde, bakkal hesabı gibi değil") */
+const SECTION_ICON: Record<string, LucideIcon> = {
+  genel: ReceiptIcon,
+  elektrik: Zap,
+  su: Droplets,
+  dogalgaz: Flame,
+  internet: Wifi,
+  haberlesme: Phone,
+  ofis: Building2,
+  mutfak: CookingPot,
+  ofis_yemek: UtensilsCrossed,
+  yemek_mutfak: Utensils,
+  akaryakit: Fuel,
+  kargo: Truck,
+  hizmet: Handshake,
+  kira: House,
+  reklam: Megaphone,
+  konaklama: BedDouble,
+  arac_kiralama: Car,
+  arac_bakim: Wrench,
+  danismanlik: Briefcase,
+  diger: Shapes,
+}
+const SECTION_GROUPS: { label: string; tone: string; keys: string[] }[] = [
+  { label: 'Faturalar', tone: 'bg-sky-500', keys: ['elektrik', 'su', 'dogalgaz', 'internet', 'haberlesme'] },
+  { label: 'Ofis ve Yemek', tone: 'bg-amber-500', keys: ['ofis', 'mutfak', 'ofis_yemek', 'yemek_mutfak'] },
+  { label: 'Araç ve Ulaşım', tone: 'bg-emerald-500', keys: ['akaryakit', 'arac_kiralama', 'arac_bakim', 'kargo', 'konaklama'] },
+  { label: 'Hizmet ve Diğer', tone: 'bg-violet-500', keys: ['hizmet', 'kira', 'reklam', 'danismanlik', 'diger'] },
+]
 
 export function ExpensesPage() {
   const [from, setFrom] = React.useState('')
@@ -63,6 +120,11 @@ export function ExpensesPage() {
     .reduce((sum, e) => sum + Number(e.amount), 0)
   const otherTotal = expenses.filter((e) => e.category === 'diger').reduce((sum, e) => sum + Number(e.amount), 0)
   const grandTotal = serviceTotal + otherTotal + entriesTotal
+  const groupTotals = SECTION_GROUPS.map((g) => ({
+    label: g.label,
+    tone: g.tone,
+    total: entries.filter((e) => g.keys.includes(e.category)).reduce((sum, e) => sum + Number(e.amount), 0),
+  }))
 
   return (
     <div>
@@ -101,59 +163,98 @@ export function ExpensesPage() {
         </div>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Wrench className="size-5" />
-            </span>
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Hizmet Gideri</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(serviceTotal)}</p>
+      {/* Özet: toplam + grupların payı */}
+      <Card className="mb-6">
+        <CardContent className="grid grid-cols-[minmax(0,1fr)] gap-5 pt-6">
+          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/15">
+                <Wallet className="size-6" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground">TOPLAM GİDER</p>
+                <p className="text-[clamp(1.5rem,2.6vw,2.25rem)] leading-tight font-semibold tracking-tight tabular-nums break-words">{currency(grandTotal)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {from || to ? `${from ? format(new Date(from), 'd MMM yyyy', { locale: trLocale }) : 'Başlangıç'} – ${to ? format(new Date(to), 'd MMM yyyy', { locale: trLocale }) : 'bugün'}` : 'Tüm zamanlar'}
+                </p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
-              <ReceiptIcon className="size-5" />
-            </span>
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Diğer Giderler</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(otherTotal)}</p>
+            <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(8rem,1fr))] gap-x-6 gap-y-2 sm:flex-1 sm:max-w-3xl">
+              {[...groupTotals, { label: 'Genel', tone: 'bg-rose-500', total: serviceTotal + otherTotal }].map((g) => (
+                <div key={g.label} className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className={cn('size-2 shrink-0 rounded-full', g.tone)} /> {g.label}
+                  </p>
+                  <p className="truncate text-sm font-semibold tabular-nums" title={currency(g.total)}>{currency0(g.total)}</p>
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-6">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Zap className="size-5" />
-            </span>
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Bölüm Giderleri</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{currency(entriesTotal)}</p>
+          </div>
+          {grandTotal > 0 && (
+            <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
+              {[...groupTotals, { label: 'Genel', tone: 'bg-rose-500', total: serviceTotal + otherTotal }].map((g) =>
+                g.total > 0 ? <div key={g.label} className={cn('h-full', g.tone)} style={{ width: `${(g.total / grandTotal) * 100}%` }} title={`${g.label}: ${currency(g.total)}`} /> : null,
+              )}
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Toplam Gider</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-3xl font-semibold tabular-nums">{currency(grandTotal)}</p>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="mb-3 h-auto flex-wrap">
-          <TabsTrigger value="genel">Genel Giderler</TabsTrigger>
-          {EXPENSE_ENTRY_SECTIONS.map((section) => (
-            <TabsTrigger key={section.key} value={section.key}>
-              {section.label}
-            </TabsTrigger>
+      <div className="grid gap-5 lg:grid-cols-[16.5rem_minmax(0,1fr)]">
+        {/* Kategori menüsü — gruplu, simgeli, dönem tutarıyla */}
+        <Card className="h-fit gap-0 p-2 lg:sticky lg:top-4">
+          <CategoryButton icon={SECTION_ICON.genel} label="Genel Giderler" total={serviceTotal + otherTotal} count={expenses.length} active={tab === 'genel'} onClick={() => setTab('genel')} />
+          {SECTION_GROUPS.map((g) => (
+            <div key={g.label} className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-0.5 lg:block">
+              {/* Grup başlığı: şeffaf kırmızı buzlu cam zemin (kullanıcı isteği, 2026-11-19) */}
+              <p className="col-span-full mx-0.5 mb-1 flex items-center gap-1.5 rounded-lg border border-primary/15 bg-primary/10 px-2.5 py-1.5 text-[11px] font-semibold tracking-wide text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md">
+                <span className={cn('size-1.5 rounded-full', g.tone)} /> {g.label.toLocaleUpperCase('tr-TR')}
+              </p>
+              {g.keys.map((k) => {
+                const section = EXPENSE_ENTRY_SECTIONS.find((x) => x.key === k)
+                if (!section) return null
+                const list = entries.filter((e) => e.category === k)
+                return (
+                  <CategoryButton
+                    key={k}
+                    icon={SECTION_ICON[k] ?? Shapes}
+                    label={section.label}
+                    total={list.reduce((sum, e) => sum + Number(e.amount), 0)}
+                    count={list.length}
+                    active={tab === k}
+                    onClick={() => setTab(k)}
+                  />
+                )
+              })}
+            </div>
           ))}
-        </TabsList>
+        </Card>
+        <div className="min-w-0">
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            {(() => {
+              const Icon = SECTION_ICON[tab] ?? Shapes
+              const label = tab === 'genel' ? 'Genel Giderler' : (EXPENSE_ENTRY_SECTIONS.find((x) => x.key === tab)?.label ?? '')
+              const total = tab === 'genel' ? serviceTotal + otherTotal : entries.filter((e) => e.category === tab).reduce((sum, e) => sum + Number(e.amount), 0)
+              return (
+                <>
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/15">
+                    <Icon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="text-lg leading-tight font-semibold">{label}</h2>
+                    <p className="text-sm text-muted-foreground tabular-nums">{currency(total)}</p>
+                  </div>
+                  {tab === 'genel' && (
+                    <div className="ml-auto flex flex-wrap gap-2 text-xs">
+                      <span className="rounded-full border px-2.5 py-1">Hizmet gideri: <b className="tabular-nums">{currency0(serviceTotal)}</b></span>
+                      <span className="rounded-full border px-2.5 py-1">Diğer: <b className="tabular-nums">{currency0(otherTotal)}</b></span>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
+          </div>
         <TabsContent value="genel">
         <Card>
           <CardContent className="p-0">
@@ -223,7 +324,52 @@ export function ExpensesPage() {
             />
           </TabsContent>
         ))}
+        </div>
+      </div>
       </Tabs>
     </div>
+  )
+}
+
+function CategoryButton({
+  icon: Icon,
+  label,
+  total,
+  count,
+  active,
+  onClick,
+}: {
+  icon: LucideIcon
+  label: string
+  total: number
+  count: number
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors',
+        active ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-accent',
+      )}
+    >
+      <span
+        className={cn(
+          'flex size-8 shrink-0 items-center justify-center rounded-lg ring-1',
+          active ? 'bg-white/15 ring-white/20' : 'bg-muted text-muted-foreground ring-border/60 group-hover:text-foreground',
+        )}
+      >
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium">{label}</span>
+        <span className={cn('block text-xs tabular-nums', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+          {total > 0 ? currency0(total) : 'Kayıt yok'}
+          {count > 0 && ` · ${count}`}
+        </span>
+      </span>
+    </button>
   )
 }
