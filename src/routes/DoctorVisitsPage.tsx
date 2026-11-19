@@ -33,7 +33,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { RepAvatar } from '@/features/salesReps/RepAvatar'
 import { DoctorVisitDialog } from '@/features/doctorVisits/DoctorVisitDialog'
 import { VisitImportDialog } from '@/features/doctorVisits/VisitImportDialog'
 import { useCreateVisit, useDeleteVisit, useRepDoctorTotals, useVisitDates, useVisitsInRange } from '@/features/doctorVisits/hooks'
@@ -62,12 +62,6 @@ function dateKey(d: Date) {
   return copy.toISOString().slice(0, 10)
 }
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return '?'
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
 
 const DOCTOR_NAMES_LIST_ID = 'rep-report-doctor-names'
 
@@ -228,12 +222,7 @@ function RepWeekSection({
             rep={rep}
             trigger={
               <button type="button" title="Temsilciyi düzenle (isim/fotoğraf)" className="flex items-center gap-2">
-                <Avatar className="size-8">
-                  {rep.photo_url && <AvatarImage src={rep.photo_url} alt={rep.name} />}
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {getInitials(rep.name)}
-                  </AvatarFallback>
-                </Avatar>
+                <RepAvatar name={rep.name} photoUrl={rep.photo_url} className="size-8" />
                 <span className="truncate hover:underline">{rep.name}</span>
               </button>
             }

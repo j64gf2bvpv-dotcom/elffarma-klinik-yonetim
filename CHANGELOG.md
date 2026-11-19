@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.418] - 2026-11-19
+- Satış temsilcisi raporu sayfasında ve ana sayfadaki temsilci performans listesinde de temsilci resmi olarak personel kartındaki fotoğraf gösteriliyor.
+
 ## [2.17.417] - 2026-11-19
 - Ürün resimlerinin arka planı beyaz flu yapıldı (ürünün renginden yalnız hafif bir iz kalıyor), ürün önde net.
 

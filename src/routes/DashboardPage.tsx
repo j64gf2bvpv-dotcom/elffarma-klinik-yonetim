@@ -78,7 +78,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { RepAvatar } from '@/features/salesReps/RepAvatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,12 +139,6 @@ function LiveClock() {
   )
 }
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return '?'
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
 
 function getWeatherDisplay(code: number): { Icon: React.ElementType; label: string } {
   if (code === 0) return { Icon: Sun, label: 'Açık' }
@@ -1340,12 +1334,7 @@ export function DashboardPage() {
             {repPerformance.map((rep) => (
               <div key={rep.name} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border p-2.5 text-sm">
                 <span className="flex min-w-0 items-center gap-2">
-                  <Avatar className="size-7">
-                    {rep.photoUrl && <AvatarImage src={rep.photoUrl} alt={rep.name} />}
-                    <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                      {getInitials(rep.name)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <RepAvatar name={rep.name} photoUrl={rep.photoUrl} className="size-7" fallbackClassName="text-[10px]" />
                   <span className="min-w-0 truncate font-medium">{rep.name}</span>
                 </span>
                 <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
