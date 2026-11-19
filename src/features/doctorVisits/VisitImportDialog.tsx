@@ -41,6 +41,19 @@ function pick(row: Record<string, unknown>, ...aliases: string[]): unknown {
   return undefined
 }
 
+/**
+ * Başlık tam tutmazsa içinde geçen kelimeyle bulur ("Doktor Adı Soyadı", "Hekim", "Cep Tel No" gibi —
+ * kullanıcı isteği, 2026-11-19: hazır doktor listesi Excel'i olduğu gibi okunsun)
+ */
+function pickLoose(row: Record<string, unknown>, test: (key: string) => boolean): unknown {
+  for (const [k, v] of Object.entries(row)) {
+    if (test(fold(k)) && v != null && String(v).trim() !== '') return v
+  }
+  return undefined
+}
+const isNameHeader = (k: string) => /doktor|hekim|dr\b|isim|ad[ıi]? ?soyad|^ad[ıi]?$|ünvan/.test(k) && !/tel|gsm|cep|numara|tarih|açıklama|not/.test(k)
+const isPhoneHeader = (k: string) => /tel|gsm|cep|numara|phone/.test(k)
+
 /** Excel tarihi (seri numara, 13.11.2026, 2026-11-13) → yyyy-MM-dd */
 function toDateKey(v: unknown): string | null {
   if (typeof v === 'number') {
@@ -121,8 +134,8 @@ export function VisitImportDialog({
       } else if (/\.(xlsx|xls|csv)$/i.test(file.name)) {
         parsed = (await readExcelFile(file))
           .map((row) => ({
-            doctor_name: String(pick(row, 'Doktor', 'Doktor Adı', 'Ad Soyad', 'Adı Soyadı', 'İsim', 'Ad') ?? '').trim(),
-            phone: String(pick(row, 'Telefon', 'Tel', 'GSM', 'Cep', 'Cep Telefonu') ?? '').trim(),
+            doctor_name: String(pick(row, 'Doktor', 'Doktor Adı', 'Ad Soyad', 'Adı Soyadı', 'İsim', 'Ad') ?? pickLoose(row, isNameHeader) ?? '').trim(),
+            phone: String(pick(row, 'Telefon', 'Tel', 'GSM', 'Cep', 'Cep Telefonu') ?? pickLoose(row, isPhoneHeader) ?? '').trim(),
             notes: String(pick(row, 'Açıklama', 'Not', 'Notlar', 'Aciklama') ?? '').trim(),
             visit_date: toDateKey(pick(row, 'Tarih', 'Ziyaret Tarihi', 'Gün')) ?? date,
           }))
@@ -212,7 +225,7 @@ export function VisitImportDialog({
         <DialogHeader>
           <DialogTitle>{rep.name} — Doktor İçe Aktar</DialogTitle>
           <DialogDescription>
-            Word, Excel, resim ya da WhatsApp sohbetindeki doktorların adı, telefonu ve açıklaması tek tek okunur ve {rep.name} listesine eklenir. Resimde gün yazıyorsa gün de oradan alınır; kontrol edip kaydedin.
+            Word, Excel, resim ya da WhatsApp sohbetindeki doktorların adı, telefonu ve açıklaması tek tek okunur ve {rep.name} listesine eklenir. Cari Kart'ta olmayan doktorlar oraya da eklenir, kartında telefonu eksik olanların numarası tamamlanır. Resimde gün yazıyorsa gün de oradan alınır; kontrol edip kaydedin.
           </DialogDescription>
         </DialogHeader>
         <input
@@ -263,7 +276,7 @@ export function VisitImportDialog({
             >
               {busy ? <Loader2 className="size-8 animate-spin" /> : <FileText className="size-8" />}
               Word, Excel ya da resim (fotoğraf, ekran görüntüsü) seçmek için tıklayın veya buraya sürükleyin
-              <span className="text-xs">Word/resim: tablo ya da "Dr. Ad Soyad - 0532 123 45 67 - açıklama" satırları, gün başlıkları ("Pazartesi", "13.11.2026") · Excel: Tarih, Doktor, Telefon, Açıklama sütunları</span>
+              <span className="text-xs">Word/resim: tablo ya da "Dr. Ad Soyad - 0532 123 45 67 - açıklama" satırları, gün başlıkları ("Pazartesi", "13.11.2026") · Excel: doktor adı ve telefon sütunları (başlık adı serbest), varsa Tarih ve Açıklama</span>
             </button>
             <Button variant="outline" disabled={busy} onClick={() => chatRef.current?.click()} className="justify-self-start">
               <MessageCircle className="size-4 text-success" /> WhatsApp Sohbetinden İçe Aktar (.txt / .zip)

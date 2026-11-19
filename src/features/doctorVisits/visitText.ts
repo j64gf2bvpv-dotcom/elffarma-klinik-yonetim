@@ -86,6 +86,7 @@ function fixTurkishOcr(line: string): string {
     .replace(/\bUrün/g, 'Ürün')
     .replace(/\bUzerin/g, 'Üzerin')
     .replace(/\bUcret/g, 'Ücret')
+    .replace(/\bUlk(?=[üu])/g, 'Ülk')
     .replace(/ihtıyaç/g, 'ihtiyaç')
 }
 
@@ -98,6 +99,44 @@ function cleanOcrLine(line: string): string | null {
   return letters < 2 && digits < 7 ? null : l
 }
 
+const PHONE_CELL = /^\+?[\d\s().-]{7,}$/
+const NAME_CELL = /^(?:(?:Prof|Doç|Doc|Op|Uzm|Dr)\.?\s*)*[A-Za-zÇĞİÖŞÜçğıöşüÂâÎîÛû'’.-]{2,}(?:\s+[A-Za-zÇĞİÖŞÜçğıöşüÂâÎîÛû'’.-]{2,}){1,3}$/
+const LIST_HEADER = /^(doktor|hekim|telefon|tel\b|isim|ad[ıi]?\s*soyad|sıra|no\b)/i
+
+/** Yazı tanımanın karıştırdığı büyük/küçük harfi düzeltir ("YaZıCı" → "Yazıcı"); ünvanlar olduğu gibi */
+function tidyName(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((w) => (/^(Prof|Doç|Doc|Op|Uzm|Dr)\.?$/i.test(w) ? w : w.charAt(0).toLocaleUpperCase('tr-TR') + w.slice(1).toLocaleLowerCase('tr-TR')))
+    .join(' ')
+}
+
+/**
+ * Basit doktor listesi (Excel ekran görüntüsü / tablo: "Ad Soyad | Telefon", telefonu boş satırlar dahil) —
+ * kullanıcı isteği, 2026-11-19. Satır numaraları, sütun harfleri ve başlık satırı atılır; satırların çoğu
+ * "isim [| telefon]" düzenindeyse her satır bir doktordur. Değilse null (genel okuyucu çalışır).
+ */
+function parseSimpleList(lines: string[], days: Date[]): ImageVisitRow[] | null {
+  const cells = lines
+    .map((l) => l.replace(/^\d{1,3}(?:\s*\|\s*|\s+)(?=\p{L})/u, '').trim())
+    .filter((l) => l && !/^[A-Z](\s*\|\s*[A-Z])*$/.test(l))
+    .filter((l) => !LIST_HEADER.test(l))
+  // Gün başlığı / tarih olan raporlar genel okuyucuda kalır (günler kaybolmasın)
+  if (cells.length < 3 || cells.some((l) => findDate(l, days))) return null
+  const rows: ImageVisitRow[] = []
+  for (const l of cells) {
+    const parts = l.split(/\s*\|\s*/).filter(Boolean)
+    let name = parts[0]
+    let phone = parts.slice(1).find((p) => PHONE_CELL.test(p)) ?? ''
+    // Hücre ayracı okunmadıysa telefon ismin sonuna yapışık olabilir
+    const m = !phone && name.match(/^(.*?\p{L})\s+(\+?[\d\s().-]{7,})$/u)
+    if (m) [name, phone] = [m[1], m[2]]
+    if (!NAME_CELL.test(name.trim())) continue
+    rows.push({ name: tidyName(name.trim()), phone: phone.trim(), notes: '', date: null })
+  }
+  return rows.length >= cells.length * 0.7 ? rows : null
+}
+
 /**
  * Okunan satırları günlere ve doktorlara ayırır. Gün başlıkları ("Pazartesi", "13.11.2026", "13 Kasım",
  * WhatsApp'ın "23 Eki Cum") altındaki doktorlar o güne yazılır; satırın içindeki tarih (tablo) yalnız o
@@ -106,6 +145,8 @@ function cleanOcrLine(line: string): string | null {
  */
 export function parseVisitLines(rawLines: string[], days: Date[], repName = ''): ImageVisitRow[] {
   const lines = rawLines.map(cleanOcrLine).filter((l): l is string => l !== null)
+  const simple = parseSimpleList(lines, days)
+  if (simple) return simple
   const out: ImageVisitRow[] = []
   let current: string | null = null
   let segment: string[] = []
