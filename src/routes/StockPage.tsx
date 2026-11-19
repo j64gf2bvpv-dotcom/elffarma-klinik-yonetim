@@ -738,7 +738,7 @@ function CategoryCell({ product }: { product: Product }) {
  * dar-ama-uzun bir "çubuk". Gerçek 1400/1024/800/600/400px pencere
  * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
  */
-const PRODUCT_COL_WIDTHS = [44, 68, 40, 180, 140, 160, 128, 120, 96, 290, 110, 134, 192, 120, 340]
+const PRODUCT_COL_WIDTHS = [44, 112, 40, 180, 140, 160, 128, 120, 96, 290, 110, 134, 192, 120, 340]
 const PRODUCT_TABLE_WIDTH = PRODUCT_COL_WIDTHS.reduce((a, b) => a + b, 0)
 
 function ProductsTable({
@@ -866,8 +866,9 @@ function ProductsTable({
                     <ZoomableThumbnail
                       src={product.image_url}
                       alt={product.name}
-                      className="size-12 max-w-none shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted object-cover"
-                      fallback={<div className="size-12 shrink-0 rounded-md border-2 border-muted-foreground/30 bg-muted" />}
+                      // 3B düğme görünümü (kullanıcı isteği, 2026-11-19: "ürün resimleri 3d buton gibi daha büyük olsa")
+                      className="size-20 max-w-none shrink-0 rounded-xl border border-border bg-gradient-to-b from-white to-muted/60 object-contain p-1.5 shadow-[0_3px_0_0_rgba(0,0,0,0.10),0_8px_18px_-6px_rgba(0,0,0,0.30)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_rgba(0,0,0,0.10),0_14px_24px_-8px_rgba(0,0,0,0.35)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.10),0_3px_8px_-4px_rgba(0,0,0,0.25)]"
+                      fallback={<div className="size-20 shrink-0 rounded-xl border border-border bg-gradient-to-b from-white to-muted/60 shadow-[0_3px_0_0_rgba(0,0,0,0.10),0_8px_18px_-6px_rgba(0,0,0,0.30)]" />}
                     />
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>

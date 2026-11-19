@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.414] - 2026-11-19
+- Stok > Ürünler tablosunda ürün resimleri büyütüldü ve 3B düğme görünümü verildi (gölge, üzerine gelince kalkma, tıklayınca basılma); resim sütunu genişletildi.
+
 ## [2.17.413] - 2026-11-19
 - Ana sayfadaki Satış Temsilcisi Raporu'nda temsilcilerin personel kartındaki fotoğrafları görünüyor (monogram yerine).
 
