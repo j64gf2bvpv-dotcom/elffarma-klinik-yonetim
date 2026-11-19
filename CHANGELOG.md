@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.409] - 2026-11-19
+- Geçmiş sayım ayrıntısı çerçeveli, çizgili, sade bir tabloya çevrildi: fark rakamları renkli etiketlerle, stoğu olmayan ürünler varsayılan gizli ("göster" ile açılır), notlar yalnız üzerine gelince görünüyor; "Swiss" başlığının "SWİSS" görünmesi düzeltildi.
+
 ## [2.17.408] - 2026-11-18
 - Geçmiş sayım ayrıntısı rapor görünümüne çevrildi: marka grupları, Önceki → Sayılan → Fark sütunları, Tümü / Değişenler / Sayılanlar süzgeci, boş ürünler soluk; notlar sade (tıklayınca yazılıyor), sayım notu boşsa yalnız "+ Sayım notu ekle".
 

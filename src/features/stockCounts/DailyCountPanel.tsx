@@ -771,7 +771,8 @@ function CompletedCountReport({
   dateLabel: string
   onSaveNote: (id: string, note: string | null) => void
 }) {
-  const rows = items.map((i) => {
+  // "Diğer" ürünler sayımda hiçbir yerde gösterilmiyor (kullanıcı isteği, 2026-08-27)
+  const rows = items.filter((i) => i.products.brand_line === 'dermakor' || i.products.brand_line === 'swiss').map((i) => {
     const prev = { paket: i.expected_quantity, kutu: i.expected_quantity_small_box ?? 0, flakon: i.expected_quantity_flakon }
     const fin = {
       paket: resolveCounted(prev.paket, i.counted_quantity),
@@ -791,13 +792,17 @@ function CompletedCountReport({
   })
   const changedN = rows.filter((r) => r.diffs.length).length
   const countedN = rows.filter((r) => r.counted).length
+  const emptyN = rows.filter((r) => r.empty).length
   const [filter, setFilter] = React.useState<'all' | 'changed' | 'counted'>('all')
-  const shown = rows.filter((r) => (filter === 'changed' ? r.diffs.length > 0 : filter === 'counted' ? r.counted : true))
+  // Stoğu olmayan, sayılmamış ürünler varsayılan olarak gizli — tablo kalabalık olmasın (kullanıcı isteği, 2026-11-19)
+  const [showEmpty, setShowEmpty] = React.useState(false)
+  const shown = rows.filter((r) =>
+    filter === 'changed' ? r.diffs.length > 0 : filter === 'counted' ? r.counted : showEmpty || !r.empty,
+  )
   const groups = (
     [
-      ['Dermakor', shown.filter((r) => r.i.products.brand_line === 'dermakor')],
-      ['Swiss', shown.filter((r) => r.i.products.brand_line === 'swiss')],
-      ['Diğer', shown.filter((r) => r.i.products.brand_line !== 'dermakor' && r.i.products.brand_line !== 'swiss')],
+      ['DERMAKOR', shown.filter((r) => r.i.products.brand_line === 'dermakor')],
+      ['SWISS', shown.filter((r) => r.i.products.brand_line === 'swiss')],
     ] as const
   ).filter(([, g]) => g.length)
 
@@ -806,84 +811,109 @@ function CompletedCountReport({
       type="button"
       onClick={() => setFilter(key)}
       className={cn(
-        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-        filter === key ? 'border-primary bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-accent',
+        'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+        filter === key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
       )}
     >
-      {label} <span className="tabular-nums opacity-80">{n}</span>
+      {label}
+      <span className={cn('rounded px-1.5 text-xs tabular-nums', filter === key ? 'bg-primary text-primary-foreground' : 'bg-muted')}>{n}</span>
     </button>
   )
+  const pill = (text: string, tone: 'up' | 'down' | 'same') => (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap tabular-nums',
+        tone === 'up' && 'bg-success/12 text-success',
+        tone === 'down' && 'bg-destructive/10 text-destructive',
+        tone === 'same' && 'bg-muted text-muted-foreground',
+      )}
+    >
+      {text}
+    </span>
+  )
+  const th = 'border-r border-border/60 px-4 py-2.5 text-left text-[13px] font-semibold text-foreground last:border-r-0'
+  const td = 'border-r border-border/60 px-4 py-2 align-middle last:border-r-0'
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
-        {chip('all', 'Tümü', rows.length)}
+    <div className="p-4">
+      <div className="mb-3 inline-flex gap-1 rounded-lg bg-muted p-1">
+        {chip('all', 'Tümü', rows.length - (showEmpty ? 0 : emptyN))}
         {chip('changed', 'Değişenler', changedN)}
         {chip('counted', 'Sayılanlar', countedN)}
       </div>
       {groups.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-muted-foreground">Bu süzgece uyan ürün yok.</p>
+        <p className="rounded-lg border px-4 py-8 text-center text-sm text-muted-foreground">Bu süzgece uyan ürün yok.</p>
       ) : (
-        <table className="w-full table-fixed text-sm">
-          <colgroup>
-            <col className="w-[24%]" />
-            <col className="w-[19%]" />
-            <col className="w-[19%]" />
-            <col className="w-[16%]" />
-            <col className="w-[22%]" />
-          </colgroup>
-          <thead>
-            <tr className="border-b text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              <th className="px-4 py-2 font-medium">Ürün</th>
-              <th className="px-3 py-2 font-medium">Önceki · {prevLabel}</th>
-              <th className="px-3 py-2 font-medium text-foreground">Sayılan · {dateLabel}</th>
-              <th className="px-3 py-2 font-medium">Fark</th>
-              <th className="px-3 py-2 font-medium">Not</th>
-            </tr>
-          </thead>
-          {groups.map(([label, g]) => (
-            <tbody key={label}>
-              <tr>
-                <td colSpan={5} className="bg-muted/40 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
-                  {label}
-                </td>
+        <div className="overflow-hidden rounded-lg border">
+          <table className="w-full table-fixed text-sm">
+            <colgroup>
+              <col className="w-[25%]" />
+              <col className="w-[19%]" />
+              <col className="w-[19%]" />
+              <col className="w-[17%]" />
+              <col className="w-[20%]" />
+            </colgroup>
+            <thead className="bg-muted/60">
+              <tr className="border-b">
+                <th className={th}>Ürün</th>
+                <th className={th}>
+                  Önceki <span className="font-normal text-muted-foreground">({prevLabel})</span>
+                </th>
+                <th className={th}>
+                  Sayılan <span className="font-normal text-muted-foreground">({dateLabel})</span>
+                </th>
+                <th className={th}>Fark</th>
+                <th className={th}>Not</th>
               </tr>
-              {g.map(({ i, prev, fin, counted, diffs, empty }) => (
-                <tr
-                  key={i.id}
-                  className={cn('border-b last:border-b-0 hover:bg-accent/40', empty && 'text-muted-foreground/60', diffs.length > 0 && 'bg-warning/5')}
-                >
-                  <td className="px-4 py-2.5 font-medium break-words">{i.products.name}</td>
-                  <td className="px-3 py-2.5 tabular-nums text-muted-foreground">{finalStockLabel(prev.paket, prev.flakon, prev.kutu)}</td>
-                  <td className={cn('px-3 py-2.5 tabular-nums', counted ? 'font-semibold' : 'text-muted-foreground')}>
-                    {counted && !fin.paket && !fin.kutu && !fin.flakon ? '0 (stok yok)' : finalStockLabel(fin.paket, fin.flakon, fin.kutu)}
-                    {!counted && !empty && <span className="ml-1 text-xs">(sayılmadı)</span>}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {diffs.length ? (
-                      <span className="flex flex-wrap gap-x-2 font-semibold tabular-nums">
-                        {diffs.map(([d, unit]) => (
-                          <span key={unit} className={d > 0 ? 'text-success' : 'text-destructive'}>
-                            {d > 0 ? `+${d}` : `−${-d}`} {unit}
-                          </span>
-                        ))}
-                      </span>
-                    ) : counted ? (
-                      <span className="inline-flex items-center gap-1 text-success">
-                        <CheckCircle2 className="size-3.5" /> Aynı
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground/60">—</span>
-                    )}
-                  </td>
-                  <td className="px-2 py-1.5">
-                    <ItemNoteInput item={i} onSave={onSaveNote} subtle />
+            </thead>
+            {groups.map(([label, g]) => (
+              <tbody key={label}>
+                <tr className="border-b bg-primary/5">
+                  <td colSpan={5} className="px-4 py-1.5 text-xs font-bold tracking-wider text-primary">
+                    {label} <span className="font-medium text-muted-foreground">· {g.length} ürün</span>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          ))}
-        </table>
+                {g.map(({ i, prev, fin, counted, diffs }, idx) => (
+                  <tr key={i.id} className={cn('group border-b last:border-b-0 hover:bg-accent/40', idx % 2 === 1 && 'bg-muted/20')}>
+                    <td className={cn(td, 'font-medium break-words')}>{i.products.name}</td>
+                    <td className={cn(td, 'tabular-nums text-muted-foreground')}>{finalStockLabel(prev.paket, prev.flakon, prev.kutu)}</td>
+                    <td className={cn(td, 'tabular-nums')}>
+                      {counted ? (
+                        <span className="font-semibold">
+                          {!fin.paket && !fin.kutu && !fin.flakon ? '0' : finalStockLabel(fin.paket, fin.flakon, fin.kutu)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {finalStockLabel(fin.paket, fin.flakon, fin.kutu)}{' '}
+                          <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[11px]">sayılmadı</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className={td}>
+                      <div className="flex flex-wrap gap-1">
+                        {diffs.length
+                          ? diffs.map(([d, unit]) => (
+                              <React.Fragment key={unit}>{pill(`${d > 0 ? '+' : '−'}${Math.abs(d)} ${unit}`, d > 0 ? 'up' : 'down')}</React.Fragment>
+                            ))
+                          : counted
+                            ? pill('✓ Aynı', 'same')
+                            : <span className="text-muted-foreground/50">—</span>}
+                      </div>
+                    </td>
+                    <td className={cn(td, 'px-2 py-1')}>
+                      <ItemNoteInput item={i} onSave={onSaveNote} subtle />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            ))}
+          </table>
+        </div>
+      )}
+      {filter === 'all' && emptyN > 0 && (
+        <button type="button" onClick={() => setShowEmpty((v) => !v)} className="mt-2 text-xs text-muted-foreground hover:text-foreground">
+          {showEmpty ? 'Stoğu olmayan ürünleri gizle' : `Stoğu olmayan ${emptyN} ürün gizlendi — göster`}
+        </button>
       )}
     </div>
   )
@@ -905,10 +935,10 @@ function ItemNoteInput({
   return (
     <Input
       value={value}
-      placeholder={subtle ? '+ Not' : 'Not ekle…'}
+      placeholder={subtle ? '+ Not ekle' : 'Not ekle…'}
       className={cn(
         'h-8 text-sm',
-        subtle && 'border-transparent bg-transparent shadow-none placeholder:text-muted-foreground/40 hover:border-border focus-visible:border-ring focus-visible:bg-background',
+        subtle && 'border-transparent bg-transparent shadow-none placeholder:text-transparent group-hover:placeholder:text-muted-foreground/50 focus-visible:placeholder:text-muted-foreground/50 hover:border-border focus-visible:border-ring focus-visible:bg-background',
       )}
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => setValue(e.target.value)}
@@ -1407,8 +1437,8 @@ export function DailyCountPanel() {
             groupItems.length === 0 ? null : (
               <div key={groupLabel} className="min-w-0">
                 {/* Grup başlığı tam genişlikte şeffaf kırmızı şerit (kullanıcı isteği, 2026-10-14) */}
-                <h3 className="border-y border-destructive/20 bg-destructive/10 px-3 py-2 text-sm font-bold tracking-wide text-destructive uppercase">
-                  {groupLabel}
+                <h3 className="border-y border-destructive/20 bg-destructive/10 px-3 py-2 text-sm font-bold tracking-wide text-destructive">
+                  {groupLabel.toUpperCase()}
                 </h3>
                 <Table className={cn('table-fixed', COUNT_TABLE_GRID)}>
                   <CountTableHeader
