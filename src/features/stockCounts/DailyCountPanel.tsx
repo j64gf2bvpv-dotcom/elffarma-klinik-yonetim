@@ -69,7 +69,8 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog'
  * (kullanıcı isteği, 2026-10-14: "aralarda çizgi şeklinde tablo şeklinde yap").
  */
 /** Geçmiş Sayımlar listesinin sütunları: Tarih | Durum | Ürünler | Not | İşlemler */
-const PAST_GRID = 'grid grid-cols-[minmax(11rem,1.1fr)_8.5rem_minmax(10rem,1fr)_minmax(0,1.6fr)_2.5rem] items-center gap-3'
+const PAST_GRID =
+  'grid grid-cols-[2.25rem_7.5rem_7.5rem_9rem_7rem_7rem_minmax(0,1fr)_3rem] [&>*]:flex [&>*]:min-w-0 [&>*]:items-center [&>*]:border-r [&>*]:border-border/60 [&>*]:px-3 [&>*:last-child]:border-r-0'
 
 const COUNT_TABLE_GRID =
   'border-collapse border border-border [&_td]:py-1.5 [&_td]:border [&_td]:border-border [&_th]:border [&_th]:border-border [&_th]:bg-muted/40'
@@ -562,19 +563,19 @@ function PastCountRow({
   const d = new Date(count.count_date)
 
   return (
-    <div className={cn('border-b last:border-b-0', open && 'bg-muted/20')}>
+    <div className="border-b last:border-b-0 even:bg-muted/20">
       <div
         role="button"
         tabIndex={0}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setOpen((v) => !v))}
-        className={cn(PAST_GRID, 'cursor-pointer px-4 py-3 text-sm transition-colors hover:bg-accent/50')}
+        className={cn(PAST_GRID, 'cursor-pointer text-sm transition-colors hover:bg-accent/50 [&>*]:py-2', open && 'bg-accent/40')}
       >
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="justify-center">
           <ChevronRight className={cn('size-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')} />
-          <span className="font-semibold tabular-nums">{format(d, 'dd.MM.yyyy', { locale: trLocale })}</span>
-          <span className="truncate text-muted-foreground">{format(d, 'EEEE', { locale: trLocale })}</span>
         </div>
+        <div className="font-semibold tabular-nums">{format(d, 'dd.MM.yyyy', { locale: trLocale })}</div>
+        <div className="text-muted-foreground">{format(d, 'EEEE', { locale: trLocale })}</div>
         <div>
           {count.status === 'completed' ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-medium text-success">
@@ -586,20 +587,27 @@ function PastCountRow({
             </span>
           )}
         </div>
-        <div className="text-muted-foreground tabular-nums">
+        <div className="justify-end tabular-nums">
           {stats ? (
-            <>
-              <span className="text-foreground">{stats.counted}</span> / {stats.total} sayıldı
-              {stats.changed > 0 && <span className="ml-2 font-medium text-warning-foreground">· {stats.changed} değişiklik</span>}
-            </>
+            <span>
+              <span className="font-semibold">{stats.counted}</span>
+              <span className="text-muted-foreground"> / {stats.total}</span>
+            </span>
           ) : (
             '—'
           )}
         </div>
-        <div className="truncate text-muted-foreground" title={count.notes ?? ''}>
-          {count.notes || '—'}
+        <div className="justify-end tabular-nums">
+          {stats?.changed ? (
+            <span className="rounded-md bg-warning/20 px-2 py-0.5 text-xs font-semibold text-warning-foreground">{stats.changed}</span>
+          ) : (
+            <span className="text-muted-foreground/50">—</span>
+          )}
         </div>
-        <div className="flex justify-end" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+        <div className="text-muted-foreground" title={count.notes ?? ''}>
+          <span className="truncate">{count.notes || '—'}</span>
+        </div>
+        <div className="justify-center" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="ghost" size="icon" className="size-8" title="İşlemler">
@@ -1477,11 +1485,14 @@ export function DailyCountPanel() {
             <CardTitle className="text-sm">Geçmiş Sayımlar</CardTitle>
             <span className="text-xs text-muted-foreground">Ayrıntı için satıra tıklayın</span>
           </CardHeader>
-          <div className="border-t">
-            <div className={cn(PAST_GRID, 'bg-muted/40 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase')}>
-              <span className="pl-6">Tarih</span>
+          <div className="mx-4 mb-4 overflow-hidden rounded-lg border">
+            <div className={cn(PAST_GRID, 'border-b bg-muted/60 text-[13px] font-semibold [&>*]:py-2.5')}>
+              <span />
+              <span>Tarih</span>
+              <span>Gün</span>
               <span>Durum</span>
-              <span>Ürünler</span>
+              <span className="justify-end">Sayılan ürün</span>
+              <span className="justify-end">Değişiklik</span>
               <span>Not</span>
               <span />
             </div>

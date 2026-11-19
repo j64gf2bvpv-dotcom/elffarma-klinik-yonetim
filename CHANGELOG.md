@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.411] - 2026-11-19
+- Geçmiş Sayımlar listesi çerçeveli tabloya çevrildi: Tarih | Gün | Durum | Sayılan ürün | Değişiklik | Not sütunları, sütun çizgileri ve sırayla renkli satırlar.
+
 ## [2.17.410] - 2026-11-19
 - Günlük Sayım tablosunda adet kutuları, "Aynı" düğmesi, not kutusu ve satır yükseklikleri küçültüldü; kutular sütun ortasında.
 
