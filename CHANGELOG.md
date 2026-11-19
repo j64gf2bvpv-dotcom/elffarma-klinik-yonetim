@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.435] - 2026-11-19
+- Araçlar, Personel Özlük Dosyası menüsünün içine sekme olarak taşındı; menünün adı "Personel Özlük Dosyası" oldu. Personel sekmesi sadece yöneticilere, Araçlar herkese açık.
+- Personel ve Araçlar tabloları sade, ince çizgili premium tablo görünümünde; personel fotoğrafı isimle aynı hücrede.
+
 ## [2.17.434] - 2026-11-19
 - Cari Hesap, Cari Kart'ın içine sekme olarak taşındı (Doktorlar / Cari Hesap / Tahsilatlar / Satışlar / Bütçe Yılı); CRM, Satış Temsilcisi Raporu'nun içine taşındı (Haftalık Rapor / Prim Hesaplama / Ekip Performansı / CRM). Sol menüde ayrı satırları kalktı, eski adresler yeni sekmelere yönleniyor; Kullanıcı Panel İzinleri sekmeleri de gizleyebiliyor.
 

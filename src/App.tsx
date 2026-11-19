@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { CariKartHub, AjandaHub, AyarlarHub } from '@/routes/hubs'
+import { CariKartHub, AjandaHub, AyarlarHub, PersonelHub } from '@/routes/hubs'
 import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -16,8 +16,6 @@ import { CongressesPage } from '@/routes/CongressesPage'
 import { CongressDetailPage } from '@/routes/CongressDetailPage'
 import { DoctorVisitsPage } from '@/routes/DoctorVisitsPage'
 import { TasksPage } from '@/routes/TasksPage'
-import { VehiclesPage } from '@/routes/VehiclesPage'
-import { PersonnelPage } from '@/routes/PersonnelPage'
 import { PersonnelDetailPage } from '@/routes/PersonnelDetailPage'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -68,10 +66,10 @@ function App() {
             <Route path="hatirlatmalar" element={<Navigate to="/ajanda?bolum=hatirlatmalar" replace />} />
             <Route path="gorevler" element={<TasksPage />} />
             <Route path="ajanda" element={<AjandaHub />} />
-            <Route path="araclar" element={<VehiclesPage />} />
+            <Route path="araclar" element={<Navigate to="/personel?bolum=araclar" replace />} />
             <Route path="ekip-performansi" element={<Navigate to="/doktor-ziyaretleri?bolum=ekip" replace />} />
             <Route path="faturalar" element={<Navigate to="/giderler?bolum=fatura_takibi" replace />} />
-            <Route path="personel" element={<PersonnelPage />} />
+            <Route path="personel" element={<PersonelHub />} />
             <Route path="personel/:id" element={<PersonnelDetailPage />} />
             <Route path="ayarlar" element={<AyarlarHub />} />
           </Route>

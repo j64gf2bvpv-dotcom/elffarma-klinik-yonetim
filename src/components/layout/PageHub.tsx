@@ -12,6 +12,8 @@ export interface HubTab {
   render: () => React.ReactNode
   /** Kullanıcı Panel İzinleri'ndeki eski menü anahtarı — kişiye gizlenmişse sekme de gizli */
   navKey?: string
+  /** Sadece yöneticiler görür (ör. Personel özlük bilgileri) */
+  adminOnly?: boolean
 }
 
 /**
@@ -23,7 +25,7 @@ export function PageHub({ tabs }: { tabs: HubTab[] }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const { staff } = useAuth()
   const hidden = new Set(staff?.hidden_nav_items ?? [])
-  const visible = tabs.filter((t) => !t.navKey || !hidden.has(t.navKey))
+  const visible = tabs.filter((t) => (!t.navKey || !hidden.has(t.navKey)) && (!t.adminOnly || staff?.role === 'admin'))
   const current = visible.find((t) => t.key === searchParams.get('bolum')) ?? visible[0]
   const select = (key: string) => setSearchParams(key === visible[0]?.key ? {} : { bolum: key }, { replace: true })
 

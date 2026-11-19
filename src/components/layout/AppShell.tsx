@@ -90,7 +90,6 @@ const navItems: { to: string; label: string; key: NavKey; end?: boolean }[] = [
   { to: '/gorevler', label: tr.nav.tasks, key: 'tasks' },
   { to: '/ajanda', label: tr.nav.agenda, key: 'agenda' },
   { to: '/instagram-doktor-listesi', label: tr.nav.instagramLeads, key: 'instagramLeads' },
-  { to: '/araclar', label: tr.nav.vehicles, key: 'vehicles' },
   { to: '/personel', label: tr.nav.personnel, key: 'personnel' },
 ]
 
@@ -103,8 +102,11 @@ interface NavLayoutItem {
 
 const defaultNavLayout: NavLayoutItem[] = navItems.map((item) => ({ key: item.key, label: item.label }))
 
+// Kayıtlı menü düzeninde eski varsayılan adla kalanlar yeni adı alır (2026-11-19: "Personel Özlük" → "Personel Özlük Dosyası")
+const RENAMED_LABELS: Record<string, string> = { 'Personel Özlük': tr.nav.personnel }
+
 function sanitizeNavLayout(input: NavLayoutItem[]): NavLayoutItem[] {
-  const known = input.filter((item) => navItemsByKey.has(item.key))
+  const known = input.filter((item) => navItemsByKey.has(item.key)).map((item) => ({ ...item, label: RENAMED_LABELS[item.label] ?? item.label }))
   const presentKeys = new Set(known.map((item) => item.key))
   const missing = defaultNavLayout.filter((item) => !presentKeys.has(item.key))
   return [...known, ...missing]
@@ -681,8 +683,9 @@ export function AppShell() {
   // soluk) gösterilir ki kapatılan bir öğe tekrar açılabilsin; normal menü
   // görünümü sadece kullanıcının kendi gizli listesine göre filtrelenir.
   const hiddenForMe = new Set(draftHidden ?? staff?.hidden_nav_items ?? [])
-  // Personel Özlük sadece yöneticilere (T.C. no, IBAN gibi hassas bilgiler — 2026-11-12)
-  const visibleNavLayout = navLayout.filter((item) => !hiddenForMe.has(item.key) && (item.key !== 'personnel' || isAdmin))
+  // Personel Özlük Dosyası menüsü herkese açık (içinde Araçlar da var); hassas "Personel" sekmesi sadece
+  // yöneticilere — sekme düzeyinde gizleniyor (bkz. routes/hubs.tsx PersonelHub, 2026-11-19)
+  const visibleNavLayout = navLayout.filter((item) => !hiddenForMe.has(item.key))
 
   // Sadece menüden gizlemek yetmez — sekmeye doğrudan URL ile gidilirse de
   // engellensin diye, mevcut sayfanın eşleştiği nav öğesi kullanıcı için

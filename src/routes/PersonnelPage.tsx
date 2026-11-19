@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, PREMIUM_TABLE } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
 import { useAuth } from '@/lib/auth'
 import { usePersonnel, usePersonnelDocuments } from '@/features/personnel/hooks'
@@ -100,10 +100,9 @@ export function PersonnelPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table className="[&_th]:whitespace-normal">
+          <Table className={PREMIUM_TABLE}>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14" />
                 <TableHead>Adı Soyadı</TableHead>
                 <TableHead>Görevi</TableHead>
                 <TableHead>Telefon</TableHead>
@@ -114,14 +113,14 @@ export function PersonnelPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                     Yükleniyor...
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                     {people.length === 0 ? 'Henüz personel eklenmedi — sağ üstten "Personel Ekle".' : 'Aramaya uyan personel yok.'}
                   </TableCell>
                 </TableRow>
@@ -130,16 +129,18 @@ export function PersonnelPage() {
                 const s = docSummary(docsOf(p.id))
                 return (
                   <TableRow key={p.id} className="cursor-pointer" onClick={() => navigate(`/personel/${p.id}`)}>
-                    <TableCell>
-                      <PersonPhoto path={p.photo_path} personnelId={p.id} className="size-10" />
-                    </TableCell>
-                    <TableCell className="font-medium whitespace-normal">
-                      {p.full_name}
-                      {!isActivePerson(p) && (
-                        <Badge variant="outline" className="ml-2">
-                          Ayrıldı
-                        </Badge>
-                      )}
+                    <TableCell className="whitespace-normal">
+                      <span className="flex items-center gap-3">
+                        <PersonPhoto path={p.photo_path} personnelId={p.id} className="size-9 shrink-0 rounded-full ring-2 ring-background shadow-sm" />
+                        <span className="min-w-0 font-medium">
+                          {p.full_name}
+                          {!isActivePerson(p) && (
+                            <Badge variant="outline" className="ml-2">
+                              Ayrıldı
+                            </Badge>
+                          )}
+                        </span>
+                      </span>
                     </TableCell>
                     <TableCell className="whitespace-normal">{[p.position, p.department].filter(Boolean).join(' · ') || '—'}</TableCell>
                     <TableCell className="tabular-nums">{p.phone ? formatPhoneTR(p.phone) : '—'}</TableCell>

@@ -1,4 +1,4 @@
-import { Users, BookOpenText, HandCoins, ShoppingCart, PiggyBank, CalendarDays, BellRing, Settings, Sparkles } from 'lucide-react'
+import { Users, BookOpenText, HandCoins, ShoppingCart, PiggyBank, CalendarDays, BellRing, Settings, Sparkles, IdCard, Car } from 'lucide-react'
 
 import { PageHub } from '@/components/layout/PageHub'
 import { CustomersPage } from '@/routes/CustomersPage'
@@ -9,6 +9,8 @@ import { BudgetYearPage } from '@/routes/BudgetYearPage'
 import { AgendaPage } from '@/routes/AgendaPage'
 import { RemindersPage } from '@/routes/RemindersPage'
 import { SettingsPage } from '@/routes/SettingsPage'
+import { PersonnelPage } from '@/routes/PersonnelPage'
+import { VehiclesPage } from '@/routes/VehiclesPage'
 import { AIInsightsPage } from '@/routes/AIInsightsPage'
 
 /**
@@ -48,6 +50,18 @@ export function AyarlarHub() {
       tabs={[
         { key: 'genel', label: 'Ayarlar', icon: Settings, render: () => <SettingsPage /> },
         { key: 'ai', label: 'Yapay Zeka Analiz', icon: Sparkles, navKey: 'aiInsights', render: () => <AIInsightsPage /> },
+      ]}
+    />
+  )
+}
+
+/** Personel Özlük Dosyası + Araçlar (kullanıcı isteği, 2026-11-19: "araçlar da personel özlük dosyasında olsun") */
+export function PersonelHub() {
+  return (
+    <PageHub
+      tabs={[
+        { key: 'personel', label: 'Personel', icon: IdCard, adminOnly: true, render: () => <PersonnelPage /> },
+        { key: 'araclar', label: 'Araçlar', icon: Car, navKey: 'vehicles', render: () => <VehiclesPage /> },
       ]}
     />
   )

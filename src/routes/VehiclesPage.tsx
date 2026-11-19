@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, PREMIUM_TABLE } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
 import { VehicleDialog } from '@/features/vehicles/VehicleDialog'
 import { RuhsatScanDialog } from '@/features/vehicles/RuhsatScanDialog'
@@ -90,7 +90,7 @@ export function VehiclesPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table className="[&_th]:whitespace-normal">
+          <Table className={PREMIUM_TABLE}>
             <TableHeader>
               <TableRow>
                 <TableHead>Araç</TableHead>

@@ -247,3 +247,11 @@ export {
   TableCell,
   TableCaption,
 }
+
+/**
+ * Sade, şık "premium" tablo görünümü (kullanıcı isteği, 2026-11-19: "tablo şeklinde olsun, sade şık premium"):
+ * ince dikey/yatay çizgiler, hafif başlık zemini, satır arası zebra, başlıklar dar ekranda alt satıra geçer.
+ * Kullanım: <Table className={PREMIUM_TABLE}>
+ */
+export const PREMIUM_TABLE =
+  '[&_th]:whitespace-normal [&_thead_th]:h-11 [&_thead_th]:bg-muted/50 [&_thead_th]:border-b [&_thead_th]:border-border [&_tbody_td]:border-b [&_tbody_td]:border-border/50 [&_tbody_td]:py-2.5 [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:nth-child(even)]:bg-muted/20 [&_th:not(:first-child)]:border-l [&_th:not(:first-child)]:border-border/50 [&_td:not(:first-child)]:border-l [&_td:not(:first-child)]:border-border/40'
