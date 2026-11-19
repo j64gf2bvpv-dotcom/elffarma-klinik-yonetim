@@ -53,6 +53,7 @@ import { cn } from '@/lib/utils'
 import { useSearchParams } from 'react-router-dom'
 import { BillsPage } from '@/routes/BillsPage'
 import { useUtilityBills } from '@/features/bills/hooks'
+import type { UtilityBillCategory } from '@/types/database'
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
@@ -83,6 +84,16 @@ const SECTION_ICON: Record<string, LucideIcon> = {
   danismanlik: Briefcase,
   diger: Shapes,
 }
+/** Gider bölümü → fatura türü: Elektrik faturaları Elektrik'in içinde, Su faturaları Su'yun içinde… (2026-11-19) */
+const BILL_CATEGORY_OF: Record<string, UtilityBillCategory | undefined> = {
+  elektrik: 'elektrik',
+  su: 'su',
+  dogalgaz: 'dogalgaz',
+  internet: 'internet',
+  haberlesme: 'telefon',
+  // "Diğer" türündeki faturalar da kaybolmasın
+  diger: 'diger',
+}
 const SECTION_GROUPS: { label: string; tone: string; keys: string[] }[] = [
   { label: 'Faturalar', tone: 'bg-sky-500', keys: ['elektrik', 'su', 'dogalgaz', 'internet', 'haberlesme'] },
   { label: 'Ofis ve Yemek', tone: 'bg-amber-500', keys: ['ofis', 'mutfak', 'ofis_yemek', 'yemek_mutfak'] },
@@ -102,7 +113,8 @@ export function ExpensesPage() {
   // Fatura, ofis ve muhasebe gider bölümleri (kullanıcı isteği, 2026-11-11 / 2026-11-12)
   // ?bolum=fatura_takibi gibi doğrudan bağlantı (eski /faturalar sayfası buraya yönlenir)
   const [searchParams] = useSearchParams()
-  const [tab, setTab] = React.useState(searchParams.get('bolum') || 'genel')
+  const bolum = searchParams.get('bolum')
+  const [tab, setTab] = React.useState(bolum === 'fatura_takibi' ? 'elektrik' : bolum || 'genel')
   const { data: utilityBills = [] } = useUtilityBills()
   const unpaidBills = utilityBills.filter((b) => !b.is_paid)
   const unpaidBillsTotal = unpaidBills.reduce((sum, b) => sum + Number(b.amount), 0)
@@ -214,15 +226,6 @@ export function ExpensesPage() {
       <div className="grid gap-5 lg:grid-cols-[16.5rem_minmax(0,1fr)]">
         {/* Kategori menüsü — gruplu, simgeli, dönem tutarıyla */}
         <Card className="h-fit gap-0 p-2 lg:sticky lg:top-4">
-          <CategoryButton
-            icon={SECTION_ICON.fatura_takibi}
-            label="Fatura Takibi"
-            total={unpaidBillsTotal}
-            count={unpaidBills.length}
-            subtitle={unpaidBills.length ? `${unpaidBills.length} ödenmemiş · ${currency0(unpaidBillsTotal)}` : 'Ödenmemiş fatura yok'}
-            active={tab === 'fatura_takibi'}
-            onClick={() => setTab('fatura_takibi')}
-          />
           <CategoryButton icon={SECTION_ICON.genel} label="Genel Giderler" total={serviceTotal + otherTotal} count={expenses.length} active={tab === 'genel'} onClick={() => setTab('genel')} />
           {SECTION_GROUPS.map((g) => (
             <div key={g.label} className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-0.5 lg:block">
@@ -241,6 +244,7 @@ export function ExpensesPage() {
                     label={section.label}
                     total={list.reduce((sum, e) => sum + Number(e.amount), 0)}
                     count={list.length}
+                    alert={BILL_CATEGORY_OF[k] ? unpaidBills.filter((b) => b.category === BILL_CATEGORY_OF[k]).length : 0}
                     active={tab === k}
                     onClick={() => setTab(k)}
                   />
@@ -279,9 +283,6 @@ export function ExpensesPage() {
               )
             })()}
           </div>
-        <TabsContent value="fatura_takibi">
-          <BillsPage embedded />
-        </TabsContent>
         <TabsContent value="genel">
         <Card>
           <CardContent className="p-0">
@@ -342,13 +343,29 @@ export function ExpensesPage() {
         </TabsContent>
         {EXPENSE_ENTRY_SECTIONS.map((section) => (
           <TabsContent key={section.key} value={section.key}>
-            <ExpenseEntriesPanel
-              section={section}
-              entries={entries.filter((e) => e.category === section.key)}
-              isLoading={entriesLoading}
-              from={from}
-              to={to}
-            />
+            {BILL_CATEGORY_OF[section.key] ? (
+              <BillSectionView
+                billCategory={BILL_CATEGORY_OF[section.key]!}
+                unpaid={unpaidBills.filter((b) => b.category === BILL_CATEGORY_OF[section.key]).length}
+                payments={
+                  <ExpenseEntriesPanel
+                    section={section}
+                    entries={entries.filter((e) => e.category === section.key)}
+                    isLoading={entriesLoading}
+                    from={from}
+                    to={to}
+                  />
+                }
+              />
+            ) : (
+              <ExpenseEntriesPanel
+                section={section}
+                entries={entries.filter((e) => e.category === section.key)}
+                isLoading={entriesLoading}
+                from={from}
+                to={to}
+              />
+            )}
           </TabsContent>
         ))}
         </div>
@@ -364,6 +381,7 @@ function CategoryButton({
   total,
   count,
   subtitle,
+  alert = 0,
   active,
   onClick,
 }: {
@@ -372,6 +390,8 @@ function CategoryButton({
   total: number
   count: number
   subtitle?: string
+  /** Ödenmemiş fatura sayısı — kırmızı rozet */
+  alert?: number
   active: boolean
   onClick: () => void
 }) {
@@ -403,6 +423,42 @@ function CategoryButton({
           )}
         </span>
       </span>
+      {alert > 0 && (
+        <span
+          className={cn('shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums', active ? 'bg-white/20 text-white' : 'bg-destructive/12 text-destructive')}
+          title={`${alert} ödenmemiş fatura`}
+        >
+          {alert}
+        </span>
+      )}
     </button>
+  )
+}
+
+/** Fatura türündeki bölüm (Elektrik, Su…): o türün fatura takibi + ödeme kayıtları, iki sekmede */
+function BillSectionView({ billCategory, unpaid, payments }: { billCategory: UtilityBillCategory; unpaid: number; payments: React.ReactNode }) {
+  const [view, setView] = React.useState<'bills' | 'payments'>('bills')
+  return (
+    <div className="grid gap-3">
+      <div className="inline-flex w-fit rounded-lg bg-muted p-1 text-sm">
+        {(
+          [
+            ['bills', 'Faturalar', unpaid ? `${unpaid} ödenmemiş` : null],
+            ['payments', 'Ödeme Kayıtları', null],
+          ] as const
+        ).map(([key, label, badge]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setView(key)}
+            className={cn('flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-colors', view === key ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+          >
+            {label}
+            {badge && <span className="rounded-full bg-destructive/12 px-1.5 text-[10px] font-semibold text-destructive">{badge}</span>}
+          </button>
+        ))}
+      </div>
+      {view === 'bills' ? <BillsPage embedded category={billCategory} /> : payments}
+    </div>
   )
 }

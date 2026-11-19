@@ -888,11 +888,13 @@ function BillAmountsTable({ groups }: { groups: SubscriptionGroup[] }) {
 
 
 /** `embedded`: Giderler sayfasının içinde "Fatura Takibi" bölümü olarak (kullanıcı isteği, 2026-11-19: "faturalar giderlerin içinde, ayrı olmasın") — sayfa başlığı yerine yalnız düğmeler */
-export function BillsPage({ embedded = false }: { embedded?: boolean } = {}) {
+export function BillsPage({ embedded = false, category }: { embedded?: boolean; category?: UtilityBillCategory } = {}) {
   const { data: allTemplates = [] } = useUtilityBillTemplates()
   const { data: bills = [], isLoading } = useUtilityBills()
   const { data: subscriptions = [] } = useUtilitySubscriptions()
-  const [categoryFilter, setCategoryFilter] = React.useState<string>(ALL_CATEGORIES)
+  // `category` verilirse (Giderler > Elektrik gibi) yalnız o türün faturaları, tür seçimi gizli (2026-11-19)
+  const [categoryState, setCategoryFilter] = React.useState<string>(ALL_CATEGORIES)
+  const categoryFilter = category ?? categoryState
 
   const filtered = categoryFilter === ALL_CATEGORIES ? bills : bills.filter((b) => b.category === categoryFilter)
 
@@ -964,7 +966,7 @@ export function BillsPage({ embedded = false }: { embedded?: boolean } = {}) {
               columns={BILL_EXPORT_COLUMNS}
             />
             <TemplatesManagerDialog />
-            <BillFormDialog />
+            <BillFormDialog defaults={category ? { category } : undefined} />
           </div>
   )
 
@@ -986,7 +988,7 @@ export function BillsPage({ embedded = false }: { embedded?: boolean } = {}) {
             <TabsTrigger value="bills">Faturalar</TabsTrigger>
             <TabsTrigger value="amounts">Tutarlar</TabsTrigger>
           </TabsList>
-          <div className="flex items-center gap-2">
+          {!category && <div className="flex items-center gap-2">
             <Label className="text-muted-foreground text-xs font-semibold tracking-wide whitespace-nowrap uppercase">Kategori</Label>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-44">
@@ -1001,7 +1003,7 @@ export function BillsPage({ embedded = false }: { embedded?: boolean } = {}) {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </div>}
         </div>
 
         <TabsContent value="bills">

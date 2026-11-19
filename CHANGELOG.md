@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.430] - 2026-11-19
+- Fatura takibi kategorilere ayrıldı: Elektrik faturaları Giderler > Elektrik'in, Su faturaları Su'yun, Doğalgaz, İnternet ve Haberleşme (Telefon) faturaları kendi bölümlerinin içinde ("Faturalar" ve "Ödeme Kayıtları" sekmeleri). Kategori menüsünde ödenmemiş fatura sayısı kırmızı rozetle görünüyor; ayrı "Fatura Takibi" kaldırıldı, son ödeme uyarısı ilgili kategoriye açılıyor.
+
 ## [2.17.429] - 2026-11-19
 - Faturalar ayrı menü olmaktan çıktı, Giderler'in içine "Fatura Takibi" bölümü olarak taşındı (kategori menüsünün en üstünde, ödenmemiş fatura sayısı ve tutarıyla). Eski Faturalar bağlantıları ve son ödeme uyarısı oraya yönleniyor.
 
