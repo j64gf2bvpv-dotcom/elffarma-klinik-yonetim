@@ -6,6 +6,33 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { placeholderColor } from '@/lib/placeholderColor'
+import { useQuery } from '@tanstack/react-query'
+import { usePersonnel } from '@/features/personnel/hooks'
+import { personOfName } from '@/features/personnel/vehicleLink'
+import { getDocumentUrl } from '@/lib/documentAttachments'
+
+/** Personel kartındaki fotoğraf (özlük dosyası) — temsilcinin kendi monogram resminden önce gelir (kullanıcı isteği, 2026-11-19) */
+function usePersonnelPhotoUrl(path: string | null | undefined) {
+  return useQuery({
+    queryKey: ['doc-url', path],
+    queryFn: () => getDocumentUrl(path!),
+    enabled: !!path,
+    staleTime: 1000 * 60 * 8,
+  }).data
+}
+
+function RepAvatar({ name, photoUrl, personnelPhotoPath }: { name: string; photoUrl?: string | null; personnelPhotoPath?: string | null }) {
+  const personnelUrl = usePersonnelPhotoUrl(personnelPhotoPath)
+  const src = personnelUrl ?? (personnelPhotoPath ? null : photoUrl)
+  return (
+    <Avatar className="size-9 shrink-0">
+      {src && <AvatarImage src={src} alt={name} className="object-cover" />}
+      <AvatarFallback className="text-xs font-semibold text-white" style={{ backgroundColor: placeholderColor(name) }}>
+        {getInitials(name)}
+      </AvatarFallback>
+    </Avatar>
+  )
+}
 
 function currency(n: number) {
   return n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
@@ -23,6 +50,7 @@ export function SalesRepReportCard({
 }: {
   items: { id: string; name: string; revenue: number; deltaPct: number | null; photoUrl?: string | null }[]
 }) {
+  const { data: people = [] } = usePersonnel()
   return (
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
@@ -47,15 +75,7 @@ export function SalesRepReportCard({
             <span className="flex size-5 shrink-0 items-center justify-center text-xs font-semibold text-muted-foreground">
               {i + 1}
             </span>
-            <Avatar className="size-9 shrink-0">
-              {item.photoUrl && <AvatarImage src={item.photoUrl} alt={item.name} />}
-              <AvatarFallback
-                className="text-xs font-semibold text-white"
-                style={{ backgroundColor: placeholderColor(item.name) }}
-              >
-                {getInitials(item.name)}
-              </AvatarFallback>
-            </Avatar>
+            <RepAvatar name={item.name} photoUrl={item.photoUrl} personnelPhotoPath={personOfName(item.name, people)?.photo_path} />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{item.name}</p>
             </div>

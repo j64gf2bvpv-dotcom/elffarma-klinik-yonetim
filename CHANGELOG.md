@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.413] - 2026-11-19
+- Ana sayfadaki Satış Temsilcisi Raporu'nda temsilcilerin personel kartındaki fotoğrafları görünüyor (monogram yerine).
+
 ## [2.17.412] - 2026-11-19
 - Günlük Sayım "Sonuç" sütununda farkın altındaki "Yeni stok: …" satırı kaldırıldı; yalnız fark (+/−) ya da "Değişiklik yok" yazıyor.
 
