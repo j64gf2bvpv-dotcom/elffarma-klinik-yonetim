@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.438] - 2026-11-19
+- Araçlar tablosunda araba fotoğrafı yerine küçük, marka renginde araba simgesi.
+
 ## [2.17.437] - 2026-11-19
 - Araçlar tablosunda her aracın yanında arabanın küçük resmi (yuvarlak köşeli, ince çerçeveli) ve altında model yılı. Yeni eklenen araçların resmi modelden kendiliğinden bulunuyor.
 - Ana sayfada dolar, euro ve TL çevir hep aynı hizada.
