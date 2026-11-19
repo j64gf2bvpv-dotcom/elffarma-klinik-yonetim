@@ -267,8 +267,9 @@ export function LiveRatesInline() {
   const updated = rates.live
     ? `Piyasa kuru · ${rates.updatedAt ? format(rates.updatedAt, 'HH:mm') : ''} güncellendi, 10 dakikada bir yenilenir`
     : 'Kur alınamadı, tekrar denenecek'
+  // Dolar, euro ve TL çevir hep aynı hizada, birlikte kayar (kullanıcı isteği, 2026-11-19)
   return (
-    <>
+    <span className="inline-flex flex-nowrap items-center gap-1.5">
       <span className={chip} title={updated}>
         <span className={cn('size-1.5 rounded-full', rates.live ? 'bg-success' : 'bg-warning')} />
         <InlineQuote code="USD" quote={rates.usd} />
@@ -287,6 +288,6 @@ export function LiveRatesInline() {
           <p className="mt-2 text-[11px] text-muted-foreground">Piyasa kuru, 10 dakikada bir güncellenir; resmi kurdan küçük fark olabilir.</p>
         </PopoverContent>
       </Popover>
-    </>
+    </span>
   )
 }
