@@ -123,35 +123,69 @@
   }
 }
 
-/* Kaydırma çubukları her zaman görünür olsun — macOS'un otomatik gizlenen
-   overlay çubukları, geniş tablolarda yana doğru daha fazla sütun olduğunu
-   belli etmiyordu. Çubuk rengi bilerek --color-border DEĞİL: o token ince
-   kenarlıklar için özellikle düşük kontrastlı seçilmiş, açık temada kart
-   arka planına neredeyse görünmez kalıyordu (kullanıcı raporu: "hiç
-   görünmüyor"). --color-muted-foreground her temada arka plana karşı
-   yeterli kontrast garantisi veriyor. */
-* {
-  scrollbar-width: auto;
-  scrollbar-color: var(--color-muted-foreground) transparent;
-}
+/* Kaydırma çubukları — premium görünüm (kullanıcı isteği, 2026-11-19: "çok basit, programa uyan daha premium bir
+   çubuk"). Her zaman görünür (macOS'un gizlenen çubukları geniş tablolarda sütun olduğunu belli etmiyordu) ve
+   yeterli kontrastlı: marka renginde parlak, yuvarlak bir tutamak + ince oluk. NOT: `scrollbar-color` /
+   `scrollbar-width` bilerek KULLANILMIYOR — Chromium (Electron) bunlar tanımlıyken ::-webkit-scrollbar
+   stillerini yok sayıp düz, basit çubuk çiziyor. */
 *::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
 }
 *::-webkit-scrollbar-track {
-  background: transparent;
+  background: color-mix(in oklab, var(--color-muted) 75%, transparent);
+  border-radius: 999px;
+  margin: 3px;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-border) 70%, transparent);
 }
 *::-webkit-scrollbar-thumb {
-  background-color: var(--color-muted-foreground);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--color-primary) 72%, white),
+    var(--color-primary) 55%,
+    color-mix(in oklab, var(--color-primary) 80%, black)
+  );
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  min-height: 36px;
+  min-width: 36px;
+}
+*::-webkit-scrollbar-thumb:horizontal {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-primary) 72%, white),
+    var(--color-primary) 55%,
+    color-mix(in oklab, var(--color-primary) 80%, black)
+  );
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-foreground);
+  border-width: 1px;
+  filter: brightness(1.08);
+}
+*::-webkit-scrollbar-thumb:active {
+  background-image: linear-gradient(var(--color-primary), color-mix(in oklab, var(--color-primary) 75%, black));
 }
 *::-webkit-scrollbar-corner {
   background: transparent;
+}
+*::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Koyu marka renkli yan menüde: altın/beyaz tonlu, yarı saydam tutamak (kırmızı üstüne kırmızı görünmezdi) */
+.bg-sidebar *::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+.bg-sidebar *::-webkit-scrollbar-thumb,
+.bg-sidebar *::-webkit-scrollbar-thumb:horizontal {
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.3));
+  box-shadow: none;
+}
+.bg-sidebar *::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.45));
 }
 
 /* Tablo gövdesinin kendi YATAY native çubuğunu gizler — geniş tablolarda

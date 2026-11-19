@@ -101,7 +101,7 @@ function FloatingScrollbar({
       data-testid="floating-scrollbar"
       onScroll={onFloatingScroll}
       style={{ position: 'fixed', left: rect.left, width: rect.width, top: rect.top, height: BAR_HEIGHT }}
-      className="bg-card border-primary/50 z-40 overflow-x-auto overflow-y-hidden rounded-b-md border-t shadow-[0_2px_6px_rgba(0,0,0,0.08)]"
+      className="z-40 overflow-x-auto overflow-y-hidden rounded-b-md border-t border-border/60 bg-card/85 shadow-[0_-4px_14px_-6px_rgba(0,0,0,0.18)] backdrop-blur-md"
     >
       <div style={{ width: contentWidth, height: 1 }} />
     </div>,

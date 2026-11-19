@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.427] - 2026-11-19
+- Kaydırma çubukları yenilendi: marka renginde, hafif parlak, yuvarlak tutamak ve ince oluk; yan menüde açık renkli yarı saydam çubuk; tabloların altındaki kayan çubuk buzlu cam görünümünde. Seçilen tema rengine göre kendiliğinden uyuyor.
+
 ## [2.17.426] - 2026-11-19
 - Pencere küçülünce ekranlar kendiliğinden sığıyor, hiçbir şey birbirine girmiyor: Günlük Sayım tablosu (sütunlar oranlı, başlıklar alt satıra geçiyor), sayfa üstündeki düğmeler sığmazsa alt satıra geçiyor (Tahsilatlar), Personel/Cari Hesap/Araçlar tablolarında uzun yazılar sarıyor, Araçlar'da dar ekranda önemi düşük sütunlar gizleniyor, temsilci kartındaki ciro kutuları alt alta diziliyor, Bütçe hedef kutusu daralıyor.
 
