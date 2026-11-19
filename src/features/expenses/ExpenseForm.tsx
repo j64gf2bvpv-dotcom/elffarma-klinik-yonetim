@@ -19,7 +19,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { tr } from '@/i18n/tr'
-import { useCreateExpense } from './hooks'
+import { useCreateExpense, useUpdateExpense } from './hooks'
+import type { Expense } from '@/types/database'
 
 const schema = z.object({
   category: z.enum(['hizmet_gideri', 'diger']),
@@ -37,27 +38,48 @@ function todayLocal() {
   return d.toISOString().slice(0, 16)
 }
 
-export function ExpenseForm({ defaultCategory }: { defaultCategory?: 'hizmet_gideri' | 'diger' }) {
+/** Yeni gider; `expense` verilirse o kaydı düzenler (2026-11-19), `trigger` ile kendi düğmesi */
+export function ExpenseForm({ defaultCategory, expense, trigger }: { defaultCategory?: 'hizmet_gideri' | 'diger'; expense?: Expense; trigger?: React.ReactNode }) {
   const [open, setOpen] = React.useState(false)
   const createMutation = useCreateExpense()
+  const updateMutation = useUpdateExpense()
+  const saving = createMutation.isPending || updateMutation.isPending
+  const toLocalInput = (iso: string) => {
+    const d = new Date(iso)
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+    return d.toISOString().slice(0, 16)
+  }
 
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      category: defaultCategory ?? 'hizmet_gideri',
-      amount: 0,
-      description: '',
-      expense_date: todayLocal(),
-    },
+    defaultValues: expense
+      ? {
+          category: expense.category as 'hizmet_gideri' | 'diger',
+          amount: Number(expense.amount),
+          description: expense.description ?? '',
+          expense_date: toLocalInput(expense.expense_date),
+        }
+      : {
+          category: defaultCategory ?? 'hizmet_gideri',
+          amount: 0,
+          description: '',
+          expense_date: todayLocal(),
+        },
   })
 
   async function onSubmit(values: FormOutput) {
-    await createMutation.mutateAsync({
+    const input = {
       category: values.category,
       amount: values.amount,
       description: values.description || null,
       expense_date: new Date(values.expense_date).toISOString(),
-    })
+    }
+    if (expense) {
+      await updateMutation.mutateAsync({ id: expense.id, input })
+      setOpen(false)
+      return
+    }
+    await createMutation.mutateAsync(input)
     form.reset({
       category: defaultCategory ?? 'hizmet_gideri',
       amount: 0,
@@ -70,13 +92,15 @@ export function ExpenseForm({ defaultCategory }: { defaultCategory?: 'hizmet_gid
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus /> Yeni Gider
-        </Button>
+        {trigger ?? (
+          <Button>
+            <Plus /> Yeni Gider
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Yeni Gider</DialogTitle>
+          <DialogTitle>{expense ? 'Gideri Düzenle' : 'Yeni Gider'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
@@ -147,8 +171,8 @@ export function ExpenseForm({ defaultCategory }: { defaultCategory?: 'hizmet_gid
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Vazgeç
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending && <Loader2 className="animate-spin" />}
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2 className="animate-spin" />}
                 Kaydet
               </Button>
             </DialogFooter>

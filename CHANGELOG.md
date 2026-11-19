@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.431] - 2026-11-19
+- Giderlerde tek ve toplu silme: her bölüm tablosunda ve Genel Giderler'de satır başında seçim kutusu, "Seçilenleri Sil" çubuğu (seçili kayıt sayısı ve toplamıyla, onaylı). Genel Giderler kayıtları artık düzenlenebiliyor.
+
 ## [2.17.430] - 2026-11-19
 - Fatura takibi kategorilere ayrıldı: Elektrik faturaları Giderler > Elektrik'in, Su faturaları Su'yun, Doğalgaz, İnternet ve Haberleşme (Telefon) faturaları kendi bölümlerinin içinde ("Faturalar" ve "Ödeme Kayıtları" sekmeleri). Kategori menüsünde ödenmemiş fatura sayısı kırmızı rozetle görünüyor; ayrı "Fatura Takibi" kaldırıldı, son ödeme uyarısı ilgili kategoriye açılıyor.
 

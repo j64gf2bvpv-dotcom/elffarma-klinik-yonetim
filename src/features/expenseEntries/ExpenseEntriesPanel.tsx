@@ -16,6 +16,9 @@ import type { ExpenseEntry } from '@/types/database'
 import { SECTION_BY_KEY, fetchExpenseEntries, isPdfPath, openExpenseAttachment, type ExpenseEntrySection } from './api'
 import { useDeleteExpenseEntry } from './hooks'
 import { ExpenseEntryDialog } from './ExpenseEntryDialog'
+import { BulkDeleteBar } from '@/components/BulkDeleteBar'
+import { useQueryClient } from '@tanstack/react-query'
+import { deleteExpenseEntry } from './api'
 import { exportAttachmentsPdf } from './exportAttachmentsPdf'
 import { entryDate, entryExportColumns } from './columns'
 
@@ -40,7 +43,33 @@ export function ExpenseEntriesPanel({
   const { confirm, dialog } = useConfirmDialog()
   const total = entries.reduce((s, e) => s + Number(e.amount), 0)
   const withDocs = entries.filter((e) => e.attachment_paths.length).length
-  const cols = section.isBill ? 7 : 5
+  const cols = section.isBill ? 8 : 6
+  // Toplu silme için seçim (2026-11-19)
+  const [selected, setSelected] = React.useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = React.useState(false)
+  const queryClient = useQueryClient()
+  const visibleSelected = entries.filter((e) => selected.has(e.id))
+  const allChecked = entries.length > 0 && visibleSelected.length === entries.length
+  const toggle = (id: string) => setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })
+
+  async function handleBulkDelete() {
+    const list = visibleSelected
+    if (!list.length || !(await confirm(`Seçili ${list.length} ${section.label} kaydı (${money(list.reduce((s, e) => s + Number(e.amount), 0))}) silinsin mi? Bu işlem geri alınamaz.`))) return
+    setBulkBusy(true)
+    let ok = 0
+    for (const e of list) {
+      try {
+        await deleteExpenseEntry(e)
+        ok++
+      } catch (err) {
+        toast.error('Bir kayıt silinemedi', { description: getErrorMessage(err) })
+      }
+    }
+    setBulkBusy(false)
+    setSelected(new Set())
+    void queryClient.invalidateQueries({ queryKey: ['expense_entries'] })
+    if (ok) toast.success(`${ok} kayıt silindi`)
+  }
 
   async function handleDelete(e: ExpenseEntry) {
     if (!(await confirm(`${entryDate(e.entry_date)} tarihli ${money(e.amount)} tutarındaki ${section.label} kaydı silinsin mi?`))) return
@@ -76,11 +105,21 @@ export function ExpenseEntriesPanel({
         </div>
       </div>
 
+      <BulkDeleteBar
+        count={visibleSelected.length}
+        total={money(visibleSelected.reduce((s, e) => s + Number(e.amount), 0))}
+        busy={bulkBusy}
+        onDelete={() => void handleBulkDelete()}
+        onClear={() => setSelected(new Set())}
+      />
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox checked={allChecked} onCheckedChange={(c) => setSelected(c === true ? new Set(entries.map((e) => e.id)) : new Set())} aria-label="Tümünü seç" />
+                </TableHead>
                 <TableHead>{section.isBill ? 'Ödeme Tarihi' : 'Tarih'}</TableHead>
                 {section.isBill && <TableHead>Abone No</TableHead>}
                 {section.isBill && <TableHead>Sözleşme No</TableHead>}
@@ -106,7 +145,10 @@ export function ExpenseEntriesPanel({
                 </TableRow>
               )}
               {entries.map((e) => (
-                <TableRow key={e.id}>
+                <TableRow key={e.id} selected={selected.has(e.id)}>
+                  <TableCell>
+                    <Checkbox checked={selected.has(e.id)} onCheckedChange={() => toggle(e.id)} aria-label="Seç" />
+                  </TableCell>
                   <TableCell className="whitespace-nowrap">{entryDate(e.entry_date)}</TableCell>
                   {section.isBill && <TableCell className="tabular-nums">{e.subscriber_number ?? '—'}</TableCell>}
                   {section.isBill && <TableCell className="tabular-nums">{e.contract_number ?? '—'}</TableCell>}

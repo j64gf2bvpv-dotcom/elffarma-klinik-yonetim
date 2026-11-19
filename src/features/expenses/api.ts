@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { offlineInsert, offlineDelete, getCurrentUserId } from '@/lib/offlineMutation'
+import { offlineInsert, offlineDelete, offlineUpdate, getCurrentUserId } from '@/lib/offlineMutation'
 import type { Expense, ExpenseCategory } from '@/types/database'
 
 export interface ExpenseInput {
@@ -32,6 +32,10 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
     { ...input, staff_id: staffId },
     `Gider: ${input.amount} TL`,
   )
+}
+
+export async function updateExpense(id: string, input: ExpenseInput): Promise<Expense> {
+  return offlineUpdate<Expense>('expenses', id, { ...input }, `Gider güncelleme: ${input.amount} TL`)
 }
 
 export async function deleteExpense(id: string): Promise<void> {

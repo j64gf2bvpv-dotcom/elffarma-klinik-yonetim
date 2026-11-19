@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { createExpense, deleteExpense, fetchExpenses, type ExpenseFilters, type ExpenseInput } from './api'
+import { createExpense, deleteExpense, fetchExpenses, type ExpenseFilters, type ExpenseInput, updateExpense } from './api'
 import type { Expense } from '@/types/database'
 
 export function useExpenses(filters: ExpenseFilters) {
@@ -33,5 +33,17 @@ export function useDeleteExpense() {
       toast.success('Gider silindi')
     },
     onError: (error: Error) => toast.error('Silinemedi', { description: error.message }),
+  })
+}
+
+export function useUpdateExpense() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: ExpenseInput }) => updateExpense(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] })
+      toast.success('Gider güncellendi')
+    },
+    onError: (error: Error) => toast.error('Güncellenemedi', { description: error.message }),
   })
 }

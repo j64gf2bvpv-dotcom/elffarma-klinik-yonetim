@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {
   Trash2,
+  Pencil,
   Wrench,
   Receipt as ReceiptIcon,
   Zap,
@@ -36,6 +37,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { BulkDeleteBar } from '@/components/BulkDeleteBar'
+import { deleteExpense } from '@/features/expenses/api'
+import { useQueryClient } from '@tanstack/react-query'
 import { Label } from '@/components/ui/label'
 import { ExpenseForm } from '@/features/expenses/ExpenseForm'
 import { useDeleteExpense, useExpenses } from '@/features/expenses/hooks'
@@ -110,6 +115,28 @@ export function ExpensesPage() {
     to: to ? new Date(to + 'T23:59:59').toISOString() : undefined,
   })
   const deleteMutation = useDeleteExpense()
+  // Genel giderlerde toplu silme (2026-11-19)
+  const [picked, setPicked] = React.useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = React.useState(false)
+  const queryClient = useQueryClient()
+  const pickedList = expenses.filter((e) => picked.has(e.id))
+  async function bulkDeleteExpenses() {
+    if (!pickedList.length || !(await confirmAction(`Seçili ${pickedList.length} gider kaydı (${currency(pickedList.reduce((s, e) => s + Number(e.amount), 0))}) silinsin mi? Bu işlem geri alınamaz.`))) return
+    setBulkBusy(true)
+    let ok = 0
+    for (const e of pickedList) {
+      try {
+        await deleteExpense(e.id)
+        ok++
+      } catch (err) {
+        toast.error('Bir kayıt silinemedi', { description: err instanceof Error ? err.message : String(err) })
+      }
+    }
+    setBulkBusy(false)
+    setPicked(new Set())
+    void queryClient.invalidateQueries({ queryKey: ['expenses'] })
+    if (ok) toast.success(`${ok} gider silindi`)
+  }
   // Fatura, ofis ve muhasebe gider bölümleri (kullanıcı isteği, 2026-11-11 / 2026-11-12)
   // ?bolum=fatura_takibi gibi doğrudan bağlantı (eski /faturalar sayfası buraya yönlenir)
   const [searchParams] = useSearchParams()
@@ -284,11 +311,27 @@ export function ExpensesPage() {
             })()}
           </div>
         <TabsContent value="genel">
+        <div className="mb-3">
+          <BulkDeleteBar
+            count={pickedList.length}
+            total={currency(pickedList.reduce((s, e) => s + Number(e.amount), 0))}
+            busy={bulkBusy}
+            onDelete={() => void bulkDeleteExpenses()}
+            onClear={() => setPicked(new Set())}
+          />
+        </div>
         <Card>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={expenses.length > 0 && pickedList.length === expenses.length}
+                      onCheckedChange={(c) => setPicked(c === true ? new Set(expenses.map((e) => e.id)) : new Set())}
+                      aria-label="Tümünü seç"
+                    />
+                  </TableHead>
                   <TableHead>Tarih</TableHead>
                   <TableHead>Kategori</TableHead>
                   <TableHead>Tutar</TableHead>
@@ -299,14 +342,14 @@ export function ExpensesPage() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                       Yükleniyor...
                     </TableCell>
                   </TableRow>
                 )}
                 {!isLoading && expenses.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                       Gider bulunamadı
                     </TableCell>
                   </TableRow>
@@ -315,8 +358,15 @@ export function ExpensesPage() {
                   <TableRow
                     key={expense.id}
                     onClick={() => setSelectedId(expense.id)}
-                    selected={expense.id === selectedId}
+                    selected={expense.id === selectedId || picked.has(expense.id)}
                   >
+                    <TableCell onClick={(ev) => ev.stopPropagation()}>
+                      <Checkbox
+                        checked={picked.has(expense.id)}
+                        onCheckedChange={() => setPicked((s) => { const n = new Set(s); if (n.has(expense.id)) n.delete(expense.id); else n.add(expense.id); return n })}
+                        aria-label="Seç"
+                      />
+                    </TableCell>
                     <TableCell>
                       {format(new Date(expense.expense_date), 'd MMM yyyy HH:mm', { locale: trLocale })}
                     </TableCell>
@@ -327,8 +377,16 @@ export function ExpensesPage() {
                     <TableCell className="max-w-xs truncate text-muted-foreground">
                       {expense.description ?? '—'}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={async () => {
+                    <TableCell className="text-right whitespace-nowrap">
+                      <ExpenseForm
+                        expense={expense}
+                        trigger={
+                          <Button variant="ghost" size="icon" title="Düzenle">
+                            <Pencil className="size-4" />
+                          </Button>
+                        }
+                      />
+                      <Button variant="ghost" size="icon" title="Sil" onClick={async () => {
   if (await confirmAction('Bu gider kaydı silinsin mi?')) deleteMutation.mutate(expense.id)
 }}>
                         <Trash2 className="size-4 text-destructive" />
