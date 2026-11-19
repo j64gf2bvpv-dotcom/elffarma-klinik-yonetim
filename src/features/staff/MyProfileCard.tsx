@@ -98,7 +98,7 @@ export function MyProfileCard() {
         </span>
       }
       title="Profilim"
-      description="Fotoğrafınızı ve iletişim bilgilerinizi düzenleyin — kartvizitiniz sağda anlık güncellenir."
+      description="Fotoğrafınız, iletişim bilgileriniz ve kartvizitiniz"
     >
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="grid gap-3">

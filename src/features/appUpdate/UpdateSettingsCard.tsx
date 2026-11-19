@@ -70,7 +70,7 @@ export function UpdateSettingsCard() {
           </Badge>
         </span>
       }
-      description="Uygulama her açılışta yeni sürüm olup olmadığını arka planda otomatik kontrol eder. İsterseniz buradan da elle kontrol edebilirsiniz."
+      description="Yeni sürümler her açılışta otomatik kontrol edilir"
     >
       <div className="flex flex-wrap items-center gap-3">
         {status === 'unsupported' && (

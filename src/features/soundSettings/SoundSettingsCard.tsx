@@ -17,7 +17,7 @@ export function SoundSettingsCard() {
         </span>
       }
       title="Ses Ayarları"
-      description="Bu cihaza özel kişisel bir tercihtir — diğer personelin ekranını etkilemez."
+      description="Bildirim ve tuş sesleri — yalnızca bu cihaz için"
     >
       <div className="grid gap-4">
         <div className="flex items-center justify-between gap-3 rounded-lg border p-3">

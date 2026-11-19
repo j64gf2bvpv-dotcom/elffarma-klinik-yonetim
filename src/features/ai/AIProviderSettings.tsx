@@ -105,7 +105,7 @@ export function AIProviderSettings() {
         </span>
       }
       title="Yapay Zeka"
-      description="AI sağlayıcısını, adresini ve modelini yönetin — tüm AI işlemleri buradaki ayara göre tek bir AIService üzerinden çalışır. Sohbet etmek için sağ alt köşedeki AI simgesini kullanın."
+      description="Yapay zekâ sağlayıcısı, modeli ve API anahtarı"
     >
       <div className="grid gap-4">
         {isAdmin ? (

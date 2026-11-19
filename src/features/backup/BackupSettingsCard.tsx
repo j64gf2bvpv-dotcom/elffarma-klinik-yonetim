@@ -173,9 +173,13 @@ export function BackupSettingsCard() {
         </span>
       }
       title="Yedekleme"
-      description="Müşteri, ürün, stok, tahsilat, satış gibi tüm iş verisi tek bir JSON dosyası olarak buluta (Supabase Storage) yedeklenir. Admin girişinde son yedekten 2 günden fazla geçtiyse otomatik olarak da alınır — isterseniz aşağıdan elle de tetikleyebilirsiniz. Google Drive'a yüklenen kopya, birikmesin diye her seferinde aynı dosyanın üzerine yazılır."
+      description="Tüm iş verisinin bulut ve Google Drive yedeği"
     >
       <div className="grid gap-4">
+        <p className="text-muted-foreground text-sm">
+          Müşteri, ürün, stok, tahsilat ve satış verisi tek dosya olarak yedeklenir. Son yedekten 2 günden fazla geçtiyse
+          admin girişinde otomatik alınır; Google Drive kopyası her seferinde aynı dosyanın üzerine yazılır.
+        </p>
         <div className="flex flex-wrap items-center gap-3">
           <Button onClick={() => createBackup.mutate()} disabled={createBackup.isPending}>
             {createBackup.isPending ? <Loader2 className="animate-spin" /> : <CloudUpload className="size-4" />}

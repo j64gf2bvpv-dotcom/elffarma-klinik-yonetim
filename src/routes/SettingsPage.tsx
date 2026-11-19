@@ -31,7 +31,7 @@ import {
 import { companyInfo } from '@/lib/companyInfo'
 
 import { PageHeader } from '@/components/layout/AppShell'
-import { CollapsibleCard } from '@/components/ui/collapsible-card'
+import { CollapsibleCard, SettingsGroup } from '@/components/ui/collapsible-card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -503,7 +503,7 @@ function NavPermissionsCard({ staffList }: { staffList: Staff[] }) {
     <CollapsibleCard
       icon={<PremiumIcon icon={EyeOff} />}
       title="Kullanıcı Panel İzinleri"
-      description="Bir personel seçip hangi sekmeleri görebileceğini belirleyin — kapattığınız bir sekme o kullanıcının sol menüsünden kaybolur, doğrudan bağlantıyla girmeye çalışsa da Ana Panel'e yönlendirilir."
+      description="Her personelin sol menüde göreceği bölümler"
     >
       <div className="grid gap-4">
         <Select value={selected?.id} onValueChange={setSelectedId}>
@@ -606,15 +606,21 @@ export function SettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Ayarlar" description="Personel yönetimi ve WhatsApp mesaj şablonları" />
+      <PageHeader title="Ayarlar" description="Hesabınız, ekip ve uygulama tercihleri" />
 
-      <div className="grid gap-6">
-        <UpdateSettingsCard />
+      <div className="grid max-w-5xl gap-7">
+        <SettingsGroup label="HESABIM">
+          <MyProfileCard />
+          <SoundSettingsCard />
+        </SettingsGroup>
+
+        <SettingsGroup label="GÖRÜNÜM VE UYGULAMA">
+          <UpdateSettingsCard />
 
         <CollapsibleCard
           icon={<PremiumIcon icon={Palette} />}
           title="Görünüm"
-          description="Açık/koyu mod kişisel tercihinizdir. Marka rengi, menü simgeleri gibi geri kalanı tüm ekibe yansıdığı için sadece admin değiştirebilir."
+          description="Açık/koyu mod, marka rengi ve menü simgeleri"
         >
           <div className="grid gap-6">
             <div>
@@ -648,15 +654,13 @@ export function SettingsPage() {
           </div>
         </CollapsibleCard>
 
+        </SettingsGroup>
+
+        <SettingsGroup label="EKİP">
         <CollapsibleCard
           icon={<PremiumIcon icon={UsersRound} />}
           title="Personel"
-          description={
-            <>
-              Yeni personel eklemek için Supabase Dashboard {'>'} Authentication {'>'} Users bölümünden hesap
-              oluşturun; burada rol ve aktiflik durumunu yönetebilirsiniz.
-            </>
-          }
+          description="Personel hesapları, roller ve aktiflik durumu"
         >
           <div className="-mx-6 -mb-6">
             <Table>
@@ -778,11 +782,14 @@ export function SettingsPage() {
         </CollapsibleCard>
 
         {currentStaff?.role === 'admin' && <NavPermissionsCard staffList={staffList} />}
+        </SettingsGroup>
+
+        <SettingsGroup label="ŞİRKET VE MESAJLAR">
 
         <CollapsibleCard
           icon={<PremiumIcon icon={MessageCircleMore} />}
           title="WhatsApp Mesaj Şablonları"
-          description="Doktorlara gönderilecek WhatsApp mesajlarında kullanılacak hazır metinler."
+          description="Doktorlara gönderilen hazır mesaj metinleri"
         >
           {templates.map((template) => (
             <TemplateRow key={template.id} template={template} readOnly={currentStaff?.role !== 'admin'} />
@@ -793,7 +800,7 @@ export function SettingsPage() {
         <CollapsibleCard
           icon={<PremiumIcon icon={Globe} />}
           title="Kurumsal Bilgiler"
-          description={companyInfo.legalName}
+          description="Web sitesi, sosyal medya, telefon ve adres"
         >
           <div className="grid gap-3 text-sm sm:grid-cols-2">
             <ContactTile href="https://elffarma.com" icon={Globe} label="elffarma.com" />
@@ -824,12 +831,7 @@ export function SettingsPage() {
         <CollapsibleCard
           icon={<PremiumIcon icon={Receipt} />}
           title="Fatura & Banka Bilgileri"
-          description={
-            <>
-              Doktorlara tahsilat için gönderilecek IBAN ve vergi bilgileri — WhatsApp şablonlarında {'{{iban}}'}{' '}
-              olarak da kullanılabilir.
-            </>
-          }
+          description="Vergi bilgileri ve IBAN"
         >
           <div className="grid gap-4 text-sm sm:grid-cols-2">
             <div>
@@ -866,22 +868,21 @@ export function SettingsPage() {
           </div>
         </CollapsibleCard>
 
+        </SettingsGroup>
+
+        <SettingsGroup label="SİSTEM">
+        <AIProviderSettings />
+        <BackupSettingsCard />
         {currentStaff?.role === 'admin' && (
           <CollapsibleCard
             icon={<PremiumIcon icon={FlaskConical} />}
             title="Örnek/Deneme Verisi"
-            description={
-              <>
-                Panel grafiklerini ve tüm ekranları gerçek veriyle görmek için birkaç örnek doktor, ürün (SKT'si
-                yaklaşan bir lot dahil), tahsilat, satış, temsilci, hatırlatma, kongre (paket fiyatlarıyla), ziyaret,
-                gider, numune talebi, bir prim kuralı, klinik, araç/yakıt kaydı, Instagram doktoru ve CRM
-                aktivitesi/fırsatı (Yeni'den Kaybedildi'ye kadar tüm CRM aşamalarında) ekler — Panel'deki hemen hemen
-                tüm widget'lar ve diğer tüm sayfalar bu veriyle dolar. Bu ay için henüz hiç bütçe hedefi
-                girilmemişse bir örnek hedef de eklenir (var olan gerçek bir hedefi asla ezmez). Adları/başlıkları
-                "[Örnek]" ile işaretlenir, tek tıkla geri silinebilir — gerçek verilerinize dokunmaz.
-              </>
-            }
+            description="Ekranları denemek için örnek kayıt ekle / sil"
           >
+            <p className="text-muted-foreground mb-3 text-sm">
+              Birkaç örnek doktor, ürün, tahsilat, satış, kongre, ziyaret ve gider ekler. Adları "[Örnek]" ile
+              işaretlenir, tek tıkla geri silinir — gerçek verilerinize dokunmaz.
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleSeedDemoData} disabled={seeding || clearing}>
                 {seeding && <Loader2 className="animate-spin" />}
@@ -895,10 +896,7 @@ export function SettingsPage() {
           </CollapsibleCard>
         )}
 
-        <AIProviderSettings />
-        <BackupSettingsCard />
-        <SoundSettingsCard />
-        <MyProfileCard />
+        </SettingsGroup>
       </div>
     </div>
   )

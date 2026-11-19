@@ -1,15 +1,13 @@
 import * as React from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 
-import { Card, CardContent } from './card'
 import { cn } from '@/lib/utils'
 
 /**
- * Ayarlar gibi çok sayıda kartın alt alta dizildiği sayfalarda sayfa
- * sayfalarca aşağı inmesin diye — başlık satırına tıklayınca içerik
- * açılıp/kapanıyor. `defaultOpen` sadece İLK render'da kullanılır (kullanıcı
- * durumu değiştirdikten sonra sayfa yeniden render olsa da açık/kapalı
- * durumu korunur).
+ * Ayarlar sayfasındaki tek bir bölüm satırı — macOS Sistem Ayarları / Stripe tarzı sade liste: küçük simge, başlık,
+ * tek satırlık açıklama ve sağda ok. Tıklayınca içerik satırın altında açılır. Satırlar `SettingsGroup` içinde
+ * ince çizgilerle ayrılmış tek bir kutuda durur (kullanıcı isteği, 2026-11-19: "daha profesyonel, sade").
+ * `defaultOpen` sadece İLK render'da kullanılır.
  */
 export function CollapsibleCard({
   icon,
@@ -27,22 +25,37 @@ export function CollapsibleCard({
   const [open, setOpen] = React.useState(defaultOpen)
 
   return (
-    <Card className="overflow-hidden">
+    <div className={cn('min-w-0', open && 'bg-muted/20')}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 px-6 py-5 text-left"
+        aria-expanded={open}
+        className="hover:bg-accent/50 flex w-full items-center gap-3.5 px-5 py-3.5 text-left transition-colors"
       >
-        {icon}
+        <span className="flex shrink-0 [&>span]:size-9 [&>span]:rounded-lg [&>span]:transition-none [&>span]:hover:scale-100 [&_svg]:size-[18px]">
+          {icon}
+        </span>
         <div className="min-w-0 flex-1">
-          <p className="leading-none font-semibold">{title}</p>
-          {description && <p className="text-muted-foreground mt-1.5 text-sm">{description}</p>}
+          <div className="text-[15px] leading-tight font-medium">{title}</div>
+          {description && <p className="text-muted-foreground mt-0.5 truncate text-[13px]">{description}</p>}
         </div>
-        <ChevronDown
-          className={cn('text-muted-foreground size-4 shrink-0 transition-transform duration-200', open && 'rotate-180')}
+        <ChevronRight
+          className={cn('text-muted-foreground/70 size-4 shrink-0 transition-transform duration-200', open && 'rotate-90')}
         />
       </button>
-      {open && <CardContent className="pt-0">{children}</CardContent>}
-    </Card>
+      {open && <div className="border-border/60 border-t px-6 pt-5 pb-6">{children}</div>}
+    </div>
+  )
+}
+
+/** Ayarlar bölümlerini başlıklı tek bir kutuda toplar; içindeki satırlar ince çizgiyle ayrılır */
+export function SettingsGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section className="grid gap-2">
+      <h2 className="text-muted-foreground px-1 text-xs font-semibold tracking-wide">{label}</h2>
+      <div className="bg-card border-border/60 divide-border/60 overflow-hidden rounded-xl border shadow-sm [&>*:empty]:hidden divide-y">
+        {children}
+      </div>
+    </section>
   )
 }
