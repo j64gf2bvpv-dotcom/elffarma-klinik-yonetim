@@ -67,6 +67,7 @@ import {
   LayoutDashboard,
   Zap,
   Plus,
+  CalendarDays,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 
@@ -125,6 +126,9 @@ import { OnlineStaffCard } from '@/features/dashboard/OnlineStaffCard'
 // Ayrı bir yaprak bileşen: saat her saniye kendi içinde güncelleniyor, bu
 // yüzden sadece bu küçük bileşen yeniden render oluyor — tüm Dashboard'ı
 // saniyede bir yeniden çizmiyor.
+const HEADER_CHIP =
+  "inline-flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-card/70 px-3 text-xs text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)] backdrop-blur"
+
 function LiveClock() {
   const [now, setNow] = React.useState(() => new Date())
   React.useEffect(() => {
@@ -134,7 +138,7 @@ function LiveClock() {
   return (
     <span className="flex shrink-0 items-center gap-1.5 tabular-nums">
       <Clock className="size-3.5" />
-      {format(now, 'HH:mm:ss')}
+      {format(now, 'HH:mm')}
     </span>
   )
 }
@@ -1459,9 +1463,9 @@ export function DashboardPage() {
           <span className="flex min-w-0 flex-wrap items-center gap-2.5">
             <span className="break-words">{`${welcomeText}${staff?.full_name ? ', ' + staff.full_name : ''}`}</span>
             {staff && (
-              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 align-middle text-xs font-medium text-primary ring-1 ring-primary/20">
                 {tr.staffRole[staff.role]}
-              </Badge>
+              </span>
             )}
             {isAdmin && (
               <Popover open={welcomePopoverOpen} onOpenChange={setWelcomePopoverOpen}>
@@ -1470,7 +1474,7 @@ export function DashboardPage() {
                     type="button"
                     onClick={openWelcomeEditor}
                     title="Karşılama metni ve şehri düzenle"
-                    className="text-muted-foreground hover:text-foreground hover:bg-accent rounded-md p-1 transition-colors"
+                    className="text-muted-foreground/40 hover:text-foreground hover:bg-accent rounded-md p-1 transition-colors"
                   >
                     <Pencil className="size-3.5" />
                   </button>
@@ -1503,15 +1507,18 @@ export function DashboardPage() {
           </span>
         }
         description={
-          <span className="flex flex-col gap-1">
-            <span className="flex flex-wrap items-center gap-3">
+          // Tarih, saat, hava ve kurlar tek sıra sade kapsüllerde (kullanıcı isteği, 2026-11-19: "çok karışık, sade şık")
+          <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <span className={HEADER_CHIP}>
+              <CalendarDays className="size-3.5" />
               {format(new Date(), 'd MMMM yyyy, EEEE', { locale: trLocale })}
-              <span className="text-border">|</span>
+            </span>
+            <span className={HEADER_CHIP}>
               <LiveClock />
-              <span className="text-border">|</span>
+            </span>
+            <span className={HEADER_CHIP}>
               <WeatherWidget city={weatherCity} />
             </span>
-            {/* Canlı dolar / euro kuru — saat ve hava durumunun altında, aynı küçük yazıyla (2026-10-21) */}
             <LiveRatesInline />
           </span>
         }

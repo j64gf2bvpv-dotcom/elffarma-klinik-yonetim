@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.436] - 2026-11-19
+- Ana sayfa karşılama satırı sadeleşti: tarih, saat, hava durumu, dolar/euro kuru ve TL çevir tek sıra düzenli kapsüllerde; ayraçlar ve saniye kalktı, rol etiketi ve düzenle kalemi daha sade.
+
 ## [2.17.435] - 2026-11-19
 - Araçlar, Personel Özlük Dosyası menüsünün içine sekme olarak taşındı; menünün adı "Personel Özlük Dosyası" oldu. Personel sekmesi sadece yöneticilere, Araçlar herkese açık.
 - Personel ve Araçlar tabloları sade, ince çizgili premium tablo görünümünde; personel fotoğrafı isimle aynı hücrede.

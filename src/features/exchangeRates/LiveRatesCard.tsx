@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { format } from 'date-fns'
-import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, Coins, DollarSign } from 'lucide-react'
+import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, Coins } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -262,25 +262,23 @@ function InlineQuote({ code, quote }: { code: string; quote: Quote | null }) {
  */
 export function LiveRatesInline() {
   const rates = useLiveRates()
+  // Sade kapsül görünüm (kullanıcı isteği, 2026-11-19: "çok karışık, daha sade şık kaliteli")
+  const chip = "inline-flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-card/70 px-3 text-xs text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)] backdrop-blur"
+  const updated = rates.live
+    ? `Piyasa kuru · ${rates.updatedAt ? format(rates.updatedAt, 'HH:mm') : ''} güncellendi, 10 dakikada bir yenilenir`
+    : 'Kur alınamadı, tekrar denenecek'
   return (
-    <span className="flex flex-wrap items-center gap-3">
-      <span className="flex shrink-0 items-center gap-1.5">
-        <DollarSign className="size-3.5" />
+    <>
+      <span className={chip} title={updated}>
+        <span className={cn('size-1.5 rounded-full', rates.live ? 'bg-success' : 'bg-warning')} />
         <InlineQuote code="USD" quote={rates.usd} />
       </span>
-      <span className="text-border">|</span>
-      <InlineQuote code="EUR" quote={rates.eur} />
-      <span className="text-border">|</span>
-      <span
-        className="flex items-center gap-1"
-        title={rates.live ? 'Piyasa kuru — 10 dakikada bir güncellenir' : 'Kur alınamadı, tekrar denenecek'}
-      >
-        <span className={cn('size-1.5 rounded-full', rates.live ? 'bg-success' : 'bg-warning')} />
-        {rates.updatedAt ? format(rates.updatedAt, 'HH:mm') : 'yükleniyor'}
+      <span className={chip} title={updated}>
+        <InlineQuote code="EUR" quote={rates.eur} />
       </span>
       <Popover>
         <PopoverTrigger asChild>
-          <button type="button" className="inline-flex items-center gap-1 text-primary hover:underline">
+          <button type="button" className={cn(chip, 'text-primary hover:bg-primary/10')}>
             <ArrowLeftRight className="size-3.5" /> TL çevir
           </button>
         </PopoverTrigger>
@@ -289,6 +287,6 @@ export function LiveRatesInline() {
           <p className="mt-2 text-[11px] text-muted-foreground">Piyasa kuru, 10 dakikada bir güncellenir; resmi kurdan küçük fark olabilir.</p>
         </PopoverContent>
       </Popover>
-    </span>
+    </>
   )
 }
