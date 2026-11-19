@@ -8,10 +8,8 @@ import { LoginPage } from '@/routes/LoginPage'
 import { ResetPasswordPage } from '@/routes/ResetPasswordPage'
 import { DashboardPage } from '@/routes/DashboardPage'
 import { CustomerDetailPage } from '@/routes/CustomerDetailPage'
-import { CrmPage } from '@/routes/CrmPage'
 import { InstagramLeadsPage } from '@/routes/InstagramLeadsPage'
 import { CariHesapPage } from '@/routes/CariHesapPage'
-import { CariHesapListPage } from '@/routes/CariHesapListPage'
 import { ExpensesPage } from '@/routes/ExpensesPage'
 import { StockPage } from '@/routes/StockPage'
 import { CongressesPage } from '@/routes/CongressesPage'
@@ -54,10 +52,10 @@ function App() {
             <Route path="musteriler" element={<CariKartHub />} />
             <Route path="musteriler/:id" element={<CustomerDetailPage />} />
             <Route path="prim" element={<Navigate to="/doktor-ziyaretleri?bolum=prim" replace />} />
-            <Route path="crm" element={<CrmPage />} />
+            <Route path="crm" element={<Navigate to="/doktor-ziyaretleri?bolum=crm" replace />} />
             <Route path="ai-analiz" element={<Navigate to="/ayarlar?bolum=ai" replace />} />
             <Route path="instagram-doktor-listesi" element={<InstagramLeadsPage />} />
-            <Route path="cari-hesap" element={<CariHesapListPage />} />
+            <Route path="cari-hesap" element={<Navigate to="/musteriler?bolum=cari-hesap" replace />} />
             <Route path="cari-hesap/:id" element={<CariHesapPage />} />
             <Route path="stok" element={<StockPage />} />
             <Route path="tahsilatlar" element={<Navigate to="/musteriler?bolum=tahsilatlar" replace />} />

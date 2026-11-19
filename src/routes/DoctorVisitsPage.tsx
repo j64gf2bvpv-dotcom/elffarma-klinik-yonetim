@@ -28,6 +28,7 @@ import {
   ClipboardList,
   Award,
   Trophy,
+  Target,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -41,6 +42,8 @@ import { RevenueCell } from '@/features/salesReps/RevenueCell'
 import { useSearchParams } from 'react-router-dom'
 import { PrimPage } from '@/routes/PrimPage'
 import { TeamPerformancePage } from '@/routes/TeamPerformancePage'
+import { CrmPage } from '@/routes/CrmPage'
+import { PageHub } from '@/components/layout/PageHub'
 import { calculateCommissions } from '@/features/commissions/calculateCommissions'
 import { useCommissionAdjustments, useCommissionRules } from '@/features/commissions/hooks'
 import { useProducts } from '@/features/stock/hooks'
@@ -440,35 +443,17 @@ function RepWeekSection({
  * beraber çalışsınlar, solda ayrı olmasın"). ?bolum=prim ile doğrudan prim açılır (eski /prim buraya yönlenir).
  */
 export function DoctorVisitsPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const bolum = searchParams.get('bolum')
-  const view: 'rapor' | 'prim' | 'ekip' = bolum === 'prim' || bolum === 'ekip' ? bolum : 'rapor'
-  const setView = (v: 'rapor' | 'prim' | 'ekip') => setSearchParams(v === 'rapor' ? {} : { bolum: v }, { replace: true })
+  const [, setSearchParams] = useSearchParams()
   return (
-    <div>
-      <div className="mb-4 inline-flex rounded-xl bg-muted p-1 text-sm">
-        {(
-          [
-            ['rapor', 'Haftalık Rapor', ClipboardList],
-            ['prim', 'Prim Hesaplama', Award],
-            ['ekip', 'Ekip Performansı', Trophy],
-          ] as const
-        ).map(([key, label, Icon]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setView(key)}
-            className={cn(
-              'flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-colors',
-              view === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            <Icon className="size-4" /> {label}
-          </button>
-        ))}
-      </div>
-      {view === 'prim' ? <PrimPage /> : view === 'ekip' ? <TeamPerformancePage /> : <WeeklyRepReport onOpenPrim={() => setView('prim')} />}
-    </div>
+    <PageHub
+      tabs={[
+        { key: 'rapor', label: 'Haftalık Rapor', icon: ClipboardList, render: () => <WeeklyRepReport onOpenPrim={() => setSearchParams({ bolum: 'prim' }, { replace: true })} /> },
+        { key: 'prim', label: 'Prim Hesaplama', icon: Award, navKey: 'commissions', render: () => <PrimPage /> },
+        { key: 'ekip', label: 'Ekip Performansı', icon: Trophy, navKey: 'teamPerformance', render: () => <TeamPerformancePage /> },
+        // CRM de burada (kullanıcı isteği, 2026-11-19: "crm de satış temsilci raporunda olsun, ayrı sütun istemiyorum")
+        { key: 'crm', label: 'CRM', icon: Target, navKey: 'crm', render: () => <CrmPage /> },
+      ]}
+    />
   )
 }
 

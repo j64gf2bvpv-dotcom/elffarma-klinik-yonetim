@@ -1,7 +1,8 @@
-import { Users, HandCoins, ShoppingCart, PiggyBank, CalendarDays, BellRing, Settings, Sparkles } from 'lucide-react'
+import { Users, BookOpenText, HandCoins, ShoppingCart, PiggyBank, CalendarDays, BellRing, Settings, Sparkles } from 'lucide-react'
 
 import { PageHub } from '@/components/layout/PageHub'
 import { CustomersPage } from '@/routes/CustomersPage'
+import { CariHesapListPage } from '@/routes/CariHesapListPage'
 import { PaymentsPage } from '@/routes/PaymentsPage'
 import { SalesPage } from '@/routes/SalesPage'
 import { BudgetYearPage } from '@/routes/BudgetYearPage'
@@ -12,13 +13,14 @@ import { AIInsightsPage } from '@/routes/AIInsightsPage'
 
 /**
  * Cari Kart: doktorlar + tahsilatlar + satışlar + bütçe yılı tek menüde (kullanıcı isteği, 2026-11-19:
- * "satışlar, bütçe yılı, tahsilatlar cari kartın içinde olsun, entegre çalışsın").
+ * "cari hesap, satışlar, bütçe yılı, tahsilatlar cari kartın içinde olsun, entegre çalışsın").
  */
 export function CariKartHub() {
   return (
     <PageHub
       tabs={[
         { key: 'doktorlar', label: 'Doktorlar', icon: Users, render: () => <CustomersPage /> },
+        { key: 'cari-hesap', label: 'Cari Hesap', icon: BookOpenText, navKey: 'cariHesap', render: () => <CariHesapListPage /> },
         { key: 'tahsilatlar', label: 'Tahsilatlar', icon: HandCoins, navKey: 'payments', render: () => <PaymentsPage /> },
         { key: 'satislar', label: 'Satışlar', icon: ShoppingCart, navKey: 'sales', render: () => <SalesPage /> },
         { key: 'butce', label: 'Bütçe Yılı', icon: PiggyBank, navKey: 'budget', render: () => <BudgetYearPage /> },
