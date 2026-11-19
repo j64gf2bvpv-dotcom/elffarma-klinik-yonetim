@@ -32,7 +32,7 @@ function TargetCell({ month, initialValue, onSave }: { month: number; initialVal
         if (value != null && value !== initialValue) onSave(month, value)
       }}
     >
-      <CurrencyInput value={value} onChange={setValue} className="w-40" />
+      <CurrencyInput value={value} onChange={setValue} className="w-full max-w-40 min-w-24" />
     </div>
   )
 }

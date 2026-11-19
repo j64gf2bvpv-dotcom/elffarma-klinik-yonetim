@@ -100,7 +100,7 @@ export function PersonnelPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <Table className="[&_th]:whitespace-normal">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-14" />
@@ -133,7 +133,7 @@ export function PersonnelPage() {
                     <TableCell>
                       <PersonPhoto path={p.photo_path} personnelId={p.id} className="size-10" />
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium whitespace-normal">
                       {p.full_name}
                       {!isActivePerson(p) && (
                         <Badge variant="outline" className="ml-2">
@@ -141,7 +141,7 @@ export function PersonnelPage() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{[p.position, p.department].filter(Boolean).join(' · ') || '—'}</TableCell>
+                    <TableCell className="whitespace-normal">{[p.position, p.department].filter(Boolean).join(' · ') || '—'}</TableCell>
                     <TableCell className="tabular-nums">{p.phone ? formatPhoneTR(p.phone) : '—'}</TableCell>
                     <TableCell>{trDate(p.start_date) || '—'}</TableCell>
                     <TableCell>

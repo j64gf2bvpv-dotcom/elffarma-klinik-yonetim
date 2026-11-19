@@ -297,16 +297,16 @@ function RepWeekSection({
         </div>
       </CardHeader>
       <CardContent className="grid gap-3">
-        <div className="mb-1 grid grid-cols-2 gap-3 rounded-lg border bg-muted/30 p-3 text-sm">
+        <div className="mb-1 grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-3 rounded-lg border bg-muted/30 p-3 text-sm">
           <RevenueCell repId={rep.id} repName={rep.name} type="week" periodStart={dateKey(days[0])} autoValue={performance.weekRevenue} label="Bu Hafta Ciro" iconClassName="text-success" />
           <RevenueCell repId={rep.id} repName={rep.name} type="month" periodStart={format(startOfMonth(new Date()), 'yyyy-MM-dd')} autoValue={performance.monthRevenue} label="Bu Ay Ciro" iconClassName="text-primary" />
-          <div className="col-span-2 flex items-center gap-2 border-t pt-2">
+          <div className="col-span-full flex items-center gap-2 border-t pt-2">
             <Users className="size-4 text-primary" />
             <p className="text-xs text-muted-foreground">Şimdiye kadar görüşülen</p>
             <p className="ml-auto font-semibold">{totalDoctors} doktor</p>
           </div>
           {performance.monthDoctors.length > 0 && (
-            <div className="col-span-2 flex items-start gap-2">
+            <div className="col-span-full flex items-start gap-2">
               <Users className="mt-0.5 size-4 text-muted-foreground" />
               <div>
                 <p className="text-xs text-muted-foreground">Bu Ay Tahsilat Alınan Doktorlar</p>

@@ -72,8 +72,9 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 const PAST_GRID =
   'grid grid-cols-[2.25rem_7.5rem_7.5rem_9rem_7rem_7rem_minmax(0,1fr)_3rem] [&>*]:flex [&>*]:min-w-0 [&>*]:items-center [&>*]:border-r [&>*]:border-border/60 [&>*]:px-3 [&>*:last-child]:border-r-0'
 
+// Dar pencerede sütunlar birbirine girmesin (2026-11-19): genişlikler yüzde, başlıklar alt satıra kayar, hücre içi sarar
 const COUNT_TABLE_GRID =
-  'border-collapse border border-border [&_td]:py-1.5 [&_td]:border [&_td]:border-border [&_th]:border [&_th]:border-border [&_th]:bg-muted/40'
+  '[&_th]:whitespace-normal [&_td]:break-words border-collapse border border-border [&_td]:py-1.5 [&_td]:border [&_td]:border-border [&_th]:border [&_th]:border-border [&_th]:bg-muted/40'
 
 
 /** "Sistemdeki Miktar" / "Son Sayım" / "O Günkü Stok" gibi taban hücreleri için —
@@ -282,7 +283,7 @@ function CountItemRow({
 
   const inputCls = (filled: boolean) =>
     cn(
-      'mx-auto h-7 w-full max-w-14 px-1 text-center text-sm tabular-nums placeholder:text-muted-foreground/40',
+      'mx-auto h-7 w-full max-w-14 min-w-0 px-0.5 text-center text-sm tabular-nums placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
       filled && 'border-primary/60 bg-primary/5 font-semibold',
     )
   const readCell = (v: number | null) =>
@@ -298,7 +299,7 @@ function CountItemRow({
       <TableCell className="text-muted-foreground whitespace-normal">
         {baselineLabel(baseline.paket, baseline.flakon, baseline.kutu)}
       </TableCell>
-      <TableCell className="border-l-2 border-l-primary/30! text-center">
+      <TableCell className="border-l-2 border-l-primary/30! px-1.5 text-center">
         {readOnly ? (
           readCell(item.counted_quantity)
         ) : (
@@ -346,7 +347,7 @@ function CountItemRow({
           />
         )}
       </TableCell>
-      <TableCell className="border-r-2 border-r-primary/30! text-center">
+      <TableCell className="border-r-2 border-r-primary/30! px-1.5 text-center">
         {readOnly ? (
           readCell(item.counted_quantity_flakon)
         ) : (
@@ -415,7 +416,7 @@ function CountItemRow({
         <ItemNoteInput item={item} onSave={onSaveNote} />
       </TableCell>
       {!readOnly && (
-        <TableCell className="text-center">
+        <TableCell className="px-1 text-center">
           <Button
             type="button"
             variant="ghost"
@@ -441,22 +442,22 @@ function CountTableHeader({ prevLabel, dateLabel, editable }: { prevLabel: strin
   return (
     <TableHeader>
       <TableRow>
-        <TableHead rowSpan={2} className="w-56 align-bottom">Ürün</TableHead>
-        <TableHead rowSpan={2} className="w-44 align-bottom leading-tight whitespace-normal">
+        <TableHead rowSpan={2} className="w-[18%] align-bottom">Ürün</TableHead>
+        <TableHead rowSpan={2} className="w-[14%] align-bottom leading-tight whitespace-normal">
           Beklenen
           <span className="block text-[11px] font-normal normal-case text-muted-foreground">{prevLabel}</span>
         </TableHead>
         <TableHead colSpan={3} className="border-x-2 border-x-primary/30! bg-primary/10! text-center text-primary">
           Bugün Sayılan · {dateLabel}
         </TableHead>
-        <TableHead rowSpan={2} className="w-56 align-bottom">Sonuç</TableHead>
-        <TableHead rowSpan={2} className="w-52 align-bottom">Not</TableHead>
-        {editable && <TableHead rowSpan={2} className="w-12"></TableHead>}
+        <TableHead rowSpan={2} className="w-[18%] align-bottom">Sonuç</TableHead>
+        <TableHead rowSpan={2} className={cn('align-bottom', editable ? 'w-[18%]' : 'w-[23%]')}>Not</TableHead>
+        {editable && <TableHead rowSpan={2} className="w-10 px-1"></TableHead>}
       </TableRow>
       <TableRow>
-        <TableHead className="w-20 border-l-2 border-l-primary/30! text-center">Tam Paket</TableHead>
-        <TableHead className="w-20 text-center">Küçük Kutu</TableHead>
-        <TableHead className="w-20 border-r-2 border-r-primary/30! text-center">Flakon</TableHead>
+        <TableHead className="w-[9%] border-l-2 border-l-primary/30! px-1 text-center leading-tight">Tam Paket</TableHead>
+        <TableHead className="w-[9%] px-1 text-center leading-tight">Küçük Kutu</TableHead>
+        <TableHead className="w-[9%] border-r-2 border-r-primary/30! px-1 text-center leading-tight">Flakon</TableHead>
       </TableRow>
     </TableHeader>
   )

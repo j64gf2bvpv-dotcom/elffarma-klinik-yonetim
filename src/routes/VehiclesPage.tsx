@@ -90,19 +90,19 @@ export function VehiclesPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <Table className="[&_th]:whitespace-normal">
             <TableHeader>
               <TableRow>
                 <TableHead>Araç</TableHead>
                 {/* Düzenle / Sil araç adının hemen yanında (kullanıcı isteği, 2026-10-23) */}
                 <TableHead className="w-0" aria-label="Düzenle / Sil" />
                 <TableHead>Plaka</TableHead>
-                <TableHead>Ehliyet</TableHead>
+                <TableHead className="hidden xl:table-cell">Ehliyet</TableHead>
                 <TableHead>Kullanıcı</TableHead>
-                <TableHead>Firma</TableHead>
-                <TableHead>Aylık Kira</TableHead>
-                <TableHead>Bakım Tarihi</TableHead>
-                <TableHead>UTTS</TableHead>
+                <TableHead className="hidden xl:table-cell">Firma</TableHead>
+                <TableHead className="hidden lg:table-cell">Aylık Kira</TableHead>
+                <TableHead className="hidden 2xl:table-cell">Bakım Tarihi</TableHead>
+                <TableHead className="hidden 2xl:table-cell">UTTS</TableHead>
                 <TableHead>Muayene</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
               </TableRow>
@@ -124,7 +124,7 @@ export function VehiclesPage() {
               )}
               {vehicles.map((v) => (
                 <TableRow key={v.id} onClick={() => setSelectedVehicleId(v.id)} selected={v.id === selectedVehicleId}>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium whitespace-normal">
                     {v.brand_model}
                     {v.year ? ` (${v.year})` : ''}
                   </TableCell>
@@ -151,17 +151,18 @@ export function VehiclesPage() {
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell>{v.plate_number ?? '—'}</TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-normal">{v.plate_number ?? '—'}</TableCell>
+                  {/* Dar pencerede önemi düşük sütunlar gizlenir, tablo yana taşmaz (2026-11-19); bilgiler düzenle penceresinde */}
+                  <TableCell className="hidden xl:table-cell">
                     <VehicleLicenseCell vehicle={v} />
                   </TableCell>
-                  <TableCell>{vehicleUserName(v) ?? '—'}</TableCell>
-                  <TableCell>{v.vendor_company ?? '—'}</TableCell>
-                  <TableCell>{currency(v.monthly_rental_price)}</TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-normal">{vehicleUserName(v) ?? '—'}</TableCell>
+                  <TableCell className="hidden whitespace-normal xl:table-cell">{v.vendor_company ?? '—'}</TableCell>
+                  <TableCell className="hidden lg:table-cell">{currency(v.monthly_rental_price)}</TableCell>
+                  <TableCell className="hidden 2xl:table-cell">
                     {v.maintenance_date ? format(new Date(v.maintenance_date), 'd MMM yyyy', { locale: trLocale }) : '—'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden 2xl:table-cell">
                     {v.has_utts ? (
                       <Badge variant="outline" className="border-transparent bg-success/15 text-success">
                         <CheckCircle2 className="size-3" /> Var

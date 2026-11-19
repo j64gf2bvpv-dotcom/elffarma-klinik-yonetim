@@ -161,7 +161,7 @@ export function CariHesapListPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <Table className="[&_th]:whitespace-normal">
             <TableHeader>
               <TableRow>
                 <TableHead>Ad Soyad</TableHead>
@@ -193,7 +193,7 @@ export function CariHesapListPage() {
                   onClick={() => setSelectedId(r.customer.id)}
                   selected={r.customer.id === selectedId}
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium whitespace-normal">
                     <Link to={`/cari-hesap/${r.customer.id}`} className="hover:underline">
                       {r.customer.full_name}
                     </Link>

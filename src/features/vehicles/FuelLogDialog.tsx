@@ -43,7 +43,7 @@ export function FuelLogDialog({ vehicleId, vehicleName }: { vehicleId: string; v
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" title="Yakıt yükleme ekle">
-          <Fuel className="size-3.5" /> Yakıt Ekle
+          <Fuel className="size-3.5" /> <span className="hidden 2xl:inline">Yakıt Ekle</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">

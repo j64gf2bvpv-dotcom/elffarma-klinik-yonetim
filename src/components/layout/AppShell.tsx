@@ -988,7 +988,7 @@ export function PageHeader({
           {description && <div className="text-muted-foreground mt-1 text-sm">{description}</div>}
         </div>
       </div>
-      {actions && <div className="flex min-w-0 flex-wrap items-center gap-2">{actions}</div>}
+      {actions && <div className="flex min-w-0 flex-wrap items-center gap-2 [&>div]:flex-wrap">{actions}</div>}
     </div>
   )
 }
