@@ -94,12 +94,10 @@ const navItems: { to: string; label: string; key: NavKey; end?: boolean }[] = [
   { to: '/hatirlatmalar', label: tr.nav.reminders, key: 'reminders' },
   { to: '/gorevler', label: tr.nav.tasks, key: 'tasks' },
   { to: '/ajanda', label: tr.nav.agenda, key: 'agenda' },
-  { to: '/prim', label: tr.nav.commissions, key: 'commissions' },
   { to: '/crm', label: tr.nav.crm, key: 'crm' },
   { to: '/ai-analiz', label: tr.nav.aiInsights, key: 'aiInsights' },
   { to: '/instagram-doktor-listesi', label: tr.nav.instagramLeads, key: 'instagramLeads' },
   { to: '/araclar', label: tr.nav.vehicles, key: 'vehicles' },
-  { to: '/ekip-performansi', label: tr.nav.teamPerformance, key: 'teamPerformance' },
   { to: '/personel', label: tr.nav.personnel, key: 'personnel' },
 ]
 

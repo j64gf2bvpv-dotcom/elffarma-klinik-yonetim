@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.432] - 2026-11-19
+- Prim Hesaplama ve Ekip Performansı ayrı menü olmaktan çıktı, Satış Temsilcisi Raporu'nun içine sekme olarak taşındı (Haftalık Rapor / Prim Hesaplama / Ekip Performansı). Her temsilci kartında "Bu Ay Prim" (prim kurallarıyla hesaplanan) görünüyor, tıklayınca prim ayrıntısı açılıyor. Eski bağlantılar yeni yere yönleniyor.
+
 ## [2.17.431] - 2026-11-19
 - Giderlerde tek ve toplu silme: her bölüm tablosunda ve Genel Giderler'de satır başında seçim kutusu, "Seçilenleri Sil" çubuğu (seçili kayıt sayısı ve toplamıyla, onaylı). Genel Giderler kayıtları artık düzenlenebiliyor.
 

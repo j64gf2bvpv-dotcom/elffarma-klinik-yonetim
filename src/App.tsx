@@ -8,7 +8,6 @@ import { ResetPasswordPage } from '@/routes/ResetPasswordPage'
 import { DashboardPage } from '@/routes/DashboardPage'
 import { CustomersPage } from '@/routes/CustomersPage'
 import { CustomerDetailPage } from '@/routes/CustomerDetailPage'
-import { PrimPage } from '@/routes/PrimPage'
 import { CrmPage } from '@/routes/CrmPage'
 import { AIInsightsPage } from '@/routes/AIInsightsPage'
 import { InstagramLeadsPage } from '@/routes/InstagramLeadsPage'
@@ -26,7 +25,6 @@ import { RemindersPage } from '@/routes/RemindersPage'
 import { TasksPage } from '@/routes/TasksPage'
 import { AgendaPage } from '@/routes/AgendaPage'
 import { VehiclesPage } from '@/routes/VehiclesPage'
-import { TeamPerformancePage } from '@/routes/TeamPerformancePage'
 import { PersonnelPage } from '@/routes/PersonnelPage'
 import { PersonnelDetailPage } from '@/routes/PersonnelDetailPage'
 import { SettingsPage } from '@/routes/SettingsPage'
@@ -62,7 +60,7 @@ function App() {
             <Route index element={<DashboardPage />} />
             <Route path="musteriler" element={<CustomersPage />} />
             <Route path="musteriler/:id" element={<CustomerDetailPage />} />
-            <Route path="prim" element={<PrimPage />} />
+            <Route path="prim" element={<Navigate to="/doktor-ziyaretleri?bolum=prim" replace />} />
             <Route path="crm" element={<CrmPage />} />
             <Route path="ai-analiz" element={<AIInsightsPage />} />
             <Route path="instagram-doktor-listesi" element={<InstagramLeadsPage />} />
@@ -80,7 +78,7 @@ function App() {
             <Route path="gorevler" element={<TasksPage />} />
             <Route path="ajanda" element={<AgendaPage />} />
             <Route path="araclar" element={<VehiclesPage />} />
-            <Route path="ekip-performansi" element={<TeamPerformancePage />} />
+            <Route path="ekip-performansi" element={<Navigate to="/doktor-ziyaretleri?bolum=ekip" replace />} />
             <Route path="faturalar" element={<Navigate to="/giderler?bolum=fatura_takibi" replace />} />
             <Route path="personel" element={<PersonnelPage />} />
             <Route path="personel/:id" element={<PersonnelDetailPage />} />

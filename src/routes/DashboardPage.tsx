@@ -878,7 +878,7 @@ export function DashboardPage() {
               <QuickAction to="/ai-analiz" icon={BarChart3} label="Raporlar" tone="orange" />
               <QuickAction to="/ajanda" icon={CalendarPlus} label="Ajandaya Ekle" tone="red" />
               <QuickAction to="/hatirlatmalar" icon={AlarmClockPlus} label="Hatırlatma Ekle" tone="pink" />
-              <QuickAction to="/prim" icon={Calculator} label="Prim Hesapla" tone="gray" />
+              <QuickAction to="/doktor-ziyaretleri?bolum=prim" icon={Calculator} label="Prim Hesapla" tone="gray" />
               <QuickAction to="/stok" icon={Boxes} label="Stok Durumu" tone="teal" />
             </div>
           </CardContent>
@@ -1356,7 +1356,7 @@ export function DashboardPage() {
               <Percent className="size-4 text-primary" /> Prim Özeti (Bu Ay)
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/prim">
+              <Link to="/doktor-ziyaretleri?bolum=prim">
                 Prim sayfasına git <ArrowRight className="size-3.5" />
               </Link>
             </Button>

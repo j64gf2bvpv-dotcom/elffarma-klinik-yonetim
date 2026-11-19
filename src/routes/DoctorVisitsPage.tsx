@@ -25,6 +25,9 @@ import {
   Loader2,
   AlertTriangle,
   ShoppingCart,
+  ClipboardList,
+  Award,
+  Trophy,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -35,6 +38,12 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { RepAvatar } from '@/features/salesReps/RepAvatar'
 import { RevenueCell } from '@/features/salesReps/RevenueCell'
+import { useSearchParams } from 'react-router-dom'
+import { PrimPage } from '@/routes/PrimPage'
+import { TeamPerformancePage } from '@/routes/TeamPerformancePage'
+import { calculateCommissions } from '@/features/commissions/calculateCommissions'
+import { useCommissionAdjustments, useCommissionRules } from '@/features/commissions/hooks'
+import { useProducts } from '@/features/stock/hooks'
 import { DoctorVisitDialog } from '@/features/doctorVisits/DoctorVisitDialog'
 import { VisitImportDialog } from '@/features/doctorVisits/VisitImportDialog'
 import { useCreateVisit, useDeleteVisit, useRepDoctorTotals, useVisitDates, useVisitsInRange } from '@/features/doctorVisits/hooks'
@@ -206,6 +215,8 @@ function RepWeekSection({
   days,
   visits,
   performance,
+  prim,
+  onOpenPrim,
   customers,
   totalDoctors,
   recentDays,
@@ -215,6 +226,9 @@ function RepWeekSection({
   days: Date[]
   visits: DoctorVisit[]
   performance: RepPerformance
+  /** Bu ayın primi (Prim Hesaplama kurallarıyla) */
+  prim?: number
+  onOpenPrim?: () => void
   customers: Customer[]
   totalDoctors: number
   /** Bu haftadayken: son Pazartesi–Cuma (son 5 iş günü) ve o günlerin kayıtları (kullanıcı isteği, 2026-11-17) */
@@ -300,6 +314,18 @@ function RepWeekSection({
         <div className="mb-1 grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-3 rounded-lg border bg-muted/30 p-3 text-sm">
           <RevenueCell repId={rep.id} repName={rep.name} type="week" periodStart={dateKey(days[0])} autoValue={performance.weekRevenue} label="Bu Hafta Ciro" iconClassName="text-success" />
           <RevenueCell repId={rep.id} repName={rep.name} type="month" periodStart={format(startOfMonth(new Date()), 'yyyy-MM-dd')} autoValue={performance.monthRevenue} label="Bu Ay Ciro" iconClassName="text-primary" />
+          <button
+            type="button"
+            onClick={onOpenPrim}
+            className="col-span-full flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-2 py-1.5 text-left transition-colors hover:bg-primary/10"
+            title="Prim ayrıntısı — Prim Hesaplama"
+          >
+            <Award className="size-4 text-primary" />
+            <span className="text-xs text-muted-foreground">Bu Ay Prim</span>
+            <span className="ml-auto font-semibold tabular-nums">
+              {(prim ?? 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+            </span>
+          </button>
           <div className="col-span-full flex items-center gap-2 border-t pt-2">
             <Users className="size-4 text-primary" />
             <p className="text-xs text-muted-foreground">Şimdiye kadar görüşülen</p>
@@ -409,7 +435,44 @@ function RepWeekSection({
   )
 }
 
+/**
+ * Satış Temsilcisi Raporu + Prim Hesaplama tek sayfada (kullanıcı isteği, 2026-11-19: "prim hesaplamayı da entegre et,
+ * beraber çalışsınlar, solda ayrı olmasın"). ?bolum=prim ile doğrudan prim açılır (eski /prim buraya yönlenir).
+ */
 export function DoctorVisitsPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const bolum = searchParams.get('bolum')
+  const view: 'rapor' | 'prim' | 'ekip' = bolum === 'prim' || bolum === 'ekip' ? bolum : 'rapor'
+  const setView = (v: 'rapor' | 'prim' | 'ekip') => setSearchParams(v === 'rapor' ? {} : { bolum: v }, { replace: true })
+  return (
+    <div>
+      <div className="mb-4 inline-flex rounded-xl bg-muted p-1 text-sm">
+        {(
+          [
+            ['rapor', 'Haftalık Rapor', ClipboardList],
+            ['prim', 'Prim Hesaplama', Award],
+            ['ekip', 'Ekip Performansı', Trophy],
+          ] as const
+        ).map(([key, label, Icon]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setView(key)}
+            className={cn(
+              'flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-colors',
+              view === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Icon className="size-4" /> {label}
+          </button>
+        ))}
+      </div>
+      {view === 'prim' ? <PrimPage /> : view === 'ekip' ? <TeamPerformancePage /> : <WeeklyRepReport onOpenPrim={() => setView('prim')} />}
+    </div>
+  )
+}
+
+function WeeklyRepReport({ onOpenPrim }: { onOpenPrim: () => void }) {
   const { data: salesReps = [] } = useSalesReps()
   const reportRef = React.useRef<HTMLDivElement>(null)
 
@@ -478,6 +541,16 @@ export function DoctorVisitsPage() {
   // Stoktan düşülen temsilci raporu satışları da ciroya eklenir (2026-11-19)
   const salesFrom = dateKey(weekStart < monthStart ? weekStart : monthStart)
   const { data: periodSales = [] } = useSalesInRange(salesFrom, dateKey(new Date()))
+  // Bu ayın primi — Prim Hesaplama'daki kurallarla aynı hesap, temsilci kartında gösterilir
+  const { data: commissionRules = [] } = useCommissionRules()
+  const { data: commissionAdjustments = [] } = useCommissionAdjustments(dateKey(monthStart), dateKey(new Date()))
+  const { data: allProducts = [] } = useProducts('')
+  const { data: allCustomers = [] } = useCustomers('')
+  const primByRep = React.useMemo(() => {
+    const monthSales = periodSales.filter((x) => x.sale_date.slice(0, 10) >= dateKey(monthStart))
+    const res = calculateCommissions(commissionRules, monthSales, monthPayments, allProducts, allCustomers, salesReps, commissionAdjustments)
+    return new Map(res.map((r) => [r.salesRepId, r.netTotal]))
+  }, [commissionRules, periodSales, monthPayments, allProducts, allCustomers, salesReps, commissionAdjustments, monthStart])
 
   const activeReps = salesReps.filter((r) => r.is_active)
   // Hızlı ekleme kutusundaki öneriler için Cari Kart doktorları
@@ -608,6 +681,8 @@ export function DoctorVisitsPage() {
             performance={
               performanceByRep.get(rep.id) ?? { weekRevenue: 0, monthRevenue: 0, monthDoctors: [] }
             }
+            prim={primByRep.get(rep.id) ?? 0}
+            onOpenPrim={onOpenPrim}
           />
         ))}
       </div>
