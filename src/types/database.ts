@@ -896,6 +896,8 @@ export interface Vehicle {
   has_utts: boolean
   /** Ruhsat (Araç Tescil Belgesi) — fotoğraf (documents bucket yolu) ve okunan bilgiler (2026-10-21) */
   registration_image_path: string | null
+  /** Arabanın küçük resmi (bağlantı) — 2026-11-19 */
+  photo_url?: string | null
   owner_name: string | null
   owner_tax_id: string | null
   owner_address: string | null

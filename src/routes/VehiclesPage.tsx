@@ -1,7 +1,9 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { Pencil, Trash2, CheckCircle2, XCircle, IdCard } from 'lucide-react'
+import { Pencil, Trash2, CheckCircle2, XCircle, IdCard, Car } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { fillCarPhoto } from '@/features/vehicles/carPhoto'
 import { toast } from 'sonner'
 import { openRegistrationImage } from '@/features/vehicles/registration'
 import { VehicleLicenseCell } from '@/features/vehicles/VehicleLicenseCell'
@@ -32,6 +34,15 @@ function currency(n: number | null) {
 export function VehiclesPage() {
   const [selectedVehicleId, setSelectedVehicleId] = React.useState<string | null>(null)
   const { data: vehicles = [], isLoading } = useVehicles()
+  // Resmi olmayan (yeni eklenen) araçların fotoğrafı modelden bir kez bulunur
+  const queryClient = useQueryClient()
+  React.useEffect(() => {
+    const missing = vehicles.filter((v) => !v.photo_url)
+    if (!missing.length) return
+    void Promise.all(missing.map((v) => fillCarPhoto(v))).then((r) => {
+      if (r.some(Boolean)) void queryClient.invalidateQueries({ queryKey: ['vehicles'] })
+    })
+  }, [vehicles, queryClient])
   const deleteMutation = useDeleteVehicle()
   const { confirm, dialog } = useConfirmDialog()
   // "Ruhsat Tara" ile açılan form — okunan plaka kayıtlı bir araçla eşleşirse o araç güncellenebilir
@@ -125,8 +136,13 @@ export function VehiclesPage() {
               {vehicles.map((v) => (
                 <TableRow key={v.id} onClick={() => setSelectedVehicleId(v.id)} selected={v.id === selectedVehicleId}>
                   <TableCell className="font-medium whitespace-normal">
-                    {v.brand_model}
-                    {v.year ? ` (${v.year})` : ''}
+                    <span className="flex items-center gap-3">
+                      <CarThumb src={v.photo_url} alt={v.brand_model} />
+                      <span className="min-w-0">
+                        {v.brand_model}
+                        {v.year ? <span className="block text-xs font-normal text-muted-foreground">{v.year} model</span> : null}
+                      </span>
+                    </span>
                   </TableCell>
                   <TableCell className="px-1">
                     <div className="flex gap-0.5">
@@ -218,4 +234,18 @@ function InspectionBadge({ date }: { date: string | null }) {
   if (days < 0) return <Badge variant="destructive" title="Muayene süresi geçmiş">{label}</Badge>
   if (days <= 30) return <Badge variant="outline" className="border-warning/40 bg-warning/10 text-warning-foreground" title={`${days} gün kaldı`}>{label}</Badge>
   return <span>{label}</span>
+}
+
+/** Arabanın küçük resmi — yuvarlak köşeli, ince çerçeveli; resim yoksa araba simgesi */
+function CarThumb({ src, alt }: { src?: string | null; alt: string }) {
+  const [broken, setBroken] = React.useState(false)
+  return (
+    <span className="relative flex h-11 w-[4.25rem] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted ring-1 ring-border/70 shadow-sm">
+      {src && !broken ? (
+        <img src={src} alt={alt} loading="lazy" className="size-full object-cover" onError={() => setBroken(true)} />
+      ) : (
+        <Car className="size-5 text-muted-foreground" />
+      )}
+    </span>
+  )
 }

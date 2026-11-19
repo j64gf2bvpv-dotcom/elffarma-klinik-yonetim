@@ -21,6 +21,7 @@ export async function fetchVehicles(): Promise<VehicleWithRelations[]> {
 }
 
 export interface VehicleInput {
+  photo_url?: string | null
   brand_model: string
   year: number | null
   plate_number: string | null

@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.437] - 2026-11-19
+- Araçlar tablosunda her aracın yanında arabanın küçük resmi (yuvarlak köşeli, ince çerçeveli) ve altında model yılı. Yeni eklenen araçların resmi modelden kendiliğinden bulunuyor.
+- Ana sayfada dolar, euro ve TL çevir hep aynı hizada.
+
 ## [2.17.436] - 2026-11-19
 - Ana sayfa karşılama satırı sadeleşti: tarih, saat, hava durumu, dolar/euro kuru ve TL çevir tek sıra düzenli kapsüllerde; ayraçlar ve saniye kalktı, rol etiketi ve düzenle kalemi daha sade.
 
