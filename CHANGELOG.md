@@ -3,6 +3,10 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.440] - 2026-11-24
+- Stok'a "Borçlu Olduğumuz Ürünler" sekmesi: satışı yapılıp gönderilmeyen ürünler, elle eklenen eksik ürünler ve temsilci raporundaki bekleyen siparişler doktora ya da ürün grubuna göre; her satırda kargo durumu (kargo gitti / kargoya verilecek / bekletiliyor / kargo kaydı yok), "Kargo kaydı" ve "Gönderildi" düğmeleri, son 60 günde gönderilenler ayrı filtrede.
+- Sekme şeritleri sığmayınca yana kaymak yerine alt satıra geçiyor.
+
 ## [2.17.439] - 2026-11-19
 - Genel test ve düzeltmeler: dar pencerede Personel evrak tablosu, Stok > Kongre/Workshop ve Doktor Hesapları tabloları ile Geçmiş Sayımlar listesi artık sığıyor; ana sayfa ve raporlarda yüzdeler Türkçe biçimde (%12,5); Araçlar kartındaki kesik yazı kısaldı; Yapay Zeka Analiz ve Prim Hesaplama açıklamaları sadeleşti; yedek boyutu ve kongre marjı Türkçe ondalıkla.
 

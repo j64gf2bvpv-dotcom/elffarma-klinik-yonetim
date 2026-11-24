@@ -38,7 +38,8 @@ function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimi
       ref={listRef}
       data-slot="tabs-list"
       className={cn(
-        'bg-muted text-muted-foreground scrollbar-hide inline-flex h-9 w-fit max-w-full items-center justify-start gap-1 overflow-x-auto rounded-lg p-1',
+        // Sığmazsa alt satıra geçer, yatay kaydırma yok (kullanıcı isteği, 2026-11-19/24)
+        'bg-muted text-muted-foreground inline-flex min-h-9 h-auto w-fit max-w-full flex-wrap items-center justify-start gap-1 rounded-lg p-1',
         className,
       )}
       {...props}
@@ -54,7 +55,7 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "data-[state=active]:bg-foreground data-[state=active]:text-background focus-visible:ring-2 focus-visible:ring-ring/50 inline-flex h-[calc(100%-1px)] shrink-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm",
+        "data-[state=active]:bg-foreground data-[state=active]:text-background focus-visible:ring-2 focus-visible:ring-ring/50 inline-flex h-7 shrink-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm",
         className,
       )}
       {...props}
