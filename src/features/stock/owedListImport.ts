@@ -25,6 +25,8 @@ export interface OwedLine {
   unitPrice: number | null
   /** Satırın kaynağındaki ham metin — önizlemede "nereden okundu" diye gösterilir */
   raw: string
+  /** Excel'deki "Not" sütunu (ör. "İNCELENECEK — …") — kayda olduğu gibi yazılır */
+  note?: string
 }
 
 export interface ExistingOwed {
@@ -63,6 +65,8 @@ export interface CompareRow {
   /** WhatsApp'ta aynı doktor + ürün birden çok kez farklı adetle geçti */
   waRepeated: boolean
   raws: string[]
+  /** Excel "Not" sütunundan gelen notlar */
+  notes: string[]
 }
 
 const fold = (s: string) =>
@@ -228,6 +232,7 @@ const HEAD = {
   price: /birim|fiyat/i,
   total: /tutar|toplam|bedel/i,
   phone: /tel|gsm|cep|telefon|whatsapp/i,
+  note: /^not(lar)?$|^durum$|inceleme|^aç[ıi]klama\s*\/?\s*not$/i,
 }
 
 /** Excel'in bütün sayfalarını ham hücre matrisi olarak okur */
@@ -261,6 +266,7 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
       const prCol = col(HEAD.price, [dCol, pCol, qCol])
       const tCol = col(HEAD.total, [dCol, pCol, qCol, prCol])
       const phCol = col(HEAD.phone, [dCol, pCol, qCol, prCol, tCol])
+      const nCol = col(HEAD.note, [dCol, pCol, qCol, prCol, tCol, phCol])
       const productCols = header.map((h, i) => ({ i, p: h ? matchProduct(h, products) : undefined, h })).filter((x) => x.i !== dCol && (x.p || PRODUCT_RE.test(x.h)))
 
       let doctor = ''
@@ -290,6 +296,7 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
             qty,
             unitPrice: unit ?? (total ? Math.round((total / qty) * 100) / 100 : null),
             raw: [d || doctor, ptext, qCol >= 0 ? cell(qCol) : ''].filter(Boolean).join(' · '),
+            note: cell(nCol) || undefined,
           })
         } else {
           for (const pc of productCols) {
@@ -377,13 +384,15 @@ export function compareOwedLists(
         xlQty: null,
         waRepeated: false,
         raws: [],
+        notes: [],
         price: null,
         waList: [],
       }
       map.set(key, a)
     }
     if (!a.phone && l.phone) a.phone = l.phone
-    if (a.price == null && l.unitPrice) a.price = l.unitPrice
+    if (a.price == null && l.unitPrice != null) a.price = l.unitPrice
+    if (l.note && !a.notes.includes(l.note)) a.notes.push(l.note)
     const rawLabel = `${src === 'wa' ? 'WhatsApp' : 'Excel'}: ${l.raw}`
     if (!a.raws.includes(rawLabel)) a.raws.push(rawLabel)
     if (src === 'xl') a.xlQty = (a.xlQty ?? 0) + l.qty

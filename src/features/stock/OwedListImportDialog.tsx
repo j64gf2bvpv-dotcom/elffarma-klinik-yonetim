@@ -153,7 +153,7 @@ export function OwedListImportDialog({
             created.set(k, cid)
           }
         }
-        const note = [source, r.status === 'farkli' ? `WhatsApp ${r.waQty} / Excel ${r.xlQty} adet` : null, r.existingQty > 0 ? `programda ${r.existingQty} adet vardı` : null].filter(Boolean).join(' · ')
+        const note = [...r.notes, source, r.status === 'farkli' ? `WhatsApp ${r.waQty} / Excel ${r.xlQty} adet` : null, r.existingQty > 0 ? `programda ${r.existingQty} adet vardı` : null].filter(Boolean).join(' · ')
         await createPendingProduct({ customer_id: cid, product_name: r.productName, quantity: qtyFor(r), unit_price: r.unitPrice || 0, note })
         ok++
       }
@@ -382,6 +382,7 @@ function Compare({ r, st }: { r: CompareRow; st: { label: string; tone: 'ok' | '
         {r.existingQty > 0 && ` · programda ${r.existingQty}`}
       </span>
       {r.waRepeated && <span className="text-warning">WhatsApp’ta farklı adetlerle tekrar geçiyor</span>}
+      {r.notes.length > 0 && <span className={cn('basis-full', /incelen/i.test(r.notes.join(' ')) ? 'font-medium text-warning' : 'text-muted-foreground')}>{r.notes.join(' · ')}</span>}
       {r.existingQty > 0 && r.addQty === 0 && <span className="text-muted-foreground">Zaten programda</span>}
     </span>
   )
