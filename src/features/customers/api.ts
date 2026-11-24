@@ -169,6 +169,11 @@ export interface PendingProductInput {
   quantity: number
   unit_price: number
   note?: string | null
+  sales_rep_name?: string | null
+  event_name?: string | null
+  order_date?: string | null
+  ordered_quantity?: number | null
+  delivered_quantity?: number
 }
 
 export async function fetchPendingProducts(customerId: string): Promise<CustomerPendingProduct[]> {
@@ -203,7 +208,7 @@ export async function createPendingProduct(input: PendingProductInput): Promise<
 /** Doktor Hesapları'nda adet / fiyat / not yerinde düzenleme (2026-10-21). */
 export async function updatePendingProduct(
   id: string,
-  patch: Partial<Pick<CustomerPendingProduct, 'product_name' | 'quantity' | 'unit_price' | 'note'>>,
+  patch: Partial<Pick<CustomerPendingProduct, 'product_name' | 'quantity' | 'unit_price' | 'note' | 'sales_rep_name' | 'event_name' | 'order_date' | 'ordered_quantity' | 'delivered_quantity'>>,
 ): Promise<CustomerPendingProduct> {
   return offlineUpdate<CustomerPendingProduct>('customer_pending_products', id, patch, 'Eksik ürün düzenleme')
 }

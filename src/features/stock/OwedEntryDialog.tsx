@@ -12,6 +12,7 @@ import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { createCustomer, createPendingProduct, updatePendingProduct } from '@/features/customers/api'
 import { nameKey, phoneKey } from '@/features/customers/dedupe'
 import { cariName } from '@/features/doctorVisits/linkCustomer'
+import { useSalesReps } from '@/features/salesReps/hooks'
 import { supabase } from '@/lib/supabaseClient'
 import { cn, getErrorMessage } from '@/lib/utils'
 
@@ -19,33 +20,47 @@ interface Line {
   productId: string
   freeText: boolean
   name: string
-  qty: string
+  /** Sipariş edilen adet */
+  ordered: string
+  /** Verilen adet */
+  delivered: string
   price: string
 }
 
-const emptyLine = (): Line => ({ productId: '', freeText: false, name: '', qty: '1', price: '' })
+const emptyLine = (): Line => ({ productId: '', freeText: false, name: '', ordered: '1', delivered: '0', price: '' })
+const remaining = (l: Line) => Math.max(0, (Number(l.ordered) || 0) - (Number(l.delivered) || 0))
 
 export interface OwedEditTarget {
   pendingId: string
   doctor: string
   productName: string
+  /** Eksik kalan */
   qty: number
   unitPrice: number
   note: string | null
+  rep: string | null
+  event: string | null
+  orderDate: string | null
+  delivered: number
 }
 
 /**
  * Borçlu olduğumuz ürünü elle girme / düzenleme (kullanıcı isteği, 2026-11-24: "borçlu olduğumuz kısımdaki
- * doktorlar ve ürünler manuel girilebilmeli"). Doktor Cari Kart'tan seçilir ya da yeni yazılır (aynı isim/telefon
- * Cari Kart'ta varsa o kart kullanılır, yoksa yeni kart açılır). Kayıt "eksik ürün" (customer_pending_products)
- * olarak durur — stok ancak "Gönderildi" denince düşer.
+ * doktorlar ve ürünler manuel girilebilmeli"; aynı gün: "satış yapan kişi, verilen ürün, eksik kalan ürün, hangi
+ * kongre/workshop'ta alındığı ve tarihi olmalı, ürünler tek tek ayrı ayrı"). Doktor Cari Kart'tan seçilir ya da yeni
+ * yazılır (aynı isim/telefon Cari Kart'ta varsa o kart kullanılır, yoksa yeni kart açılır). Her ürün ayrı kayıt
+ * (customer_pending_products) olur; eksik kalan = sipariş − verilen. Stok ancak "Gönderildi" denince düşer.
  */
 export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; onOpenChange: (o: boolean) => void; edit?: OwedEditTarget | null }) {
   const queryClient = useQueryClient()
+  const { data: reps = [] } = useSalesReps()
   const [customerId, setCustomerId] = React.useState<string>('')
   const [newDoctor, setNewDoctor] = React.useState(false)
   const [doctorName, setDoctorName] = React.useState('')
   const [phone, setPhone] = React.useState('')
+  const [rep, setRep] = React.useState('')
+  const [event, setEvent] = React.useState('')
+  const [orderDate, setOrderDate] = React.useState('')
   const [lines, setLines] = React.useState<Line[]>([emptyLine()])
   const [note, setNote] = React.useState('')
   const [busy, setBusy] = React.useState(false)
@@ -56,12 +71,19 @@ export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; o
     setNewDoctor(false)
     setDoctorName('')
     setPhone('')
+    setRep(edit?.rep ?? '')
+    setEvent(edit?.event ?? '')
+    setOrderDate(edit?.orderDate ?? new Date().toISOString().slice(0, 10))
     setNote(edit?.note ?? '')
-    setLines(edit ? [{ productId: '', freeText: true, name: edit.productName, qty: String(edit.qty), price: edit.unitPrice ? String(edit.unitPrice) : '' }] : [emptyLine()])
+    setLines(
+      edit
+        ? [{ productId: '', freeText: true, name: edit.productName, ordered: String(edit.qty + edit.delivered), delivered: String(edit.delivered), price: edit.unitPrice ? String(edit.unitPrice) : '' }]
+        : [emptyLine()],
+    )
   }, [open, edit])
 
   const update = (i: number, patch: Partial<Line>) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)))
-  const lineOk = (l: Line) => l.name.trim() && Number(l.qty) > 0
+  const lineOk = (l: Line) => l.name.trim() && Number(l.ordered) > 0 && (Number(l.delivered) || 0) <= Number(l.ordered)
   const doctorOk = edit ? true : newDoctor ? doctorName.trim().length > 1 : !!customerId
   const valid = doctorOk && lines.length > 0 && lines.every(lineOk)
 
@@ -91,15 +113,31 @@ export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; o
 
   async function save() {
     setBusy(true)
+    const common = { sales_rep_name: rep.trim() || null, event_name: event.trim() || null, order_date: orderDate || null, note: note.trim() || null }
     try {
       if (edit) {
         const l = lines[0]
-        await updatePendingProduct(edit.pendingId, { product_name: l.name.trim(), quantity: Number(l.qty), unit_price: Number(l.price) || 0, note: note.trim() || null })
+        await updatePendingProduct(edit.pendingId, {
+          ...common,
+          product_name: l.name.trim(),
+          quantity: remaining(l),
+          ordered_quantity: Number(l.ordered),
+          delivered_quantity: Number(l.delivered) || 0,
+          unit_price: Number(l.price) || 0,
+        })
         toast.success('Kayıt güncellendi')
       } else {
         const cid = await resolveCustomer()
         for (const l of lines) {
-          await createPendingProduct({ customer_id: cid, product_name: l.name.trim(), quantity: Number(l.qty), unit_price: Number(l.price) || 0, note: note.trim() || null })
+          await createPendingProduct({
+            ...common,
+            customer_id: cid,
+            product_name: l.name.trim(),
+            quantity: remaining(l),
+            ordered_quantity: Number(l.ordered),
+            delivered_quantity: Number(l.delivered) || 0,
+            unit_price: Number(l.price) || 0,
+          })
         }
         toast.success(`${lines.length} ürün borç listesine eklendi`)
       }
@@ -114,12 +152,10 @@ export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{edit ? `Borçlu ürünü düzenle — ${edit.doctor}` : 'Borçlu olduğumuz ürün ekle'}</DialogTitle>
-          <DialogDescription>
-            {edit ? 'Ürün, adet, fiyat ve notu düzeltebilirsiniz.' : 'Doktoru ve gönderilecek ürünleri girin. Stok, ürün gönderildi olarak işaretlenince düşülür.'}
-          </DialogDescription>
+          <DialogDescription>Her ürün ayrı satırdır. Eksik kalan = sipariş − verilen. Stok, ürün gönderildi olarak işaretlenince düşülür.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
@@ -152,23 +188,42 @@ export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; o
             </div>
           )}
 
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="owed-rep">Satış yapan</Label>
+              <Input id="owed-rep" list="owed-rep-list" placeholder="Temsilci adı" value={rep} onChange={(e) => setRep(e.target.value)} />
+              <datalist id="owed-rep-list">
+                {reps.map((r) => (
+                  <option key={r.id} value={r.name} />
+                ))}
+              </datalist>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="owed-event">Kongre / Workshop</Label>
+              <Input id="owed-event" placeholder="Örn. Mısır Kongresi" value={event} onChange={(e) => setEvent(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="owed-date">Sipariş tarihi</Label>
+              <Input id="owed-date" type="date" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
+            </div>
+          </div>
+
           <div className="grid gap-2">
-            <div className="hidden grid-cols-[minmax(0,1fr)_4.5rem_7rem_2rem] gap-2 px-1 text-xs font-medium text-muted-foreground sm:grid">
+            <div className="hidden grid-cols-[minmax(0,1fr)_4.5rem_4.5rem_4.5rem_6.5rem_2rem] gap-2 px-1 text-xs font-medium text-muted-foreground sm:grid">
               <span>Ürün</span>
-              <span>Adet</span>
+              <span>Sipariş</span>
+              <span>Verilen</span>
+              <span>Eksik</span>
               <span>Birim fiyat ₺</span>
               <span />
             </div>
             {lines.map((l, i) => (
-              <div key={i} className="grid grid-cols-[minmax(0,1fr)_4.5rem_7rem_2rem] items-start gap-2">
-                <div className="grid min-w-0 gap-1">
+              <div key={i} className="grid grid-cols-[repeat(3,minmax(0,1fr))_2rem] items-start gap-2 rounded-lg border p-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_4.5rem_4.5rem_6.5rem_2rem] sm:border-0 sm:p-0">
+                <div className="col-span-3 grid min-w-0 gap-1 sm:col-span-1">
                   {l.freeText ? (
                     <Input placeholder="Ürün adı" value={l.name} onChange={(e) => update(i, { name: e.target.value })} />
                   ) : (
-                    <ProductCombobox
-                      value={l.productId || undefined}
-                      onChange={(p) => update(i, { productId: p.id, name: p.name, price: l.price || (p.unit_price ? String(p.unit_price) : '') })}
-                    />
+                    <ProductCombobox value={l.productId || undefined} onChange={(p) => update(i, { productId: p.id, name: p.name, price: l.price || (p.unit_price ? String(p.unit_price) : '') })} />
                   )}
                   {!edit && (
                     <button type="button" className="w-fit text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline" onClick={() => update(i, { freeText: !l.freeText, productId: '', name: '' })}>
@@ -176,11 +231,15 @@ export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; o
                     </button>
                   )}
                 </div>
-                <Input inputMode="numeric" aria-label="Adet" value={l.qty} onChange={(e) => update(i, { qty: e.target.value.replace(/[^\d]/g, '') })} />
-                <Input inputMode="decimal" aria-label="Birim fiyat" placeholder="0" value={l.price} onChange={(e) => update(i, { price: e.target.value.replace(',', '.').replace(/[^\d.]/g, '') })} />
-                <Button type="button" size="icon" variant="ghost" className="size-9 text-muted-foreground hover:text-destructive" disabled={lines.length === 1} onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))} aria-label="Satırı sil">
+                <Button type="button" size="icon" variant="ghost" className="size-9 text-muted-foreground hover:text-destructive sm:order-last" disabled={lines.length === 1} onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))} aria-label="Satırı sil">
                   <Trash2 className="size-4" />
                 </Button>
+                <Input inputMode="numeric" aria-label="Sipariş adedi" placeholder="Sipariş" value={l.ordered} onChange={(e) => update(i, { ordered: e.target.value.replace(/[^\d]/g, '') })} />
+                <Input inputMode="numeric" aria-label="Verilen adet" placeholder="Verilen" value={l.delivered} onChange={(e) => update(i, { delivered: e.target.value.replace(/[^\d]/g, '') })} />
+                <span className={cn('flex h-9 items-center justify-center rounded-md bg-muted text-sm font-semibold tabular-nums', (Number(l.delivered) || 0) > (Number(l.ordered) || 0) && 'text-destructive')} aria-label="Eksik kalan">
+                  {remaining(l)}
+                </span>
+                <Input className="col-span-3 sm:col-span-1" inputMode="decimal" aria-label="Birim fiyat" placeholder="Birim fiyat ₺" value={l.price} onChange={(e) => update(i, { price: e.target.value.replace(',', '.').replace(/[^\d.]/g, '') })} />
               </div>
             ))}
             {!edit && (
@@ -192,7 +251,7 @@ export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; o
 
           <div className="grid gap-1.5">
             <Label htmlFor="owed-note">Not</Label>
-            <Input id="owed-note" placeholder="Örn. ürün gelince gönderilecek" value={note} onChange={(e) => setNote(e.target.value)} />
+            <Input id="owed-note" placeholder="Ayrıntılar — örn. faturasız, ürün gelince gönderilecek" value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
         </div>
 

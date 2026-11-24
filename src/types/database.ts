@@ -593,9 +593,20 @@ export interface CustomerPendingProduct {
   id: string
   customer_id: string
   product_name: string
+  /** Eksik kalan (gönderilecek) adet */
   quantity: number
   unit_price: number
   note: string | null
+  /** Satışı yapan kişi — serbest metin (2026-11-24) */
+  sales_rep_name: string | null
+  /** Siparişin alındığı kongre / workshop / masterclass (2026-11-24) */
+  event_name: string | null
+  /** Sipariş tarihi (2026-11-24) — boşsa created_at */
+  order_date: string | null
+  /** Sipariş edilen toplam adet — boşsa quantity + delivered_quantity (2026-11-24) */
+  ordered_quantity: number | null
+  /** Şimdiye kadar verilen adet (2026-11-24) */
+  delivered_quantity: number
   created_at: string
 }
 

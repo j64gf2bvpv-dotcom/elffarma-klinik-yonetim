@@ -59,13 +59,22 @@ interface OwedRow {
   note?: string | null
   visit?: DoctorVisit
   repName?: string
+  /** Satışı yapan kişi */
+  rep?: string | null
+  /** Siparişin alındığı kongre / workshop / masterclass */
+  event?: string | null
+  /** Sipariş edilen toplam adet */
+  ordered: number
+  /** Şimdiye kadar verilen adet */
+  delivered: number
+  /** Eksik kalan adet (= qty) değil; qty zaten eksik kalan */
+  orderDate?: string | null
 }
 
 const fold = (s: string) =>
   s.toLocaleLowerCase('tr-TR').replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u').replace(/\s+/g, ' ').trim()
 const money = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
 const day = (d: string | null) => (d ? format(new Date(d.length === 10 ? `${d}T00:00:00` : d), 'd MMM yyyy', { locale: trLocale }) : '—')
-const SOURCE_LABEL: Record<Source, string> = { satis: 'Satış', elle: 'Eksik ürün', rapor: 'Temsilci raporu' }
 
 interface DoctorExportRow {
   no: number
@@ -77,15 +86,24 @@ interface DoctorExportRow {
   cargo: string
 }
 
-const detailColumns: ExportColumn<OwedRow>[] = [
+type ExportRow = OwedRow & { doctorTotal: number | '' }
+
+// Her ürün ayrı satır (kullanıcı isteği, 2026-11-24: "doktor ismi, satış yapan kişi, verilen ürün, eksik kalan ürün,
+// hangi kongre/workshop'ta alındığı ve tarihi; tutar ayrı, o doktora kalan toplam borç ayrı; diğer yazılar not kısmında")
+const productColumns: ExportColumn<ExportRow>[] = [
   { header: 'Doktor', value: (r) => r.doctor },
   { header: 'Ürün', value: (r) => r.productName },
-  { header: 'Adet', value: (r) => r.qty },
+  { header: 'Satış Yapan', value: (r) => r.rep ?? '' },
+  { header: 'Kongre / Workshop', value: (r) => r.event ?? '' },
+  { header: 'Sipariş Tarihi', value: (r) => (r.orderDate ? day(r.orderDate) : '') },
+  { header: 'Sipariş Adedi', value: (r) => r.ordered },
+  { header: 'Verilen', value: (r) => r.delivered },
+  { header: 'Eksik Kalan', value: (r) => r.qty },
+  { header: 'Birim Fiyat', value: (r) => (r.qty ? (r.amount ?? 0) / r.qty : '') },
   { header: 'Tutar', value: (r) => r.amount ?? '' },
-  { header: 'Tarih', value: (r) => day(r.date) },
-  { header: 'Kaynak', value: (r) => SOURCE_LABEL[r.source] },
-  { header: 'Not', value: (r) => r.note ?? '' },
+  { header: 'Doktora Kalan Toplam Borç', value: (r) => r.doctorTotal },
   { header: 'Kargo', value: (r) => cargoLabel(r).text },
+  { header: 'Not', value: (r) => r.note ?? '' },
 ]
 
 function useRepPendingVisits() {
@@ -150,6 +168,7 @@ export function OwedProductsPanel() {
         )
         .sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
     const since = new Date(Date.now() - 60 * 864e5).toISOString()
+    const repOf = (id: string | null) => (id ? reps.find((r) => r.id === id)?.name ?? null : null)
     const out: OwedRow[] = []
     for (const s of sales) {
       if (s.type !== 'sale') continue
@@ -159,20 +178,21 @@ export function OwedProductsPanel() {
       if (waiting <= 0) {
         // Gönderilmiş olanlar son 60 gün için "Gönderildi" olarak görünür
         if (!s.shipped_at || s.shipped_at < since) continue
-        out.push({ key: `s:${s.id}`, customerId: s.customer_id, doctor, productName: s.product_name, qty: s.quantity, totalQty: s.quantity, amount: s.quantity * Number(s.unit_price), date: s.sale_date, source: 'satis', status: 'gonderildi', shippedAt: s.shipped_at, sale: s, cargo: findCargo(s.customer_id, doctor, s.product_name) })
+        out.push({ key: `s:${s.id}`, customerId: s.customer_id, doctor, productName: s.product_name, qty: s.quantity, totalQty: s.quantity, amount: s.quantity * Number(s.unit_price), date: s.sale_date, orderDate: s.sale_date, source: 'satis', status: 'gonderildi', shippedAt: s.shipped_at, sale: s, note: s.note, rep: repOf(s.sales_rep_id), event: s.congress_name, ordered: s.quantity, delivered: s.quantity, cargo: findCargo(s.customer_id, doctor, s.product_name) })
         continue
       }
-      out.push({ key: `s:${s.id}`, customerId: s.customer_id, doctor, productName: s.product_name, qty: waiting, totalQty: s.quantity, amount: waiting * Number(s.unit_price), date: s.sale_date, source: 'satis', status: shipped > 0 ? 'kismi' : 'gonderilmedi', shippedAt: s.shipped_at, sale: s, cargo: findCargo(s.customer_id, doctor, s.product_name) })
+      out.push({ key: `s:${s.id}`, customerId: s.customer_id, doctor, productName: s.product_name, qty: waiting, totalQty: s.quantity, amount: waiting * Number(s.unit_price), date: s.sale_date, orderDate: s.sale_date, source: 'satis', status: shipped > 0 ? 'kismi' : 'gonderilmedi', shippedAt: s.shipped_at, sale: s, note: s.note, rep: repOf(s.sales_rep_id), event: s.congress_name, ordered: s.quantity, delivered: shipped, cargo: findCargo(s.customer_id, doctor, s.product_name) })
     }
     for (const p of pending) {
       const doctor = customerName.get(p.customer_id) ?? '—'
-      out.push({ key: `p:${p.id}`, customerId: p.customer_id, doctor, productName: p.product_name, qty: p.quantity, totalQty: p.quantity, amount: p.quantity * Number(p.unit_price), date: p.created_at, source: 'elle', status: 'gonderilmedi', shippedAt: null, pendingId: p.id, unitPrice: Number(p.unit_price), note: p.note, cargo: findCargo(p.customer_id, doctor, p.product_name) })
+      const delivered = p.delivered_quantity ?? 0
+      out.push({ key: `p:${p.id}`, customerId: p.customer_id, doctor, productName: p.product_name, qty: p.quantity, totalQty: p.quantity, amount: p.quantity * Number(p.unit_price), date: p.order_date ?? p.created_at, orderDate: p.order_date, source: 'elle', status: 'gonderilmedi', shippedAt: null, pendingId: p.id, unitPrice: Number(p.unit_price), note: p.note, rep: p.sales_rep_name, event: p.event_name, ordered: p.ordered_quantity ?? p.quantity + delivered, delivered, cargo: findCargo(p.customer_id, doctor, p.product_name) })
     }
     for (const v of repVisits) {
       const repName = reps.find((r) => r.id === v.sales_rep_id)?.name ?? 'Temsilci'
       for (const [i, it] of v.sale!.items.entries()) {
         const qty = Number(it.text.match(/\d+/)?.[0] ?? 1)
-        out.push({ key: `v:${v.id}:${i}`, customerId: v.customer_id, doctor: v.doctor_name, productName: it.text.replace(/^\s*\d+\s*(\+\s*\d+\s*)?(paket|kutu|adet|flakon)?\s*/i, '') || it.text, qty, totalQty: qty, amount: it.amount, date: v.visit_date, source: 'rapor', status: 'gonderilmedi', shippedAt: null, visit: v, repName, cargo: findCargo(v.customer_id, v.doctor_name, it.text) })
+        out.push({ key: `v:${v.id}:${i}`, customerId: v.customer_id, doctor: v.doctor_name, productName: it.text.replace(/^\s*\d+\s*(\+\s*\d+\s*)?(paket|kutu|adet|flakon)?\s*/i, '') || it.text, qty, totalQty: qty, amount: it.amount, date: v.visit_date, orderDate: v.visit_date, source: 'rapor', status: 'gonderilmedi', shippedAt: null, visit: v, repName, rep: repName, ordered: qty, delivered: 0, cargo: findCargo(v.customer_id, v.doctor_name, it.text) })
       }
     }
     return out.sort((a, b) => b.date.localeCompare(a.date))
@@ -246,31 +266,41 @@ export function OwedProductsPanel() {
     }
   }
 
-  // Dışa aktarma: kullanıcının kendi "ürün borçları" Excel'i düzeninde — her doktor tek satır, ürünler yan yana
-  // (kullanıcı isteği, 2026-11-24: "aynı benim sana attığım excel gibi dışa aktar kısmı olsun")
-  const doctorExport = React.useMemo<DoctorExportRow[]>(() => {
+  // Doktora kalan toplam borç (gönderilmeyenlerin tutarı) — tutar ayrı, doktor toplamı ayrı (kullanıcı isteği, 2026-11-24)
+  const doctorKey = (r: OwedRow) => r.customerId ?? fold(r.doctor)
+  const doctorTotal = React.useMemo(() => {
+    const m = new Map<string, number>()
+    for (const r of open) m.set(doctorKey(r), (m.get(doctorKey(r)) ?? 0) + (r.amount ?? 0))
+    return m
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows])
+
+  // Dışa aktarma: her ürün ayrı satır, doktora göre sıralı; doktorun toplam borcu yalnız ilk satırında (toplanınca şişmesin)
+  const exportRows = React.useMemo<ExportRow[]>(() => {
+    const sorted = [...visible].sort((a, b) => a.doctor.localeCompare(b.doctor, 'tr') || (a.orderDate ?? a.date).localeCompare(b.orderDate ?? b.date))
+    return sorted.map((r, i) => ({ ...r, doctorTotal: i === 0 || doctorKey(sorted[i - 1]) !== doctorKey(r) ? doctorTotal.get(doctorKey(r)) ?? 0 : '' }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, doctorTotal])
+
+  // Doktor başına tek satır özet (kullanıcının ilk "ürün borçları" Excel'i düzeni) — menüde ayrı seçenek
+  const doctorSummary = React.useMemo<DoctorExportRow[]>(() => {
     const map = new Map<string, OwedRow[]>()
     for (const r of visible) {
-      const k = r.customerId ?? fold(r.doctor)
-      if (!map.has(k)) map.set(k, [])
-      map.get(k)!.push(r)
+      if (!map.has(doctorKey(r))) map.set(doctorKey(r), [])
+      map.get(doctorKey(r))!.push(r)
     }
     return [...map.values()]
       .sort((a, b) => a[0].doctor.localeCompare(b[0].doctor, 'tr'))
-      .map((rs, i) => {
-        const notes = [...new Set(rs.map((r) => r.note?.trim()).filter(Boolean) as string[])]
-        const text = notes.join(' ')
-        const invoice = [/faturas[ıi]z/i.test(text) ? 'faturasız' : '', text.match(/\d+\s*(?:gün|ay)\s*vade/i)?.[0] ?? ''].filter(Boolean).join(', ')
-        return {
-          no: i + 1,
-          doctor: rs[0].doctor,
-          items: rs.map((r) => `${r.qty} ${r.productName}`).join(', '),
-          invoice,
-          amount: rs.reduce((s, r) => s + (r.amount ?? 0), 0),
-          notes: notes.join(' | '),
-          cargo: [...new Set(rs.map((r) => cargoLabel(r).text))].join(', '),
-        }
-      })
+      .map((rs, i) => ({
+        no: i + 1,
+        doctor: rs[0].doctor,
+        items: rs.map((r) => `${r.qty} ${r.productName}`).join(', '),
+        invoice: '',
+        amount: rs.reduce((s, r) => s + (r.amount ?? 0), 0),
+        notes: [...new Set(rs.map((r) => r.note?.trim()).filter(Boolean) as string[])].join(' | '),
+        cargo: [...new Set(rs.map((r) => cargoLabel(r).text))].join(', '),
+      }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
 
   const groups = React.useMemo(() => {
@@ -342,22 +372,27 @@ export function OwedProductsPanel() {
           <Button size="sm" onClick={() => { setEditTarget(null); setEntryOpen(true) }}>
             <Plus className="size-4" /> Elle ekle
           </Button>
-          <ExportMenu<DoctorExportRow>
+          <ExportMenu<ExportRow>
             title="Borçlu Olduğumuz Ürünler"
             filename="urun-borclari"
-            rows={doctorExport}
-            columns={[
-              { header: 'Sıra', value: (r) => r.no },
-              { header: 'Doktor', value: (r) => r.doctor },
-              { header: 'Ürünler', value: (r) => r.items },
-              { header: 'Fatura / Vade', value: (r) => r.invoice },
-              { header: 'Tutar', value: (r) => r.amount || '' },
-              { header: 'Not', value: (r) => r.notes },
-              { header: 'Kargo', value: (r) => r.cargo },
-            ]}
+            rows={exportRows}
+            columns={productColumns}
             extraItems={
-              <DropdownMenuItem onClick={() => (visible.length ? exportToExcel('borclu-urunler-ayrintili', detailColumns, visible) : toast.error('Dışa aktarılacak veri yok'))}>
-                <FileSpreadsheet className="size-4" /> Ürün ürün ayrıntılı Excel
+              <DropdownMenuItem
+                onClick={() =>
+                  doctorSummary.length
+                    ? exportToExcel('urun-borclari-doktor-ozeti', [
+                        { header: 'Sıra', value: (r: DoctorExportRow) => r.no },
+                        { header: 'Doktor', value: (r: DoctorExportRow) => r.doctor },
+                        { header: 'Ürünler', value: (r: DoctorExportRow) => r.items },
+                        { header: 'Kalan Toplam Borç', value: (r: DoctorExportRow) => r.amount || '' },
+                        { header: 'Kargo', value: (r: DoctorExportRow) => r.cargo },
+                        { header: 'Not', value: (r: DoctorExportRow) => r.notes },
+                      ], doctorSummary)
+                    : toast.error('Dışa aktarılacak veri yok')
+                }
+              >
+                <FileSpreadsheet className="size-4" /> Doktor başına tek satır özet (Excel)
               </DropdownMenuItem>
             }
           />
@@ -378,11 +413,16 @@ export function OwedProductsPanel() {
             <Table className={PREMIUM_TABLE}>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{view === 'doktor' ? 'Ürün' : 'Doktor'}</TableHead>
-                  <TableHead className="text-right">Adet</TableHead>
+                  <TableHead className="w-[22%]">{view === 'doktor' ? 'Ürün' : 'Doktor'}</TableHead>
+                  <TableHead className="hidden xl:table-cell">Satış Yapan</TableHead>
+                  <TableHead className="hidden xl:table-cell">Kongre / Workshop</TableHead>
+                  <TableHead className="hidden lg:table-cell">Sipariş Tarihi</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">Sipariş</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">Verilen</TableHead>
+                  <TableHead className="text-right">Eksik Kalan</TableHead>
                   <TableHead className="text-right">Tutar</TableHead>
-                  <TableHead>Tarih</TableHead>
-                  <TableHead>Kargo Durumu</TableHead>
+                  <TableHead className="text-right">Doktora Kalan Toplam Borç</TableHead>
+                  <TableHead>Kargo</TableHead>
                   <TableHead className="text-right">İşlem</TableHead>
                 </TableRow>
               </TableHeader>
@@ -390,33 +430,45 @@ export function OwedProductsPanel() {
                 {groups.map((g) => (
                   <React.Fragment key={g.title}>
                     <TableRow className="bg-primary/5 hover:bg-primary/5">
-                      <TableCell colSpan={6} className="py-2">
+                      <TableCell colSpan={11} className="py-2">
                         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span className="font-semibold">{g.title}</span>
                           <span className="text-xs text-muted-foreground">
-                            {g.rows.length} kalem · {g.qty} adet{g.amount ? ` · ${money(g.amount)}` : ''}
+                            {g.rows.length} kalem · {g.qty} adet eksik{g.amount ? ` · ${money(g.amount)}` : ''}
                           </span>
                         </span>
                       </TableCell>
                     </TableRow>
-                    {g.rows.map((r) => {
+                    {g.rows.map((r, idx) => {
                       const c = cargoLabel(r)
+                      const total = doctorTotal.get(doctorKey(r)) ?? 0
+                      // Doktora göre görünümde toplam borç doktorun ilk satırında, satırları kapsayacak şekilde bir kez
+                      const showTotal = view === 'urun' || idx === 0
                       return (
                         <TableRow key={r.key}>
                           <TableCell className="whitespace-normal">
                             <span className="font-medium">{view === 'doktor' ? r.productName : r.doctor}</span>
-                            <span className="block text-xs text-muted-foreground">
-                              {SOURCE_LABEL[r.source]}
-                              {r.repName ? ` · ${r.repName}` : ''}
-                              {r.note ? ` · ${r.note}` : ''}
+                            {/* Dar ekranda gizlenen sütunlar adın altında */}
+                            <span className="block text-xs text-muted-foreground xl:hidden">
+                              {[r.rep, r.event, r.orderDate ? day(r.orderDate) : null].filter(Boolean).join(' · ')}
                             </span>
+                            <span className="block text-xs text-muted-foreground md:hidden">
+                              Sipariş {r.ordered} · verilen {r.delivered}
+                            </span>
+                            {r.note && <span className={cn('block text-xs', /incelen/i.test(r.note) ? 'font-medium text-warning' : 'text-muted-foreground')}>Not: {r.note}</span>}
                           </TableCell>
-                          <TableCell className="text-right font-medium tabular-nums">
-                            {r.qty}
-                            {r.status === 'kismi' && <span className="block text-[11px] font-normal text-muted-foreground">{r.totalQty - r.qty}/{r.totalQty} gitti</span>}
-                          </TableCell>
+                          <TableCell className="hidden whitespace-normal xl:table-cell">{r.rep || '—'}</TableCell>
+                          <TableCell className="hidden whitespace-normal xl:table-cell">{r.event || '—'}</TableCell>
+                          <TableCell className="hidden whitespace-normal lg:table-cell">{r.orderDate ? day(r.orderDate) : '—'}</TableCell>
+                          <TableCell className="hidden text-right tabular-nums md:table-cell">{r.ordered}</TableCell>
+                          <TableCell className="hidden text-right tabular-nums md:table-cell">{r.delivered}</TableCell>
+                          <TableCell className="text-right font-semibold tabular-nums">{r.qty}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.amount != null ? money(r.amount) : '—'}</TableCell>
-                          <TableCell className="whitespace-normal">{day(r.date)}</TableCell>
+                          {showTotal ? (
+                            <TableCell rowSpan={view === 'doktor' ? g.rows.length : 1} className="border-l text-right align-middle font-semibold tabular-nums">
+                              {r.status === 'gonderildi' ? '—' : money(total)}
+                            </TableCell>
+                          ) : null}
                           <TableCell>
                             <span
                               className={cn(
@@ -448,7 +500,17 @@ export function OwedProductsPanel() {
                                 </Button>
                                 {r.source === 'elle' && (
                                   <>
-                                    <Button size="icon" variant="ghost" className="size-7 text-muted-foreground" title="Düzenle" aria-label="Düzenle" onClick={() => { setEditTarget({ pendingId: r.pendingId!, doctor: r.doctor, productName: r.productName, qty: r.qty, unitPrice: r.unitPrice ?? 0, note: r.note ?? null }); setEntryOpen(true) }}>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="size-7 text-muted-foreground"
+                                      title="Düzenle"
+                                      aria-label="Düzenle"
+                                      onClick={() => {
+                                        setEditTarget({ pendingId: r.pendingId!, doctor: r.doctor, productName: r.productName, qty: r.qty, unitPrice: r.unitPrice ?? 0, note: r.note ?? null, rep: r.rep ?? null, event: r.event ?? null, orderDate: r.orderDate ?? null, delivered: r.delivered })
+                                        setEntryOpen(true)
+                                      }}
+                                    >
                                       <Pencil className="size-3.5" />
                                     </Button>
                                     <Button size="icon" variant="ghost" className="size-7 text-muted-foreground hover:text-destructive" title="Sil" aria-label="Sil" onClick={() => void removeManual(r)}>
@@ -474,7 +536,7 @@ export function OwedProductsPanel() {
         open={listOpen}
         onOpenChange={setListOpen}
         products={products}
-        existing={open.map((r) => ({ customerId: r.customerId, doctor: r.doctor, productName: r.productName, qty: r.qty }))}
+        existing={open.map((r) => ({ customerId: r.customerId, doctor: r.doctor, productName: r.productName, qty: r.qty, pendingId: r.pendingId, note: r.note ?? null }))}
       />
       {stockVisit?.visit && (
         <SaleStockDialog

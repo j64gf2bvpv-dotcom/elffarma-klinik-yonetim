@@ -27,6 +27,16 @@ export interface OwedLine {
   raw: string
   /** Excel'deki "Not" sütunu (ör. "İNCELENECEK — …") — kayda olduğu gibi yazılır */
   note?: string
+  /** Satışı yapan kişi (Excel "Satış Yapan" sütunu ya da WhatsApp mesajını gönderen) */
+  rep?: string | null
+  /** Kongre / workshop / masterclass */
+  event?: string | null
+  /** Sipariş tarihi yyyy-MM-dd (Excel sütunu ya da WhatsApp mesaj tarihi) */
+  orderDate?: string | null
+  /** Sipariş edilen adet — verilmezse qty + delivered */
+  ordered?: number | null
+  /** Verilen adet */
+  delivered?: number
 }
 
 export interface ExistingOwed {
@@ -34,6 +44,9 @@ export interface ExistingOwed {
   doctor: string
   productName: string
   qty: number
+  /** Elle/listeden eklenmiş kayıtsa id'si (önceki içe aktarmayı değiştirmek için) */
+  pendingId?: string
+  note?: string | null
 }
 
 export interface CariLite {
@@ -67,6 +80,11 @@ export interface CompareRow {
   raws: string[]
   /** Excel "Not" sütunundan gelen notlar */
   notes: string[]
+  rep: string | null
+  event: string | null
+  orderDate: string | null
+  ordered: number | null
+  delivered: number
 }
 
 const fold = (s: string) =>
@@ -202,11 +220,21 @@ function parseTextLine(line: string, products: Product[], currentDoctor: { name:
   return out
 }
 
-/** WhatsApp konuşması (yapıştırılmış metin ya da "Sohbeti dışa aktar" dosyası) → doktor/ürün/adet satırları */
+/** "23.10.2026" + saat → yyyy-MM-dd */
+function chatDate(d: string): string | null {
+  const m = d.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/)
+  if (!m) return null
+  const y = m[3].length === 2 ? `20${m[3]}` : m[3]
+  return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
+}
+
+/** WhatsApp konuşması (yapıştırılmış metin ya da "Sohbeti dışa aktar" dosyası) → doktor/ürün/adet satırları.
+ * Satış yapan = mesajı gönderen kişi, sipariş tarihi = mesajın tarihi. */
 export function parseOwedWhatsApp(text: string, products: Product[]): OwedLine[] {
   const out: OwedLine[] = []
   const current = { name: '', phone: null as string | null }
   let lastSender = ''
+  let msgDate: string | null = null
   for (const rawLine of text.replace(/[‎‏‪-‮⁦-⁩﻿]/g, '').replace(/ /g, ' ').split(/\r?\n/)) {
     let line = rawLine
     const m = rawLine.match(MESSAGE_RE)
@@ -217,10 +245,11 @@ export function parseOwedWhatsApp(text: string, products: Product[]): OwedLine[]
         current.phone = null
         lastSender = m[1].trim()
       }
+      msgDate = chatDate(rawLine)
       line = m[2]
     }
     if (!line.trim() || NOISE_RE.test(line)) continue
-    out.push(...parseTextLine(line, products, current))
+    for (const l of parseTextLine(line, products, current)) out.push({ ...l, rep: lastSender || null, orderDate: msgDate })
   }
   return out
 }
@@ -228,11 +257,31 @@ export function parseOwedWhatsApp(text: string, products: Product[]): OwedLine[]
 const HEAD = {
   doctor: /doktor|hekim|^dr\.?$|müşteri|musteri|cari|ad[ıi]?\s*soyad|isim|unvan|alıcı|alici|klinik|firma/i,
   product: /ürün|urun|malzeme|stok\s*ad|mal\s*ad|ürün\s*ad|cins|açıklama|aciklama|model/i,
-  qty: /adet|miktar|qty|sayı|sayi|kutu|paket|borç\s*adet|kalan/i,
+  qty: /adet|miktar|qty|sayı|sayi|kutu|paket|borç\s*adet/i,
   price: /birim|fiyat/i,
-  total: /tutar|toplam|bedel/i,
-  phone: /tel|gsm|cep|telefon|whatsapp/i,
+  total: /^tutar|^toplam\s*tutar|^bedel/i,
+  phone: /^tel|gsm|cep|telefon|whatsapp/i,
   note: /^not(lar)?$|^durum$|inceleme|^aç[ıi]klama\s*\/?\s*not$/i,
+  rep: /satış\s*yapan|satis\s*yapan|temsilci|satan|personel|plasiyer/i,
+  event: /kongre|workshop|etkinlik|masterclass|organizasyon|eğitim/i,
+  date: /tarih/i,
+  ordered: /^sipariş(\s*(adedi|adet|miktarı?))?$|^siparis(\s*(adedi|adet))?$/i,
+  delivered: /verilen|teslim\s*edilen|gönderilen|gonderilen/i,
+  remaining: /^eksik(\s*kalan)?|^kalan(\s*adet)?$/i,
+}
+
+/** Excel tarih hücresi (seri sayı, "12.06.2026", "12 Haz 2026", Date) → yyyy-MM-dd */
+const TR_MONTHS = ['oca', 'şub', 'mar', 'nis', 'may', 'haz', 'tem', 'ağu', 'eyl', 'eki', 'kas', 'ara']
+function excelDate(v: unknown): string | null {
+  if (v instanceof Date) return v.toISOString().slice(0, 10)
+  if (typeof v === 'number' && v > 20000 && v < 80000) return new Date(Math.round((v - 25569) * 864e5)).toISOString().slice(0, 10)
+  const s = String(v ?? '').trim()
+  if (!s) return null
+  const n = chatDate(s)
+  if (n) return n
+  const m = s.toLocaleLowerCase('tr-TR').match(/(\d{1,2})\s+([a-zçğıöşü]{3})[a-zçğıöşü]*\.?\s+(\d{4})/)
+  const mi = m ? TR_MONTHS.indexOf(m[2]) : -1
+  return m && mi >= 0 ? `${m[3]}-${String(mi + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}` : null
 }
 
 /** Excel'in bütün sayfalarını ham hücre matrisi olarak okur */
@@ -243,7 +292,9 @@ export async function readWorkbookMatrices(file: File): Promise<{ name: string; 
 
 /**
  * Excel listesi → doktor/ürün/adet satırları. Üç düzen tanınır:
- *  1) Sütunlu liste: Doktor | Ürün | Adet (| Fiyat | Telefon) — doktor hücresi boşsa üstteki doktor geçerli
+ *  1) Sütunlu liste: Doktor | Ürün | Adet (| Satış Yapan | Kongre / Workshop | Sipariş Tarihi | Sipariş Adedi |
+ *     Verilen | Eksik Kalan | Birim Fiyat | Tutar | Telefon | Not) — doktor hücresi boşsa üstteki doktor geçerli.
+ *     Programın kendi "Dışa Aktar" Excel'i bu düzendedir, geri okunabilir.
  *  2) Çapraz tablo: satırlarda doktor, sütun başlıklarında ürün adları, hücrelerde adet
  *  3) Başlıksız/serbest liste: her satır WhatsApp satırı gibi okunur ("Dr Ali Kaya | 2 BVRS PL")
  */
@@ -259,15 +310,27 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
 
     if (headerIdx >= 0) {
       const header = rows[headerIdx].map((c) => String(c ?? '').trim())
-      const col = (re: RegExp, skip: number[] = []) => header.findIndex((h, i) => !skip.includes(i) && h && re.test(h))
+      const used: number[] = []
+      // Borç/özet sütunları (ör. "Doktora Kalan Toplam Borç") hiçbir alana eşlenmez
+      const col = (re: RegExp) => {
+        const i = header.findIndex((h, j) => !used.includes(j) && h && !/borç|borc/i.test(h) && re.test(h))
+        if (i >= 0) used.push(i)
+        return i
+      }
       const dCol = col(HEAD.doctor)
-      const pCol = col(HEAD.product, [dCol])
-      const qCol = col(HEAD.qty, [dCol, pCol])
-      const prCol = col(HEAD.price, [dCol, pCol, qCol])
-      const tCol = col(HEAD.total, [dCol, pCol, qCol, prCol])
-      const phCol = col(HEAD.phone, [dCol, pCol, qCol, prCol, tCol])
-      const nCol = col(HEAD.note, [dCol, pCol, qCol, prCol, tCol, phCol])
-      const productCols = header.map((h, i) => ({ i, p: h ? matchProduct(h, products) : undefined, h })).filter((x) => x.i !== dCol && (x.p || PRODUCT_RE.test(x.h)))
+      const repCol = col(HEAD.rep)
+      const evCol = col(HEAD.event)
+      const dateCol = col(HEAD.date)
+      const pCol = col(HEAD.product)
+      const ordCol = col(HEAD.ordered)
+      const delCol = col(HEAD.delivered)
+      const remCol = col(HEAD.remaining)
+      const qCol = col(HEAD.qty)
+      const prCol = col(HEAD.price)
+      const tCol = col(HEAD.total)
+      const phCol = col(HEAD.phone)
+      const nCol = col(HEAD.note)
+      const productCols = header.map((h, i) => ({ i, p: h ? matchProduct(h, products) : undefined, h })).filter((x) => !used.includes(x.i) && (x.p || PRODUCT_RE.test(x.h)))
 
       let doctor = ''
       let phone: string | null = null
@@ -284,7 +347,10 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
         if (pCol >= 0) {
           const ptext = cell(pCol)
           if (!ptext) continue
-          const qty = toNumber(r[qCol]) ?? qtyOf(ptext) ?? 1
+          const ordered = toNumber(r[ordCol])
+          const delivered = toNumber(r[delCol]) ?? 0
+          // Eksik kalan: sütunu varsa o; yoksa sipariş − verilen; yoksa adet sütunu / yazıdaki adet
+          const qty = toNumber(r[remCol]) ?? (ordered != null ? ordered - delivered : null) ?? toNumber(r[qCol]) ?? qtyOf(ptext) ?? 1
           if (qty <= 0) continue
           const unit = toNumber(r[prCol])
           const total = toNumber(r[tCol])
@@ -295,14 +361,19 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
             product: matchProduct(ptext, products),
             qty,
             unitPrice: unit ?? (total ? Math.round((total / qty) * 100) / 100 : null),
-            raw: [d || doctor, ptext, qCol >= 0 ? cell(qCol) : ''].filter(Boolean).join(' · '),
+            raw: [d || doctor, ptext, String(qty)].filter(Boolean).join(' · '),
             note: cell(nCol) || undefined,
+            rep: cell(repCol) || null,
+            event: cell(evCol) || null,
+            orderDate: dateCol >= 0 ? excelDate(r[dateCol]) : null,
+            ordered: ordered ?? qty + delivered,
+            delivered,
           })
         } else {
           for (const pc of productCols) {
             const qty = toNumber(r[pc.i])
             if (!qty || qty <= 0) continue
-            out.push({ doctor, phone, productText: pc.h, product: pc.p, qty, unitPrice: null, raw: `${doctor} · ${pc.h} · ${qty}` })
+            out.push({ doctor, phone, productText: pc.h, product: pc.p, qty, unitPrice: null, raw: `${doctor} · ${pc.h} · ${qty}`, rep: cell(repCol) || null, event: cell(evCol) || null, orderDate: dateCol >= 0 ? excelDate(r[dateCol]) : null })
           }
         }
       }
@@ -347,10 +418,10 @@ function findCari(doctor: string, phone: string | null, customers: CariLite[]): 
 }
 
 /**
- * İki listeyi (ve programdaki açık borçları) kıyaslar. Satır anahtarı: doktor (Cari Kart eşleşmesi ya da adı) + ürün
- * (katalog eşleşmesi ya da yazısı). Excel'de aynı doktor/ürün birden çok satırdaysa adetler toplanır; WhatsApp'ta
- * tekrar geçen satır çoğu zaman aynı listenin yeniden gönderilmesi ya da düzeltmesi olduğu için en büyüğü alınır ve
- * işaretlenir.
+ * İki listeyi (ve programdaki açık borçları) kıyaslar. Excel'in her satırı AYRI kayıttır — aynı doktorun aynı ürünü
+ * iki ayrı siparişte geçiyorsa birleşmez (kullanıcı isteği, 2026-11-24: "her biri ayrı olmalı"). WhatsApp satırları
+ * doktor + ürün başına tek toplanır (tekrar gönderilen liste çift sayılmasın — en büyüğü alınır) ve Excel'deki aynı
+ * doktor + ürünün toplam eksik adediyle kıyaslanır; Excel'de karşılığı olmayan WhatsApp satırı ayrı satır olur.
  */
 export function compareOwedLists(
   wa: OwedLine[] | null,
@@ -360,57 +431,77 @@ export function compareOwedLists(
   products: Product[],
 ): CompareRow[] {
   const both = !!wa?.length && !!xl?.length
-  const doctorKey = (doctor: string, phone: string | null) => {
+  const doctorOf = (doctor: string, phone: string | null) => {
     const c = findCari(doctor, phone, customers)
     return { key: c ? `c:${c.id}` : `n:${nameKey(doctor)}`, customer: c }
   }
+  const make = (l: OwedLine, key: string, customer: CariLite | undefined): Omit<CompareRow, 'status' | 'existingQty' | 'targetQty' | 'addQty'> & { base: string } => ({
+    key,
+    base: key.split('#')[0],
+    doctor: customer?.full_name ?? l.doctor,
+    phone: l.phone,
+    customer,
+    productName: l.product?.name ?? l.productText,
+    product: l.product,
+    waQty: null,
+    xlQty: null,
+    waRepeated: false,
+    raws: [],
+    notes: l.note ? [l.note] : [],
+    unitPrice: l.unitPrice ?? Number(l.product?.unit_price ?? 0),
+    rep: l.rep ?? null,
+    event: l.event ?? null,
+    orderDate: l.orderDate ?? null,
+    ordered: l.ordered ?? null,
+    delivered: l.delivered ?? 0,
+  })
 
-  type Acc = Omit<CompareRow, 'existingQty' | 'targetQty' | 'addQty' | 'status' | 'unitPrice'> & { price: number | null; waList: number[] }
-  const map = new Map<string, Acc>()
-  // Yalnız Excel verildiyse her satır ayrı kayıt kalır (aynı doktor + ürünün iki ayrı siparişi, ayrı notlarıyla)
-  const separateXl = !wa?.length
-  const baseKey = new Map<string, string>()
-  const add = (l: OwedLine, src: 'wa' | 'xl', i: number) => {
-    const d = doctorKey(l.doctor, l.phone)
-    if (d.key === 'n:') return
+  // WhatsApp: doktor + ürün başına tek (en büyük adet)
+  const waBy = new Map<string, { line: OwedLine; customer?: CariLite; qtys: number[]; raws: string[] }>()
+  for (const l of wa ?? []) {
+    const d = doctorOf(l.doctor, l.phone)
+    if (d.key === 'n:') continue
     const base = `${d.key}|${productKey(l)}`
-    const key = src === 'xl' && separateXl ? `${base}#${i}` : base
-    baseKey.set(key, base)
-    let a = map.get(key)
-    if (!a) {
-      a = {
-        key,
-        doctor: d.customer?.full_name ?? l.doctor,
-        phone: l.phone,
-        customer: d.customer,
-        productName: l.product?.name ?? l.productText,
-        product: l.product,
-        waQty: null,
-        xlQty: null,
-        waRepeated: false,
-        raws: [],
-        notes: [],
-        price: null,
-        waList: [],
+    const w = waBy.get(base) ?? { line: l, customer: d.customer, qtys: [], raws: [] }
+    w.qtys.push(l.qty)
+    if (!w.raws.includes(`WhatsApp: ${l.raw}`)) w.raws.push(`WhatsApp: ${l.raw}`)
+    if (l.qty >= Math.max(...w.qtys)) w.line = { ...l, phone: l.phone ?? w.line.phone }
+    waBy.set(base, w)
+  }
+
+  const rows: ReturnType<typeof make>[] = []
+  for (const [i, l] of (xl ?? []).entries()) {
+    const d = doctorOf(l.doctor, l.phone)
+    if (d.key === 'n:') continue
+    const r = make(l, `${d.key}|${productKey(l)}#x${i}`, d.customer)
+    r.xlQty = l.qty
+    r.raws.push(`Excel: ${l.raw}`)
+    rows.push(r)
+  }
+  const xlSum = new Map<string, number>()
+  for (const r of rows) xlSum.set(r.base, (xlSum.get(r.base) ?? 0) + (r.xlQty ?? 0))
+  for (const [base, w] of waBy) {
+    const waQty = Math.max(...w.qtys)
+    const matched = rows.filter((r) => r.base === base)
+    if (matched.length) {
+      for (const r of matched) {
+        r.waQty = waQty
+        r.waRepeated = new Set(w.qtys).size > 1
+        r.raws.push(...w.raws)
+        // Excel'de boş kalan alanlar WhatsApp'tan tamamlanır
+        r.rep ??= w.line.rep ?? null
+        r.orderDate ??= w.line.orderDate ?? null
       }
-      map.set(key, a)
-    }
-    if (!a.phone && l.phone) a.phone = l.phone
-    if (a.price == null && l.unitPrice != null) a.price = l.unitPrice
-    if (l.note && !a.notes.includes(l.note)) a.notes.push(l.note)
-    const rawLabel = `${src === 'wa' ? 'WhatsApp' : 'Excel'}: ${l.raw}`
-    if (!a.raws.includes(rawLabel)) a.raws.push(rawLabel)
-    if (src === 'xl') a.xlQty = (a.xlQty ?? 0) + l.qty
-    else {
-      a.waList.push(l.qty)
-      a.waQty = Math.max(a.waQty ?? 0, l.qty)
-      a.waRepeated = new Set(a.waList).size > 1
+    } else {
+      const r = make({ ...w.line, qty: waQty }, `${base}#w`, w.customer)
+      r.waQty = waQty
+      r.waRepeated = new Set(w.qtys).size > 1
+      r.raws.push(...w.raws)
+      rows.push(r)
     }
   }
-  for (const [i, l] of (wa ?? []).entries()) add(l, 'wa', i)
-  for (const [i, l] of (xl ?? []).entries()) add(l, 'xl', i)
 
-  // Programdaki açık borçlar aynı anahtarla toplanır
+  // Programdaki açık borçlar aynı doktor + ürün anahtarıyla; satırlara sırayla düşülür
   const existingByKey = new Map<string, number>()
   for (const e of existing) {
     const c = e.customerId ? customers.find((x) => x.id === e.customerId) : findCari(e.doctor, null, customers)
@@ -420,30 +511,21 @@ export function compareOwedLists(
     existingByKey.set(k, (existingByKey.get(k) ?? 0) + e.qty)
   }
 
-  return [...map.values()]
-    .map(({ price, waList: _w, ...a }) => {
+  return rows
+    .map(({ base, ...a }) => {
       const status: CompareStatus = !both
         ? 'tek_kaynak'
         : a.waQty != null && a.xlQty != null
-          ? a.waQty === a.xlQty
+          ? a.waQty === xlSum.get(base)
             ? 'eslesti'
             : 'farkli'
           : a.waQty != null
             ? 'yalniz_wa'
             : 'yalniz_xl'
       const targetQty = a.xlQty ?? a.waQty ?? 0
-      // Programdaki adet aynı doktor + ürünün satırlarına sırayla düşülür
-      const base = baseKey.get(a.key) ?? a.key
       const existingQty = Math.min(targetQty, existingByKey.get(base) ?? 0)
       existingByKey.set(base, (existingByKey.get(base) ?? 0) - existingQty)
-      return {
-        ...a,
-        status,
-        targetQty,
-        existingQty,
-        addQty: Math.max(0, targetQty - existingQty),
-        unitPrice: price ?? Number(a.product?.unit_price ?? 0),
-      }
+      return { ...a, status, targetQty, existingQty, addQty: Math.max(0, targetQty - existingQty) }
     })
-    .sort((x, y) => x.doctor.localeCompare(y.doctor, 'tr') || x.productName.localeCompare(y.productName, 'tr'))
+    .sort((x, y) => x.doctor.localeCompare(y.doctor, 'tr') || (x.orderDate ?? '').localeCompare(y.orderDate ?? '') || x.productName.localeCompare(y.productName, 'tr'))
 }

@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.444] - 2026-11-24
+- Borçlu Olduğumuz Ürünler: her ürün ayrı satır; satış yapan, kongre/workshop, sipariş tarihi, sipariş/verilen/eksik kalan adet, tutar ve doktora kalan toplam borç ayrı sütunlarda, ayrıntılar yalnız Not'ta. Elle ekleme/düzenleme ve WhatsApp/Excel içe aktarma bu alanları dolduruyor (Excel satırları birleşmiyor, önceki içe aktarma tek seferde değiştirilebiliyor); Dışa Aktar aynı sütunlarla. Veritabanı: customer_pending_products'a sales_rep_name, event_name, order_date, ordered_quantity, delivered_quantity.
+
 ## [2.17.443] - 2026-11-24
 - Borçlu Olduğumuz Ürünler › Dışa Aktar: kullanıcının "ürün borçları" Excel'i düzeninde — her doktor tek satır, ürünler yan yana, fatura/vade, tutar, not ve kargo; ürün ürün ayrıntılı Excel menüde ayrı seçenek. Excel'den içe aktarmada "Not" sütunu kayda yazılıyor, 0 ₺ (MF) satırlara katalog fiyatı yazılmıyor, aynı doktorun aynı ürünü ayrı satırlardaysa ayrı kayıt kalıyor.
 

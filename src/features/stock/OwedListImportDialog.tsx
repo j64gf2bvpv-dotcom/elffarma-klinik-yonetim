@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { createCustomer, createPendingProduct } from '@/features/customers/api'
+import { createCustomer, createPendingProduct, deletePendingProduct } from '@/features/customers/api'
 import { cariName } from '@/features/doctorVisits/linkCustomer'
 import { readWhatsAppChatFile } from '@/features/doctorVisits/whatsappChat'
 import { supabase } from '@/lib/supabaseClient'
@@ -52,6 +52,9 @@ export function OwedListImportDialog({
   const [qtyEdit, setQtyEdit] = React.useState<Record<string, string>>({})
   const [counts, setCounts] = React.useState<{ wa: number | null; xl: number | null }>({ wa: null, xl: null })
   const [filter, setFilter] = React.useState<Filter>('tumu')
+  // Daha önce bu pencereyle (WhatsApp/Excel listesinden) eklenmiş kayıtlar — yenisiyle değiştirilebilir
+  const previous = React.useMemo(() => existing.filter((e) => e.pendingId && /(WhatsApp \+ Excel|Excel|WhatsApp) listesi/.test(e.note ?? '')), [existing])
+  const [replacePrev, setReplacePrev] = React.useState(false)
   const waInput = React.useRef<HTMLInputElement>(null)
   const xlInput = React.useRef<HTMLInputElement>(null)
 
@@ -64,6 +67,7 @@ export function OwedListImportDialog({
     setSelected(new Set())
     setQtyEdit({})
     setFilter('tumu')
+    setReplacePrev(false)
   }, [open])
 
   async function pickWhatsApp(file: File | undefined) {
@@ -88,7 +92,8 @@ export function OwedListImportDialog({
       // Cari Kart'ın tamamı (sayfalı liste değil) — doktor eşleşmesi kaçmasın
       const { data: cari, error } = await supabase.from('customers').select('id, full_name, phone, mobile_phone, whatsapp_phone')
       if (error) throw error
-      const result = compareOwedLists(wa, xl, existing, (cari ?? []) as CariLite[], products)
+      const base = replacePrev ? existing.filter((e) => !previous.includes(e)) : existing
+      const result = compareOwedLists(wa, xl, base, (cari ?? []) as CariLite[], products)
       if (!result.length) return
       const sel = new Set(result.filter((r) => r.addQty > 0 && (r.status === 'eslesti' || r.status === 'farkli' || r.status === 'tek_kaynak')).map((r) => r.key))
       setCounts({ wa: wa ? wa.length : null, xl: xl ? xl.length : null })
@@ -129,11 +134,12 @@ export function OwedListImportDialog({
   )
 
   async function save() {
+    if (replacePrev && previous.length && !window.confirm(`Daha önce listeden eklenen ${previous.length} kayıt silinip yerine bu ${chosen.length} kayıt eklenecek. Devam edilsin mi?`)) return
     setBusy(true)
     const created = new Map<string, string>()
     let ok = 0
     try {
-      const source = waText.trim() && xlFile ? 'WhatsApp + Excel listesi' : waText.trim() ? 'WhatsApp listesi' : 'Excel listesi'
+      if (replacePrev) for (const e of previous) await deletePendingProduct(e.pendingId!)
       for (const r of chosen) {
         let cid = r.customer?.id
         if (!cid) {
@@ -147,23 +153,36 @@ export function OwedListImportDialog({
               is_invoiced: false,
               doctor_type: 'sahis',
               sales_rep_id: null,
-              notes: `Borçlu olduğumuz ürünler — ${source} ile eklendi, ${new Date().toLocaleDateString('tr-TR')}`,
+              notes: `Borçlu olduğumuz ürünler listesinden eklendi, ${new Date().toLocaleDateString('tr-TR')}`,
             })
             cid = c.id
             created.set(k, cid)
           }
         }
-        const note = [...r.notes, source, r.status === 'farkli' ? `WhatsApp ${r.waQty} / Excel ${r.xlQty} adet` : null, r.existingQty > 0 ? `programda ${r.existingQty} adet vardı` : null].filter(Boolean).join(' · ')
-        await createPendingProduct({ customer_id: cid, product_name: r.productName, quantity: qtyFor(r), unit_price: r.unitPrice || 0, note })
+        const qty = qtyFor(r)
+        const delivered = r.delivered || 0
+        // Not yalnız listedeki ayrıntı — kaynak/kıyas yazısı eklenmez (kullanıcı isteği: "gereksiz yazılar olmayacak")
+        await createPendingProduct({
+          customer_id: cid,
+          product_name: r.productName,
+          quantity: qty,
+          unit_price: r.unitPrice || 0,
+          note: r.notes.join(' · ') || null,
+          sales_rep_name: r.rep,
+          event_name: r.event,
+          order_date: r.orderDate,
+          ordered_quantity: r.ordered ?? qty + delivered,
+          delivered_quantity: delivered,
+        })
         ok++
       }
-      toast.success(`${ok} ürün borç listesine eklendi`, { description: created.size ? `${created.size} yeni doktor kartı açıldı.` : undefined })
+      toast.success(`${ok} ürün borç listesine eklendi`, { description: [replacePrev && previous.length ? `${previous.length} eski kayıt silindi.` : '', created.size ? `${created.size} yeni doktor kartı açıldı.` : ''].filter(Boolean).join(' ') || undefined })
       void queryClient.invalidateQueries({ queryKey: ['customer_pending_products'] })
       if (created.size) void queryClient.invalidateQueries({ queryKey: ['customers'] })
       onOpenChange(false)
     } catch (err) {
       toast.error(ok ? `${ok} ürün eklendi, kalanlar eklenemedi` : 'Eklenemedi', { description: getErrorMessage(err) })
-      if (ok) void queryClient.invalidateQueries({ queryKey: ['customer_pending_products'] })
+      void queryClient.invalidateQueries({ queryKey: ['customer_pending_products'] })
     } finally {
       setBusy(false)
     }
@@ -252,7 +271,16 @@ export function OwedListImportDialog({
               </p>
             </div>
           </div>
-        ) : (
+        ) : null}
+        {!rows && previous.length > 0 && (
+          <label className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+            <input type="checkbox" className="mt-0.5 size-4 accent-primary" checked={replacePrev} onChange={(e) => setReplacePrev(e.target.checked)} />
+            <span>
+              <b>Önceki listeyi değiştir:</b> daha önce WhatsApp/Excel listesinden eklenen {previous.length} kayıt silinsin, yerine bu liste eklensin. Elle girilen ve satıştan gelen kayıtlara dokunulmaz.
+            </span>
+          </label>
+        )}
+        {!rows ? null : (
           <div className="grid gap-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
               {counts.wa != null && <span>WhatsApp’tan {counts.wa} satır</span>}
@@ -382,7 +410,10 @@ function Compare({ r, st }: { r: CompareRow; st: { label: string; tone: 'ok' | '
         {r.existingQty > 0 && ` · programda ${r.existingQty}`}
       </span>
       {r.waRepeated && <span className="text-warning">WhatsApp’ta farklı adetlerle tekrar geçiyor</span>}
-      {r.notes.length > 0 && <span className={cn('basis-full', /incelen/i.test(r.notes.join(' ')) ? 'font-medium text-warning' : 'text-muted-foreground')}>{r.notes.join(' · ')}</span>}
+      {(r.rep || r.event || r.orderDate) && (
+        <span className="basis-full text-muted-foreground">{[r.rep, r.event, r.orderDate ? r.orderDate.split('-').reverse().join('.') : null].filter(Boolean).join(' · ')}{r.delivered ? ` · ${r.delivered} verildi` : ''}</span>
+      )}
+            {r.notes.length > 0 && <span className={cn('basis-full', /incelen/i.test(r.notes.join(' ')) ? 'font-medium text-warning' : 'text-muted-foreground')}>{r.notes.join(' · ')}</span>}
       {r.existingQty > 0 && r.addQty === 0 && <span className="text-muted-foreground">Zaten programda</span>}
     </span>
   )
