@@ -442,10 +442,11 @@ export function OwedProductsPanel() {
                     {g.rows.map((r, idx) => {
                       const c = cargoLabel(r)
                       const total = doctorTotal.get(doctorKey(r)) ?? 0
-                      // Doktora göre görünümde toplam borç doktorun ilk satırında, satırları kapsayacak şekilde bir kez
+                      // Doktora göre görünümde toplam borç yalnız doktorun ilk satırında
                       const showTotal = view === 'urun' || idx === 0
                       return (
-                        <TableRow key={r.key}>
+                        <React.Fragment key={r.key}>
+                        <TableRow className={cn(r.note && 'border-b-0')}>
                           <TableCell className="whitespace-normal">
                             <span className="font-medium">{view === 'doktor' ? r.productName : r.doctor}</span>
                             {/* Dar ekranda gizlenen sütunlar adın altında */}
@@ -455,7 +456,6 @@ export function OwedProductsPanel() {
                             <span className="block text-xs text-muted-foreground md:hidden">
                               Sipariş {r.ordered} · verilen {r.delivered}
                             </span>
-                            {r.note && <span className={cn('block text-xs', /incelen/i.test(r.note) ? 'font-medium text-warning' : 'text-muted-foreground')}>Not: {r.note}</span>}
                           </TableCell>
                           <TableCell className="hidden whitespace-normal xl:table-cell">{r.rep || '—'}</TableCell>
                           <TableCell className="hidden whitespace-normal xl:table-cell">{r.event || '—'}</TableCell>
@@ -464,11 +464,7 @@ export function OwedProductsPanel() {
                           <TableCell className="hidden text-right tabular-nums md:table-cell">{r.delivered}</TableCell>
                           <TableCell className="text-right font-semibold tabular-nums">{r.qty}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.amount != null ? money(r.amount) : '—'}</TableCell>
-                          {showTotal ? (
-                            <TableCell rowSpan={view === 'doktor' ? g.rows.length : 1} className="border-l text-right align-middle font-semibold tabular-nums">
-                              {r.status === 'gonderildi' ? '—' : money(total)}
-                            </TableCell>
-                          ) : null}
+                          <TableCell className="text-right font-semibold tabular-nums">{showTotal && r.status !== 'gonderildi' ? money(total) : ''}</TableCell>
                           <TableCell>
                             <span
                               className={cn(
@@ -522,6 +518,17 @@ export function OwedProductsPanel() {
                             )}
                           </TableCell>
                         </TableRow>
+                        {r.note && (
+                          // Not ürün satırının altında, satır boyunca (kullanıcı isteği: "not kısmı düzgün, uzunlamasına")
+                          <TableRow className="hover:bg-transparent">
+                            <TableCell colSpan={11} className="pt-0 pb-3 whitespace-normal">
+                              <span className={cn('text-sm', /incelen/i.test(r.note) ? 'font-medium text-warning' : 'text-muted-foreground')}>
+                                <span className="font-semibold">Not:</span> {r.note}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        </React.Fragment>
                       )
                     })}
                   </React.Fragment>

@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.445] - 2026-11-24
+- Borçlu Olduğumuz Ürünler: Not artık ürün satırının altında satır boyunca, düzgün okunur; doktora kalan toplam borç doktorun ilk satırında.
+
 ## [2.17.444] - 2026-11-24
 - Borçlu Olduğumuz Ürünler: her ürün ayrı satır; satış yapan, kongre/workshop, sipariş tarihi, sipariş/verilen/eksik kalan adet, tutar ve doktora kalan toplam borç ayrı sütunlarda, ayrıntılar yalnız Not'ta. Elle ekleme/düzenleme ve WhatsApp/Excel içe aktarma bu alanları dolduruyor (Excel satırları birleşmiyor, önceki içe aktarma tek seferde değiştirilebiliyor); Dışa Aktar aynı sütunlarla. Veritabanı: customer_pending_products'a sales_rep_name, event_name, order_date, ordered_quantity, delivered_quantity.
 
