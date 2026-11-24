@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.446] - 2026-11-24
+- Borçlu Olduğumuz Ürünler: "Verilen ürünler" alanı — aynı siparişten verilen ürünlerin adları satırın altında, elle ekleme/düzenlemede, Excel içe/dışa aktarmada (veritabanı: delivered_items).
+
 ## [2.17.445] - 2026-11-24
 - Borçlu Olduğumuz Ürünler: Not artık ürün satırının altında satır boyunca, düzgün okunur; doktora kalan toplam borç doktorun ilk satırında.
 

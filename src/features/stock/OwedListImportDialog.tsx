@@ -173,6 +173,7 @@ export function OwedListImportDialog({
           order_date: r.orderDate,
           ordered_quantity: r.ordered ?? qty + delivered,
           delivered_quantity: delivered,
+          delivered_items: r.deliveredItems,
         })
         ok++
       }
@@ -411,7 +412,7 @@ function Compare({ r, st }: { r: CompareRow; st: { label: string; tone: 'ok' | '
       </span>
       {r.waRepeated && <span className="text-warning">WhatsApp’ta farklı adetlerle tekrar geçiyor</span>}
       {(r.rep || r.event || r.orderDate) && (
-        <span className="basis-full text-muted-foreground">{[r.rep, r.event, r.orderDate ? r.orderDate.split('-').reverse().join('.') : null].filter(Boolean).join(' · ')}{r.delivered ? ` · ${r.delivered} verildi` : ''}</span>
+        <span className="basis-full text-muted-foreground">{[r.rep, r.event, r.orderDate ? r.orderDate.split('-').reverse().join('.') : null].filter(Boolean).join(' · ')}{r.deliveredItems ? ` · verilen: ${r.deliveredItems}` : r.delivered ? ` · ${r.delivered} verildi` : ''}</span>
       )}
             {r.notes.length > 0 && <span className={cn('basis-full', /incelen/i.test(r.notes.join(' ')) ? 'font-medium text-warning' : 'text-muted-foreground')}>{r.notes.join(' · ')}</span>}
       {r.existingQty > 0 && r.addQty === 0 && <span className="text-muted-foreground">Zaten programda</span>}

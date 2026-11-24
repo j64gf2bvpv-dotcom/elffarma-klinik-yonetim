@@ -37,6 +37,8 @@ export interface OwedLine {
   ordered?: number | null
   /** Verilen adet */
   delivered?: number
+  /** Aynı siparişten verilen ürünlerin adları */
+  deliveredItems?: string | null
 }
 
 export interface ExistingOwed {
@@ -85,6 +87,7 @@ export interface CompareRow {
   orderDate: string | null
   ordered: number | null
   delivered: number
+  deliveredItems: string | null
 }
 
 const fold = (s: string) =>
@@ -266,6 +269,7 @@ const HEAD = {
   event: /kongre|workshop|etkinlik|masterclass|organizasyon|eğitim/i,
   date: /tarih/i,
   ordered: /^sipariş(\s*(adedi|adet|miktarı?))?$|^siparis(\s*(adedi|adet))?$/i,
+  deliveredItems: /verilen\s*ürün|verilen\s*urun|teslim\s*edilen\s*ürün/i,
   delivered: /verilen|teslim\s*edilen|gönderilen|gonderilen/i,
   remaining: /^eksik(\s*kalan)?|^kalan(\s*adet)?$/i,
 }
@@ -323,6 +327,7 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
       const dateCol = col(HEAD.date)
       const pCol = col(HEAD.product)
       const ordCol = col(HEAD.ordered)
+      const delItemsCol = col(HEAD.deliveredItems)
       const delCol = col(HEAD.delivered)
       const remCol = col(HEAD.remaining)
       const qCol = col(HEAD.qty)
@@ -368,6 +373,7 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
             orderDate: dateCol >= 0 ? excelDate(r[dateCol]) : null,
             ordered: ordered ?? qty + delivered,
             delivered,
+            deliveredItems: cell(delItemsCol) || null,
           })
         } else {
           for (const pc of productCols) {
@@ -454,6 +460,7 @@ export function compareOwedLists(
     orderDate: l.orderDate ?? null,
     ordered: l.ordered ?? null,
     delivered: l.delivered ?? 0,
+    deliveredItems: l.deliveredItems ?? null,
   })
 
   // WhatsApp: doktor + ürün başına tek (en büyük adet)

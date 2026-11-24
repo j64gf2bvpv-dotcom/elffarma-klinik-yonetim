@@ -42,6 +42,7 @@ export interface OwedEditTarget {
   event: string | null
   orderDate: string | null
   delivered: number
+  deliveredItems: string | null
 }
 
 /**
@@ -63,6 +64,7 @@ export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; o
   const [orderDate, setOrderDate] = React.useState('')
   const [lines, setLines] = React.useState<Line[]>([emptyLine()])
   const [note, setNote] = React.useState('')
+  const [deliveredItems, setDeliveredItems] = React.useState('')
   const [busy, setBusy] = React.useState(false)
 
   React.useEffect(() => {
@@ -75,6 +77,7 @@ export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; o
     setEvent(edit?.event ?? '')
     setOrderDate(edit?.orderDate ?? new Date().toISOString().slice(0, 10))
     setNote(edit?.note ?? '')
+    setDeliveredItems(edit?.deliveredItems ?? '')
     setLines(
       edit
         ? [{ productId: '', freeText: true, name: edit.productName, ordered: String(edit.qty + edit.delivered), delivered: String(edit.delivered), price: edit.unitPrice ? String(edit.unitPrice) : '' }]
@@ -113,7 +116,7 @@ export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; o
 
   async function save() {
     setBusy(true)
-    const common = { sales_rep_name: rep.trim() || null, event_name: event.trim() || null, order_date: orderDate || null, note: note.trim() || null }
+    const common = { sales_rep_name: rep.trim() || null, event_name: event.trim() || null, order_date: orderDate || null, note: note.trim() || null, delivered_items: deliveredItems.trim() || null }
     try {
       if (edit) {
         const l = lines[0]
@@ -247,6 +250,11 @@ export function OwedEntryDialog({ open, onOpenChange, edit }: { open: boolean; o
                 <Plus className="size-4" /> Ürün ekle
               </Button>
             )}
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="owed-delivered">Verilen ürünler</Label>
+            <Input id="owed-delivered" placeholder="Bu siparişten verilenler — örn. 1 BVRS PL, 2 Polyboost Vola" value={deliveredItems} onChange={(e) => setDeliveredItems(e.target.value)} />
           </div>
 
           <div className="grid gap-1.5">

@@ -527,6 +527,8 @@ export interface CustomerPendingProduct {
   ordered_quantity: number | null
   /** Şimdiye kadar verilen adet (2026-11-24) */
   delivered_quantity: number
+  /** Aynı siparişten verilen ürünlerin adları (2026-11-24) */
+  delivered_items: string | null
   created_at: string
 }
 

@@ -67,6 +67,8 @@ interface OwedRow {
   ordered: number
   /** Şimdiye kadar verilen adet */
   delivered: number
+  /** Aynı siparişten verilen ürünlerin adları */
+  deliveredItems?: string | null
   /** Eksik kalan adet (= qty) değil; qty zaten eksik kalan */
   orderDate?: string | null
 }
@@ -98,6 +100,7 @@ const productColumns: ExportColumn<ExportRow>[] = [
   { header: 'Sipariş Tarihi', value: (r) => (r.orderDate ? day(r.orderDate) : '') },
   { header: 'Sipariş Adedi', value: (r) => r.ordered },
   { header: 'Verilen', value: (r) => r.delivered },
+  { header: 'Verilen Ürünler', value: (r) => r.deliveredItems ?? '' },
   { header: 'Eksik Kalan', value: (r) => r.qty },
   { header: 'Birim Fiyat', value: (r) => (r.qty ? (r.amount ?? 0) / r.qty : '') },
   { header: 'Tutar', value: (r) => r.amount ?? '' },
@@ -186,7 +189,7 @@ export function OwedProductsPanel() {
     for (const p of pending) {
       const doctor = customerName.get(p.customer_id) ?? '—'
       const delivered = p.delivered_quantity ?? 0
-      out.push({ key: `p:${p.id}`, customerId: p.customer_id, doctor, productName: p.product_name, qty: p.quantity, totalQty: p.quantity, amount: p.quantity * Number(p.unit_price), date: p.order_date ?? p.created_at, orderDate: p.order_date, source: 'elle', status: 'gonderilmedi', shippedAt: null, pendingId: p.id, unitPrice: Number(p.unit_price), note: p.note, rep: p.sales_rep_name, event: p.event_name, ordered: p.ordered_quantity ?? p.quantity + delivered, delivered, cargo: findCargo(p.customer_id, doctor, p.product_name) })
+      out.push({ key: `p:${p.id}`, customerId: p.customer_id, doctor, productName: p.product_name, qty: p.quantity, totalQty: p.quantity, amount: p.quantity * Number(p.unit_price), date: p.order_date ?? p.created_at, orderDate: p.order_date, source: 'elle', status: 'gonderilmedi', shippedAt: null, pendingId: p.id, unitPrice: Number(p.unit_price), note: p.note, rep: p.sales_rep_name, event: p.event_name, ordered: p.ordered_quantity ?? p.quantity + delivered, delivered, deliveredItems: p.delivered_items, cargo: findCargo(p.customer_id, doctor, p.product_name) })
     }
     for (const v of repVisits) {
       const repName = reps.find((r) => r.id === v.sales_rep_id)?.name ?? 'Temsilci'
@@ -446,7 +449,7 @@ export function OwedProductsPanel() {
                       const showTotal = view === 'urun' || idx === 0
                       return (
                         <React.Fragment key={r.key}>
-                        <TableRow className={cn(r.note && 'border-b-0')}>
+                        <TableRow className={cn((r.note || r.deliveredItems) && 'border-b-0')}>
                           <TableCell className="whitespace-normal">
                             <span className="font-medium">{view === 'doktor' ? r.productName : r.doctor}</span>
                             {/* Dar ekranda gizlenen sütunlar adın altında */}
@@ -503,7 +506,7 @@ export function OwedProductsPanel() {
                                       title="Düzenle"
                                       aria-label="Düzenle"
                                       onClick={() => {
-                                        setEditTarget({ pendingId: r.pendingId!, doctor: r.doctor, productName: r.productName, qty: r.qty, unitPrice: r.unitPrice ?? 0, note: r.note ?? null, rep: r.rep ?? null, event: r.event ?? null, orderDate: r.orderDate ?? null, delivered: r.delivered })
+                                        setEditTarget({ pendingId: r.pendingId!, doctor: r.doctor, productName: r.productName, qty: r.qty, unitPrice: r.unitPrice ?? 0, note: r.note ?? null, rep: r.rep ?? null, event: r.event ?? null, orderDate: r.orderDate ?? null, delivered: r.delivered, deliveredItems: r.deliveredItems ?? null })
                                         setEntryOpen(true)
                                       }}
                                     >
@@ -518,13 +521,23 @@ export function OwedProductsPanel() {
                             )}
                           </TableCell>
                         </TableRow>
-                        {r.note && (
-                          // Not ürün satırının altında, satır boyunca (kullanıcı isteği: "not kısmı düzgün, uzunlamasına")
+                        {(r.note || r.deliveredItems) && (
+                          // Verilen ürünler ve not, ürün satırının altında satır boyunca (kullanıcı isteği: "not kısmı düzgün,
+                          // uzunlamasına"; "hangi ürünler verildi onların da isimlerini yazman gerek")
                           <TableRow className="hover:bg-transparent">
                             <TableCell colSpan={11} className="pt-0 pb-3 whitespace-normal">
-                              <span className={cn('text-sm', /incelen/i.test(r.note) ? 'font-medium text-warning' : 'text-muted-foreground')}>
-                                <span className="font-semibold">Not:</span> {r.note}
-                              </span>
+                              <div className="grid gap-0.5">
+                              {r.deliveredItems && (
+                                <span className="text-sm text-success">
+                                  <span className="font-semibold">Verilen ürünler:</span> {r.deliveredItems}
+                                </span>
+                              )}
+                              {r.note && (
+                                <span className={cn('text-sm', /incelen/i.test(r.note) ? 'font-medium text-warning' : 'text-muted-foreground')}>
+                                  <span className="font-semibold">Not:</span> {r.note}
+                                </span>
+                              )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         )}
