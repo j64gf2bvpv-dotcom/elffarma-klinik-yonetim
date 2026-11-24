@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.441] - 2026-11-24
+- Stok › Borçlu Olduğumuz Ürünler: "Elle ekle" ile doktor (Cari Kart'tan ya da yeni) ve birden çok ürün elle girilebiliyor; elle girilen kayıtlar düzenlenip silinebiliyor, not satırda görünüyor.
+
 ## [2.17.440] - 2026-11-24
 - Stok'a "Borçlu Olduğumuz Ürünler" sekmesi: satışı yapılıp gönderilmeyen ürünler, elle eklenen eksik ürünler ve temsilci raporundaki bekleyen siparişler doktora ya da ürün grubuna göre; her satırda kargo durumu (kargo gitti / kargoya verilecek / bekletiliyor / kargo kaydı yok), "Kargo kaydı" ve "Gönderildi" düğmeleri, son 60 günde gönderilenler ayrı filtrede.
 - Sekme şeritleri sığmayınca yana kaymak yerine alt satıra geçiyor.

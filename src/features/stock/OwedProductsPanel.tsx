@@ -2,7 +2,7 @@ import * as React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { CheckCircle2, Loader2, PackageCheck, PackageOpen, Truck, Users, Boxes, ClipboardList } from 'lucide-react'
+import { CheckCircle2, Loader2, PackageCheck, PackageOpen, Truck, Users, Boxes, ClipboardList, Plus, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -22,6 +22,7 @@ import { useProducts } from '@/features/stock/hooks'
 import { useSalesReps } from '@/features/salesReps/hooks'
 import { SaleStockDialog } from '@/features/doctorVisits/SaleStockDialog'
 import { matchProduct } from '@/features/doctorVisits/productMatch'
+import { OwedEntryDialog, type OwedEditTarget } from './OwedEntryDialog'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import type { CargoShipment, DoctorVisit, Sale } from '@/types/database'
 
@@ -51,6 +52,8 @@ interface OwedRow {
   cargo?: CargoShipment
   sale?: Sale
   pendingId?: string
+  unitPrice?: number
+  note?: string | null
   visit?: DoctorVisit
   repName?: string
 }
@@ -95,6 +98,19 @@ export function OwedProductsPanel() {
   const [filter, setFilter] = React.useState<'bekleyen' | 'gonderildi' | 'tumu'>('bekleyen')
   const [busyKey, setBusyKey] = React.useState<string | null>(null)
   const [stockVisit, setStockVisit] = React.useState<OwedRow | null>(null)
+  const [entryOpen, setEntryOpen] = React.useState(false)
+  const [editTarget, setEditTarget] = React.useState<OwedEditTarget | null>(null)
+
+  async function removeManual(r: OwedRow) {
+    if (!r.pendingId || !(await confirm(`${r.doctor} — ${r.qty} ${r.productName} borç listesinden silinsin mi?`))) return
+    try {
+      await deletePendingProduct(r.pendingId)
+      toast.success('Kayıt silindi')
+      void queryClient.invalidateQueries({ queryKey: ['customer_pending_products'] })
+    } catch (err) {
+      toast.error('Silinemedi', { description: getErrorMessage(err) })
+    }
+  }
 
   const customerName = React.useMemo(() => new Map(customers.map((c) => [c.id, c.full_name])), [customers])
   const customerPhone = React.useMemo(() => new Map(customers.map((c) => [c.id, c.phone])), [customers])
@@ -125,7 +141,7 @@ export function OwedProductsPanel() {
     }
     for (const p of pending) {
       const doctor = customerName.get(p.customer_id) ?? '—'
-      out.push({ key: `p:${p.id}`, customerId: p.customer_id, doctor, productName: p.product_name, qty: p.quantity, totalQty: p.quantity, amount: p.quantity * Number(p.unit_price), date: p.created_at, source: 'elle', status: 'gonderilmedi', shippedAt: null, pendingId: p.id, cargo: findCargo(p.customer_id, doctor, p.product_name) })
+      out.push({ key: `p:${p.id}`, customerId: p.customer_id, doctor, productName: p.product_name, qty: p.quantity, totalQty: p.quantity, amount: p.quantity * Number(p.unit_price), date: p.created_at, source: 'elle', status: 'gonderilmedi', shippedAt: null, pendingId: p.id, unitPrice: Number(p.unit_price), note: p.note, cargo: findCargo(p.customer_id, doctor, p.product_name) })
     }
     for (const v of repVisits) {
       const repName = reps.find((r) => r.id === v.sales_rep_id)?.name ?? 'Temsilci'
@@ -267,7 +283,10 @@ export function OwedProductsPanel() {
             </button>
           ))}
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <Button size="sm" onClick={() => { setEditTarget(null); setEntryOpen(true) }}>
+            <Plus className="size-4" /> Elle ekle
+          </Button>
           <ExportMenu<OwedRow>
             title="Borçlu Olduğumuz Ürünler"
             filename="borclu-oldugumuz-urunler"
@@ -290,7 +309,7 @@ export function OwedProductsPanel() {
       ) : groups.length === 0 ? (
         <Card>
           <CardContent className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-            <CheckCircle2 className="size-4 text-success" /> {filter === 'bekleyen' ? 'Gönderilmeyi bekleyen ürün yok — bütün doktorlara gönderildi.' : 'Kayıt yok.'}
+            <CheckCircle2 className="size-4 text-success" /> {filter === 'bekleyen' ? 'Gönderilmeyi bekleyen ürün yok. Elle eklemek için sağ üstteki “Elle ekle” düğmesini kullanın.' : 'Kayıt yok.'}
           </CardContent>
         </Card>
       ) : (
@@ -329,6 +348,7 @@ export function OwedProductsPanel() {
                             <span className="block text-xs text-muted-foreground">
                               {SOURCE_LABEL[r.source]}
                               {r.repName ? ` · ${r.repName}` : ''}
+                              {r.note ? ` · ${r.note}` : ''}
                             </span>
                           </TableCell>
                           <TableCell className="text-right font-medium tabular-nums">
@@ -366,6 +386,16 @@ export function OwedProductsPanel() {
                                 <Button size="sm" className="h-7 text-xs" disabled={busyKey === r.key} onClick={() => void markSent(r)}>
                                   {busyKey === r.key ? <Loader2 className="size-3.5 animate-spin" /> : <PackageCheck className="size-3.5" />} Gönderildi
                                 </Button>
+                                {r.source === 'elle' && (
+                                  <>
+                                    <Button size="icon" variant="ghost" className="size-7 text-muted-foreground" title="Düzenle" aria-label="Düzenle" onClick={() => { setEditTarget({ pendingId: r.pendingId!, doctor: r.doctor, productName: r.productName, qty: r.qty, unitPrice: r.unitPrice ?? 0, note: r.note ?? null }); setEntryOpen(true) }}>
+                                      <Pencil className="size-3.5" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" className="size-7 text-muted-foreground hover:text-destructive" title="Sil" aria-label="Sil" onClick={() => void removeManual(r)}>
+                                      <Trash2 className="size-3.5" />
+                                    </Button>
+                                  </>
+                                )}
                               </span>
                             )}
                           </TableCell>
@@ -379,6 +409,7 @@ export function OwedProductsPanel() {
           </CardContent>
         </Card>
       )}
+      <OwedEntryDialog open={entryOpen} onOpenChange={setEntryOpen} edit={editTarget} />
       {stockVisit?.visit && (
         <SaleStockDialog
           visit={stockVisit.visit}
