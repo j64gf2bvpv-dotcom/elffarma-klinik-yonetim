@@ -2,7 +2,7 @@ import * as React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { tr as trLocale } from 'date-fns/locale/tr'
-import { CheckCircle2, Loader2, PackageCheck, PackageOpen, Truck, Users, Boxes, ClipboardList, Plus, Pencil, Trash2 } from 'lucide-react'
+import { CheckCircle2, Loader2, PackageCheck, PackageOpen, Truck, Users, Boxes, ClipboardList, Plus, Pencil, Trash2, FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,6 +23,7 @@ import { useSalesReps } from '@/features/salesReps/hooks'
 import { SaleStockDialog } from '@/features/doctorVisits/SaleStockDialog'
 import { matchProduct } from '@/features/doctorVisits/productMatch'
 import { OwedEntryDialog, type OwedEditTarget } from './OwedEntryDialog'
+import { OwedListImportDialog } from './OwedListImportDialog'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import type { CargoShipment, DoctorVisit, Sale } from '@/types/database'
 
@@ -100,6 +101,7 @@ export function OwedProductsPanel() {
   const [stockVisit, setStockVisit] = React.useState<OwedRow | null>(null)
   const [entryOpen, setEntryOpen] = React.useState(false)
   const [editTarget, setEditTarget] = React.useState<OwedEditTarget | null>(null)
+  const [listOpen, setListOpen] = React.useState(false)
 
   async function removeManual(r: OwedRow) {
     if (!r.pendingId || !(await confirm(`${r.doctor} — ${r.qty} ${r.productName} borç listesinden silinsin mi?`))) return
@@ -283,7 +285,10 @@ export function OwedProductsPanel() {
             </button>
           ))}
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          <Button size="sm" variant="outline" onClick={() => setListOpen(true)}>
+            <FileSpreadsheet className="size-4" /> WhatsApp / Excel’den ekle
+          </Button>
           <Button size="sm" onClick={() => { setEditTarget(null); setEntryOpen(true) }}>
             <Plus className="size-4" /> Elle ekle
           </Button>
@@ -309,7 +314,7 @@ export function OwedProductsPanel() {
       ) : groups.length === 0 ? (
         <Card>
           <CardContent className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-            <CheckCircle2 className="size-4 text-success" /> {filter === 'bekleyen' ? 'Gönderilmeyi bekleyen ürün yok. Elle eklemek için sağ üstteki “Elle ekle” düğmesini kullanın.' : 'Kayıt yok.'}
+            <CheckCircle2 className="size-4 text-success" /> {filter === 'bekleyen' ? 'Gönderilmeyi bekleyen ürün yok. Eklemek için sağ üstteki “WhatsApp / Excel’den ekle” ya da “Elle ekle” düğmesini kullanın.' : 'Kayıt yok.'}
           </CardContent>
         </Card>
       ) : (
@@ -410,6 +415,12 @@ export function OwedProductsPanel() {
         </Card>
       )}
       <OwedEntryDialog open={entryOpen} onOpenChange={setEntryOpen} edit={editTarget} />
+      <OwedListImportDialog
+        open={listOpen}
+        onOpenChange={setListOpen}
+        products={products}
+        existing={open.map((r) => ({ customerId: r.customerId, doctor: r.doctor, productName: r.productName, qty: r.qty }))}
+      />
       {stockVisit?.visit && (
         <SaleStockDialog
           visit={stockVisit.visit}
