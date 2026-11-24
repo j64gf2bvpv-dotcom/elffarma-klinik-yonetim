@@ -367,10 +367,15 @@ export function compareOwedLists(
 
   type Acc = Omit<CompareRow, 'existingQty' | 'targetQty' | 'addQty' | 'status' | 'unitPrice'> & { price: number | null; waList: number[] }
   const map = new Map<string, Acc>()
-  const add = (l: OwedLine, src: 'wa' | 'xl') => {
+  // Yalnız Excel verildiyse her satır ayrı kayıt kalır (aynı doktor + ürünün iki ayrı siparişi, ayrı notlarıyla)
+  const separateXl = !wa?.length
+  const baseKey = new Map<string, string>()
+  const add = (l: OwedLine, src: 'wa' | 'xl', i: number) => {
     const d = doctorKey(l.doctor, l.phone)
     if (d.key === 'n:') return
-    const key = `${d.key}|${productKey(l)}`
+    const base = `${d.key}|${productKey(l)}`
+    const key = src === 'xl' && separateXl ? `${base}#${i}` : base
+    baseKey.set(key, base)
     let a = map.get(key)
     if (!a) {
       a = {
@@ -402,8 +407,8 @@ export function compareOwedLists(
       a.waRepeated = new Set(a.waList).size > 1
     }
   }
-  for (const l of wa ?? []) add(l, 'wa')
-  for (const l of xl ?? []) add(l, 'xl')
+  for (const [i, l] of (wa ?? []).entries()) add(l, 'wa', i)
+  for (const [i, l] of (xl ?? []).entries()) add(l, 'xl', i)
 
   // Programdaki açık borçlar aynı anahtarla toplanır
   const existingByKey = new Map<string, number>()
@@ -427,7 +432,10 @@ export function compareOwedLists(
             ? 'yalniz_wa'
             : 'yalniz_xl'
       const targetQty = a.xlQty ?? a.waQty ?? 0
-      const existingQty = existingByKey.get(a.key) ?? 0
+      // Programdaki adet aynı doktor + ürünün satırlarına sırayla düşülür
+      const base = baseKey.get(a.key) ?? a.key
+      const existingQty = Math.min(targetQty, existingByKey.get(base) ?? 0)
+      existingByKey.set(base, (existingByKey.get(base) ?? 0) - existingQty)
       return {
         ...a,
         status,

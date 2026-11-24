@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.443] - 2026-11-24
+- Borçlu Olduğumuz Ürünler › Dışa Aktar: kullanıcının "ürün borçları" Excel'i düzeninde — her doktor tek satır, ürünler yan yana, fatura/vade, tutar, not ve kargo; ürün ürün ayrıntılı Excel menüde ayrı seçenek. Excel'den içe aktarmada "Not" sütunu kayda yazılıyor, 0 ₺ (MF) satırlara katalog fiyatı yazılmıyor, aynı doktorun aynı ürünü ayrı satırlardaysa ayrı kayıt kalıyor.
+
 ## [2.17.442] - 2026-11-24
 - Stok › Borçlu Olduğumuz Ürünler: "WhatsApp / Excel'den ekle" — WhatsApp konuşması (yapıştır ya da dışa aktarılan .txt/.zip) ve Excel listesi okunup birbiriyle ve programdaki açık borçlarla kıyaslanıyor; iki listede aynı olanlar seçili, adeti farklı ya da tek listede geçenler işaretli geliyor, programda zaten olan adet düşülüyor, Cari Kart'ta olmayan doktora yeni kart açılıyor.
 

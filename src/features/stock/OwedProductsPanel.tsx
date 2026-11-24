@@ -9,6 +9,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, PREMIUM_TABLE } from '@/components/ui/table'
 import { ExportMenu } from '@/components/ExportMenu'
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { exportToExcel, type ExportColumn } from '@/lib/exportData'
 import { cn, getErrorMessage } from '@/lib/utils'
 import { supabase } from '@/lib/supabaseClient'
 import { useSales } from '@/features/sales/hooks'
@@ -64,6 +66,27 @@ const fold = (s: string) =>
 const money = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
 const day = (d: string | null) => (d ? format(new Date(d.length === 10 ? `${d}T00:00:00` : d), 'd MMM yyyy', { locale: trLocale }) : '—')
 const SOURCE_LABEL: Record<Source, string> = { satis: 'Satış', elle: 'Eksik ürün', rapor: 'Temsilci raporu' }
+
+interface DoctorExportRow {
+  no: number
+  doctor: string
+  items: string
+  invoice: string
+  amount: number
+  notes: string
+  cargo: string
+}
+
+const detailColumns: ExportColumn<OwedRow>[] = [
+  { header: 'Doktor', value: (r) => r.doctor },
+  { header: 'Ürün', value: (r) => r.productName },
+  { header: 'Adet', value: (r) => r.qty },
+  { header: 'Tutar', value: (r) => r.amount ?? '' },
+  { header: 'Tarih', value: (r) => day(r.date) },
+  { header: 'Kaynak', value: (r) => SOURCE_LABEL[r.source] },
+  { header: 'Not', value: (r) => r.note ?? '' },
+  { header: 'Kargo', value: (r) => cargoLabel(r).text },
+]
 
 function useRepPendingVisits() {
   return useQuery({
@@ -223,6 +246,33 @@ export function OwedProductsPanel() {
     }
   }
 
+  // Dışa aktarma: kullanıcının kendi "ürün borçları" Excel'i düzeninde — her doktor tek satır, ürünler yan yana
+  // (kullanıcı isteği, 2026-11-24: "aynı benim sana attığım excel gibi dışa aktar kısmı olsun")
+  const doctorExport = React.useMemo<DoctorExportRow[]>(() => {
+    const map = new Map<string, OwedRow[]>()
+    for (const r of visible) {
+      const k = r.customerId ?? fold(r.doctor)
+      if (!map.has(k)) map.set(k, [])
+      map.get(k)!.push(r)
+    }
+    return [...map.values()]
+      .sort((a, b) => a[0].doctor.localeCompare(b[0].doctor, 'tr'))
+      .map((rs, i) => {
+        const notes = [...new Set(rs.map((r) => r.note?.trim()).filter(Boolean) as string[])]
+        const text = notes.join(' ')
+        const invoice = [/faturas[ıi]z/i.test(text) ? 'faturasız' : '', text.match(/\d+\s*(?:gün|ay)\s*vade/i)?.[0] ?? ''].filter(Boolean).join(', ')
+        return {
+          no: i + 1,
+          doctor: rs[0].doctor,
+          items: rs.map((r) => `${r.qty} ${r.productName}`).join(', '),
+          invoice,
+          amount: rs.reduce((s, r) => s + (r.amount ?? 0), 0),
+          notes: notes.join(' | '),
+          cargo: [...new Set(rs.map((r) => cargoLabel(r).text))].join(', '),
+        }
+      })
+  }, [visible])
+
   const groups = React.useMemo(() => {
     const map = new Map<string, { title: string; sub: string; rows: OwedRow[] }>()
     for (const r of visible) {
@@ -292,19 +342,24 @@ export function OwedProductsPanel() {
           <Button size="sm" onClick={() => { setEditTarget(null); setEntryOpen(true) }}>
             <Plus className="size-4" /> Elle ekle
           </Button>
-          <ExportMenu<OwedRow>
+          <ExportMenu<DoctorExportRow>
             title="Borçlu Olduğumuz Ürünler"
-            filename="borclu-oldugumuz-urunler"
-            rows={visible}
+            filename="urun-borclari"
+            rows={doctorExport}
             columns={[
+              { header: 'Sıra', value: (r) => r.no },
               { header: 'Doktor', value: (r) => r.doctor },
-              { header: 'Ürün', value: (r) => r.productName },
-              { header: 'Adet', value: (r) => r.qty },
-              { header: 'Tutar', value: (r) => r.amount ?? '' },
-              { header: 'Tarih', value: (r) => day(r.date) },
-              { header: 'Kaynak', value: (r) => SOURCE_LABEL[r.source] },
-              { header: 'Kargo', value: (r) => cargoLabel(r).text },
+              { header: 'Ürünler', value: (r) => r.items },
+              { header: 'Fatura / Vade', value: (r) => r.invoice },
+              { header: 'Tutar', value: (r) => r.amount || '' },
+              { header: 'Not', value: (r) => r.notes },
+              { header: 'Kargo', value: (r) => r.cargo },
             ]}
+            extraItems={
+              <DropdownMenuItem onClick={() => (visible.length ? exportToExcel('borclu-urunler-ayrintili', detailColumns, visible) : toast.error('Dışa aktarılacak veri yok'))}>
+                <FileSpreadsheet className="size-4" /> Ürün ürün ayrıntılı Excel
+              </DropdownMenuItem>
+            }
           />
         </div>
       </div>
