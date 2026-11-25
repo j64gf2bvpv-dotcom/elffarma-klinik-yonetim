@@ -269,7 +269,9 @@ const HEAD = {
   event: /kongre|workshop|etkinlik|masterclass|organizasyon|eğitim/i,
   date: /tarih/i,
   ordered: /^sipariş(\s*(adedi|adet|miktarı?))?$|^siparis(\s*(adedi|adet))?$/i,
-  deliveredItems: /verilen\s*ürün|verilen\s*urun|teslim\s*edilen\s*ürün/i,
+  deliveredItems: /verilen\s*ürün|verilen\s*urun|teslim\s*edilen\s*ürün|al[ıi]nan\s*ürün|al[ıi]nan\s*urun/i,
+  /** "Borçlu Ürünler" sütunu: "5 BVRS PL" — ürün ve eksik kalan adet birlikte */
+  owed: /borçlu\s*ürün|borclu\s*urun/i,
   delivered: /verilen|teslim\s*edilen|gönderilen|gonderilen/i,
   remaining: /^eksik(\s*kalan)?|^kalan(\s*adet)?$/i,
 }
@@ -321,18 +323,21 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
         if (i >= 0) used.push(i)
         return i
       }
+      // "Borçlu Ürünler" borç sözcüğü içerdiği hâlde ürün sütunudur; bu düzende "Fiyat" borçlu ürünlerin tutarıdır
+      const owedCol = header.findIndex((h) => HEAD.owed.test(h))
+      if (owedCol >= 0) used.push(owedCol)
       const dCol = col(HEAD.doctor)
       const repCol = col(HEAD.rep)
       const evCol = col(HEAD.event)
       const dateCol = col(HEAD.date)
-      const pCol = col(HEAD.product)
-      const ordCol = col(HEAD.ordered)
       const delItemsCol = col(HEAD.deliveredItems)
+      const pCol = owedCol >= 0 ? owedCol : col(HEAD.product)
+      const ordCol = col(HEAD.ordered)
       const delCol = col(HEAD.delivered)
       const remCol = col(HEAD.remaining)
       const qCol = col(HEAD.qty)
+      const tCol = owedCol >= 0 ? col(/^fiyat$|^tutar$|^toplam/i) : col(HEAD.total)
       const prCol = col(HEAD.price)
-      const tCol = col(HEAD.total)
       const phCol = col(HEAD.phone)
       const nCol = col(HEAD.note)
       const productCols = header.map((h, i) => ({ i, p: h ? matchProduct(h, products) : undefined, h })).filter((x) => !used.includes(x.i) && (x.p || PRODUCT_RE.test(x.h)))
@@ -365,7 +370,7 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
             productText: productTextOf(ptext) || ptext,
             product: matchProduct(ptext, products),
             qty,
-            unitPrice: unit ?? (total ? Math.round((total / qty) * 100) / 100 : null),
+            unitPrice: unit ?? (total != null ? Math.round((total / qty) * 100) / 100 : null),
             raw: [d || doctor, ptext, String(qty)].filter(Boolean).join(' · '),
             note: cell(nCol) || undefined,
             rep: cell(repCol) || null,

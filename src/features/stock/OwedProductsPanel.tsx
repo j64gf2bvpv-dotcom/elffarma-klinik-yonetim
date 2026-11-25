@@ -78,6 +78,14 @@ const fold = (s: string) =>
 const money = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })
 const day = (d: string | null) => (d ? format(new Date(d.length === 10 ? `${d}T00:00:00` : d), 'd MMM yyyy', { locale: trLocale }) : '—')
 
+// Liste düzeni (kullanıcı isteği, 2026-11-25): Doktor İsmi | Satış Yapan | Alınan Ürünler | Fiyat | Borçlu Ürünler | Not
+/** Doktorun bu siparişten aldığı (kendisine verilen) ürünler */
+const receivedText = (r: OwedRow) => r.deliveredItems || (r.delivered > 0 ? `${r.delivered} ${r.productName}` : '')
+/** Hâlâ borçlu olduğumuz ürün: "5 BVRS PL" */
+const owedText = (r: OwedRow) => `${r.qty} ${r.productName}`
+/** Not: kongre / workshop adı ve not birlikte; tarih ve satış yapan yazılmaz */
+const noteText = (r: OwedRow) => [r.event, r.note].filter(Boolean).join(' · ')
+
 interface DoctorExportRow {
   no: number
   doctor: string
@@ -93,20 +101,12 @@ type ExportRow = OwedRow & { doctorTotal: number | '' }
 // Her ürün ayrı satır (kullanıcı isteği, 2026-11-24: "doktor ismi, satış yapan kişi, verilen ürün, eksik kalan ürün,
 // hangi kongre/workshop'ta alındığı ve tarihi; tutar ayrı, o doktora kalan toplam borç ayrı; diğer yazılar not kısmında")
 const productColumns: ExportColumn<ExportRow>[] = [
-  { header: 'Doktor', value: (r) => r.doctor },
-  { header: 'Ürün', value: (r) => r.productName },
+  { header: 'Doktor İsmi', value: (r) => r.doctor },
   { header: 'Satış Yapan', value: (r) => r.rep ?? '' },
-  { header: 'Kongre / Workshop', value: (r) => r.event ?? '' },
-  { header: 'Sipariş Tarihi', value: (r) => (r.orderDate ? day(r.orderDate) : '') },
-  { header: 'Sipariş Adedi', value: (r) => r.ordered },
-  { header: 'Verilen', value: (r) => r.delivered },
-  { header: 'Verilen Ürünler', value: (r) => r.deliveredItems ?? '' },
-  { header: 'Eksik Kalan', value: (r) => r.qty },
-  { header: 'Birim Fiyat', value: (r) => (r.qty ? (r.amount ?? 0) / r.qty : '') },
-  { header: 'Tutar', value: (r) => r.amount ?? '' },
-  { header: 'Doktora Kalan Toplam Borç', value: (r) => r.doctorTotal },
-  { header: 'Kargo', value: (r) => cargoLabel(r).text },
-  { header: 'Not', value: (r) => r.note ?? '' },
+  { header: 'Alınan Ürünler', value: (r) => receivedText(r) },
+  { header: 'Fiyat', value: (r) => r.amount ?? '' },
+  { header: 'Borçlu Ürünler', value: (r) => owedText(r) },
+  { header: 'Not', value: (r) => noteText(r) },
 ]
 
 function useRepPendingVisits() {
@@ -416,16 +416,13 @@ export function OwedProductsPanel() {
             <Table className={PREMIUM_TABLE}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[22%]">{view === 'doktor' ? 'Ürün' : 'Doktor'}</TableHead>
-                  <TableHead className="hidden xl:table-cell">Satış Yapan</TableHead>
-                  <TableHead className="hidden xl:table-cell">Kongre / Workshop</TableHead>
-                  <TableHead className="hidden lg:table-cell">Sipariş Tarihi</TableHead>
-                  <TableHead className="hidden text-right md:table-cell">Sipariş</TableHead>
-                  <TableHead className="hidden text-right md:table-cell">Verilen</TableHead>
-                  <TableHead className="text-right">Eksik Kalan</TableHead>
-                  <TableHead className="text-right">Tutar</TableHead>
-                  <TableHead className="text-right">Doktora Kalan Toplam Borç</TableHead>
-                  <TableHead>Kargo</TableHead>
+                  <TableHead className="w-[18%]">Doktor İsmi</TableHead>
+                  <TableHead className="hidden md:table-cell">Satış Yapan</TableHead>
+                  <TableHead className="hidden lg:table-cell">Alınan Ürünler</TableHead>
+                  <TableHead className="text-right">Fiyat</TableHead>
+                  <TableHead>Borçlu Ürünler</TableHead>
+                  <TableHead className="hidden w-[24%] sm:table-cell">Not</TableHead>
+                  <TableHead className="hidden xl:table-cell">Kargo</TableHead>
                   <TableHead className="text-right">İşlem</TableHead>
                 </TableRow>
               </TableHeader>
@@ -433,7 +430,7 @@ export function OwedProductsPanel() {
                 {groups.map((g) => (
                   <React.Fragment key={g.title}>
                     <TableRow className="bg-primary/5 hover:bg-primary/5">
-                      <TableCell colSpan={11} className="py-2">
+                      <TableCell colSpan={8} className="py-2">
                         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span className="font-semibold">{g.title}</span>
                           <span className="text-xs text-muted-foreground">
@@ -442,33 +439,29 @@ export function OwedProductsPanel() {
                         </span>
                       </TableCell>
                     </TableRow>
-                    {g.rows.map((r, idx) => {
+                    {g.rows.map((r) => {
                       const c = cargoLabel(r)
-                      const total = doctorTotal.get(doctorKey(r)) ?? 0
-                      // Doktora göre görünümde toplam borç yalnız doktorun ilk satırında
-                      const showTotal = view === 'urun' || idx === 0
                       return (
                         <React.Fragment key={r.key}>
-                        <TableRow className={cn((r.note || r.deliveredItems) && 'border-b-0')}>
+                        <TableRow>
                           <TableCell className="whitespace-normal">
-                            <span className="font-medium">{view === 'doktor' ? r.productName : r.doctor}</span>
+                            <span className="font-medium">{r.doctor}</span>
                             {/* Dar ekranda gizlenen sütunlar adın altında */}
-                            <span className="block text-xs text-muted-foreground xl:hidden">
-                              {[r.rep, r.event, r.orderDate ? day(r.orderDate) : null].filter(Boolean).join(' · ')}
-                            </span>
-                            <span className="block text-xs text-muted-foreground md:hidden">
-                              Sipariş {r.ordered} · verilen {r.delivered}
-                            </span>
+                            {r.rep && <span className="block text-xs text-muted-foreground md:hidden">{r.rep}</span>}
                           </TableCell>
-                          <TableCell className="hidden whitespace-normal xl:table-cell">{r.rep || '—'}</TableCell>
-                          <TableCell className="hidden whitespace-normal xl:table-cell">{r.event || '—'}</TableCell>
-                          <TableCell className="hidden whitespace-normal lg:table-cell">{r.orderDate ? day(r.orderDate) : '—'}</TableCell>
-                          <TableCell className="hidden text-right tabular-nums md:table-cell">{r.ordered}</TableCell>
-                          <TableCell className="hidden text-right tabular-nums md:table-cell">{r.delivered}</TableCell>
-                          <TableCell className="text-right font-semibold tabular-nums">{r.qty}</TableCell>
+                          <TableCell className="hidden whitespace-normal md:table-cell">{r.rep || '—'}</TableCell>
+                          <TableCell className="hidden whitespace-normal text-success lg:table-cell">{receivedText(r) || '—'}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.amount != null ? money(r.amount) : '—'}</TableCell>
-                          <TableCell className="text-right font-semibold tabular-nums">{showTotal && r.status !== 'gonderildi' ? money(total) : ''}</TableCell>
-                          <TableCell>
+                          <TableCell className="whitespace-normal">
+                            <span className="font-semibold">{owedText(r)}</span>
+                            {receivedText(r) && <span className="block text-xs text-success lg:hidden">Alınan: {receivedText(r)}</span>}
+                            <span className={cn('mt-0.5 flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium xl:hidden', c.tone === 'ok' && 'bg-success/12 text-success', c.tone === 'wait' && 'bg-warning/15 text-warning', c.tone === 'none' && 'bg-destructive/10 text-destructive')}>
+                              {c.tone === 'ok' ? <PackageCheck className="size-3.5" /> : <Truck className="size-3.5" />} {c.text}
+                            </span>
+                            {noteText(r) && <span className={cn('block text-xs sm:hidden', /incelen/i.test(noteText(r)) ? 'font-medium text-warning' : 'text-muted-foreground')}>{noteText(r)}</span>}
+                          </TableCell>
+                          <TableCell className={cn('hidden whitespace-normal text-sm sm:table-cell', /incelen/i.test(noteText(r)) ? 'font-medium text-warning' : 'text-muted-foreground')}>{noteText(r) || '—'}</TableCell>
+                          <TableCell className="hidden xl:table-cell">
                             <span
                               className={cn(
                                 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
@@ -521,26 +514,6 @@ export function OwedProductsPanel() {
                             )}
                           </TableCell>
                         </TableRow>
-                        {(r.note || r.deliveredItems) && (
-                          // Verilen ürünler ve not, ürün satırının altında satır boyunca (kullanıcı isteği: "not kısmı düzgün,
-                          // uzunlamasına"; "hangi ürünler verildi onların da isimlerini yazman gerek")
-                          <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={11} className="pt-0 pb-3 whitespace-normal">
-                              <div className="grid gap-0.5">
-                              {r.deliveredItems && (
-                                <span className="text-sm text-success">
-                                  <span className="font-semibold">Verilen ürünler:</span> {r.deliveredItems}
-                                </span>
-                              )}
-                              {r.note && (
-                                <span className={cn('text-sm', /incelen/i.test(r.note) ? 'font-medium text-warning' : 'text-muted-foreground')}>
-                                  <span className="font-semibold">Not:</span> {r.note}
-                                </span>
-                              )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
                         </React.Fragment>
                       )
                     })}
