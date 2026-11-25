@@ -292,9 +292,8 @@ const HEAD = {
   event: /kongre|workshop|etkinlik|masterclass|organizasyon|eğitim/i,
   date: /tarih/i,
   ordered: /^sipariş(\s*(adedi|adet|miktarı?))?$|^siparis(\s*(adedi|adet))?$/i,
-  deliveredItems: /verilen\s*ürün|verilen\s*urun|teslim\s*edilen\s*ürün/i,
-  /** "Alınan Ürünler": doktorun sipariş ettiği ürün ve adet, ör. "6 Fillicia" */
-  orderedItems: /al[ıi]nan\s*ürün|al[ıi]nan\s*urun|sipariş\s*edilen\s*ürün/i,
+  /** "Alınan Ürünler" / "Verilen Ürünler": doktorun bu siparişten teslim aldıkları */
+  deliveredItems: /verilen\s*ürün|verilen\s*urun|teslim\s*edilen\s*ürün|al[ıi]nan\s*ürün|al[ıi]nan\s*urun/i,
   /** "Borçlu Ürünler" sütunu: "5 BVRS PL" — ürün ve eksik kalan adet birlikte */
   owed: /borçlu\s*ürün|borclu\s*urun/i,
   delivered: /verilen|teslim\s*edilen|gönderilen|gonderilen/i,
@@ -364,7 +363,6 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
       const evCol = col(HEAD.event)
       const dateCol = col(HEAD.date)
       const delItemsCol = col(HEAD.deliveredItems)
-      const ordItemsCol = col(HEAD.orderedItems)
       const pCol = owedCol >= 0 ? owedCol : col(HEAD.product)
       const ordCol = col(HEAD.ordered)
       const delCol = col(HEAD.delivered)
@@ -391,7 +389,7 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
         if (pCol >= 0) {
           const ptext = cell(pCol)
           if (!ptext) continue
-          const ordered = toNumber(r[ordCol]) ?? (ordItemsCol >= 0 && cell(ordItemsCol) ? qtyOf(cell(ordItemsCol)) : null)
+          const ordered = toNumber(r[ordCol])
           // "Borçlu Ürünler" düzeninde yazıdaki adet eksik kalandır; verilen = alınan − borçlu
           const owedQty = owedCol >= 0 ? qtyOf(ptext) : null
           const delivered = toNumber(r[delCol]) ?? (owedQty != null && ordered != null ? Math.max(0, ordered - owedQty) : 0)
@@ -414,7 +412,7 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
             orderDate: dateCol >= 0 ? excelDate(r[dateCol]) : null,
             ordered: ordered ?? qty + delivered,
             delivered,
-            deliveredItems: cell(delItemsCol) || noteParts(cell(nCol)).given,
+            deliveredItems: (/^teslim\s*edilmedi|^hiçbiri/i.test(cell(delItemsCol)) ? '' : cell(delItemsCol)) || noteParts(cell(nCol)).given,
           })
         } else {
           for (const pc of productCols) {

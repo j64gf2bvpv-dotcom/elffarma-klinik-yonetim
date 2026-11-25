@@ -80,10 +80,9 @@ const money = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', curr
 const day = (d: string | null) => (d ? format(new Date(d.length === 10 ? `${d}T00:00:00` : d), 'd MMM yyyy', { locale: trLocale }) : '—')
 
 // Liste düzeni (kullanıcı isteği, 2026-11-25): Doktor İsmi | Satış Yapan | Alınan Ürünler | Fiyat | Borçlu Ürünler | Not
-/** Doktorun satın aldığı (sipariş ettiği) ürün: "6 Fillicia" — her satırda dolu (kullanıcı isteği, 2026-11-25) */
-const receivedText = (r: OwedRow) => `${r.ordered || r.qty} ${r.productName}`
-/** Şimdiye kadar verilenler Not'ta: "Verilen: 1 BVRS PL, 4 Elisir Lift" */
-const givenText = (r: OwedRow) => r.deliveredItems || (r.delivered > 0 ? `${r.delivered} ${r.productName}` : '')
+/** Doktorun bu siparişten teslim aldığı ürünler; hiçbiri gitmediyse açıkça yazılır (kullanıcı isteği, 2026-11-25:
+ *  "ürünlerin hangisini aldı hangisi kaldı") */
+const receivedText = (r: OwedRow) => r.deliveredItems || (r.delivered > 0 ? `${r.delivered} ${r.productName}` : 'Teslim edilmedi')
 /** Satış yapan: kayıtta yoksa eski notta WhatsApp'tan yazan kişi ("16.06 Ahsen: …", "25.08 Furkan.") */
 const REPS: [RegExp, string][] = [[/furkan/i, 'Furkan Şengül'], [/ahsen/i, 'Ahsen'], [/duygu/i, 'Duygu'], [/emrah\b(?!\s*(özer|karadurak))/i, 'Emrah'], [/atınç|atinc/i, 'Atınç'], [/burcu/i, 'Burcu']]
 const repOf = (r: OwedRow) => {
@@ -94,7 +93,7 @@ const repOf = (r: OwedRow) => {
 /** Hâlâ borçlu olduğumuz ürün: "5 BVRS PL" */
 const owedText = (r: OwedRow) => `${r.qty} ${r.productName}`
 /** Not: kongre / workshop adı ve not birlikte; tarih ve satış yapan yazılmaz */
-const noteText = (r: OwedRow) => [givenText(r) ? `Verilen: ${givenText(r)}` : '', r.event, cleanOwedNote(r.note)].filter(Boolean).join(' · ')
+const noteText = (r: OwedRow) => [r.event, cleanOwedNote(r.note)].filter(Boolean).join(' · ')
 
 interface DoctorExportRow {
   no: number
@@ -460,7 +459,7 @@ export function OwedProductsPanel() {
                             {repOf(r) && <span className="block text-xs text-muted-foreground md:hidden">{repOf(r)}</span>}
                           </TableCell>
                           <TableCell className="hidden whitespace-normal md:table-cell">{repOf(r) || '—'}</TableCell>
-                          <TableCell className="hidden whitespace-normal lg:table-cell">{receivedText(r)}</TableCell>
+                          <TableCell className={cn('hidden whitespace-normal lg:table-cell', r.deliveredItems || r.delivered > 0 ? 'text-success' : 'text-muted-foreground')}>{receivedText(r)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.amount != null ? money(r.amount) : '—'}</TableCell>
                           <TableCell className="whitespace-normal">
                             <span className="font-semibold">{owedText(r)}</span>
