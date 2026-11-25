@@ -233,6 +233,29 @@ function chatDate(d: string): string | null {
 
 /** WhatsApp konuşması (yapıştırılmış metin ya da "Sohbeti dışa aktar" dosyası) → doktor/ürün/adet satırları.
  * Satış yapan = mesajı gönderen kişi, sipariş tarihi = mesajın tarihi. */
+/**
+ * Not yazısını sadeleştirir (kullanıcı isteği, 2026-11-25: "8.09 gibi saatleri yazma, WhatsApp / Excel listesi gibi
+ * şeyleri yazma"): gün.ay / saat ifadeleri, kaynak ve kıyas yazıları ("WhatsApp + Excel listesi", "WhatsApp 1 / Excel
+ * 5 adet", "Excel'de yok", "Sohbette bulunamadı") ve ardından kalan satış yapan adı çıkarılır.
+ */
+export function cleanOwedNote(note: string | null | undefined): string {
+  if (!note) return ''
+  let s = note
+    .replace(/\b(whatsapp|excel)\s*(\+\s*(whatsapp|excel))?\s*listesi\b/gi, '')
+    .replace(/\bwhatsapp\s*\d+\s*\/\s*excel\s*\d+(\s*adet)?/gi, '')
+    .replace(/\b(whatsapp|excel)\s*\d+\s*adet\b/gi, '')
+    .replace(/excel[’'`]?(de|da)\s*(yok(tu)?|bulunamadı|yer\s*almıyor)\s*[:.]?/gi, '')
+    .replace(/sohbette\s*bulunamadı\.?/gi, '')
+    .replace(/\b\d{1,2}[.:/]\d{1,2}([.:/]\d{2,4})?\b(\s*[A-ZÇĞİÖŞÜ][a-zçğıöşü]+[:.](?=\s|$))?/g, '')
+    .replace(/\(\s*\)/g, '')
+  s = s
+    .split(/\s*·\s*/)
+    .map((p) => p.replace(/^[\s,;:—–-]+|[\s,;:—–-]+$/g, '').replace(/\s{2,}/g, ' '))
+    .filter((p) => p && !/^(İNCELENECEK|incelenecek)$/.test(p))
+    .join(' · ')
+  return s.replace(/(İNCELENECEK|İncelenecek)\s*[—–-]\s*[:.]?\s*/g, 'İncelenecek: ').replace(/:\s*:/g, ':').trim()
+}
+
 export function parseOwedWhatsApp(text: string, products: Product[]): OwedLine[] {
   const out: OwedLine[] = []
   const current = { name: '', phone: null as string | null }

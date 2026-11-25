@@ -26,6 +26,7 @@ import { SaleStockDialog } from '@/features/doctorVisits/SaleStockDialog'
 import { matchProduct } from '@/features/doctorVisits/productMatch'
 import { OwedEntryDialog, type OwedEditTarget } from './OwedEntryDialog'
 import { OwedListImportDialog } from './OwedListImportDialog'
+import { cleanOwedNote } from './owedListImport'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import type { CargoShipment, DoctorVisit, Sale } from '@/types/database'
 
@@ -84,7 +85,7 @@ const receivedText = (r: OwedRow) => r.deliveredItems || (r.delivered > 0 ? `${r
 /** Hâlâ borçlu olduğumuz ürün: "5 BVRS PL" */
 const owedText = (r: OwedRow) => `${r.qty} ${r.productName}`
 /** Not: kongre / workshop adı ve not birlikte; tarih ve satış yapan yazılmaz */
-const noteText = (r: OwedRow) => [r.event, r.note].filter(Boolean).join(' · ')
+const noteText = (r: OwedRow) => [r.event, cleanOwedNote(r.note)].filter(Boolean).join(' · ')
 
 interface DoctorExportRow {
   no: number

@@ -13,7 +13,7 @@ import { readWhatsAppChatFile } from '@/features/doctorVisits/whatsappChat'
 import { supabase } from '@/lib/supabaseClient'
 import { cn, getErrorMessage } from '@/lib/utils'
 import type { Product } from '@/types/database'
-import { compareOwedLists, parseOwedExcel, parseOwedWhatsApp, readWorkbookMatrices, type CariLite, type CompareRow, type CompareStatus, type ExistingOwed, type OwedLine } from './owedListImport'
+import { cleanOwedNote, compareOwedLists, parseOwedExcel, parseOwedWhatsApp, readWorkbookMatrices, type CariLite, type CompareRow, type CompareStatus, type ExistingOwed, type OwedLine } from './owedListImport'
 
 const STATUS: Record<CompareStatus, { label: string; tone: 'ok' | 'warn' | 'info' }> = {
   eslesti: { label: 'İki listede aynı', tone: 'ok' },
@@ -167,7 +167,7 @@ export function OwedListImportDialog({
           product_name: r.productName,
           quantity: qty,
           unit_price: r.unitPrice || 0,
-          note: r.notes.join(' · ') || null,
+          note: cleanOwedNote(r.notes.join(' · ')) || null,
           sales_rep_name: r.rep,
           event_name: r.event,
           order_date: r.orderDate,
