@@ -84,6 +84,13 @@ const day = (d: string | null) => (d ? format(new Date(d.length === 10 ? `${d}T0
 const receivedText = (r: OwedRow) => `${r.ordered || r.qty} ${r.productName}`
 /** Şimdiye kadar verilenler Not'ta: "Verilen: 1 BVRS PL, 4 Elisir Lift" */
 const givenText = (r: OwedRow) => r.deliveredItems || (r.delivered > 0 ? `${r.delivered} ${r.productName}` : '')
+/** Satış yapan: kayıtta yoksa eski notta WhatsApp'tan yazan kişi ("16.06 Ahsen: …", "25.08 Furkan.") */
+const REPS: [RegExp, string][] = [[/furkan/i, 'Furkan Şengül'], [/ahsen/i, 'Ahsen'], [/duygu/i, 'Duygu'], [/emrah\b(?!\s*(özer|karadurak))/i, 'Emrah'], [/atınç|atinc/i, 'Atınç'], [/burcu/i, 'Burcu']]
+const repOf = (r: OwedRow) => {
+  if (r.rep) return r.rep
+  const m = (r.note ?? '').match(/\b\d{1,2}[.]\d{1,2}\s+([A-ZÇĞİÖŞÜ][a-zçğıöşü]+)[:.]/)
+  return m ? REPS.find(([re]) => re.test(m[1]))?.[1] ?? '' : ''
+}
 /** Hâlâ borçlu olduğumuz ürün: "5 BVRS PL" */
 const owedText = (r: OwedRow) => `${r.qty} ${r.productName}`
 /** Not: kongre / workshop adı ve not birlikte; tarih ve satış yapan yazılmaz */
@@ -105,7 +112,7 @@ type ExportRow = OwedRow & { doctorTotal: number | '' }
 // hangi kongre/workshop'ta alındığı ve tarihi; tutar ayrı, o doktora kalan toplam borç ayrı; diğer yazılar not kısmında")
 const productColumns: ExportColumn<ExportRow>[] = [
   { header: 'Doktor İsmi', value: (r) => r.doctor },
-  { header: 'Satış Yapan', value: (r) => r.rep ?? '' },
+  { header: 'Satış Yapan', value: (r) => repOf(r) },
   { header: 'Alınan Ürünler', value: (r) => receivedText(r) },
   { header: 'Fiyat', value: (r) => r.amount ?? '' },
   { header: 'Borçlu Ürünler', value: (r) => owedText(r) },
@@ -450,9 +457,9 @@ export function OwedProductsPanel() {
                           <TableCell className="whitespace-normal">
                             <span className="font-medium">{r.doctor}</span>
                             {/* Dar ekranda gizlenen sütunlar adın altında */}
-                            {r.rep && <span className="block text-xs text-muted-foreground md:hidden">{r.rep}</span>}
+                            {repOf(r) && <span className="block text-xs text-muted-foreground md:hidden">{repOf(r)}</span>}
                           </TableCell>
-                          <TableCell className="hidden whitespace-normal md:table-cell">{r.rep || '—'}</TableCell>
+                          <TableCell className="hidden whitespace-normal md:table-cell">{repOf(r) || '—'}</TableCell>
                           <TableCell className="hidden whitespace-normal lg:table-cell">{receivedText(r)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.amount != null ? money(r.amount) : '—'}</TableCell>
                           <TableCell className="whitespace-normal">
