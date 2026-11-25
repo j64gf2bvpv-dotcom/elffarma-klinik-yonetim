@@ -292,11 +292,21 @@ const HEAD = {
   event: /kongre|workshop|etkinlik|masterclass|organizasyon|eğitim/i,
   date: /tarih/i,
   ordered: /^sipariş(\s*(adedi|adet|miktarı?))?$|^siparis(\s*(adedi|adet))?$/i,
-  deliveredItems: /verilen\s*ürün|verilen\s*urun|teslim\s*edilen\s*ürün|al[ıi]nan\s*ürün|al[ıi]nan\s*urun/i,
+  deliveredItems: /verilen\s*ürün|verilen\s*urun|teslim\s*edilen\s*ürün/i,
+  /** "Alınan Ürünler": doktorun sipariş ettiği ürün ve adet, ör. "6 Fillicia" */
+  orderedItems: /al[ıi]nan\s*ürün|al[ıi]nan\s*urun|sipariş\s*edilen\s*ürün/i,
   /** "Borçlu Ürünler" sütunu: "5 BVRS PL" — ürün ve eksik kalan adet birlikte */
   owed: /borçlu\s*ürün|borclu\s*urun/i,
   delivered: /verilen|teslim\s*edilen|gönderilen|gonderilen/i,
   remaining: /^eksik(\s*kalan)?|^kalan(\s*adet)?$/i,
+}
+
+/** Programın dışa aktardığı notta "Verilen: …" parçası ayrı alana döner (not içinde ikinci kez görünmesin) */
+function noteParts(text: string): { note: string | undefined; given: string | null } {
+  const parts = text.split(/\s*·\s*/).filter(Boolean)
+  const g = parts.find((p) => /^verilen\s*:/i.test(p))
+  const rest = parts.filter((p) => p !== g).join(' · ')
+  return { note: rest || undefined, given: g ? g.replace(/^verilen\s*:\s*/i, '') : null }
 }
 
 /** Excel tarih hücresi (seri sayı, "12.06.2026", "12 Haz 2026", Date) → yyyy-MM-dd */
@@ -354,6 +364,7 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
       const evCol = col(HEAD.event)
       const dateCol = col(HEAD.date)
       const delItemsCol = col(HEAD.deliveredItems)
+      const ordItemsCol = col(HEAD.orderedItems)
       const pCol = owedCol >= 0 ? owedCol : col(HEAD.product)
       const ordCol = col(HEAD.ordered)
       const delCol = col(HEAD.delivered)
@@ -380,10 +391,12 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
         if (pCol >= 0) {
           const ptext = cell(pCol)
           if (!ptext) continue
-          const ordered = toNumber(r[ordCol])
-          const delivered = toNumber(r[delCol]) ?? 0
+          const ordered = toNumber(r[ordCol]) ?? (ordItemsCol >= 0 && cell(ordItemsCol) ? qtyOf(cell(ordItemsCol)) : null)
+          // "Borçlu Ürünler" düzeninde yazıdaki adet eksik kalandır; verilen = alınan − borçlu
+          const owedQty = owedCol >= 0 ? qtyOf(ptext) : null
+          const delivered = toNumber(r[delCol]) ?? (owedQty != null && ordered != null ? Math.max(0, ordered - owedQty) : 0)
           // Eksik kalan: sütunu varsa o; yoksa sipariş − verilen; yoksa adet sütunu / yazıdaki adet
-          const qty = toNumber(r[remCol]) ?? (ordered != null ? ordered - delivered : null) ?? toNumber(r[qCol]) ?? qtyOf(ptext) ?? 1
+          const qty = owedQty ?? toNumber(r[remCol]) ?? (ordered != null ? ordered - delivered : null) ?? toNumber(r[qCol]) ?? qtyOf(ptext) ?? 1
           if (qty <= 0) continue
           const unit = toNumber(r[prCol])
           const total = toNumber(r[tCol])
@@ -395,13 +408,13 @@ export function parseOwedExcel(sheets: { name: string; rows: unknown[][] }[], pr
             qty,
             unitPrice: unit ?? (total != null ? Math.round((total / qty) * 100) / 100 : null),
             raw: [d || doctor, ptext, String(qty)].filter(Boolean).join(' · '),
-            note: cell(nCol) || undefined,
+            note: noteParts(cell(nCol)).note,
             rep: cell(repCol) || null,
             event: cell(evCol) || null,
             orderDate: dateCol >= 0 ? excelDate(r[dateCol]) : null,
             ordered: ordered ?? qty + delivered,
             delivered,
-            deliveredItems: cell(delItemsCol) || null,
+            deliveredItems: cell(delItemsCol) || noteParts(cell(nCol)).given,
           })
         } else {
           for (const pc of productCols) {

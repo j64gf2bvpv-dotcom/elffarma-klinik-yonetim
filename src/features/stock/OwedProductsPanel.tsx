@@ -80,12 +80,14 @@ const money = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', curr
 const day = (d: string | null) => (d ? format(new Date(d.length === 10 ? `${d}T00:00:00` : d), 'd MMM yyyy', { locale: trLocale }) : '—')
 
 // Liste düzeni (kullanıcı isteği, 2026-11-25): Doktor İsmi | Satış Yapan | Alınan Ürünler | Fiyat | Borçlu Ürünler | Not
-/** Doktorun bu siparişten aldığı (kendisine verilen) ürünler */
-const receivedText = (r: OwedRow) => r.deliveredItems || (r.delivered > 0 ? `${r.delivered} ${r.productName}` : '')
+/** Doktorun satın aldığı (sipariş ettiği) ürün: "6 Fillicia" — her satırda dolu (kullanıcı isteği, 2026-11-25) */
+const receivedText = (r: OwedRow) => `${r.ordered || r.qty} ${r.productName}`
+/** Şimdiye kadar verilenler Not'ta: "Verilen: 1 BVRS PL, 4 Elisir Lift" */
+const givenText = (r: OwedRow) => r.deliveredItems || (r.delivered > 0 ? `${r.delivered} ${r.productName}` : '')
 /** Hâlâ borçlu olduğumuz ürün: "5 BVRS PL" */
 const owedText = (r: OwedRow) => `${r.qty} ${r.productName}`
 /** Not: kongre / workshop adı ve not birlikte; tarih ve satış yapan yazılmaz */
-const noteText = (r: OwedRow) => [r.event, cleanOwedNote(r.note)].filter(Boolean).join(' · ')
+const noteText = (r: OwedRow) => [givenText(r) ? `Verilen: ${givenText(r)}` : '', r.event, cleanOwedNote(r.note)].filter(Boolean).join(' · ')
 
 interface DoctorExportRow {
   no: number
@@ -451,11 +453,11 @@ export function OwedProductsPanel() {
                             {r.rep && <span className="block text-xs text-muted-foreground md:hidden">{r.rep}</span>}
                           </TableCell>
                           <TableCell className="hidden whitespace-normal md:table-cell">{r.rep || '—'}</TableCell>
-                          <TableCell className="hidden whitespace-normal text-success lg:table-cell">{receivedText(r) || '—'}</TableCell>
+                          <TableCell className="hidden whitespace-normal lg:table-cell">{receivedText(r)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.amount != null ? money(r.amount) : '—'}</TableCell>
                           <TableCell className="whitespace-normal">
                             <span className="font-semibold">{owedText(r)}</span>
-                            {receivedText(r) && <span className="block text-xs text-success lg:hidden">Alınan: {receivedText(r)}</span>}
+                            <span className="block text-xs text-muted-foreground lg:hidden">Alınan: {receivedText(r)}</span>
                             <span className={cn('mt-0.5 flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium xl:hidden', c.tone === 'ok' && 'bg-success/12 text-success', c.tone === 'wait' && 'bg-warning/15 text-warning', c.tone === 'none' && 'bg-destructive/10 text-destructive')}>
                               {c.tone === 'ok' ? <PackageCheck className="size-3.5" /> : <Truck className="size-3.5" />} {c.text}
                             </span>

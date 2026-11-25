@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.449] - 2026-11-25
+- Borçlu Olduğumuz Ürünler: "Alınan Ürünler" artık doktorun sipariş ettiği ürün ve adet (her satırda dolu); verilenler Not'ta "Verilen: …" olarak; içe aktarmada Borçlu Ürünler adedi eksik kalan sayılır.
+
 ## [2.17.448] - 2026-11-25
 - Borçlu Olduğumuz Ürünler: notlarda tarih/saat ("8.09" gibi) ve "WhatsApp + Excel listesi", "WhatsApp 1 / Excel 5 adet", "Excel'de yok" gibi kaynak yazıları gösterilmez, dışa aktarılmaz, içe aktarırken kaydedilmez.
 
