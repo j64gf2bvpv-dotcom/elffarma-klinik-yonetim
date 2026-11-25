@@ -80,8 +80,10 @@ const money = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', curr
 const day = (d: string | null) => (d ? format(new Date(d.length === 10 ? `${d}T00:00:00` : d), 'd MMM yyyy', { locale: trLocale }) : '—')
 
 // Liste düzeni (kullanıcı isteği, 2026-11-25): Doktor İsmi | Satış Yapan | Alınan Ürünler | Fiyat | Borçlu Ürünler | Not
-/** Doktorun bu siparişten teslim aldığı ürünler; hiçbiri gitmediyse açıkça yazılır (kullanıcı isteği, 2026-11-25:
- *  "ürünlerin hangisini aldı hangisi kaldı") */
+// Üçü ayrı (kullanıcı isteği, 2026-11-25: "alınan ürünler dursun, kalan ürünler de dursun"; "hangisini aldı hangisi kaldı")
+/** Alınan: doktorun sipariş ettiği ürün ve adet, ör. "2 BVRS PL" */
+const orderedText = (r: OwedRow) => `${r.ordered || r.qty} ${r.productName}`
+/** Teslim edilen: doktorun bu siparişten teslim aldıkları; hiçbiri gitmediyse açıkça yazılır */
 const receivedText = (r: OwedRow) => r.deliveredItems || (r.delivered > 0 ? `${r.delivered} ${r.productName}` : 'Teslim edilmedi')
 /** Satış yapan: kayıtta yoksa eski notta WhatsApp'tan yazan kişi ("16.06 Ahsen: …", "25.08 Furkan.") */
 const REPS: [RegExp, string][] = [[/furkan/i, 'Furkan Şengül'], [/ahsen/i, 'Ahsen'], [/duygu/i, 'Duygu'], [/emrah\b(?!\s*(özer|karadurak))/i, 'Emrah'], [/atınç|atinc/i, 'Atınç'], [/burcu/i, 'Burcu']]
@@ -90,7 +92,7 @@ const repOf = (r: OwedRow) => {
   const m = (r.note ?? '').match(/\b\d{1,2}[.]\d{1,2}\s+([A-ZÇĞİÖŞÜ][a-zçğıöşü]+)[:.]/)
   return m ? REPS.find(([re]) => re.test(m[1]))?.[1] ?? '' : ''
 }
-/** Hâlâ borçlu olduğumuz ürün: "5 BVRS PL" */
+/** Kalan (borçlu olduğumuz) ürün: "5 BVRS PL" */
 const owedText = (r: OwedRow) => `${r.qty} ${r.productName}`
 /** Not: kongre / workshop adı ve not birlikte; tarih ve satış yapan yazılmaz */
 const noteText = (r: OwedRow) => [r.event, cleanOwedNote(r.note)].filter(Boolean).join(' · ')
@@ -112,9 +114,10 @@ type ExportRow = OwedRow & { doctorTotal: number | '' }
 const productColumns: ExportColumn<ExportRow>[] = [
   { header: 'Doktor İsmi', value: (r) => r.doctor },
   { header: 'Satış Yapan', value: (r) => repOf(r) },
-  { header: 'Alınan Ürünler', value: (r) => receivedText(r) },
+  { header: 'Alınan Ürünler', value: (r) => orderedText(r) },
+  { header: 'Teslim Edilen', value: (r) => receivedText(r) },
+  { header: 'Kalan Ürünler', value: (r) => owedText(r) },
   { header: 'Fiyat', value: (r) => r.amount ?? '' },
-  { header: 'Borçlu Ürünler', value: (r) => owedText(r) },
   { header: 'Not', value: (r) => noteText(r) },
 ]
 
@@ -428,8 +431,9 @@ export function OwedProductsPanel() {
                   <TableHead className="w-[18%]">Doktor İsmi</TableHead>
                   <TableHead className="hidden md:table-cell">Satış Yapan</TableHead>
                   <TableHead className="hidden lg:table-cell">Alınan Ürünler</TableHead>
+                  <TableHead className="hidden lg:table-cell">Teslim Edilen</TableHead>
+                  <TableHead>Kalan Ürünler</TableHead>
                   <TableHead className="text-right">Fiyat</TableHead>
-                  <TableHead>Borçlu Ürünler</TableHead>
                   <TableHead className="hidden w-[24%] sm:table-cell">Not</TableHead>
                   <TableHead className="hidden xl:table-cell">Kargo</TableHead>
                   <TableHead className="text-right">İşlem</TableHead>
@@ -439,7 +443,7 @@ export function OwedProductsPanel() {
                 {groups.map((g) => (
                   <React.Fragment key={g.title}>
                     <TableRow className="bg-primary/5 hover:bg-primary/5">
-                      <TableCell colSpan={8} className="py-2">
+                      <TableCell colSpan={9} className="py-2">
                         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span className="font-semibold">{g.title}</span>
                           <span className="text-xs text-muted-foreground">
@@ -459,16 +463,17 @@ export function OwedProductsPanel() {
                             {repOf(r) && <span className="block text-xs text-muted-foreground md:hidden">{repOf(r)}</span>}
                           </TableCell>
                           <TableCell className="hidden whitespace-normal md:table-cell">{repOf(r) || '—'}</TableCell>
+                          <TableCell className="hidden whitespace-normal lg:table-cell">{orderedText(r)}</TableCell>
                           <TableCell className={cn('hidden whitespace-normal lg:table-cell', r.deliveredItems || r.delivered > 0 ? 'text-success' : 'text-muted-foreground')}>{receivedText(r)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{r.amount != null ? money(r.amount) : '—'}</TableCell>
                           <TableCell className="whitespace-normal">
                             <span className="font-semibold">{owedText(r)}</span>
-                            <span className="block text-xs text-muted-foreground lg:hidden">Alınan: {receivedText(r)}</span>
+                            <span className="block text-xs text-muted-foreground lg:hidden">Alınan: {orderedText(r)} · Teslim: {receivedText(r)}</span>
                             <span className={cn('mt-0.5 flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium xl:hidden', c.tone === 'ok' && 'bg-success/12 text-success', c.tone === 'wait' && 'bg-warning/15 text-warning', c.tone === 'none' && 'bg-destructive/10 text-destructive')}>
                               {c.tone === 'ok' ? <PackageCheck className="size-3.5" /> : <Truck className="size-3.5" />} {c.text}
                             </span>
                             {noteText(r) && <span className={cn('block text-xs sm:hidden', /incelen/i.test(noteText(r)) ? 'font-medium text-warning' : 'text-muted-foreground')}>{noteText(r)}</span>}
                           </TableCell>
+                          <TableCell className="text-right tabular-nums">{r.amount != null ? money(r.amount) : '—'}</TableCell>
                           <TableCell className={cn('hidden whitespace-normal text-sm sm:table-cell', /incelen/i.test(noteText(r)) ? 'font-medium text-warning' : 'text-muted-foreground')}>{noteText(r) || '—'}</TableCell>
                           <TableCell className="hidden xl:table-cell">
                             <span
