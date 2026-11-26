@@ -13,6 +13,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   MoreHorizontal,
   Eye,
   CalendarDays,
@@ -118,22 +120,31 @@ function stepFromHint(e: React.KeyboardEvent<HTMLInputElement>, value: string, h
 }
 
 /**
- * Aynısı fareyle: kutu boşken sağdaki küçük ok düğmelerine tıklanırsa önce ipucu
- * rakamı kutuya yazılır, tarayıcı da onu bir artırır/azaltır (kullanıcı
- * bildirimi, 2026-10-27: "oka tıklayıp yükseltip azaltırken sıfırlamasın").
- * Sadece ok düğmelerinin olduğu sağ kenar (son ~22 px) yakalanır; kutunun içine
- * tıklamak kutuyu doldurmaz.
+ * Sayım kutusunun sağındaki ▲▼ düğmeleri (kullanıcı isteği, 2026-11-26: "günlük sayımda yukarı aşağı oklar
+ * vardı, yükseltip azaltıyorduk, ekle"). Tarayıcının kendi okları dar pencerede kutuyu taşırdığı için
+ * gizlenmişti; yerine kutunun içine sığan kendi düğmelerimiz. Kutu boşsa gri ipucu rakamından (mevcut adet)
+ * bir artırır/azaltır, 0'dan başlamaz. Odak kutuda kalır, kayıt her zamanki gibi kutudan çıkınca yapılır.
  */
-function fillHintOnSpinner(e: React.MouseEvent<HTMLInputElement>, value: string, hint: number, set: (v: string) => void) {
-  if (value !== '') return
-  const el = e.currentTarget
-  const x = e.clientX - el.getBoundingClientRect().left
-  if (x < el.clientWidth - 22) return
-  // Tarayıcının kendi adımına bırakmadan biz uygularız: üst yarı = artır, alt yarı = azalt
-  e.preventDefault()
-  const up = e.clientY - el.getBoundingClientRect().top < el.clientHeight / 2
-  set(String(Math.max(0, hint + (up ? 1 : -1))))
-  el.focus()
+function StepButtons({ inputId, value, hint, set }: { inputId: string; value: string; hint: number; set: (v: string) => void }) {
+  const step = (d: 1 | -1) => (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const base = value === '' ? hint : Number(value) || 0
+    set(String(Math.max(0, base + d)))
+    document.getElementById(inputId)?.focus()
+  }
+  const cls =
+    'flex h-1/2 w-3.5 items-center justify-center text-foreground/70 hover:bg-muted hover:text-foreground'
+  return (
+    <div className="absolute inset-y-px right-px flex flex-col overflow-hidden rounded-r-md">
+      <button type="button" tabIndex={-1} aria-label="Bir artır" className={cls} onMouseDown={step(1)}>
+        <ChevronUp className="size-3" />
+      </button>
+      <button type="button" tabIndex={-1} aria-label="Bir azalt" className={cls} onMouseDown={step(-1)}>
+        <ChevronDown className="size-3" />
+      </button>
+    </div>
+  )
 }
 
 function resolveCounted(baseline: number, counted: number | null): number {
@@ -283,7 +294,7 @@ function CountItemRow({
 
   const inputCls = (filled: boolean) =>
     cn(
-      'mx-auto h-7 w-full max-w-14 min-w-0 px-0.5 text-center text-sm tabular-nums placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+      'h-7 w-full min-w-0 pr-3.5 pl-0.5 text-center text-sm tabular-nums placeholder:text-foreground placeholder:opacity-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
       filled && 'border-primary/60 bg-primary/5 font-semibold',
     )
   const readCell = (v: number | null) =>
@@ -303,72 +314,78 @@ function CountItemRow({
         {readOnly ? (
           readCell(item.counted_quantity)
         ) : (
-          <Input
-            id={`count-paket-${item.id}`}
-            type="number"
-            min="0"
-            className={inputCls(paketValue !== '')}
-            placeholder={String(item.products.current_quantity)}
-            value={paketValue}
-            onChange={(e) => setPaketValue(e.target.value)}
-            onMouseDown={(e) => fillHintOnSpinner(e, paketValue, item.products.current_quantity, setPaketValue)}
-            onBlur={handleBlurPaket}
-            onKeyDown={(e) => {
-              if (stepFromHint(e, paketValue, item.products.current_quantity, setPaketValue)) return
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                document.getElementById(`count-kutu-${item.id}`)?.focus()
-              }
-            }}
-          />
+          <div className="relative mx-auto w-full max-w-16">
+            <Input
+              id={`count-paket-${item.id}`}
+              type="number"
+              min="0"
+              className={inputCls(paketValue !== '')}
+              placeholder={String(item.products.current_quantity)}
+              value={paketValue}
+              onChange={(e) => setPaketValue(e.target.value)}
+              onBlur={handleBlurPaket}
+              onKeyDown={(e) => {
+                if (stepFromHint(e, paketValue, item.products.current_quantity, setPaketValue)) return
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  document.getElementById(`count-kutu-${item.id}`)?.focus()
+                }
+              }}
+            />
+            <StepButtons inputId={`count-paket-${item.id}`} value={paketValue} hint={item.products.current_quantity} set={setPaketValue} />
+          </div>
         )}
       </TableCell>
       <TableCell className="text-center">
         {readOnly ? (
           readCell(item.counted_quantity_small_box)
         ) : (
-          <Input
-            id={`count-kutu-${item.id}`}
-            type="number"
-            min="0"
-            className={inputCls(kutuValue !== '')}
-            placeholder={String(item.products.small_box_quantity ?? 0)}
-            value={kutuValue}
-            onChange={(e) => setKutuValue(e.target.value)}
-            onMouseDown={(e) => fillHintOnSpinner(e, kutuValue, item.products.small_box_quantity ?? 0, setKutuValue)}
-            onBlur={handleBlurKutu}
-            onKeyDown={(e) => {
-              if (stepFromHint(e, kutuValue, item.products.small_box_quantity ?? 0, setKutuValue)) return
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                document.getElementById(`count-flakon-${item.id}`)?.focus()
-              }
-            }}
-          />
+          <div className="relative mx-auto w-full max-w-16">
+            <Input
+              id={`count-kutu-${item.id}`}
+              type="number"
+              min="0"
+              className={inputCls(kutuValue !== '')}
+              placeholder={String(item.products.small_box_quantity ?? 0)}
+              value={kutuValue}
+              onChange={(e) => setKutuValue(e.target.value)}
+              onBlur={handleBlurKutu}
+              onKeyDown={(e) => {
+                if (stepFromHint(e, kutuValue, item.products.small_box_quantity ?? 0, setKutuValue)) return
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  document.getElementById(`count-flakon-${item.id}`)?.focus()
+                }
+              }}
+            />
+            <StepButtons inputId={`count-kutu-${item.id}`} value={kutuValue} hint={item.products.small_box_quantity ?? 0} set={setKutuValue} />
+          </div>
         )}
       </TableCell>
       <TableCell className="border-r-2 border-r-primary/30! px-1.5 text-center">
         {readOnly ? (
           readCell(item.counted_quantity_flakon)
         ) : (
-          <Input
-            id={`count-flakon-${item.id}`}
-            type="number"
-            min="0"
-            className={inputCls(flakonValue !== '')}
-            placeholder={String(item.products.flakon_quantity)}
-            value={flakonValue}
-            onChange={(e) => setFlakonValue(e.target.value)}
-            onMouseDown={(e) => fillHintOnSpinner(e, flakonValue, item.products.flakon_quantity, setFlakonValue)}
-            onBlur={handleBlurFlakon}
-            onKeyDown={(e) => {
-              if (stepFromHint(e, flakonValue, item.products.flakon_quantity, setFlakonValue)) return
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                if (nextItemId) document.getElementById(`count-paket-${nextItemId}`)?.focus()
-              }
-            }}
-          />
+          <div className="relative mx-auto w-full max-w-16">
+            <Input
+              id={`count-flakon-${item.id}`}
+              type="number"
+              min="0"
+              className={inputCls(flakonValue !== '')}
+              placeholder={String(item.products.flakon_quantity)}
+              value={flakonValue}
+              onChange={(e) => setFlakonValue(e.target.value)}
+              onBlur={handleBlurFlakon}
+              onKeyDown={(e) => {
+                if (stepFromHint(e, flakonValue, item.products.flakon_quantity, setFlakonValue)) return
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (nextItemId) document.getElementById(`count-paket-${nextItemId}`)?.focus()
+                }
+              }}
+            />
+            <StepButtons inputId={`count-flakon-${item.id}`} value={flakonValue} hint={item.products.flakon_quantity} set={setFlakonValue} />
+          </div>
         )}
       </TableCell>
       <TableCell className="whitespace-normal">

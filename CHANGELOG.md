@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.453] - 2026-11-26
+- Günlük Sayım: Tam Paket / Küçük Kutu / Flakon kutularına yeniden yukarı-aşağı oklar eklendi (boşsa mevcut adetten bir artırır/azaltır); kutulardaki rakamlar artık soluk değil, koyu görünüyor.
+
 ## [2.17.452] - 2026-11-25
 - Borçlu Olduğumuz Ürünler: her ürün için Alınan Ürünler (sipariş), Teslim Edilen ve Kalan Ürünler ayrı sütunlarda; tamamı teslim edilenler "Kalmadı" ile içe aktarılmaz.
 
