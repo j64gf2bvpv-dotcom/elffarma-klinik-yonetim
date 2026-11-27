@@ -612,7 +612,7 @@ function PackageSizeCell({ product }: { product: Product }) {
 function CampaignBadge({ text }: { text: string }) {
   const parts = text.split(/\s*·\s*/).filter(Boolean)
   return (
-    <span className="mx-auto inline-flex w-full max-w-48 flex-col items-center px-2 py-1 text-center text-xs leading-snug font-medium break-words whitespace-normal text-destructive">
+    <span className="mx-auto inline-flex w-full max-w-48 flex-col items-center px-1 text-center text-[11px] leading-tight font-medium break-words whitespace-normal text-destructive">
       {parts.map((part, i) => (
         <span key={i}>{part}</span>
       ))}
@@ -762,7 +762,8 @@ function CategoryCell({ product }: { product: Product }) {
  * dar-ama-uzun bir "çubuk". Gerçek 1400/1024/800/600/400px pencere
  * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
  */
-const PRODUCT_COL_WIDTHS = [44, 112, 40, 180, 140, 160, 128, 120, 96, 290, 110, 134, 192, 120, 340]
+// Daha sıkı tablo (kullanıcı isteği, 2026-11-27: "buradaki tabloyu biraz daha küçült, çok geniş")
+const PRODUCT_COL_WIDTHS = [36, 60, 32, 150, 100, 150, 116, 92, 84, 240, 100, 112, 170, 100, 260]
 const PRODUCT_TABLE_WIDTH = PRODUCT_COL_WIDTHS.reduce((a, b) => a + b, 0)
 
 function ProductsTable({
@@ -842,7 +843,7 @@ function ProductsTable({
               <TableHead className="border-l text-center">Güncel Stok Durumu</TableHead>
               <TableHead className="border-l text-center">Satış Fiyatı</TableHead>
               <TableHead className="border-l text-center">Faturasız Fiyat</TableHead>
-              <TableHead className="w-48 min-w-48 border-l text-center">Kampanya</TableHead>
+              <TableHead className="border-l text-center">Kampanya</TableHead>
               <TableHead className="border-l text-center">SKT</TableHead>
               <TableHead className="border-l text-center">İşlemler</TableHead>
             </TableRow>
@@ -873,7 +874,7 @@ function ProductsTable({
                     // 2026-10-02: "ürünler arasına tablo gibi çizgi koy, karışıyor").
                     // Dikey çizgilerle (td border-l) aynı renk ve kalınlıkta alt çizgi —
                     // her hücreye veriliyor ki satır arka planları çizgiyi örtmesin.
-                    '[&>td]:border-b [&>td]:border-border',
+                    '[&>td]:border-b [&>td]:border-border [&>td]:px-2 [&>td]:py-1.5',
                     // Kritik/süresi geçmiş rengi (bg-destructive/5) seçiliyken
                     // ATLANIYOR — aksi halde TableRow'un seçili-satır
                     // koyulaştırması twMerge birleştirmesinde bu renk
@@ -890,7 +891,7 @@ function ProductsTable({
                     {/* 3B düğme (kullanıcı isteği, 2026-11-19: "3d buton gibi daha büyük olsa", "arka planları daha belirgin
                         olsun, ürünlerin kutusu görünmüyor") — ürün fotoğrafının beyaz zemini çarpma karışımıyla kaybolur,
                         ürün kutusu renkli zeminin üstünde belirgin durur. */}
-                    <div className="relative isolate size-20 shrink-0 overflow-hidden rounded-xl border border-border bg-white shadow-[0_3px_0_0_rgba(0,0,0,0.12),0_8px_18px_-6px_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_rgba(0,0,0,0.12),0_14px_24px_-8px_rgba(0,0,0,0.4)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.12),0_3px_8px_-4px_rgba(0,0,0,0.3)]">
+                    <div className="relative isolate size-12 shrink-0 overflow-hidden rounded-lg border border-border bg-white shadow-[0_3px_0_0_rgba(0,0,0,0.12),0_8px_18px_-6px_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_rgba(0,0,0,0.12),0_14px_24px_-8px_rgba(0,0,0,0.4)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.12),0_3px_8px_-4px_rgba(0,0,0,0.3)]">
                       {/* Arka plan: aynı ürün fotoğrafının büyütülmüş, flu hali (kullanıcı isteği, 2026-11-19: "ürünler net
                           olsun, ürünlerin arkası flu olsun") */}
                       {product.image_url && (
@@ -904,8 +905,8 @@ function ProductsTable({
                       <ZoomableThumbnail
                         src={product.image_url}
                         alt={product.name}
-                        className="relative size-20 max-w-none object-contain p-1 mix-blend-multiply drop-shadow-sm dark:mix-blend-normal"
-                        fallback={<div className="size-20" />}
+                        className="relative size-12 max-w-none object-contain p-0.5 mix-blend-multiply drop-shadow-sm dark:mix-blend-normal"
+                        fallback={<div className="size-12" />}
                       />
                     </div>
                   </TableCell>
@@ -963,10 +964,10 @@ function ProductsTable({
                         burada uzun bir çizgiye gerek yok (kullanıcı isteği,
                         2026-08-28: "bu kısımda yukarıdan aşağıya uzun çizgiler
                         olmasın"). */}
-                    <div className="flex items-center justify-center gap-2 text-sm">
+                    <div className="flex items-center justify-center gap-1.5 text-xs">
                       <span
                         className={cn(
-                          'w-24 shrink-0 text-right',
+                          'w-20 shrink-0 text-right',
                           isCritical &&
                             product.current_quantity > 0 &&
                             'font-medium text-destructive animate-alert-glow-red',
@@ -975,11 +976,11 @@ function ProductsTable({
                         {product.current_quantity > 0 ? `${product.current_quantity} tam paket` : '—'}
                       </span>
                       <span className="border-border h-4 border-l" />
-                      <span className="w-24 shrink-0 text-center">
+                      <span className="w-20 shrink-0 text-center">
                         {(product.small_box_quantity ?? 0) > 0 ? `${product.small_box_quantity} küçük kutu` : '—'}
                       </span>
                       <span className="border-border h-4 border-l" />
-                      <span className="w-16 shrink-0 text-left">
+                      <span className="w-14 shrink-0 text-left">
                         {product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}
                       </span>
                     </div>
@@ -990,7 +991,7 @@ function ProductsTable({
                   <TableCell className="border-l text-center">
                     <PriceCell product={product} field="unit_price_uninvoiced" />
                   </TableCell>
-                  <TableCell className="w-48 min-w-48 max-w-48 overflow-hidden border-l text-center whitespace-normal">
+                  <TableCell className="overflow-hidden border-l text-center text-xs whitespace-normal">
                     <CampaignCell product={product} />
                   </TableCell>
                   <TableCell className="border-l text-center">
@@ -1001,7 +1002,7 @@ function ProductsTable({
                     <ExpiryCell product={product} status={expiryStatus} />
                   </TableCell>
                   <TableCell className="border-l">
-                    <div className="flex justify-center gap-2">
+                    <div className="flex justify-center gap-0.5">
                       <StockHistoryDialog product={product} />
                       <StockMovementDialog product={product} />
                       <ProductForm product={product} />
