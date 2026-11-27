@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, Gift, Loader2, PackageMinus, Pencil, Trash2, Upload } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, Gift, Loader2, PackageMinus, Plus, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -24,6 +24,7 @@ import {
   fetchCongressGivenProducts,
   pendingDeduct,
   updateCongressGivenProduct,
+  type CongressGivenInput,
 } from './api'
 import { matchGiven, parseCongressGivenExcel, type GivenLine } from './importExcel'
 
@@ -55,7 +56,7 @@ export function CongressGivenProductsPanel() {
   const list = rows.filter((r) => r.congress_name === current)
 
   const [importOpen, setImportOpen] = React.useState(false)
-  const [edit, setEdit] = React.useState<CongressGivenProduct | null>(null)
+  const [focusId, setFocusId] = React.useState<string | null>(null)
   const [pick, setPick] = React.useState<CongressGivenProduct | null>(null)
   const [busy, setBusy] = React.useState<string | null>(null)
 
@@ -152,6 +153,118 @@ export function CongressGivenProductsPanel() {
       refresh()
     }
   }
+
+  type Field = 'given_date' | 'description' | 'doctor_name' | 'sales_rep_name' | 'product_name' | 'ordered_quantity' | 'delivered_quantity' | 'owed_quantity' | 'note'
+  const CARRY: Field[] = ['given_date', 'description', 'doctor_name', 'sales_rep_name']
+
+  /**
+   * Hücre düzenleme (kullanıcı isteği, 2026-11-27: "tabloların içine müdahil olalım, düzenleme ekleme yapabilelim").
+   * Hoca / satışçı / tarih / açıklama Excel'deki gibi üstten devralınır: yazılı hücre değişince ona bağlı alttaki
+   * satırlar da değişir; boş hücreye yazılınca o satırdan itibaren geçerli olur. Sipariş ya da teslim değişince borç
+   * = sipariş − teslim olarak yeniden hesaplanır.
+   */
+  async function saveCell(r: CongressGivenProduct, field: Field, raw: string) {
+    const isNum = field === 'ordered_quantity' || field === 'delivered_quantity' || field === 'owed_quantity'
+    const value = isNum ? Math.max(0, Math.round(Number(raw.replace(',', '.')) || 0)) : raw.trim() || null
+    if (field === 'doctor_name' && !value) return
+    if (field === 'product_name' && !value) return
+    const targets: CongressGivenProduct[] = [r]
+    if (CARRY.includes(field)) {
+      const idx = list.findIndex((x) => x.id === r.id)
+      for (let j = idx + 1; j < list.length; j++) {
+        const x = list[j]
+        if (x.group_no !== r.group_no || (x[field] ?? null) !== (r[field] ?? null)) break
+        if (field === 'description' && x.given_date !== r.given_date) break
+        targets.push(x)
+      }
+    }
+    try {
+      for (const t of targets) {
+        const patch: Partial<CongressGivenInput> = { [field]: value }
+        if (field === 'ordered_quantity' || field === 'delivered_quantity') {
+          const o = field === 'ordered_quantity' ? (value as number) : t.ordered_quantity
+          const d = field === 'delivered_quantity' ? (value as number) : t.delivered_quantity
+          patch.owed_quantity = Math.max(0, o - d)
+        }
+        await updateCongressGivenProduct(t.id, patch)
+      }
+    } catch (err) {
+      toast.error('Kaydedilemedi', { description: getErrorMessage(err) })
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: KEY })
+    }
+  }
+
+  async function addBelow(r: CongressGivenProduct) {
+    const idx = list.findIndex((x) => x.id === r.id)
+    const next = list[idx + 1]
+    try {
+      const created = await createCongressGivenProduct({
+        congress_name: r.congress_name,
+        group_no: r.group_no,
+        given_date: r.given_date,
+        description: r.description,
+        doctor_name: r.doctor_name,
+        sales_rep_name: r.sales_rep_name,
+        customer_id: r.customer_id,
+        product_name: '',
+        product_id: null,
+        ordered_quantity: 1,
+        delivered_quantity: 0,
+        owed_quantity: 1,
+        note: null,
+        sort_order: next ? (r.sort_order + next.sort_order) / 2 : r.sort_order + 1,
+      })
+      setFocusId(`${created.id}:product_name`)
+    } catch (err) {
+      toast.error('Satır eklenemedi', { description: getErrorMessage(err) })
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: KEY })
+    }
+  }
+
+  async function addDoctor() {
+    if (!current) return
+    const last = list[list.length - 1]
+    try {
+      const created = await createCongressGivenProduct({
+        congress_name: current,
+        group_no: list.reduce((m, x) => Math.max(m, x.group_no ?? 0), 0) + 1,
+        given_date: format(new Date(), 'yyyy-MM-dd'),
+        description: last?.description ?? null,
+        doctor_name: '',
+        sales_rep_name: null,
+        customer_id: null,
+        product_name: '',
+        product_id: null,
+        ordered_quantity: 1,
+        delivered_quantity: 0,
+        owed_quantity: 1,
+        note: null,
+        sort_order: (last?.sort_order ?? 0) + 1,
+      })
+      setFocusId(`${created.id}:doctor_name`)
+    } catch (err) {
+      toast.error('Hoca eklenemedi', { description: getErrorMessage(err) })
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: KEY })
+    }
+  }
+
+  const cell = (r: CongressGivenProduct, field: Field, shown: boolean, opts: { type?: 'text' | 'number' | 'date'; className?: string; display?: React.ReactNode; placeholder?: string } = {}) => (
+    <EditCell
+      key={field}
+      value={r[field] == null ? '' : String(r[field])}
+      type={opts.type}
+      className={opts.className}
+      placeholder={opts.placeholder}
+      autoEdit={focusId === `${r.id}:${field}`}
+      onDone={() => setFocusId(null)}
+      onSave={(v) => saveCell(r, field, v)}
+    >
+      {shown ? (opts.display ?? r[field]) : ''}
+    </EditCell>
+  )
 
   const sum = (k: 'ordered_quantity' | 'delivered_quantity' | 'owed_quantity' | 'stock_deducted_quantity') =>
     list.reduce((s, r) => s + r[k], 0)
@@ -292,21 +405,32 @@ export function CongressGivenProductsPanel() {
                   return (
                     <TableRow key={r.id} className="hover:bg-muted/30">
                       <TableCell className="hidden tabular-nums md:table-cell">{v.newGroup ? r.group_no ?? '' : ''}</TableCell>
-                      <TableCell className="hidden text-right tabular-nums md:table-cell">{v.first ? fmtDate(r.given_date) : ''}</TableCell>
-                      <TableCell className="hidden text-xs! lg:table-cell" title={r.description ?? undefined}>{v.first ? r.description : ''}</TableCell>
-                      <TableCell title={r.doctor_name}>
-                        {v.showName && r.doctor_name}
-                        {v.first && r.given_date && <span className="ml-1 text-xs text-muted-foreground md:hidden">{fmtDate(r.given_date)}</span>}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">{v.showRep ? r.sales_rep_name : ''}</TableCell>
-                      <TableCell className={cn(hl)} title={r.product_name}>
-                        {r.product_name}
-                        {r.note && <span className="ml-1 text-xs font-normal sm:hidden">· {r.note}</span>}
-                      </TableCell>
-                      <TableCell className={cn('text-right tabular-nums', hl)}>{r.ordered_quantity}</TableCell>
-                      <TableCell className={cn('text-right tabular-nums', hl)}>{r.delivered_quantity}</TableCell>
-                      <TableCell className={cn('text-right tabular-nums', hl)}>{r.owed_quantity}</TableCell>
-                      <TableCell className="hidden text-xs sm:table-cell" title={r.note ?? undefined}>{r.note}</TableCell>
+                      {cell(r, 'given_date', v.first, { type: 'date', className: 'hidden text-right tabular-nums md:table-cell', display: fmtDate(r.given_date) })}
+                      {cell(r, 'description', v.first, { className: 'hidden text-xs! lg:table-cell' })}
+                      {cell(r, 'doctor_name', v.showName || !r.doctor_name, {
+                        placeholder: 'Hoca adı',
+                        display: (
+                          <>
+                            {r.doctor_name}
+                            {v.first && r.given_date && <span className="ml-1 text-xs text-muted-foreground md:hidden">{fmtDate(r.given_date)}</span>}
+                          </>
+                        ),
+                      })}
+                      {cell(r, 'sales_rep_name', v.showRep, { className: 'hidden md:table-cell' })}
+                      {cell(r, 'product_name', true, {
+                        className: cn(hl),
+                        placeholder: 'Ürün yazın',
+                        display: (
+                          <>
+                            {r.product_name || <span className="font-normal text-muted-foreground">Ürün yazın</span>}
+                            {r.note && <span className="ml-1 text-xs font-normal sm:hidden">· {r.note}</span>}
+                          </>
+                        ),
+                      })}
+                      {cell(r, 'ordered_quantity', true, { type: 'number', className: cn('text-right tabular-nums', hl) })}
+                      {cell(r, 'delivered_quantity', true, { type: 'number', className: cn('text-right tabular-nums', hl) })}
+                      {cell(r, 'owed_quantity', true, { type: 'number', className: cn('text-right tabular-nums', hl) })}
+                      {cell(r, 'note', true, { className: 'hidden text-xs sm:table-cell' })}
                       <TableCell>
                         {left > 0 ? (
                           <Button size="sm" variant="outline" className="h-6 gap-1 px-2 text-xs [&_svg]:size-3.5" disabled={busy != null} onClick={() => deductOne(r)}>
@@ -323,8 +447,8 @@ export function CongressGivenProductsPanel() {
                       </TableCell>
                       <TableCell className="px-1">
                         <div className="flex justify-end">
-                          <Button size="icon" variant="ghost" className="size-6" title="Düzenle" onClick={() => setEdit(r)}>
-                            <Pencil className="size-3.5" />
+                          <Button size="icon" variant="ghost" className="size-6" title="Altına ürün ekle" onClick={() => addBelow(r)}>
+                            <Plus className="size-3.5" />
                           </Button>
                           <Button size="icon" variant="ghost" className="size-6 text-destructive" title="Sil" onClick={() => remove(r)}>
                             <Trash2 className="size-3.5" />
@@ -336,6 +460,12 @@ export function CongressGivenProductsPanel() {
                 })}
               </TableBody>
             </Table>
+            <div className="border-t p-2">
+              <Button size="sm" variant="ghost" onClick={addDoctor}>
+                <Plus /> Yeni hoca ekle
+              </Button>
+              <span className="ml-2 text-xs text-muted-foreground">Hücreye tıklayıp düzenleyin; Enter kaydeder, Esc vazgeçer.</span>
+            </div>
           </Card>
         </>
       )}
@@ -351,8 +481,7 @@ export function CongressGivenProductsPanel() {
           refresh()
         }}
       />
-      {edit && <GivenEditDialog row={edit} onClose={() => setEdit(null)} onSaved={refresh} />}
-      <Dialog open={!!pick} onOpenChange={(o) => !o && setPick(null)}>
+            <Dialog open={!!pick} onOpenChange={(o) => !o && setPick(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Stoktaki ürünü seçin</DialogTitle>
@@ -373,72 +502,6 @@ export function CongressGivenProductsPanel() {
       </Dialog>
       {dialog}
     </div>
-  )
-}
-
-function GivenEditDialog({ row, onClose, onSaved }: { row: CongressGivenProduct; onClose: () => void; onSaved: () => void }) {
-  const [v, setV] = React.useState({
-    doctor_name: row.doctor_name,
-    product_name: row.product_name,
-    ordered_quantity: String(row.ordered_quantity),
-    delivered_quantity: String(row.delivered_quantity),
-    owed_quantity: String(row.owed_quantity),
-    note: row.note ?? '',
-  })
-  const [saving, setSaving] = React.useState(false)
-  const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement>) => setV((s) => ({ ...s, [k]: e.target.value }))
-  async function save() {
-    setSaving(true)
-    try {
-      await updateCongressGivenProduct(row.id, {
-        doctor_name: v.doctor_name.trim() || row.doctor_name,
-        product_name: v.product_name.trim() || row.product_name,
-        ordered_quantity: Math.max(0, Number(v.ordered_quantity) || 0),
-        delivered_quantity: Math.max(0, Number(v.delivered_quantity) || 0),
-        owed_quantity: Math.max(0, Number(v.owed_quantity) || 0),
-        note: v.note.trim() || null,
-      })
-      onSaved()
-      onClose()
-    } catch (err) {
-      toast.error('Kaydedilemedi', { description: getErrorMessage(err) })
-    } finally {
-      setSaving(false)
-    }
-  }
-  const field = (label: string, k: keyof typeof v, type = 'text') => (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <Input type={type} min={type === 'number' ? 0 : undefined} value={v[k]} onChange={set(k)} />
-    </label>
-  )
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Kaydı düzenle</DialogTitle>
-          <DialogDescription>Sonradan teslim edilenleri buradan güncelleyin; artan teslim adedi “Stoktan düş” ile düşülür.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3">
-          {field('Adı Soyadı', 'doctor_name')}
-          {field('Ürün', 'product_name')}
-          <div className="grid grid-cols-3 gap-2">
-            {field('Sipariş', 'ordered_quantity', 'number')}
-            {field('Teslim Edilen', 'delivered_quantity', 'number')}
-            {field('Borç Ürün', 'owed_quantity', 'number')}
-          </div>
-          {field('Not', 'note')}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Vazgeç
-          </Button>
-          <Button onClick={save} disabled={saving}>
-            {saving && <Loader2 className="animate-spin" />} Kaydet
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 
@@ -630,5 +693,75 @@ function GivenImportDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** Tıklayınca düzenlenen tablo hücresi — Enter / dışarı tıklama kaydeder, Esc vazgeçer. */
+function EditCell({
+  value,
+  type = 'text',
+  className,
+  placeholder,
+  autoEdit,
+  onDone,
+  onSave,
+  children,
+}: {
+  value: string
+  type?: 'text' | 'number' | 'date'
+  className?: string
+  placeholder?: string
+  autoEdit?: boolean
+  onDone?: () => void
+  onSave: (v: string) => void
+  children: React.ReactNode
+}) {
+  const [editing, setEditing] = React.useState(false)
+  const [draft, setDraft] = React.useState(value)
+  const open = editing || !!autoEdit
+  const start = () => {
+    setDraft(value)
+    setEditing(true)
+  }
+  const finish = (save: boolean) => {
+    setEditing(false)
+    onDone?.()
+    if (save && draft !== value) onSave(draft)
+  }
+  return (
+    <TableCell
+      className={cn('cursor-text hover:bg-primary/5', open && 'p-0!', className)}
+      title={type === 'text' && value ? value : undefined}
+      onClick={() => !open && start()}
+    >
+      {open ? (
+        <input
+          autoFocus
+          type={type}
+          min={type === 'number' ? 0 : undefined}
+          value={editing ? draft : value}
+          placeholder={placeholder}
+          onFocus={(e) => {
+            if (!editing) start()
+            if (type !== 'date') e.currentTarget.select()
+          }}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => finish(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur()
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              finish(false)
+            }
+          }}
+          className={cn(
+            'h-8 w-full min-w-0 bg-background px-1.5 text-sm font-normal text-foreground ring-2 ring-primary outline-none ring-inset',
+            type === 'number' && 'text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none',
+          )}
+        />
+      ) : (
+        children
+      )}
+    </TableCell>
   )
 }

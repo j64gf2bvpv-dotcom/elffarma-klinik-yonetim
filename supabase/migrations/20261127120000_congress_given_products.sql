@@ -21,7 +21,7 @@ create table if not exists public.congress_given_products (
   note text,
   stock_deducted_quantity integer not null default 0,
   stock_deducted_at timestamptz,
-  sort_order integer not null default 0,
+  sort_order double precision not null default 0,
   created_by uuid references public.staff (id) default auth.uid(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
