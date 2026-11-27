@@ -10,6 +10,8 @@ import {
   ChevronDown,
   Settings2,
   FileDown,
+  Eye,
+  Download,
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/AppShell'
@@ -63,7 +65,8 @@ import type { BrandLine, Product, ProductCatalog } from '@/types/database'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import type { ProductPriceField } from '@/features/stock/api'
 import { exportPriceListPdf, type PriceListKind } from '@/features/stock/exportPriceListPdf'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { PdfPreviewDialog } from '@/features/stock/PdfPreviewDialog'
 import { fixShortYear } from '@/lib/fixShortYear'
 
 const ALL_BRANDS = 'all'
@@ -428,13 +431,19 @@ function CampaignCell({ product }: { product: Product }) {
   )
 }
 
-/** Stok > "Fiyat Listesi PDF" — kullanıcının fiyat listesi düzeninde, her marka tek A4 sayfa (bkz. exportPriceListPdf). */
+/**
+ * Stok > "Fiyat Listesi PDF" — kullanıcının fiyat listesi düzeninde, her marka tek A4 sayfa (bkz. exportPriceListPdf).
+ * Her liste için Görüntüle (program içinde ön izleme, oradan da indirilebilir) ve İndir (kullanıcı isteği, 2026-11-27).
+ */
 function PriceListPdfMenu({ products }: { products: Product[] }) {
   const [busy, setBusy] = React.useState(false)
-  async function run(kind: PriceListKind) {
+  const [preview, setPreview] = React.useState<{ blob: Blob; fileName: string; title: string } | null>(null)
+  const TITLE: Record<PriceListKind, string> = { uninvoiced: 'Faturasız Fiyat Listesi', invoiced: 'Faturalı (Satış Fiyatı) Fiyat Listesi' }
+  async function run(kind: PriceListKind, mode: 'view' | 'download') {
     setBusy(true)
     try {
-      await exportPriceListPdf(products, kind)
+      const pdf = await exportPriceListPdf(products, kind, { download: mode === 'download' })
+      if (mode === 'view') setPreview({ ...pdf, title: TITLE[kind] })
     } catch (err) {
       toast.error('Fiyat listesi oluşturulamadı', { description: err instanceof Error ? err.message : String(err) })
     } finally {
@@ -442,17 +451,30 @@ function PriceListPdfMenu({ products }: { products: Product[] }) {
     }
   }
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="outline" disabled={busy}>
-          {busy ? <Loader2 className="size-3.5 animate-spin" /> : <FileDown className="size-3.5" />} Fiyat Listesi PDF
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => void run('uninvoiced')}>Faturasız Fiyat Listesi (A4)</DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => void run('invoiced')}>Faturalı (Satış Fiyatı) Fiyat Listesi (A4)</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" variant="outline" disabled={busy}>
+            {busy ? <Loader2 className="size-3.5 animate-spin" /> : <FileDown className="size-3.5" />} Fiyat Listesi PDF
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-64">
+          {(['uninvoiced', 'invoiced'] as const).map((kind, i) => (
+            <React.Fragment key={kind}>
+              {i > 0 && <DropdownMenuSeparator />}
+              <DropdownMenuLabel className="text-xs text-muted-foreground">{TITLE[kind]} (A4)</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => void run(kind, 'view')}>
+                <Eye className="size-4" /> Görüntüle
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void run(kind, 'download')}>
+                <Download className="size-4" /> İndir
+              </DropdownMenuItem>
+            </React.Fragment>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <PdfPreviewDialog pdf={preview} title={preview?.title ?? ''} onClose={() => setPreview(null)} />
+    </>
   )
 }
 

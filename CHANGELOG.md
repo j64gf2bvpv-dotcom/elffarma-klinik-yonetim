@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.459] - 2026-11-27
+- Stok › Fiyat Listesi PDF: her liste için Görüntüle (tam ekran, sayfa sayfa, ok tuşlarıyla geçiş, içinden İndir) ve İndir seçenekleri.
+
 ## [2.17.458] - 2026-11-27
 - Kongre borç listesi: "Yeni hoca ekle" ve satırdaki + düğmesi ekleme penceresi açar; hoca adı Cari Kart'tan, satışçı temsilcilerden önerilir, ürünler stoktan seçilir (birden çok ürün, sipariş/teslim adediyle).
 

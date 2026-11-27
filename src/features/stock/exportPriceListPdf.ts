@@ -118,7 +118,15 @@ function fitLines(doc: jsPDF, lines: string[], maxW: number, maxH: number, start
   return { size: min, wrapped: lines.flatMap((l) => doc.splitTextToSize(l, maxW) as string[]) }
 }
 
-export async function exportPriceListPdf(products: Product[], kind: PriceListKind) {
+/**
+ * Fiyat listesi PDF'i. `download: false` verilirse dosya indirilmez, yalnız oluşturulan PDF döner — Stok'taki
+ * "Görüntüle" ön izlemesi için (kullanıcı isteği, 2026-11-27: "fiyat listesi hem görüntüle olsun hem indir olsun").
+ */
+export async function exportPriceListPdf(
+  products: Product[],
+  kind: PriceListKind,
+  opts: { download?: boolean } = {},
+): Promise<{ blob: Blob; fileName: string }> {
   const year = new Date().getFullYear()
   // Fiyatı girilmemiş ürün listeye hiç alınmaz (faturasızda satış fiyatına düşmek yanıltıcıydı)
   const priceOf = (p: Product) => (kind === 'uninvoiced' ? p.unit_price_uninvoiced : p.unit_price)
@@ -224,5 +232,7 @@ export async function exportPriceListPdf(products: Product[], kind: PriceListKin
   })
 
   const fileName = `elffarma-${year}-fiyat-listesi-${kind === 'uninvoiced' ? 'faturasiz' : 'faturali'}.pdf`
-  saveAs(doc.output('blob'), fileName)
+  const blob = doc.output('blob')
+  if (opts.download !== false) saveAs(blob, fileName)
+  return { blob, fileName }
 }
