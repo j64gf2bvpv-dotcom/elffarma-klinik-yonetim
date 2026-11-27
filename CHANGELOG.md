@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.458] - 2026-11-27
+- Kongre borç listesi: "Yeni hoca ekle" ve satırdaki + düğmesi ekleme penceresi açar; hoca adı Cari Kart'tan, satışçı temsilcilerden önerilir, ürünler stoktan seçilir (birden çok ürün, sipariş/teslim adediyle).
+
 ## [2.17.457] - 2026-11-27
 - Kongre borç listesi: hücreye tıklayıp düzenleme (hoca/satışçı/tarih Excel gibi alttaki satırlara da geçer, sipariş/teslim değişince borç yeniden hesaplanır), satır altına ürün ve yeni hoca ekleme.
 

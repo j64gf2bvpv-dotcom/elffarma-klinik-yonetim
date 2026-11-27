@@ -14,6 +14,8 @@ import { type ExportColumn } from '@/lib/exportData'
 import { cn, getErrorMessage } from '@/lib/utils'
 import { useConfirmDialog } from '@/hooks/useConfirmDialog'
 import { useProducts } from '@/features/stock/hooks'
+import { useCustomers } from '@/features/customers/hooks'
+import { useSalesReps } from '@/features/salesReps/hooks'
 import { ProductCombobox } from '@/features/stock/ProductCombobox'
 import { readWorkbookMatrices } from '@/features/stock/owedListImport'
 import type { CongressGivenProduct, Product } from '@/types/database'
@@ -195,60 +197,37 @@ export function CongressGivenProductsPanel() {
     }
   }
 
-  async function addBelow(r: CongressGivenProduct) {
-    const idx = list.findIndex((x) => x.id === r.id)
-    const next = list[idx + 1]
-    try {
-      const created = await createCongressGivenProduct({
-        congress_name: r.congress_name,
-        group_no: r.group_no,
-        given_date: r.given_date,
-        description: r.description,
-        doctor_name: r.doctor_name,
-        sales_rep_name: r.sales_rep_name,
-        customer_id: r.customer_id,
-        product_name: '',
-        product_id: null,
-        ordered_quantity: 1,
-        delivered_quantity: 0,
-        owed_quantity: 1,
-        note: null,
-        sort_order: next ? (r.sort_order + next.sort_order) / 2 : r.sort_order + 1,
-      })
-      setFocusId(`${created.id}:product_name`)
-    } catch (err) {
-      toast.error('Satır eklenemedi', { description: getErrorMessage(err) })
-    } finally {
-      void queryClient.invalidateQueries({ queryKey: KEY })
-    }
+  /** Ekleme penceresi (kullanıcı isteği, 2026-11-27: "yeni hoca ekle yerine stoktaki ürünler ve hoca ismi gelsin"). */
+  const [adding, setAdding] = React.useState<AddTarget | null>(null)
+
+  function addBelow(r: CongressGivenProduct) {
+    // Aynı hocanın aynı tarihli ürünlerinin sonuna eklenir
+    let idx = list.findIndex((x) => x.id === r.id)
+    while (list[idx + 1] && list[idx + 1].group_no === r.group_no && list[idx + 1].given_date === r.given_date) idx++
+    const last = list[idx]
+    setAdding({
+      groupNo: r.group_no,
+      doctor: r.doctor_name,
+      rep: r.sales_rep_name ?? '',
+      date: r.given_date ?? '',
+      description: r.description ?? '',
+      after: last.sort_order,
+      before: list[idx + 1]?.sort_order ?? null,
+    })
   }
 
-  async function addDoctor() {
-    if (!current) return
+  function addDoctor() {
     const last = list[list.length - 1]
-    try {
-      const created = await createCongressGivenProduct({
-        congress_name: current,
-        group_no: list.reduce((m, x) => Math.max(m, x.group_no ?? 0), 0) + 1,
-        given_date: format(new Date(), 'yyyy-MM-dd'),
-        description: last?.description ?? null,
-        doctor_name: '',
-        sales_rep_name: null,
-        customer_id: null,
-        product_name: '',
-        product_id: null,
-        ordered_quantity: 1,
-        delivered_quantity: 0,
-        owed_quantity: 1,
-        note: null,
-        sort_order: (last?.sort_order ?? 0) + 1,
-      })
-      setFocusId(`${created.id}:doctor_name`)
-    } catch (err) {
-      toast.error('Hoca eklenemedi', { description: getErrorMessage(err) })
-    } finally {
-      void queryClient.invalidateQueries({ queryKey: KEY })
-    }
+    setAdding({
+      groupNo: list.reduce((m, x) => Math.max(m, x.group_no ?? 0), 0) + 1,
+      doctor: '',
+      rep: '',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      description: last?.description ?? '',
+      after: last?.sort_order ?? 0,
+      before: null,
+      newDoctor: true,
+    })
   }
 
   const cell = (r: CongressGivenProduct, field: Field, shown: boolean, opts: { type?: 'text' | 'number' | 'date'; className?: string; display?: React.ReactNode; placeholder?: string } = {}) => (
@@ -352,9 +331,14 @@ export function CongressGivenProductsPanel() {
               Henüz kongre ürün listesi yok. Kongrede hocalara verilen ürünlerin Excel listesini yükleyin; kayıt stoğu değiştirmez,
               stoktan düşmeyi sonra siz yaparsınız.
             </p>
-            <Button onClick={() => setImportOpen(true)}>
-              <Upload /> Excel'den yükle
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button onClick={() => setImportOpen(true)}>
+                <Upload /> Excel'den yükle
+              </Button>
+              <Button variant="outline" onClick={addDoctor}>
+                <Plus /> Yeni hoca ekle
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -447,7 +431,7 @@ export function CongressGivenProductsPanel() {
                       </TableCell>
                       <TableCell className="px-1">
                         <div className="flex justify-end">
-                          <Button size="icon" variant="ghost" className="size-6" title="Altına ürün ekle" onClick={() => addBelow(r)}>
+                          <Button size="icon" variant="ghost" className="size-6" title="Bu hocaya ürün ekle" onClick={() => addBelow(r)}>
                             <Plus className="size-3.5" />
                           </Button>
                           <Button size="icon" variant="ghost" className="size-6 text-destructive" title="Sil" onClick={() => remove(r)}>
@@ -500,8 +484,186 @@ export function CongressGivenProductsPanel() {
           />
         </DialogContent>
       </Dialog>
+      {adding && (
+        <GivenAddDialog
+          target={adding}
+          congress={current ?? 'Mısır Kongresi'}
+          existing={list}
+          onClose={() => setAdding(null)}
+          onSaved={() => {
+            if (!current) setActive('Mısır Kongresi')
+            void queryClient.invalidateQueries({ queryKey: KEY })
+          }}
+        />
+      )}
       {dialog}
     </div>
+  )
+}
+
+interface AddTarget {
+  groupNo: number | null
+  doctor: string
+  rep: string
+  date: string
+  description: string
+  /** Yeni satırlar bu iki sort_order arasına yerleşir */
+  after: number
+  before: number | null
+  newDoctor?: boolean
+}
+
+type AddLine = { product?: Product; ordered: string; delivered: string }
+
+function GivenAddDialog({
+  target,
+  congress,
+  existing,
+  onClose,
+  onSaved,
+}: {
+  target: AddTarget
+  congress: string
+  existing: CongressGivenProduct[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const { data: customers = [] } = useCustomers('')
+  const { data: reps = [] } = useSalesReps()
+  const [doctor, setDoctor] = React.useState(target.doctor)
+  const [rep, setRep] = React.useState(target.rep)
+  const [date, setDate] = React.useState(target.date)
+  const [description, setDescription] = React.useState(target.description)
+  const [lines, setLines] = React.useState<AddLine[]>([{ ordered: '1', delivered: '0' }])
+  const [saving, setSaving] = React.useState(false)
+
+  const doctorNames = [...new Set([...existing.map((r) => r.doctor_name), ...customers.map((c) => c.full_name)])].filter(Boolean)
+  const repNames = [...new Set([...reps.filter((r) => r.is_active).map((r) => r.name), ...existing.map((r) => r.sales_rep_name ?? '')])].filter(Boolean)
+  const setLine = (i: number, patch: Partial<AddLine>) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)))
+  const ready = lines.filter((l) => l.product)
+
+  async function save() {
+    const name = doctor.trim()
+    if (!name) {
+      toast.error('Hoca adını yazın')
+      return
+    }
+    if (!ready.length) {
+      toast.error('Stoktan en az bir ürün seçin')
+      return
+    }
+    setSaving(true)
+    const fold = (t: string) => t.toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ').trim()
+    const customer = customers.find((c) => fold(c.full_name) === fold(name))
+    const gap = (target.before ?? target.after + ready.length + 1) - target.after
+    let ok = 0
+    try {
+      for (const [k, l] of ready.entries()) {
+        const ordered = Math.max(0, Math.round(Number(l.ordered) || 0))
+        const delivered = Math.max(0, Math.round(Number(l.delivered) || 0))
+        await createCongressGivenProduct({
+          congress_name: congress,
+          group_no: target.groupNo,
+          given_date: date || null,
+          description: description.trim() || null,
+          doctor_name: name,
+          sales_rep_name: rep.trim() || null,
+          customer_id: customer?.id ?? null,
+          product_name: l.product!.name,
+          product_id: l.product!.id,
+          ordered_quantity: ordered,
+          delivered_quantity: delivered,
+          owed_quantity: Math.max(0, ordered - delivered),
+          note: null,
+          sort_order: target.after + (gap * (k + 1)) / (ready.length + 1),
+        })
+        ok++
+      }
+      toast.success(`${ok} ürün ${name} için eklendi`)
+      onSaved()
+      onClose()
+    } catch (err) {
+      toast.error(ok ? `${ok} ürün eklendi, kalanlar eklenemedi` : 'Eklenemedi', { description: getErrorMessage(err) })
+      onSaved()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && !saving && onClose()}>
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{target.newDoctor ? 'Yeni hoca ekle' : `${target.doctor} — ürün ekle`}</DialogTitle>
+          <DialogDescription>Hocayı Cari Kart'tan, ürünleri stoktan seçin. Kayıt stoğu değiştirmez.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Hoca adı</span>
+            <Input list="given-doctors" value={doctor} onChange={(e) => setDoctor(e.target.value)} placeholder="Yazmaya başlayın…" autoFocus={target.newDoctor} />
+            <datalist id="given-doctors">
+              {doctorNames.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Satışçısı</span>
+            <Input list="given-reps" value={rep} onChange={(e) => setRep(e.target.value)} placeholder="Ör. AHSEN" />
+            <datalist id="given-reps">
+              {repNames.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Tarih</span>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Açıklama</span>
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="KAYIT KONAKLAMA ULAŞIM" />
+          </label>
+        </div>
+        <div className="grid gap-2">
+          <div className="grid grid-cols-[1fr_4.5rem_4.5rem_2rem] gap-2 text-xs font-semibold text-muted-foreground">
+            <span>ÜRÜN (stoktan)</span>
+            <span className="text-center">SİPARİŞ</span>
+            <span className="text-center">TESLİM</span>
+            <span />
+          </div>
+          {lines.map((l, i) => (
+            <div key={i} className="grid grid-cols-[1fr_4.5rem_4.5rem_2rem] items-center gap-2">
+              <ProductCombobox value={l.product?.id} placeholder="Stoktan ürün seçin..." onChange={(p) => setLine(i, { product: p })} />
+              <Input type="number" min={0} className="text-center" value={l.ordered} onChange={(e) => setLine(i, { ordered: e.target.value })} />
+              <Input type="number" min={0} className="text-center" value={l.delivered} onChange={(e) => setLine(i, { delivered: e.target.value })} />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-8 text-destructive"
+                title="Satırı kaldır"
+                disabled={lines.length === 1}
+                onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          ))}
+          <Button variant="outline" size="sm" className="justify-self-start" onClick={() => setLines((ls) => [...ls, { ordered: '1', delivered: '0' }])}>
+            <Plus /> Ürün satırı ekle
+          </Button>
+          <p className="text-xs text-muted-foreground">Borç = sipariş − teslim olarak hesaplanır.</p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Vazgeç
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving && <Loader2 className="animate-spin" />} {ready.length ? `${ready.length} ürünü ekle` : 'Ekle'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
