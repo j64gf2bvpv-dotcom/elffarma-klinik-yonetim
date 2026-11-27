@@ -128,6 +128,31 @@ export function CongressGivenProductsPanel() {
     }
   }
 
+  async function removeAll() {
+    if (!current) return
+    const deducted = list.filter((r) => r.stock_deducted_quantity > 0).length
+    const ok = await confirm(
+      `${current} borç listesindeki ${list.length} satırın tamamı silinsin mi?` +
+        (deducted ? ` ${deducted} satır stoktan düşülmüştü; stok geri eklenmez, gerekiyorsa stok geçmişinden silin.` : ''),
+      { title: 'Listeyi sil', confirmLabel: 'Tümünü Sil' },
+    )
+    if (!ok) return
+    setBusy('del')
+    let done = 0
+    try {
+      for (const r of list) {
+        await deleteCongressGivenProduct(r.id)
+        done++
+      }
+      toast.success(`${done} satır silindi`)
+    } catch (err) {
+      toast.error(`${done} satır silindi, kalanlar silinemedi`, { description: getErrorMessage(err) })
+    } finally {
+      setBusy(null)
+      refresh()
+    }
+  }
+
   const sum = (k: 'ordered_quantity' | 'delivered_quantity' | 'owed_quantity' | 'stock_deducted_quantity') =>
     list.reduce((s, r) => s + r[k], 0)
   const doctors = new Set(list.map((r) => r.doctor_name.toLocaleLowerCase('tr-TR'))).size
@@ -196,6 +221,9 @@ export function CongressGivenProductsPanel() {
               <Button onClick={deductAll} disabled={!waiting.length || busy != null}>
                 {busy === 'all' ? <Loader2 className="animate-spin" /> : <PackageMinus />}
                 Tümünü stoktan düş{waiting.length ? ` (${waiting.reduce((s, r) => s + pendingDeduct(r), 0)})` : ''}
+              </Button>
+              <Button variant="outline" className="text-destructive" onClick={removeAll} disabled={busy != null}>
+                {busy === 'del' ? <Loader2 className="animate-spin" /> : <Trash2 />} Tümünü sil
               </Button>
               <ExportMenu title={`${current} Borç Listesi`.toLocaleUpperCase('tr-TR')} filename={`${current} borç listesi`} columns={columns} rows={view} />
             </>
