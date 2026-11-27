@@ -763,7 +763,7 @@ function CategoryCell({ product }: { product: Product }) {
  * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
  */
 // Daha sıkı tablo (kullanıcı isteği, 2026-11-27: "buradaki tabloyu biraz daha küçült, çok geniş")
-const PRODUCT_COL_WIDTHS = [36, 60, 32, 150, 100, 150, 116, 92, 84, 240, 100, 112, 170, 100, 260]
+const PRODUCT_COL_WIDTHS = [36, 60, 32, 200, 100, 150, 116, 92, 84, 240, 100, 112, 170, 100, 260]
 const PRODUCT_TABLE_WIDTH = PRODUCT_COL_WIDTHS.reduce((a, b) => a + b, 0)
 
 function ProductsTable({
