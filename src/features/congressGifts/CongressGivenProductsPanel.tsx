@@ -362,7 +362,9 @@ export function CongressGivenProductsPanel() {
           </div>
 
           <Card className="overflow-hidden py-0">
-            <Table className={cn('table-fixed', EXCEL_GRID)}>
+            {/* Listenin kendi dikey kaydırma çubuğu, başlık üstte sabit (kullanıcı isteği, 2026-11-27: "listede kaydırma çubuğu yok") */}
+            <div className="max-h-[calc(100vh-15rem)] min-h-64 overflow-y-auto">
+            <table className={cn('w-full table-fixed border-separate border-spacing-0 text-sm', EXCEL_GRID, '[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-muted')}>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="hidden w-[3%] md:table-cell" />
@@ -443,7 +445,8 @@ export function CongressGivenProductsPanel() {
                   )
                 })}
               </TableBody>
-            </Table>
+            </table>
+            </div>
             <div className="border-t p-2">
               <Button size="sm" variant="ghost" onClick={addDoctor}>
                 <Plus /> Yeni hoca ekle
