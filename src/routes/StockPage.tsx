@@ -50,6 +50,7 @@ import {
   useUpdateProductExpiry,
 } from '@/features/stock/hooks'
 import { OwedProductsPanel } from '@/features/stock/OwedProductsPanel'
+import { CongressGivenProductsPanel } from '@/features/congressGifts/CongressGivenProductsPanel'
 import { DailyCountPanel } from '@/features/stockCounts/DailyCountPanel'
 import { StockCardPanel } from '@/features/stock/StockCardPanel'
 import { CargoPanel } from '@/features/cargo/CargoPanel'
@@ -1307,6 +1308,7 @@ export function StockPage() {
           <TabsTrigger value="count">Günlük Sayım</TabsTrigger>
           <TabsTrigger value="card">Stok Kartı</TabsTrigger>
           <TabsTrigger value="congress">Kongre/Workshop</TabsTrigger>
+          <TabsTrigger value="hocalar">Kongrede Hocalara Verilen</TabsTrigger>
           <TabsTrigger value="cargo">Kargo</TabsTrigger>
           <TabsTrigger value="borc">Borçlu Olduğumuz Ürünler</TabsTrigger>
           <TabsTrigger value="accounts">Doktor Hesapları</TabsTrigger>
@@ -1427,6 +1429,10 @@ export function StockPage() {
 
         <TabsContent value="congress">
           <CongressShipmentsPanel />
+        </TabsContent>
+
+        <TabsContent value="hocalar">
+          <CongressGivenProductsPanel />
         </TabsContent>
 
         <TabsContent value="cargo">

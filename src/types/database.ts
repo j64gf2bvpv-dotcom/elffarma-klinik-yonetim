@@ -589,6 +589,31 @@ export interface CongressChecklistItem {
   created_at: string
 }
 
+/** Kongrede hocalara verilen ürünler (2026-11-27) — sadece kayıt; stoktan düşme ayrı bir düğmeyle */
+export interface CongressGivenProduct {
+  id: string
+  congress_name: string
+  group_no: number | null
+  given_date: string | null
+  /** Ör. "KAYIT KONAKLAMA ULAŞIM" */
+  description: string | null
+  doctor_name: string
+  customer_id: string | null
+  product_name: string
+  product_id: string | null
+  ordered_quantity: number
+  delivered_quantity: number
+  owed_quantity: number
+  note: string | null
+  /** Teslim edilenden stoktan düşülmüş adet */
+  stock_deducted_quantity: number
+  stock_deducted_at: string | null
+  sort_order: number
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface CustomerPendingProduct {
   id: string
   customer_id: string

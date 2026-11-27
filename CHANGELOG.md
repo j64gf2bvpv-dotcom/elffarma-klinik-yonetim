@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.454] - 2026-11-27
+- Stok › Kongrede Hocalara Verilen: kongrede hocalara verilen ürünler Excel düzeninde (No, Tarih, Açıklama, Adı Soyadı, Ürünler, Sipariş, Teslim Edilen, Borç Ürün, Not) ayrı listede tutulur; Excel'den yüklenir, stoğu değiştirmez; "Stoktan düş" satır satır ya da toplu, aynı ürün iki kez düşülmez.
+
 ## [2.17.453] - 2026-11-26
 - Günlük Sayım: Tam Paket / Küçük Kutu / Flakon kutularına yeniden yukarı-aşağı oklar eklendi (boşsa mevcut adetten bir artırır/azaltır); kutulardaki rakamlar artık soluk değil, koyu görünüyor.
 
