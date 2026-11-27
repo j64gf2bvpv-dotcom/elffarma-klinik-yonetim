@@ -611,11 +611,13 @@ function PackageSizeCell({ product }: { product: Product }) {
  */
 function CampaignBadge({ text }: { text: string }) {
   const parts = text.split(/\s*·\s*/).filter(Boolean)
+  // Küçük yazı, kampanyalar · ile yan yana, en çok 4 satır — satır yüksekliği bozulmasın (kullanıcı isteği: "yazılar sığmalı, daha küçük olmalı")
   return (
-    <span className="mx-auto inline-flex w-full max-w-48 flex-col items-center px-1 text-center text-[11px] leading-tight font-medium break-words whitespace-normal text-destructive">
-      {parts.map((part, i) => (
-        <span key={i}>{part}</span>
-      ))}
+    <span
+      title={parts.join('\n')}
+      className="mx-auto line-clamp-4 w-full px-0.5 text-center text-[11px] leading-[1.1] font-medium break-words whitespace-normal text-destructive"
+    >
+      {parts.join(' · ')}
     </span>
   )
 }
@@ -763,7 +765,7 @@ function CategoryCell({ product }: { product: Product }) {
  * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
  */
 // Daha sıkı tablo (kullanıcı isteği, 2026-11-27: "buradaki tabloyu biraz daha küçült, çok geniş")
-const PRODUCT_COL_WIDTHS = [36, 60, 32, 200, 100, 150, 116, 92, 84, 240, 100, 112, 170, 100, 260]
+const PRODUCT_COL_WIDTHS = [36, 60, 32, 200, 104, 150, 120, 100, 92, 290, 112, 118, 240, 110, 290]
 const PRODUCT_TABLE_WIDTH = PRODUCT_COL_WIDTHS.reduce((a, b) => a + b, 0)
 
 function ProductsTable({
@@ -811,7 +813,8 @@ function ProductsTable({
             ))}
           </colgroup>
           <TableHeader>
-            <TableRow>
+            {/* Başlıklar şeffaf kırmızı zeminde (kullanıcı isteği, 2026-11-27: "başlık kısımları şeffaf kırmızı şeklinde olmalı") */}
+            <TableRow className="hover:bg-transparent [&>th]:bg-primary/10 [&>th]:font-bold [&>th]:text-primary">
               {/* Sıra numarası — kullanıcı isteği, 2026-08-28: "toplam kaç
                   ürün olduğunu sayılara bakarak anlarım". Katalog başına ayrı
                   bir ProductsTable render edildiği için (bkz. StockPage'in
@@ -875,6 +878,9 @@ function ProductsTable({
                     // Dikey çizgilerle (td border-l) aynı renk ve kalınlıkta alt çizgi —
                     // her hücreye veriliyor ki satır arka planları çizgiyi örtmesin.
                     '[&>td]:border-b [&>td]:border-border [&>td]:px-2 [&>td]:py-1.5',
+                    // Bütün hücrelerde aynı yazı boyutu ve kalınlığı, aynı satır yüksekliği (kullanıcı isteği, 2026-11-27:
+                    // "bütün yazı formatları ve boyutları, tablo aralıkları aynı olmalı")
+                    '[&>td]:h-16 [&>td]:text-sm [&>td]:font-medium [&>td:not([data-campaign])_*]:text-sm! [&>td_*]:font-medium!',
                     // Kritik/süresi geçmiş rengi (bg-destructive/5) seçiliyken
                     // ATLANIYOR — aksi halde TableRow'un seçili-satır
                     // koyulaştırması twMerge birleştirmesinde bu renk
@@ -964,10 +970,10 @@ function ProductsTable({
                         burada uzun bir çizgiye gerek yok (kullanıcı isteği,
                         2026-08-28: "bu kısımda yukarıdan aşağıya uzun çizgiler
                         olmasın"). */}
-                    <div className="flex items-center justify-center gap-1.5 text-xs">
+                    <div className="flex items-center justify-center gap-1.5">
                       <span
                         className={cn(
-                          'w-20 shrink-0 text-right',
+                          'w-24 shrink-0 text-right',
                           isCritical &&
                             product.current_quantity > 0 &&
                             'font-medium text-destructive animate-alert-glow-red',
@@ -976,11 +982,11 @@ function ProductsTable({
                         {product.current_quantity > 0 ? `${product.current_quantity} tam paket` : '—'}
                       </span>
                       <span className="border-border h-4 border-l" />
-                      <span className="w-20 shrink-0 text-center">
+                      <span className="w-24 shrink-0 text-center">
                         {(product.small_box_quantity ?? 0) > 0 ? `${product.small_box_quantity} küçük kutu` : '—'}
                       </span>
                       <span className="border-border h-4 border-l" />
-                      <span className="w-14 shrink-0 text-left">
+                      <span className="w-16 shrink-0 text-left">
                         {product.flakon_quantity > 0 ? `${product.flakon_quantity} flakon` : '—'}
                       </span>
                     </div>
@@ -991,7 +997,7 @@ function ProductsTable({
                   <TableCell className="border-l text-center">
                     <PriceCell product={product} field="unit_price_uninvoiced" />
                   </TableCell>
-                  <TableCell className="overflow-hidden border-l text-center text-xs whitespace-normal">
+                  <TableCell data-campaign className="overflow-hidden border-l py-0.5! text-center whitespace-normal">
                     <CampaignCell product={product} />
                   </TableCell>
                   <TableCell className="border-l text-center">

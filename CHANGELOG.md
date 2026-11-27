@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.462] - 2026-11-27
+- Stok › Ürünler tablosu: bütün hücrelerde aynı yazı boyutu/kalınlığı ve eşit satır yüksekliği, başlıklar şeffaf kırmızı zeminde, kampanya yazısı küçük ve hücreye sığıyor.
+
 ## [2.17.461] - 2026-11-27
 - Stok › Ürünler tablosu daha sıkı: küçük ürün resmi, dar hücre boşlukları ve sütunlar (yaklaşık 2300 → 1800 px), kampanya yazısı daha sık.
 
