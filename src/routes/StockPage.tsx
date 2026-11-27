@@ -765,7 +765,7 @@ function CategoryCell({ product }: { product: Product }) {
  * genişliklerinde, gerçek ürün verisiyle headless Chrome'da ölçülüp doğrulandı.
  */
 // Daha sıkı tablo (kullanıcı isteği, 2026-11-27: "buradaki tabloyu biraz daha küçült, çok geniş")
-const PRODUCT_COL_WIDTHS = [36, 60, 32, 200, 104, 150, 120, 100, 92, 290, 112, 118, 240, 110, 290]
+const PRODUCT_COL_WIDTHS = [36, 60, 32, 200, 104, 150, 120, 100, 92, 290, 112, 118, 240, 124, 290]
 const PRODUCT_TABLE_WIDTH = PRODUCT_COL_WIDTHS.reduce((a, b) => a + b, 0)
 
 function ProductsTable({
@@ -814,7 +814,7 @@ function ProductsTable({
           </colgroup>
           <TableHeader>
             {/* Başlıklar şeffaf kırmızı zeminde (kullanıcı isteği, 2026-11-27: "başlık kısımları şeffaf kırmızı şeklinde olmalı") */}
-            <TableRow className="hover:bg-transparent [&>th]:bg-primary/10 [&>th]:font-bold [&>th]:text-primary">
+            <TableRow className="hover:bg-transparent [&>th]:overflow-hidden [&>th]:bg-primary/10 [&>th]:px-2 [&>th]:text-center [&>th]:leading-tight [&>th]:font-bold [&>th]:break-words [&>th]:whitespace-normal [&>th]:text-primary">
               {/* Sıra numarası — kullanıcı isteği, 2026-08-28: "toplam kaç
                   ürün olduğunu sayılara bakarak anlarım". Katalog başına ayrı
                   bir ProductsTable render edildiği için (bkz. StockPage'in
