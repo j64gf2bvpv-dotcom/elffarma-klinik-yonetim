@@ -31,7 +31,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { HorizontalScroll, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ProductForm } from '@/features/stock/ProductForm'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { StockMovementDialog } from '@/features/stock/StockMovementDialog'
@@ -769,6 +769,7 @@ const PRODUCT_COL_WIDTHS = [36, 60, 32, 200, 104, 150, 120, 100, 92, 290, 112, 1
 const PRODUCT_TABLE_WIDTH = PRODUCT_COL_WIDTHS.reduce((a, b) => a + b, 0)
 
 function ProductsTable({
+  sharedScroll = false,
   products,
   onRemove,
   selectedId,
@@ -778,6 +779,8 @@ function ProductsTable({
   onToggleAll,
   onReorder,
 }: {
+  /** Tümü görünümünde Dermakor/Swiss tabloları tek ortak kaydırma çubuğuyla kayar */
+  sharedScroll?: boolean
   products: Product[]
   onRemove: (product: Product) => void
   selectedId: string | null
@@ -801,12 +804,12 @@ function ProductsTable({
   }
 
   return (
-    <Card>
+    <Card className={cn(sharedScroll && 'w-max')}>
       <CardContent className="p-0">
         {/* Dermakor / Swiss tablolarında sütunlar yukarıdan aşağıya hizalı olsun diye
             (kullanıcı isteği, 2026-10-14) sabit genişlikli tablo düzeni — her
             iki tablo aynı PRODUCT_COL_WIDTHS'i kullanır. */}
-        <Table className="table-fixed" style={{ width: PRODUCT_TABLE_WIDTH, minWidth: PRODUCT_TABLE_WIDTH }}>
+        <Table scroll={!sharedScroll} className="table-fixed" style={{ width: PRODUCT_TABLE_WIDTH, minWidth: PRODUCT_TABLE_WIDTH }}>
           <colgroup>
             {PRODUCT_COL_WIDTHS.map((w, i) => (
               <col key={i} style={{ width: w }} />
@@ -1413,13 +1416,15 @@ export function StockPage() {
           {isLoading && <p className="text-muted-foreground py-8 text-center">Yükleniyor...</p>}
 
           {!isLoading && brandFilter === ALL_BRANDS && (
+            <HorizontalScroll>
             <div ref={groupsRef} className="grid gap-6">
               {catalogs.map((c) => (
                 <div key={c.id} className="min-w-0">
-                  <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  <h3 className="sticky left-0 mb-2 w-fit text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                     {catalogLabel(c.name)}
                   </h3>
                   <ProductsTable
+                    sharedScroll
                     products={products.filter((p) => p.brand_line === c.name)}
                     onRemove={handleRemove}
                     selectedId={selectedProductId}
@@ -1432,6 +1437,7 @@ export function StockPage() {
                 </div>
               ))}
             </div>
+            </HorizontalScroll>
           )}
 
           {!isLoading && brandFilter !== ALL_BRANDS && (

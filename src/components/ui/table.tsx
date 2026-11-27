@@ -26,7 +26,7 @@ function FloatingScrollbar({
   contentRef,
 }: {
   containerRef: React.RefObject<HTMLDivElement | null>
-  contentRef: React.RefObject<HTMLTableElement | null>
+  contentRef: React.RefObject<HTMLElement | null>
 }) {
   const floatingRef = React.useRef<HTMLDivElement>(null)
   const [rect, setRect] = React.useState<{ left: number; width: number; top: number } | null>(null)
@@ -109,7 +109,7 @@ function FloatingScrollbar({
   )
 }
 
-function Table({ className, ...props }: React.ComponentProps<'table'>) {
+function Table({ className, scroll = true, ...props }: React.ComponentProps<'table'> & { scroll?: boolean }) {
   // Yatay kaydırma TEK bir kutuda ve kendi native çubuğu bilerek gizli
   // (`scrollbar-hide`) — aşağıya sabitlenen kayan çubuk (FloatingScrollbar)
   // zaten bu işi görüyor; ikisi aynı anda görününce tablonun altında üst
@@ -122,6 +122,17 @@ function Table({ className, ...props }: React.ComponentProps<'table'>) {
   // çubuğu da çıkardı; sınır vermeyerek bunu zararsız kılıyoruz.
   const containerRef = React.useRef<HTMLDivElement>(null)
   const tableRef = React.useRef<HTMLTableElement>(null)
+  // scroll={false}: tablo kendi kaydırmasını yapmaz, dıştaki ortak HorizontalScroll kaydırır (birden çok tablo tek çubuk)
+  if (!scroll)
+    return (
+      <div data-slot="table-container" className="relative w-max rounded-md">
+        <table
+          data-slot="table"
+          className={cn('w-full caption-bottom border-separate border-spacing-0 text-sm', className)}
+          {...props}
+        />
+      </div>
+    )
   return (
     <div
       ref={containerRef}
@@ -237,7 +248,26 @@ function TableCaption({ className, ...props }: React.ComponentProps<'caption'>) 
   )
 }
 
+/**
+ * Alt alta birden çok tabloyu TEK yatay kaydırma çubuğuyla birlikte kaydırır (kullanıcı isteği, 2026-11-27: "burada
+ * iki kaydırma çubuğu var, tek kaydırma çubuğu olmalı"). İçindeki tablolar `scroll={false}` ile verilir; çubuk
+ * tablolardaki gibi ekranın altına / alanın hemen altına sabitlenen FloatingScrollbar'dır.
+ */
+function HorizontalScroll({ className, children }: { className?: string; children: React.ReactNode }) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const contentRef = React.useRef<HTMLDivElement>(null)
+  return (
+    <div ref={containerRef} className={cn('scrollbar-hide relative w-full overflow-x-auto', className)}>
+      <div ref={contentRef} className="w-max min-w-full">
+        {children}
+      </div>
+      <FloatingScrollbar containerRef={containerRef} contentRef={contentRef} />
+    </div>
+  )
+}
+
 export {
+  HorizontalScroll,
   Table,
   TableHeader,
   TableBody,
