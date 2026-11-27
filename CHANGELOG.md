@@ -3,6 +3,9 @@
 Bu dosya, Elffarma Paket Programı'nda sürüm bazında yapılan değişiklikleri listeler.
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) mantığına göre yapılır (v1.0.0, v1.1.0, v2.0.0 ...).
 
+## [2.17.465] - 2026-11-27
+- Kongre borç listesi yeni premium görünüm: her hoca numaralı şeritle başlar (satışçılar, tarih aralığı, Sipariş/Teslim/Borç toplamları, Ürün ekle), ürün satırları altında; şeffaf kırmızı sabit başlık, belirgin satır/sütun çizgileri, borç rozetleri, simgeli özet kartları.
+
 ## [2.17.464] - 2026-11-27
 - Stok › Ürünler (Tümü): Dermakor ve Swiss tabloları tek yatay kaydırma çubuğuyla birlikte kayar, katalog başlıkları solda sabit.
 

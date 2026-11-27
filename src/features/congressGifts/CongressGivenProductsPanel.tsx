@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, Gift, Loader2, PackageMinus, Plus, Trash2, Upload } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, Gift, Loader2, PackageCheck, PackageMinus, Plus, ShoppingBag, Trash2, Upload, Users } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -40,11 +40,14 @@ import { matchGiven, parseCongressGivenExcel, type GivenLine } from './importExc
 const KEY = ['congress_given_products']
 const fmtDate = (d: string | null) => (d ? format(new Date(`${d}T00:00:00`), 'd/M/yy') : '')
 
-type ViewRow = { sep: true; r?: undefined; first?: undefined; newGroup?: undefined; showName?: undefined; showRep?: undefined } | { sep?: undefined; r: CongressGivenProduct; first: boolean; newGroup: boolean; showName: boolean; showRep: boolean }
+type ViewRow = { sep: true; r?: undefined; first?: undefined; newGroup?: undefined; showName?: undefined; showRep?: undefined; gi?: undefined } | { sep?: undefined; r: CongressGivenProduct; first: boolean; newGroup: boolean; showName: boolean; showRep: boolean; gi: number }
 
-/** Excel ızgarası: ince kenarlıklı hücreler, kalın büyük harf başlıklar, sıkı satırlar */
-const EXCEL_GRID =
-  '[&_th]:h-9 [&_th]:border [&_th]:border-border [&_th]:bg-muted/40 [&_th]:px-1.5 [&_th]:text-xs [&_th]:font-bold [&_th]:whitespace-normal [&_th]:text-foreground [&_td]:h-8 [&_td]:border [&_td]:border-border/70 [&_td]:px-1.5 [&_td]:py-0 [&_td]:align-middle [&_td]:text-sm [&_td]:leading-tight [&_td]:whitespace-nowrap [&_td]:overflow-hidden [&_td]:text-ellipsis'
+/**
+ * Premium tablo görünümü (kullanıcı isteği, 2026-11-27: "bu tabloyu daha kaliteli, premium yapar mısın, profesyonel
+ * olsun"): şeffaf kırmızı sabit başlık, yumuşak çizgiler, hoca grupları sırayla hafif zeminli, tek yazı boyutu.
+ */
+const PREMIUM_GRID =
+  '[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:h-11 [&_th]:border-b [&_th]:border-primary/20 [&_th]:bg-[color-mix(in_oklab,var(--color-primary)_9%,var(--color-card))] [&_th]:px-3 [&_th]:text-[11px] [&_th]:font-bold [&_th]:tracking-wider [&_th]:whitespace-normal [&_th]:text-primary [&_th:not(:first-child)]:border-l [&_th:not(:first-child)]:border-l-primary/15 [&_td]:h-11 [&_td]:border-b [&_td]:border-border [&_td:not(:first-child)]:border-l [&_td:not(:first-child)]:border-l-border [&_td]:px-3 [&_td]:py-0 [&_td]:align-middle [&_td]:text-sm [&_td]:whitespace-nowrap [&_td]:overflow-hidden [&_td]:text-ellipsis'
 
 export function CongressGivenProductsPanel() {
   const queryClient = useQueryClient()
@@ -249,16 +252,32 @@ export function CongressGivenProductsPanel() {
     list.reduce((s, r) => s + r[k], 0)
   const doctors = new Set(list.map((r) => r.doctor_name.toLocaleLowerCase('tr-TR'))).size
 
+  /** Hoca şeridindeki toplamlar — aynı grup (No, yoksa hoca adı) */
+  const groupStats = (r: CongressGivenProduct) => {
+    const same = list.filter((x) => (r.group_no != null ? x.group_no === r.group_no : x.doctor_name === r.doctor_name))
+    const dates = [...new Set(same.map((x) => x.given_date).filter(Boolean) as string[])].map(fmtDate)
+    return {
+      ordered: same.reduce((n, x) => n + x.ordered_quantity, 0),
+      delivered: same.reduce((n, x) => n + x.delivered_quantity, 0),
+      owed: same.reduce((n, x) => n + x.owed_quantity, 0),
+      reps: [...new Set(same.map((x) => x.sales_rep_name).filter(Boolean) as string[])],
+      dates: dates.length > 2 ? `${dates[0]} – ${dates[dates.length - 1]}` : dates.join(', '),
+      last: same[same.length - 1],
+    }
+  }
+
   // Excel'deki düzen: hoca/tarih/açıklama yalnız ilk satırda, hocalar arasında boş ayırıcı satır
   const view: ViewRow[] = []
+  let gi = -1
   list.forEach((r, i) => {
     const prev = list[i - 1]
     const newGroup = !prev || (r.group_no != null ? prev.group_no !== r.group_no : prev.doctor_name !== r.doctor_name)
     const first = newGroup || prev.given_date !== r.given_date
     const showName = newGroup || prev.doctor_name !== r.doctor_name
     const showRep = newGroup || (prev.sales_rep_name ?? '') !== (r.sales_rep_name ?? '')
+    if (newGroup) gi++
     if (newGroup && i > 0) view.push({ sep: true })
-    view.push({ r, first, newGroup, showName, showRep })
+    view.push({ r, first, newGroup, showName, showRep, gi })
   })
   const x = (v: ViewRow, f: (r: CongressGivenProduct) => string | number) => (v.r ? f(v.r) : '')
   const columns: ExportColumn<ViewRow>[] = [
@@ -343,115 +362,178 @@ export function CongressGivenProductsPanel() {
         </Card>
       ) : (
         <>
-          <h2 className="text-center text-xl font-bold tracking-wide text-primary">{`${current} Borç Listesi`.toLocaleUpperCase('tr-TR')}</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {[
-              ['Hoca', doctors],
-              ['Sipariş', sum('ordered_quantity')],
-              ['Teslim edilen', sum('delivered_quantity')],
-              ['Borç ürün', sum('owed_quantity')],
-              ['Stoktan düşülen', sum('stock_deducted_quantity')],
-            ].map(([label, n]) => (
+          <div className="text-center">
+            <h2 className="text-xl font-bold tracking-wide text-primary">{`${current} Borç Listesi`.toLocaleUpperCase('tr-TR')}</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {doctors} hoca · {list.length} ürün satırı · hücreye tıklayıp düzenleyebilirsiniz
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {(
+              [
+                ['Hoca', doctors, Users, 'bg-primary/10 text-primary'],
+                ['Sipariş', sum('ordered_quantity'), ShoppingBag, 'bg-sky-500/10 text-sky-600 dark:text-sky-400'],
+                ['Teslim edilen', sum('delivered_quantity'), PackageCheck, 'bg-success/10 text-success'],
+                ['Borç ürün', sum('owed_quantity'), AlertTriangle, 'bg-destructive/10 text-destructive'],
+                ['Stoktan düşülen', sum('stock_deducted_quantity'), PackageMinus, 'bg-amber-500/10 text-amber-600 dark:text-amber-400'],
+              ] as const
+            ).map(([label, n, Icon, tone]) => (
               <Card key={label} className="py-0">
-                <CardContent className="px-3 py-2.5">
-                  <div className="text-xs text-muted-foreground">{label}</div>
-                  <div className={cn('text-lg font-semibold tabular-nums', label === 'Borç ürün' && Number(n) > 0 && 'text-destructive')}>{n}</div>
+                <CardContent className="flex items-center gap-3 px-4 py-3">
+                  <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl', tone)}>
+                    <Icon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-medium text-muted-foreground">{label}</div>
+                    <div className={cn('text-xl font-bold tabular-nums', label === 'Borç ürün' && n > 0 && 'text-destructive')}>{n}</div>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          <Card className="overflow-hidden py-0">
-            {/* Listenin kendi dikey kaydırma çubuğu, başlık üstte sabit (kullanıcı isteği, 2026-11-27: "listede kaydırma çubuğu yok") */}
-            <div className="max-h-[calc(100vh-15rem)] min-h-64 overflow-y-auto">
-            <table className={cn('w-full table-fixed border-separate border-spacing-0 text-sm', EXCEL_GRID, '[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-muted')}>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="hidden w-[3%] md:table-cell" />
-                  <TableHead className="hidden w-[7%] md:table-cell">TARİH</TableHead>
-                  <TableHead className="hidden w-[13%] lg:table-cell" />
-                  <TableHead className="w-[15%]">ADI SOYADI</TableHead>
-                  <TableHead className="hidden w-[8%] md:table-cell">SATIŞÇISI</TableHead>
-                  <TableHead>ÜRÜNLER</TableHead>
-                  <TableHead className="w-[9%] text-center sm:w-[7%]">SİPARİŞ</TableHead>
-                  <TableHead className="w-[9%] text-center sm:w-[7%]">TESLİM EDİLEN</TableHead>
-                  <TableHead className="w-[9%] text-center sm:w-[7%]">BORÇ ÜRÜN</TableHead>
-                  <TableHead className="hidden w-[6%] sm:table-cell" />
-                  <TableHead className="w-[14%] sm:w-[9%]">STOK</TableHead>
-                  <TableHead className="w-[10%] sm:w-[6%]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {view.map((v, i) => {
-                  if (!v.r) return <TableRow key={`s${i}`} className="hover:bg-transparent"><TableCell colSpan={12} className="h-4! border-x-0! p-0" /></TableRow>
-                  const r = v.r
-                  const left = pendingDeduct(r)
-                  const owed = r.owed_quantity > 0
-                  const hl = owed && 'bg-[#fff35c] font-bold text-[#e3251b] dark:bg-yellow-400/25 dark:text-red-400'
-                  return (
-                    <TableRow key={r.id} className="hover:bg-muted/30">
-                      <TableCell className="hidden tabular-nums md:table-cell">{v.newGroup ? r.group_no ?? '' : ''}</TableCell>
-                      {cell(r, 'given_date', v.first, { type: 'date', className: 'hidden text-right tabular-nums md:table-cell', display: fmtDate(r.given_date) })}
-                      {cell(r, 'description', v.first, { className: 'hidden text-xs! lg:table-cell' })}
-                      {cell(r, 'doctor_name', v.showName || !r.doctor_name, {
-                        placeholder: 'Hoca adı',
-                        display: (
-                          <>
-                            {r.doctor_name}
-                            {v.first && r.given_date && <span className="ml-1 text-xs text-muted-foreground md:hidden">{fmtDate(r.given_date)}</span>}
-                          </>
-                        ),
-                      })}
-                      {cell(r, 'sales_rep_name', v.showRep, { className: 'hidden md:table-cell' })}
-                      {cell(r, 'product_name', true, {
-                        className: cn(hl),
-                        placeholder: 'Ürün yazın',
-                        display: (
-                          <>
-                            {r.product_name || <span className="font-normal text-muted-foreground">Ürün yazın</span>}
-                            {r.note && <span className="ml-1 text-xs font-normal sm:hidden">· {r.note}</span>}
-                          </>
-                        ),
-                      })}
-                      {cell(r, 'ordered_quantity', true, { type: 'number', className: cn('text-right tabular-nums', hl) })}
-                      {cell(r, 'delivered_quantity', true, { type: 'number', className: cn('text-right tabular-nums', hl) })}
-                      {cell(r, 'owed_quantity', true, { type: 'number', className: cn('text-right tabular-nums', hl) })}
-                      {cell(r, 'note', true, { className: 'hidden text-xs sm:table-cell' })}
-                      <TableCell>
-                        {left > 0 ? (
-                          <Button size="sm" variant="outline" className="h-6 gap-1 px-2 text-xs [&_svg]:size-3.5" disabled={busy != null} onClick={() => deductOne(r)}>
-                            {busy === r.id ? <Loader2 className="animate-spin" /> : <PackageMinus />}
-                            Düş ({left}){r.stock_deducted_quantity > 0 ? ` · ${r.stock_deducted_quantity} düşüldü` : ''}
-                          </Button>
-                        ) : r.stock_deducted_quantity > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
-                            <CheckCircle2 className="size-3.5" /> Düşüldü
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+          <Card className="overflow-hidden py-0 shadow-md">
+            {/* Listenin kendi dikey kaydırma çubuğu, başlık üstte sabit (kullanıcı isteği, 2026-11-27: "listede kaydırma çubuğu yok").
+                Her hoca kendi şeridiyle bir blok (kullanıcı isteği, 2026-11-27: "daha güzel, kaliteli olmalı") */}
+            <div className="max-h-[calc(100vh-16rem)] min-h-64 overflow-y-auto">
+              <table className={cn('w-full table-fixed border-separate border-spacing-0', PREMIUM_GRID)}>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[12%] pl-5! sm:w-[9%]">TARİH</TableHead>
+                    <TableHead>ÜRÜNLER</TableHead>
+                    <TableHead className="hidden w-[10%] md:table-cell">SATIŞÇISI</TableHead>
+                    <TableHead className="w-[11%] text-center sm:w-[8%]">SİPARİŞ</TableHead>
+                    <TableHead className="w-[11%] text-center sm:w-[8%]">TESLİM EDİLEN</TableHead>
+                    <TableHead className="w-[11%] text-center sm:w-[8%]">BORÇ ÜRÜN</TableHead>
+                    <TableHead className="hidden w-[9%] sm:table-cell">NOT</TableHead>
+                    <TableHead className="w-[16%] px-2! text-center sm:w-[11%]">STOK</TableHead>
+                    <TableHead className="w-[12%] sm:w-[7%]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {view.map((v) => {
+                    if (!v.r) return null
+                    const r = v.r
+                    const left = pendingDeduct(r)
+                    const owed = r.owed_quantity > 0
+                    const num = 'text-center tabular-nums'
+                    const g = v.newGroup ? groupStats(r) : null
+                    return (
+                      <React.Fragment key={r.id}>
+                        {g && (
+                          <TableRow className="hover:bg-transparent">
+                            <TableCell colSpan={9} className={cn('h-14! overflow-visible! border-b-primary/15! bg-gradient-to-r from-primary/[0.07] via-primary/[0.03] to-transparent px-4!', v.gi > 0 && 'border-t-[6px]! border-t-background!')}>
+                              <div className="flex items-center gap-3">
+                                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-sm tabular-nums">
+                                  {r.group_no ?? '•'}
+                                </span>
+                                <div className="min-w-0">
+                                  <InlineEdit
+                                    value={r.doctor_name}
+                                    placeholder="Hoca adı"
+                                    autoEdit={focusId === `${r.id}:doctor_name`}
+                                    onDone={() => setFocusId(null)}
+                                    onSave={(val) => saveCell(r, 'doctor_name', val)}
+                                    className="text-base font-bold text-foreground"
+                                  />
+                                  <div className="truncate text-xs text-muted-foreground">
+                                    {[g.reps.join(', '), g.dates, r.description].filter(Boolean).join(' · ')}
+                                  </div>
+                                </div>
+                                <div className="ml-auto hidden shrink-0 items-center gap-2 sm:flex">
+                                  <Stat label="Sipariş" value={g.ordered} />
+                                  <Stat label="Teslim" value={g.delivered} tone="success" />
+                                  <Stat label="Borç" value={g.owed} tone={g.owed ? 'danger' : undefined} />
+                                  <Button size="sm" variant="ghost" className="h-8 text-primary" onClick={() => addBelow(g.last)}>
+                                    <Plus /> Ürün ekle
+                                  </Button>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         )}
-                      </TableCell>
-                      <TableCell className="px-1">
-                        <div className="flex justify-end">
-                          <Button size="icon" variant="ghost" className="size-6" title="Bu hocaya ürün ekle" onClick={() => addBelow(r)}>
-                            <Plus className="size-3.5" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="size-6 text-destructive" title="Sil" onClick={() => remove(r)}>
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </table>
+                        <TableRow
+                          className={cn(
+                            'group/row transition-colors hover:bg-primary/[0.035]',
+                            owed && 'bg-destructive/[0.045] hover:bg-destructive/[0.07] [&>td:first-child]:shadow-[inset_3px_0_0_var(--color-destructive)]',
+                          )}
+                        >
+                          {cell(r, 'given_date', v.first, {
+                            type: 'date',
+                            className: 'pl-5! tabular-nums text-muted-foreground',
+                            display: <span title={r.description ?? undefined}>{fmtDate(r.given_date)}</span>,
+                          })}
+                          {cell(r, 'product_name', true, {
+                            className: cn('font-semibold', owed && 'text-destructive'),
+                            placeholder: 'Ürün yazın',
+                            display: (
+                              <>
+                                {r.product_name || <span className="font-normal text-muted-foreground">Ürün yazın</span>}
+                                {r.note && <span className="ml-1 text-xs font-normal sm:hidden">· {r.note}</span>}
+                              </>
+                            ),
+                          })}
+                          {cell(r, 'sales_rep_name', v.showRep && !v.newGroup, {
+                            className: 'hidden md:table-cell',
+                            display: r.sales_rep_name && (
+                              <span className="inline-flex max-w-full truncate rounded-md bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">{r.sales_rep_name}</span>
+                            ),
+                          })}
+                          {cell(r, 'ordered_quantity', true, { type: 'number', className: cn(num, 'font-medium') })}
+                          {cell(r, 'delivered_quantity', true, { type: 'number', className: cn(num, 'font-medium', r.delivered_quantity > 0 ? 'text-success' : 'text-muted-foreground/70') })}
+                          {cell(r, 'owed_quantity', true, {
+                            type: 'number',
+                            className: num,
+                            display: owed ? (
+                              <span className="inline-flex min-w-7 justify-center rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-white shadow-sm tabular-nums">{r.owed_quantity}</span>
+                            ) : (
+                              <span className="text-muted-foreground/70">0</span>
+                            ),
+                          })}
+                          {cell(r, 'note', true, {
+                            className: 'hidden px-2! sm:table-cell',
+                            display: r.note && (
+                              <span className={cn('inline-flex max-w-full truncate rounded-md px-1.5 py-0.5 text-xs font-semibold', /borç/i.test(r.note) ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground')}>
+                                {r.note.toLocaleUpperCase('tr-TR')}
+                              </span>
+                            ),
+                          })}
+                          <TableCell className="px-2! text-center">
+                            {left > 0 ? (
+                              <Button size="sm" variant="outline" className="h-7 gap-1 rounded-full px-2.5 text-xs shadow-none [&_svg]:size-3.5" disabled={busy != null} onClick={() => deductOne(r)}>
+                                {busy === r.id ? <Loader2 className="animate-spin" /> : <PackageMinus />}
+                                Düş ({left})
+                              </Button>
+                            ) : r.stock_deducted_quantity > 0 ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                                <CheckCircle2 className="size-3.5" /> Düşüldü
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/50">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-1!">
+                            <div className="flex justify-end opacity-0 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100">
+                              <Button size="icon" variant="ghost" className="size-7" title="Bu hocaya ürün ekle" onClick={() => addBelow(r)}>
+                                <Plus className="size-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="size-7 text-destructive" title="Sil" onClick={() => remove(r)}>
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      </React.Fragment>
+                    )
+                  })}
+                </TableBody>
+              </table>
             </div>
-            <div className="border-t p-2">
-              <Button size="sm" variant="ghost" onClick={addDoctor}>
+            <div className="flex flex-wrap items-center gap-2 border-t bg-muted/20 px-3 py-2">
+              <Button size="sm" variant="outline" onClick={addDoctor}>
                 <Plus /> Yeni hoca ekle
               </Button>
-              <span className="ml-2 text-xs text-muted-foreground">Hücreye tıklayıp düzenleyin; Enter kaydeder, Esc vazgeçer.</span>
+              <span className="text-xs text-muted-foreground">Hücreye tıklayıp düzenleyin; Enter kaydeder, Esc vazgeçer.</span>
             </div>
           </Card>
         </>
@@ -895,7 +977,7 @@ function EditCell({
   }
   return (
     <TableCell
-      className={cn('cursor-text hover:bg-primary/5', open && 'p-0!', className)}
+      className={cn('cursor-text hover:bg-primary/[0.06]', open && 'p-0!', className)}
       title={type === 'text' && value ? value : undefined}
       onClick={() => !open && start()}
     >
@@ -920,7 +1002,7 @@ function EditCell({
             }
           }}
           className={cn(
-            'h-8 w-full min-w-0 bg-background px-1.5 text-sm font-normal text-foreground ring-2 ring-primary outline-none ring-inset',
+            'h-10 w-full min-w-0 bg-background px-3 text-sm font-normal text-foreground ring-2 ring-primary outline-none ring-inset',
             type === 'number' && 'text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none',
           )}
         />
@@ -928,5 +1010,84 @@ function EditCell({
         children
       )}
     </TableCell>
+  )
+}
+
+function Stat({ label, value, tone }: { label: string; value: number; tone?: 'success' | 'danger' }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-baseline gap-1 rounded-lg border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs',
+        tone === 'danger' && 'border-destructive/30 bg-destructive/5 text-destructive',
+        tone === 'success' && 'text-success',
+      )}
+    >
+      {label}
+      <b className="text-sm tabular-nums">{value}</b>
+    </span>
+  )
+}
+
+/** Hoca şeridindeki adı tıklayınca düzenleme — Enter / dışarı tıklama kaydeder, Esc vazgeçer. */
+function InlineEdit({
+  value,
+  placeholder,
+  autoEdit,
+  onDone,
+  onSave,
+  className,
+}: {
+  value: string
+  placeholder?: string
+  autoEdit?: boolean
+  onDone?: () => void
+  onSave: (v: string) => void
+  className?: string
+}) {
+  const [editing, setEditing] = React.useState(false)
+  const [draft, setDraft] = React.useState(value)
+  const open = editing || !!autoEdit
+  const finish = (save: boolean) => {
+    setEditing(false)
+    onDone?.()
+    if (save && draft.trim() && draft !== value) onSave(draft)
+  }
+  if (open)
+    return (
+      <input
+        autoFocus
+        value={editing ? draft : value}
+        placeholder={placeholder}
+        onFocus={(e) => {
+          if (!editing) {
+            setDraft(value)
+            setEditing(true)
+          }
+          e.currentTarget.select()
+        }}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => finish(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+          if (e.key === 'Escape') {
+            e.preventDefault()
+            finish(false)
+          }
+        }}
+        className={cn('h-7 w-64 max-w-full rounded-md bg-background px-2 ring-2 ring-primary outline-none', className)}
+      />
+    )
+  return (
+    <button
+      type="button"
+      title="Hoca adını düzenlemek için tıklayın"
+      onClick={() => {
+        setDraft(value)
+        setEditing(true)
+      }}
+      className={cn('block max-w-full truncate rounded-md text-left hover:text-primary', className)}
+    >
+      {value || <span className="font-normal text-muted-foreground">{placeholder}</span>}
+    </button>
   )
 }
