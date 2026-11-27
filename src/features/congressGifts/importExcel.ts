@@ -3,7 +3,7 @@ import type { Product } from '@/types/database'
 
 /**
  * Kongrede hocalara verilen ürünler Excel'i (kullanıcının gönderdiği düzen, 2026-11-27):
- *   No | TARİH | (açıklama, ör. KAYIT KONAKLAMA ULAŞIM) | ADI SOYADI | ÜRÜNLER | SİPARİŞ | TESLİM EDİLEN | BORÇ ÜRÜN | (not, ör. BORÇ)
+ *   No | TARİH | (açıklama, ör. KAYIT KONAKLAMA ULAŞIM) | ADI SOYADI | SATIŞÇISI | ÜRÜNLER | SİPARİŞ | TESLİM EDİLEN | BORÇ ÜRÜN | (not, ör. BORÇ)
  * Bir doktorun ürünleri alt alta yazılır; No / tarih / açıklama / ad hücreleri yalnız ilk satırda doludur, altındaki boş
  * hücreler üstten devralınır. Boş ayırıcı satırlar atlanır. Adetler hücrede ne yazıyorsa o; boş hücre yorumlanmaz,
  * yalnız eksik olan biri öbür ikisinden hesaplanır (Borç = Sipariş − Teslim) ve satır "kontrol et" diye işaretlenir.
@@ -13,6 +13,7 @@ export interface GivenLine {
   date: string | null
   description: string | null
   doctor: string
+  rep: string | null
   productText: string
   product?: Product
   ordered: number
@@ -83,7 +84,8 @@ export function parseCongressGivenExcel(sheets: { name: string; rows: unknown[][
     const ordCol = find(/sipari|alinan|adet/)
     const delCol = find(/teslim|verilen/)
     const owedCol = find(/borc|kalan/)
-    const known = [dateCol, nameCol, prodCol, ordCol, delCol, owedCol].filter((c) => c >= 0)
+    const repCol = find(/satis|temsilci/)
+    const known = [dateCol, nameCol, repCol, prodCol, ordCol, delCol, owedCol].filter((c) => c >= 0)
     const noCol = find(/^no$|^sira/) >= 0 ? find(/^no$|^sira/) : dateCol > 0 && head[dateCol - 1] === '' ? dateCol - 1 : -1
     // Tarih ile ad arasındaki başlıksız sütun = açıklama (KAYIT KONAKLAMA ULAŞIM); son bilinen sütundan sonrası = not
     const descCols = head.map((_, i) => i).filter((i) => i > Math.max(dateCol, noCol) && i < nameCol && !known.includes(i))
@@ -92,11 +94,11 @@ export function parseCongressGivenExcel(sheets: { name: string; rows: unknown[][
     const noteCols = [...Array(width).keys()].filter((i) => i > last || /^not|aciklama/.test(head[i] ?? ''))
     if (nameCol < 0 || prodCol < 0) continue
 
-    let carry = { no: null as number | null, date: null as string | null, desc: null as string | null, doctor: '' }
+    let carry = { no: null as number | null, date: null as string | null, desc: null as string | null, doctor: '', rep: '' }
     for (let i = hi + 1; i < rows.length; i++) {
       const r = rows[i]
       const no = noCol >= 0 ? num(r[noCol]) : null
-      if (no != null && no !== carry.no) carry = { no, date: null, desc: null, doctor: '' }
+      if (no != null && no !== carry.no) carry = { no, date: null, desc: null, doctor: '', rep: '' }
       const d = dateCol >= 0 ? toDate(r[dateCol]) : null
       const desc = descCols.map((c) => text(r[c])).filter(Boolean).join(' ')
       if (d) {
@@ -105,6 +107,8 @@ export function parseCongressGivenExcel(sheets: { name: string; rows: unknown[][
       } else if (desc) carry.desc = desc
       const doc = text(r[nameCol])
       if (doc) carry.doctor = doc
+      const rep = repCol >= 0 ? text(r[repCol]) : ''
+      if (rep) carry.rep = rep
       const prod = text(r[prodCol])
       if (!prod) continue
       const o = num(r[ordCol]), dl = num(r[delCol]), ow = num(r[owedCol])
@@ -130,6 +134,7 @@ export function parseCongressGivenExcel(sheets: { name: string; rows: unknown[][
         date: carry.date,
         description: carry.desc,
         doctor: carry.doctor || '(isimsiz)',
+        rep: carry.rep || null,
         productText: prod,
         product: matchGiven(prod, products),
         ordered,

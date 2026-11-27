@@ -598,6 +598,8 @@ export interface CongressGivenProduct {
   /** Ör. "KAYIT KONAKLAMA ULAŞIM" */
   description: string | null
   doctor_name: string
+  /** Excel'deki SATIŞÇISI */
+  sales_rep_name: string | null
   customer_id: string | null
   product_name: string
   product_id: string | null

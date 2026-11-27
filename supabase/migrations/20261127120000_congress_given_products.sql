@@ -1,7 +1,7 @@
 -- Kongrede hocalara verilen ürünler (kullanıcı isteği, 2026-11-27: "Mısır kongresi için hocalara verdiğimiz ürünlerin
 -- listesi var Excel olarak, bunu programa ayrı bir sütuna işler misin"; "sadece kayıt tutulsun, stoktan düş tuşu da
 -- olsun sonradan düşebilelim"). Satış / prim hesabına giren congress_participant_products'tan bilerek ayrı.
--- Excel düzeni: No | Tarih | Açıklama (ör. KAYIT KONAKLAMA ULAŞIM) | Adı Soyadı | Ürünler | Sipariş | Teslim Edilen | Borç Ürün | Not.
+-- Excel düzeni: No | Tarih | Açıklama (ör. KAYIT KONAKLAMA ULAŞIM) | Adı Soyadı | Satışçısı | Ürünler | Sipariş | Teslim Edilen | Borç Ürün | Not.
 -- Kayıt stoğu değiştirmez; "Stoktan düş" teslim edilen adetten henüz düşülmemiş kısmı stok hareketi olarak düşer
 -- (stock_deducted_quantity bunu tutar, aynı ürün iki kez düşülmez).
 create table if not exists public.congress_given_products (
@@ -11,6 +11,7 @@ create table if not exists public.congress_given_products (
   given_date date,
   description text,
   doctor_name text not null,
+  sales_rep_name text,
   customer_id uuid references public.customers (id) on delete set null,
   product_name text not null,
   product_id uuid references public.products (id) on delete set null,

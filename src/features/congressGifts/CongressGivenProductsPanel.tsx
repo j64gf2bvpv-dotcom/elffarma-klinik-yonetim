@@ -35,7 +35,13 @@ import { matchGiven, parseCongressGivenExcel, type GivenLine } from './importExc
  */
 
 const KEY = ['congress_given_products']
-const fmtDate = (d: string | null) => (d ? format(new Date(`${d}T00:00:00`), 'd.MM.yyyy') : '')
+const fmtDate = (d: string | null) => (d ? format(new Date(`${d}T00:00:00`), 'd/M/yy') : '')
+
+type ViewRow = { sep: true; r?: undefined; first?: undefined; newGroup?: undefined; showName?: undefined; showRep?: undefined } | { sep?: undefined; r: CongressGivenProduct; first: boolean; newGroup: boolean; showName: boolean; showRep: boolean }
+
+/** Excel ızgarası: ince kenarlıklı hücreler, kalın büyük harf başlıklar, sıkı satırlar */
+const EXCEL_GRID =
+  '[&_th]:h-9 [&_th]:border [&_th]:border-border [&_th]:bg-muted/40 [&_th]:px-1.5 [&_th]:text-xs [&_th]:font-bold [&_th]:whitespace-normal [&_th]:text-foreground [&_td]:h-8 [&_td]:border [&_td]:border-border/70 [&_td]:px-1.5 [&_td]:py-0 [&_td]:align-middle [&_td]:text-sm [&_td]:leading-tight [&_td]:whitespace-nowrap [&_td]:overflow-hidden [&_td]:text-ellipsis'
 
 export function CongressGivenProductsPanel() {
   const queryClient = useQueryClient()
@@ -126,17 +132,30 @@ export function CongressGivenProductsPanel() {
     list.reduce((s, r) => s + r[k], 0)
   const doctors = new Set(list.map((r) => r.doctor_name.toLocaleLowerCase('tr-TR'))).size
 
-  const columns: ExportColumn<CongressGivenProduct>[] = [
-    { header: 'No', value: (r) => r.group_no ?? '' },
-    { header: 'Tarih', value: (r) => fmtDate(r.given_date) },
-    { header: 'Açıklama', value: (r) => r.description ?? '' },
-    { header: 'Adı Soyadı', value: (r) => r.doctor_name },
-    { header: 'Ürünler', value: (r) => r.product_name },
-    { header: 'Sipariş', value: (r) => r.ordered_quantity },
-    { header: 'Teslim Edilen', value: (r) => r.delivered_quantity },
-    { header: 'Borç Ürün', value: (r) => r.owed_quantity },
-    { header: 'Not', value: (r) => r.note ?? '' },
-    { header: 'Stoktan Düşülen', value: (r) => r.stock_deducted_quantity },
+  // Excel'deki düzen: hoca/tarih/açıklama yalnız ilk satırda, hocalar arasında boş ayırıcı satır
+  const view: ViewRow[] = []
+  list.forEach((r, i) => {
+    const prev = list[i - 1]
+    const newGroup = !prev || (r.group_no != null ? prev.group_no !== r.group_no : prev.doctor_name !== r.doctor_name)
+    const first = newGroup || prev.given_date !== r.given_date
+    const showName = newGroup || prev.doctor_name !== r.doctor_name
+    const showRep = newGroup || (prev.sales_rep_name ?? '') !== (r.sales_rep_name ?? '')
+    if (newGroup && i > 0) view.push({ sep: true })
+    view.push({ r, first, newGroup, showName, showRep })
+  })
+  const x = (v: ViewRow, f: (r: CongressGivenProduct) => string | number) => (v.r ? f(v.r) : '')
+  const columns: ExportColumn<ViewRow>[] = [
+    { header: 'NO', value: (v) => x(v, (r) => (v.newGroup ? r.group_no ?? '' : '')) },
+    { header: 'TARİH', value: (v) => x(v, (r) => (v.first ? fmtDate(r.given_date) : '')) },
+    { header: 'AÇIKLAMA', value: (v) => x(v, (r) => (v.first ? r.description ?? '' : '')) },
+    { header: 'ADI SOYADI', value: (v) => x(v, (r) => (v.showName ? r.doctor_name : '')) },
+    { header: 'SATIŞÇISI', value: (v) => x(v, (r) => (v.showRep ? r.sales_rep_name ?? '' : '')) },
+    { header: 'ÜRÜNLER', value: (v) => x(v, (r) => r.product_name) },
+    { header: 'SİPARİŞ', value: (v) => x(v, (r) => r.ordered_quantity) },
+    { header: 'TESLİM EDİLEN', value: (v) => x(v, (r) => r.delivered_quantity) },
+    { header: 'BORÇ ÜRÜN', value: (v) => x(v, (r) => r.owed_quantity) },
+    { header: 'NOT', value: (v) => x(v, (r) => r.note ?? '') },
+    { header: 'STOKTAN DÜŞÜLEN', value: (v) => x(v, (r) => r.stock_deducted_quantity) },
   ]
 
   if (isLoading)
@@ -178,7 +197,7 @@ export function CongressGivenProductsPanel() {
                 {busy === 'all' ? <Loader2 className="animate-spin" /> : <PackageMinus />}
                 Tümünü stoktan düş{waiting.length ? ` (${waiting.reduce((s, r) => s + pendingDeduct(r), 0)})` : ''}
               </Button>
-              <ExportMenu title={`${current} — Hocalara Verilen Ürünler`} filename={`${current} hocalara verilen ürünler`} columns={columns} rows={list} />
+              <ExportMenu title={`${current} Borç Listesi`.toLocaleUpperCase('tr-TR')} filename={`${current} borç listesi`} columns={columns} rows={view} />
             </>
           )}
         </div>
@@ -199,6 +218,7 @@ export function CongressGivenProductsPanel() {
         </Card>
       ) : (
         <>
+          <h2 className="text-center text-xl font-bold tracking-wide text-primary">{`${current} Borç Listesi`.toLocaleUpperCase('tr-TR')}</h2>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {[
               ['Hoca', doctors],
@@ -216,59 +236,54 @@ export function CongressGivenProductsPanel() {
             ))}
           </div>
 
-          <Card className="py-0">
-            <Table className={cn(PREMIUM_TABLE, 'table-fixed')}>
+          <Card className="overflow-hidden py-0">
+            <Table className={cn('table-fixed', EXCEL_GRID)}>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="hidden w-10 md:table-cell">No</TableHead>
-                  <TableHead className="hidden w-24 md:table-cell">Tarih</TableHead>
-                  <TableHead className="hidden w-[13%] lg:table-cell">Açıklama</TableHead>
-                  <TableHead className="w-[20%]">Adı Soyadı</TableHead>
-                  <TableHead>Ürünler</TableHead>
-                  <TableHead className="w-14 text-center sm:w-18">Sipariş</TableHead>
-                  <TableHead className="w-14 text-center sm:w-18">Teslim Edilen</TableHead>
-                  <TableHead className="w-14 text-center sm:w-18">Borç Ürün</TableHead>
-                  <TableHead className="hidden w-[10%] sm:table-cell">Not</TableHead>
-                  <TableHead className="w-24 sm:w-32">Stok</TableHead>
-                  <TableHead className="w-16" />
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="hidden w-[3%] md:table-cell" />
+                  <TableHead className="hidden w-[7%] md:table-cell">TARİH</TableHead>
+                  <TableHead className="hidden w-[13%] lg:table-cell" />
+                  <TableHead className="w-[15%]">ADI SOYADI</TableHead>
+                  <TableHead className="hidden w-[8%] md:table-cell">SATIŞÇISI</TableHead>
+                  <TableHead>ÜRÜNLER</TableHead>
+                  <TableHead className="w-[9%] text-center sm:w-[7%]">SİPARİŞ</TableHead>
+                  <TableHead className="w-[9%] text-center sm:w-[7%]">TESLİM EDİLEN</TableHead>
+                  <TableHead className="w-[9%] text-center sm:w-[7%]">BORÇ ÜRÜN</TableHead>
+                  <TableHead className="hidden w-[6%] sm:table-cell" />
+                  <TableHead className="w-[14%] sm:w-[9%]">STOK</TableHead>
+                  <TableHead className="w-[10%] sm:w-[6%]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((r, i) => {
-                  const prev = list[i - 1]
-                  const first = !prev || prev.doctor_name !== r.doctor_name || prev.given_date !== r.given_date || prev.group_no !== r.group_no
-                  const newGroup = !prev || prev.group_no !== r.group_no || prev.doctor_name !== r.doctor_name
+                {view.map((v, i) => {
+                  if (!v.r) return <TableRow key={`s${i}`} className="hover:bg-transparent"><TableCell colSpan={12} className="h-4! border-x-0! p-0" /></TableRow>
+                  const r = v.r
                   const left = pendingDeduct(r)
+                  const owed = r.owed_quantity > 0
+                  const hl = owed && 'bg-[#fff35c] font-bold text-[#e3251b] dark:bg-yellow-400/25 dark:text-red-400'
                   return (
-                    <TableRow key={r.id} className={cn(newGroup && i > 0 && '[&>td]:border-t-2 [&>td]:border-t-border')}>
-                      <TableCell className="hidden align-top font-medium tabular-nums md:table-cell">{newGroup ? r.group_no ?? '' : ''}</TableCell>
-                      <TableCell className="hidden align-top tabular-nums md:table-cell">{first ? fmtDate(r.given_date) : ''}</TableCell>
-                      <TableCell className="hidden align-top text-xs whitespace-normal text-muted-foreground lg:table-cell">{first ? r.description : ''}</TableCell>
-                      <TableCell className="align-top font-medium break-words whitespace-normal">
-                        {first ? (
-                          <>
-                            {r.doctor_name}
-                            {r.given_date && <div className="text-xs font-normal text-muted-foreground md:hidden">{fmtDate(r.given_date)}</div>}
-                          </>
-                        ) : (
-                          ''
-                        )}
+                    <TableRow key={r.id} className="hover:bg-muted/30">
+                      <TableCell className="hidden tabular-nums md:table-cell">{v.newGroup ? r.group_no ?? '' : ''}</TableCell>
+                      <TableCell className="hidden text-right tabular-nums md:table-cell">{v.first ? fmtDate(r.given_date) : ''}</TableCell>
+                      <TableCell className="hidden text-xs! lg:table-cell" title={r.description ?? undefined}>{v.first ? r.description : ''}</TableCell>
+                      <TableCell title={r.doctor_name}>
+                        {v.showName && r.doctor_name}
+                        {v.first && r.given_date && <span className="ml-1 text-xs text-muted-foreground md:hidden">{fmtDate(r.given_date)}</span>}
                       </TableCell>
-                      <TableCell className={cn('break-words whitespace-normal', r.owed_quantity > 0 && 'bg-warning/15 font-semibold text-destructive')}>
+                      <TableCell className="hidden md:table-cell">{v.showRep ? r.sales_rep_name : ''}</TableCell>
+                      <TableCell className={cn(hl)} title={r.product_name}>
                         {r.product_name}
-                        {r.note && <div className="text-xs font-normal text-muted-foreground sm:hidden">{r.note}</div>}
+                        {r.note && <span className="ml-1 text-xs font-normal sm:hidden">· {r.note}</span>}
                       </TableCell>
-                      <TableCell className="text-center tabular-nums">{r.ordered_quantity}</TableCell>
-                      <TableCell className="text-center tabular-nums">{r.delivered_quantity}</TableCell>
-                      <TableCell className={cn('text-center tabular-nums', r.owed_quantity > 0 && 'bg-warning/15 font-bold text-destructive')}>
-                        {r.owed_quantity}
-                      </TableCell>
-                      <TableCell className="hidden text-xs whitespace-normal sm:table-cell">{r.note}</TableCell>
-                      <TableCell className="whitespace-normal">
+                      <TableCell className={cn('text-right tabular-nums', hl)}>{r.ordered_quantity}</TableCell>
+                      <TableCell className={cn('text-right tabular-nums', hl)}>{r.delivered_quantity}</TableCell>
+                      <TableCell className={cn('text-right tabular-nums', hl)}>{r.owed_quantity}</TableCell>
+                      <TableCell className="hidden text-xs sm:table-cell" title={r.note ?? undefined}>{r.note}</TableCell>
+                      <TableCell>
                         {left > 0 ? (
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" disabled={busy != null} onClick={() => deductOne(r)}>
+                          <Button size="sm" variant="outline" className="h-6 gap-1 px-2 text-xs [&_svg]:size-3.5" disabled={busy != null} onClick={() => deductOne(r)}>
                             {busy === r.id ? <Loader2 className="animate-spin" /> : <PackageMinus />}
-                            Düş ({left})
+                            Düş ({left}){r.stock_deducted_quantity > 0 ? ` · ${r.stock_deducted_quantity} düşüldü` : ''}
                           </Button>
                         ) : r.stock_deducted_quantity > 0 ? (
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
@@ -277,16 +292,13 @@ export function CongressGivenProductsPanel() {
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
-                        {r.stock_deducted_quantity > 0 && left > 0 && (
-                          <div className="mt-0.5 text-[11px] text-muted-foreground">{r.stock_deducted_quantity} düşüldü</div>
-                        )}
                       </TableCell>
                       <TableCell className="px-1">
                         <div className="flex justify-end">
-                          <Button size="icon" variant="ghost" className="size-7" title="Düzenle" onClick={() => setEdit(r)}>
+                          <Button size="icon" variant="ghost" className="size-6" title="Düzenle" onClick={() => setEdit(r)}>
                             <Pencil className="size-3.5" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="size-7 text-destructive" title="Sil" onClick={() => remove(r)}>
+                          <Button size="icon" variant="ghost" className="size-6 text-destructive" title="Sil" onClick={() => remove(r)}>
                             <Trash2 className="size-3.5" />
                           </Button>
                         </div>
@@ -476,6 +488,7 @@ function GivenImportDialog({
           given_date: l.date,
           description: l.description,
           doctor_name: l.doctor,
+          sales_rep_name: l.rep,
           customer_id: null,
           product_name: l.productText,
           product_id: l.product?.id ?? null,
@@ -504,7 +517,7 @@ function GivenImportDialog({
         <DialogHeader>
           <DialogTitle>Kongre ürün listesini Excel'den yükle</DialogTitle>
           <DialogDescription>
-            Excel'deki satırlar olduğu gibi aktarılır: No, Tarih, Açıklama, Adı Soyadı, Ürünler, Sipariş, Teslim Edilen, Borç Ürün, Not. Stok
+            Excel'deki satırlar olduğu gibi aktarılır: No, Tarih, Açıklama, Adı Soyadı, Satışçısı, Ürünler, Sipariş, Teslim Edilen, Borç Ürün, Not. Stok
             değişmez.
           </DialogDescription>
         </DialogHeader>
@@ -545,6 +558,7 @@ function GivenImportDialog({
                     <TableHead className="hidden w-20 md:table-cell">Tarih</TableHead>
                     <TableHead className="hidden lg:table-cell">Açıklama</TableHead>
                     <TableHead>Adı Soyadı</TableHead>
+                    <TableHead className="hidden w-20 md:table-cell">Satışçısı</TableHead>
                     <TableHead>Ürünler</TableHead>
                     <TableHead className="w-12 text-center">Sip.</TableHead>
                     <TableHead className="w-12 text-center">Tes.</TableHead>
@@ -559,6 +573,7 @@ function GivenImportDialog({
                       <TableCell className="hidden md:table-cell">{fmtDate(l.date)}</TableCell>
                       <TableCell className="hidden whitespace-normal lg:table-cell">{l.description}</TableCell>
                       <TableCell className="whitespace-normal">{l.doctor}</TableCell>
+                      <TableCell className="hidden md:table-cell">{l.rep}</TableCell>
                       <TableCell className="whitespace-normal">
                         {l.productText}
                         {!l.product && <span className="ml-1 text-muted-foreground">(stokta yok)</span>}
